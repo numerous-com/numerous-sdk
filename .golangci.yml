@@ -1,0 +1,27 @@
+# https://golangci-lint.run/usage/configuration/
+run:
+  timeout: 5m
+
+linters-settings:
+  nlreturn:
+    block-size: 2
+  testifylint:
+    disable:
+      - require-error
+
+linters:
+  enable:
+    - gocritic
+    - gomnd
+    - misspell
+    - nlreturn
+    - perfsprint
+    - predeclared
+    - stylecheck
+    - testifylint
+    - thelper
+    - usestdlibvars
+    - whitespace
+
+issues:
+  max-same-issues: 10

@@ -1,0 +1,93 @@
+fragment ButtonValue on Button {
+  buttonValue: value
+}
+
+fragment TextFieldValue on TextField {
+  textValue: value
+}
+
+fragment NumberFieldValue on NumberField {
+  numberValue: value
+}
+
+fragment SliderValue on SliderElement {
+  sliderValue: value
+  minValue
+  maxValue
+}
+
+fragment HTMLValue on HTMLElement {
+  html
+}
+
+fragment GraphContext on ElementGraphContext {
+  parent {
+    __typename
+    id
+  }
+  affectedBy {
+    id
+  }
+  affects {
+    id
+  }
+}
+
+query AllElements($toolSessionId: ID!) {
+  session: toolSession(id: $toolSessionId) {
+    id
+    clientID
+    all: allElements {
+      id
+      name
+      graphContext {
+        ...GraphContext
+      }
+      ...ButtonValue
+      ...TextFieldValue
+      ...NumberFieldValue
+      ...HTMLValue
+      ...SliderValue
+    }
+  }
+}
+
+mutation UpdateElement(
+  $sessionID: ID!
+  $clientID: ID!
+  $element: ElementInput!
+) {
+  elementUpdate(
+    toolSessionId: $sessionID
+    clientId: $clientID
+    element: $element
+  ) {
+    __typename
+  }
+}
+
+subscription Updates($sessionId: ID!, $clientId: ID!) {
+  toolSessionEvent(toolSessionId: $sessionId, clientId: $clientId) {
+    __typename
+    ... on ToolSessionElementUpdated {
+      element {
+        id
+        name
+        graphContext {
+          ...GraphContext
+        }
+        ...ButtonValue
+        ...TextFieldValue
+        ...NumberFieldValue
+        ...HTMLValue
+        ...SliderValue
+      }
+    }
+    ... on ToolSessionActionTriggered {
+      element {
+        id
+        name
+      }
+    }
+  }
+}

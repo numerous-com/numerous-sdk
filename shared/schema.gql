@@ -1,0 +1,478 @@
+scalar Time
+scalar Upload
+
+directive @client on QUERY | FIELD
+directive @trackOperation(eventName: String!) on FIELD_DEFINITION
+directive @canAccessInvitation on FIELD_DEFINITION
+
+###############################################################################
+### Auth
+###############################################################################
+
+directive @hasRole(role: AuthRole!) on FIELD_DEFINITION
+
+enum AuthRole {
+  AUTHENTICATED
+  ADMIN
+  USER
+}
+
+###############################################################################
+### Auth end
+###############################################################################
+
+###############################################################################
+### User management
+###############################################################################
+
+enum Role {
+  ADMIN
+  USER
+}
+
+type OrganizationMembership {
+  organization: Organization!
+  role: Role!
+}
+
+type User {
+  fullName: String!
+  memberships: [OrganizationMembership!]!
+}
+
+type Query {
+  me: User! @hasRole(role: AUTHENTICATED)
+}
+
+###############################################################################
+### End of user management
+###############################################################################
+
+###############################################################################
+### Organization management
+###############################################################################
+
+type Organization {
+  id: ID!
+  name: String!
+  slug: String!
+  apps: [App!]!
+  members: [OrganizationMembership!]!
+}
+
+type OrganizationInvitation {
+  id: ID!
+  email: String!
+  organizationName: String!
+  invitedAt: Time!
+  role: Role!
+}
+
+type InvalidEmail {
+  email: String!
+}
+
+type OrganizationMemberExists {
+  email: String!
+}
+
+input OrganizationInvitationInput {
+  role: Role!
+  email: String!
+}
+
+input NewOrganization {
+  name: String!
+}
+
+type OrganizationNotFound {
+  id: ID!
+  slug: String!
+}
+
+type OrganizationRenameFailure {
+  result: String!
+}
+
+union OrganizationRenameResult =
+  | Organization
+  | OrganizationNotFound
+  | OrganizationRenameFailure
+
+union OrganizationQueryResult = Organization | OrganizationNotFound
+
+type OrganizationInvitationNotFound {
+  id: ID!
+}
+
+union OrganizationInvitationQueryResult =
+  | OrganizationInvitation
+  | OrganizationNotFound
+  | OrganizationInvitationNotFound
+
+union OrganizationInvitationCreateResult =
+  | OrganizationInvitation
+  | OrganizationNotFound
+  | InvalidEmail
+  | OrganizationMemberExists
+
+union OrganizationInvitationAcceptResult = Organization | OrganizationNotFound
+
+extend type Query {
+  organization(organizationSlug: ID): OrganizationQueryResult!
+    @hasRole(role: USER)
+  organizationInvitation(invitationId: ID!): OrganizationInvitationQueryResult
+    @canAccessInvitation
+}
+type Mutation {
+  organizationCreate(input: NewOrganization!): Organization!
+    @hasRole(role: AUTHENTICATED)
+  organizationRename(
+    organizationId: ID!
+    name: String!
+  ): OrganizationRenameResult! @hasRole(role: ADMIN)
+  organizationInvitationCreate(
+    organizationId: ID!
+    input: OrganizationInvitationInput
+  ): OrganizationInvitationCreateResult! @hasRole(role: ADMIN)
+  organizationInvitationAccept(
+    invitationId: ID!
+  ): OrganizationInvitationAcceptResult @canAccessInvitation
+}
+
+###############################################################################
+### End of organization management
+###############################################################################
+
+###############################################################################
+### Tool management
+###############################################################################
+
+type Tool {
+  id: ID!
+  name: String!
+  description: String
+  user: User!
+  publicUrl: String
+  sharedUrl: String
+  createdAt: Time!
+}
+
+type App {
+  id: ID!
+  name: String!
+  description: String
+  user: User!
+  publicUrl: String
+  sharedUrl: String
+  createdAt: Time!
+}
+
+type PublicTool {
+  developer: User!
+  name: String!
+  description: String
+  pictureUrl: String
+  publicUrl: String!
+}
+
+extend type Query {
+  publicTools: [PublicTool!]
+  tool(id: ID!): Tool!
+  tools: [Tool!]! @hasRole(role: AUTHENTICATED)
+}
+
+input NewTool {
+  userId: ID!
+  manifest: String!
+}
+
+type ToolDeleteSuccess {
+  result: String!
+}
+
+type ToolDeleteFailure {
+  result: String!
+}
+
+union ToolDeleteResult = ToolDeleteSuccess | ToolDeleteFailure
+
+type AppDeploy {
+  app: App!
+  buildId: ID!
+}
+
+extend type Mutation {
+  toolCreate(input: NewTool!): Tool! @trackOperation(eventName: "App Create")
+  toolPublish(id: ID!): Tool! @trackOperation(eventName: "App Publish")
+  toolUnpublish(id: ID!): Tool! @trackOperation(eventName: "App Unpublish")
+  toolDelete(id: ID!): ToolDeleteResult!
+    @trackOperation(eventName: "App Delete")
+  organizationAppDeploy(
+    appId: ID!
+    organizationSlug: ID!
+    appArchive: Upload!
+  ): AppDeploy! @hasRole(role: USER)
+}
+
+###############################################################################
+### End of tool management
+###############################################################################
+
+###############################################################################
+### Job management
+###############################################################################
+
+type Job {
+  id: ID!
+  status: String
+  proxyUrl: String
+  user: User!
+  createdAt: Time!
+}
+
+type StopJobPayload {
+  message: String!
+}
+
+enum ToolHashType {
+  public
+  shared
+}
+
+extend type Query {
+  job(id: ID!): Job!
+  jobsByTool(id: ID!): [Job!]!
+  jobs: [Job!]!
+}
+
+extend type Mutation {
+  jobStart(toolHash: ID!, hashType: ToolHashType!): Job!
+    @trackOperation(eventName: "App Use/Requested from Proxy")
+  jobStop(id: ID!): StopJobPayload!
+}
+
+###############################################################################
+### End of job management
+###############################################################################
+
+###############################################################################
+### Custom tool development
+###############################################################################
+
+interface ElementGraphParent {
+  id: ID!
+}
+
+type ElementGraphContext {
+  parent: ElementGraphParent
+  affectedBy: [Element]!
+  affects: [Element]!
+}
+
+interface Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+}
+
+type Container implements Element & ElementGraphParent {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+}
+
+type SliderElement implements Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  value: Float!
+  minValue: Float!
+  maxValue: Float!
+}
+
+type HTMLElement implements Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  html: String!
+}
+
+type Button implements Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  value: String!
+}
+
+type TextField implements Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  value: String!
+}
+
+type NumberField implements Element {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  value: Float!
+}
+
+type ElementList implements Element & ElementGraphParent {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+}
+
+type ElementSelect implements Element & ElementGraphParent {
+  id: ID!
+  name: String!
+  label: String!
+  graphContext: ElementGraphContext!
+  selectedOption: Element!
+}
+
+type ToolSession {
+  id: ID!
+  name: String!
+  allElements: [Element!]!
+  isActive: Boolean!
+  clientID: String!
+  title: String!
+}
+
+input ElementInput {
+  elementID: ID!
+  textValue: String
+  numberValue: Float
+  htmlValue: String
+  sliderValue: Float
+}
+
+input ElementSelectInput {
+  selectElementID: ID!
+  selectedOptionID: ID!
+}
+
+input ListElementInput {
+  listElementID: ID!
+}
+
+extend type Query {
+  toolSession(id: ID!): ToolSession!
+}
+
+extend type Mutation {
+  toolSessionCreate: ToolSession!
+  elementUpdate(
+    toolSessionId: ID!
+    clientId: ID!
+    element: ElementInput!
+  ): Element!
+  elementTrigger(
+    toolSessionId: ID!
+    clientId: ID!
+    actionElementId: ID!
+  ): Element!
+  elementSelectionUpdate(
+    clientId: ID!
+    elementSelection: ElementSelectInput!
+  ): Element!
+  listElementAdd(clientId: ID!, listElement: ListElementInput): Element!
+  listElementRemove(clientId: ID!, listItemID: ID!): Element!
+}
+
+type ToolSessionElementAdded {
+  element: Element!
+}
+
+type ToolSessionElementRemoved {
+  element: Element!
+}
+
+type ToolSessionElementUpdated {
+  element: Element!
+}
+
+type ToolSessionActionTriggered {
+  element: Button!
+}
+
+union ToolSessionEvent =
+  | ToolSessionElementAdded
+  | ToolSessionElementRemoved
+  | ToolSessionElementUpdated
+  | ToolSessionActionTriggered
+
+type Subscription {
+  toolSessionEvent(toolSessionId: ID!, clientId: ID!): ToolSessionEvent!
+}
+
+###############################################################################
+### End of custom tool development
+###############################################################################
+
+###############################################################################
+### CLI Push command
+###############################################################################
+
+type buildConfiguration {
+  buildId: ID!
+}
+
+type BuildEventSuccess {
+  result: String!
+}
+
+type BuildEventFailure {
+  result: String!
+}
+
+type BuildEventInfo {
+  result: String!
+}
+
+union BuildEvent = BuildEventSuccess | BuildEventFailure | BuildEventInfo
+
+extend type Mutation {
+  buildPush(file: Upload!, id: ID!): buildConfiguration!
+    @trackOperation(eventName: "App Push")
+}
+
+extend type Subscription {
+  buildEvents(buildId: ID!, appPath: String): BuildEvent!
+}
+
+extend type Subscription {
+  deployEvents(toolID: ID!): BuildEvent!
+}
+
+###############################################################################
+### End of CLI Push command
+###############################################################################
+
+###############################################################################
+### CLI Logs command
+###############################################################################
+
+type LogMessage {
+  time: Time!
+  message: String!
+}
+
+extend type Subscription {
+  logs(appId: ID!): LogMessage!
+}
+
+###############################################################################
+### End of CLI Push command
+###############################################################################

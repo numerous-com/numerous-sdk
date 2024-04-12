@@ -1,0 +1,4 @@
+build
+!internal/gql/build
+cli.db
+c.out
