@@ -90,14 +90,13 @@ And you can run tests with
 
 ### Trying out Numerous app engine development
 
-In the examples folder are two tools `examples/action.py` (containing
-`ActionTool`), and `examples/parameters.py` (containing `ParameterTool`). These
-can be used to test the first-class tool development features.
+In the `examples/numerous` folder are two apps `action.py` (containing
+`ActionTool`), and `parameters.py` (containing `ParameterTool`). These can be
+used to test the Numerous app engine development features.
 
-**Note: You need an activated python environment with the python SDK
-installed.** See
-[the python sdk development section](#development-of-python-sdk-🐍) for information
-about how to install it.
+**Note: You need an activate python environment with the python SDK installed.**
+See the [python sdk development section](#development-of-python-sdk-) for
+information about how to install it.
 
 For example, if you built using `make cli-build`, you can run
 
