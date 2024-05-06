@@ -5,13 +5,14 @@ import (
 
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/test"
+	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAppPublish(t *testing.T) {
 	t.Run("returns nil and successfully sends AppPublish mutations", func(t *testing.T) {
-		test.ChdirToTmpDirWithAppIDDocument(t, "id")
+		test.ChdirToTmpDirWithAppIDDocument(t, tool.AppIDFileName, "id")
 		app := app.App{
 			ID:        "id",
 			SharedURL: "https://test.com/shared/some-hash",
@@ -27,7 +28,7 @@ func TestAppPublish(t *testing.T) {
 	})
 
 	t.Run("returns error if app does not exist", func(t *testing.T) {
-		test.ChdirToTmpDirWithAppIDDocument(t, "id")
+		test.ChdirToTmpDirWithAppIDDocument(t, tool.AppIDFileName, "id")
 		appNotFoundResponse := `{"errors":[{"message":"record not found","path":["tool"]}],"data":null}`
 		c, transportMock := test.CreateMockGqlClient(appNotFoundResponse)
 
@@ -46,7 +47,7 @@ func TestAppPublish(t *testing.T) {
 	})
 
 	t.Run("return nil and does not send AppPublish mutation, if app is published", func(t *testing.T) {
-		test.ChdirToTmpDirWithAppIDDocument(t, "id")
+		test.ChdirToTmpDirWithAppIDDocument(t, tool.AppIDFileName, "id")
 		app := app.App{
 			ID:        "id",
 			SharedURL: "https://test.com/shared/some-hash",

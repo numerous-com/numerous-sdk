@@ -15,8 +15,14 @@ func WriteTempFile(t *testing.T, filename string, content []byte) string {
 	t.Helper()
 
 	filePath := filepath.Join(t.TempDir(), filename)
-	err := os.WriteFile(filePath, content, tempFileMode)
-	require.NoError(t, err)
+	WriteFile(t, filePath, content)
 
 	return filePath
+}
+
+func WriteFile(t *testing.T, filePath string, content []byte) {
+	t.Helper()
+
+	err := os.WriteFile(filePath, content, tempFileMode)
+	require.NoError(t, err)
 }

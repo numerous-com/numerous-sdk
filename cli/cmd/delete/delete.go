@@ -33,8 +33,8 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 	if len(args) == 1 {
 		appID = args[0]
 	} else {
-		appID, err = tool.ReadToolID(".")
-		if err == tool.ErrToolIDNotFound {
+		appID, err = tool.ReadAppID(".")
+		if err == tool.ErrAppIDNotFound {
 			fmt.Println("Sorry, we could not recognize your app in the specified directory.",
 				"\nRun \"numerous init\" to initialize the app in Numerous.")
 

@@ -10,7 +10,6 @@ import (
 	"numerous/cli/cmd/initialize/wizard"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
-	"numerous/cli/manifest"
 	"numerous/cli/tool"
 
 	"github.com/spf13/cobra"
@@ -50,7 +49,7 @@ func runInit(cmd *cobra.Command, args []string) {
 		projectFolderPath = pathArgumentHandler(args[0], projectFolderPath)
 	}
 
-	if exist, _ := tool.ToolIDExistsInCurrentDir(&newApp, projectFolderPath); exist {
+	if exist, _ := tool.AppIDExistsInCurrentDir(&newApp, projectFolderPath); exist {
 		fmt.Printf("Error: An app is already initialized in '%s'\n", projectFolderPath)
 		fmt.Println("You can initialize an app in a folder by specifying a path in the command, like below:")
 		fmt.Println("    numerous init ./my-app-folder")
@@ -75,12 +74,12 @@ func runInit(cmd *cobra.Command, args []string) {
 	// Initialize and boostrap project files
 	a, err := app.Create(newApp, gql.GetClient())
 	if err != nil {
-		fmt.Printf("error creating app in the database.\n error: %s)", err)
+		fmt.Printf("Error creating app in the database.\n error: %s)", err)
 		return
 	}
 
 	if err := bootstrapFiles(newApp, a.ID, projectFolderPath); err != nil {
-		fmt.Printf("error bootstrapping files.\n error: %s)", err)
+		fmt.Printf("Error bootstrapping files.\n error: %s)", err)
 		return
 	}
 
@@ -132,16 +131,16 @@ func setPython(a *tool.Tool) {
 
 func printSuccess(a app.App) {
 	fmt.Printf(`
-The app has been initialized!
-If you need to edit some of the information you have just entered
-go to %s
+🥳 The app has been initialized! 🎉"
 
-APP ID:
-%s
-
-The APP ID is an access id to this app.
-It exists in this project, but be sure to save it somewhere else in case you delete this folder and still want access.
-`, manifest.ManifestFileName, a.ID)
+💾 The information you entered is now stored in "numerous.toml".
+🔍 The App ID %q is stored in %q,
+   and is used to identify the app in commands which manage it.
+❌ If %q is removed the CLI cannot identify your app, so make
+   sure not to delete it!
+💡 If you are logged in, you can use "numerous list" to find the
+   App ID again.
+`, a.ID, tool.AppIDFileName, tool.AppIDFileName)
 }
 
 func init() {

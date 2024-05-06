@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 )
 
-const ToolIDFileName string = ".tool_id.txt"
+const (
+	ToolIDFileName string = ".tool_id.txt" // supported for backwards compatibility
+	AppIDFileName  string = ".app_id.txt"
+)
 
-var ErrToolIDNotFound = fmt.Errorf("%s not found", ToolIDFileName)
+var ErrAppIDNotFound = errors.New("app id not found")
 
 type Tool struct {
 	Name             string
@@ -21,26 +24,43 @@ type Tool struct {
 	CoverImage       string
 }
 
-func ToolIDExistsInCurrentDir(t *Tool, basePath string) (bool, error) {
-	_, err := os.Stat(filepath.Join(basePath, ToolIDFileName))
-	exists := !errors.Is(err, os.ErrNotExist)
-
-	return exists, err
-}
-
-func DeleteTool(basePath string) error {
-	return os.Remove(filepath.Join(basePath, ToolIDFileName))
-}
-
-func ReadToolID(basePath string) (string, error) {
-	toolID, err := os.ReadFile(filepath.Join(basePath, ToolIDFileName))
-	if errors.Is(err, os.ErrNotExist) {
-		return "", ErrToolIDNotFound
+func AppIDExistsInCurrentDir(t *Tool, basePath string) (bool, error) {
+	_, err := os.Stat(filepath.Join(basePath, AppIDFileName))
+	if !errors.Is(err, os.ErrNotExist) {
+		return true, nil
 	} else if err != nil {
+		return false, err
+	}
+
+	_, err = os.Stat(filepath.Join(basePath, ToolIDFileName))
+	if !errors.Is(err, os.ErrNotExist) {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	// neither file exists
+	return false, nil
+}
+
+func ReadAppID(basePath string) (string, error) {
+	appID, err := os.ReadFile(filepath.Join(basePath, AppIDFileName))
+	if err == nil {
+		return string(appID), nil
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
 
-	return string(toolID), nil
+	appID, err = os.ReadFile(filepath.Join(basePath, ToolIDFileName))
+	if errors.Is(err, os.ErrNotExist) {
+		return "", ErrAppIDNotFound
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(appID), nil
 }
 
 func (t Tool) String() string {

@@ -41,7 +41,7 @@ func log(cmd *cobra.Command, args []string) {
 	appID, err := os.ReadFile(filepath.Join(userDir, tool.ToolIDFileName))
 	if err != nil {
 		slog.Info("An error occurred when trying read tool id file.", slog.String("error", err.Error()))
-		fmt.Println(tool.ErrToolIDNotFound)
+		fmt.Println(tool.ErrAppIDNotFound)
 		fmt.Println("Remember to be in the app directory or pass it as an argument to the numerous log command!")
 
 		return

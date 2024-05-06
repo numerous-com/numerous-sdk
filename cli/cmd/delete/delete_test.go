@@ -5,13 +5,14 @@ import (
 
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/test"
+	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAppDelete(t *testing.T) {
 	t.Run("returns nil and successfully sends AppDelete mutations", func(t *testing.T) {
-		test.ChdirToTmpDirWithAppIDDocument(t, "id")
+		test.ChdirToTmpDirWithAppIDDocument(t, tool.AppIDFileName, "id")
 		response, _ := test.DeleteSuccessQueryResult()
 		app := app.App{
 			ID:        "id",
@@ -25,7 +26,7 @@ func TestAppDelete(t *testing.T) {
 		transportMock.AssertExpectations(t)
 	})
 	t.Run("returns error if app does not exist", func(t *testing.T) {
-		test.ChdirToTmpDirWithAppIDDocument(t, "id")
+		test.ChdirToTmpDirWithAppIDDocument(t, tool.AppIDFileName, "id")
 		appNotFoundResponse := `"record not found"`
 		response, _ := test.DeleteFailureQueryResult(appNotFoundResponse)
 		c, transportMock := test.CreateMockGqlClient(response)

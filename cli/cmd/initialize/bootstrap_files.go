@@ -20,8 +20,6 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
 		return err
 	}
 
-	println("bootstrapping files in", basePath)
-
 	err = createToolIDFile(basePath, toolID)
 	if err != nil {
 		return err
