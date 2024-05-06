@@ -20,7 +20,7 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
 		return err
 	}
 
-	err = createToolIDFile(basePath, toolID)
+	err = createAppIDFile(basePath, toolID)
 	if err != nil {
 		return err
 	}

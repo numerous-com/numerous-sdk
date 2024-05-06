@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const expectedAddedGitIgnorePattern = "expected-added-gitignore-pattern"
+
 const mockGitIgnore string = `
 some.txt
 *.go
@@ -20,27 +22,27 @@ const expectedGitIgnore string = `
 some.txt
 *.go
 another.yaml
-.tool_id.txt`
+` + expectedAddedGitIgnorePattern
 
-func TestCreateToolIdFile(t *testing.T) {
-	testPath := t.TempDir()
-	err := os.Chdir(testPath)
+func TestCreateAppIdFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := os.Chdir(tmpDir)
 	require.NoError(t, err)
-	toolIDPath := filepath.Join(testPath, tool.ToolIDFileName)
-	toolID := "some-id"
+	appIDPath := filepath.Join(tmpDir, tool.AppIDFileName)
+	appID := "some-id"
 
-	err = createToolIDFile(testPath, toolID)
+	err = createAppIDFile(tmpDir, appID)
 
 	if assert.NoError(t, err) {
-		toolIDContent, err := os.ReadFile(toolIDPath)
+		toolIDContent, err := os.ReadFile(appIDPath)
 		if assert.NoError(t, err) {
 			actualID := string(toolIDContent)
-			assert.Equal(t, toolID, actualID)
+			assert.Equal(t, appID, actualID)
 		}
 	}
 }
 
-func TestAddToolIdFileToGitIgnore(t *testing.T) {
+func TestAddToGitIgnore(t *testing.T) {
 	t.Run("Adds if .gitignore exists", func(t *testing.T) {
 		testPath := t.TempDir()
 		err := os.Chdir(testPath)
@@ -53,7 +55,7 @@ func TestAddToolIdFileToGitIgnore(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, file.Close())
 
-		err = addToGitIgnore(testPath, tool.ToolIDFileName)
+		err = addToGitIgnore(testPath, expectedAddedGitIgnorePattern)
 
 		if assert.NoError(t, err) {
 			fileContentInBytes, err := os.ReadFile(gitignorePath)
@@ -70,12 +72,12 @@ func TestAddToolIdFileToGitIgnore(t *testing.T) {
 		gitignorePath := filepath.Join(testPath, ".gitignore")
 		require.NoFileExists(t, gitignorePath)
 
-		err = addToGitIgnore(testPath, tool.ToolIDFileName)
+		err = addToGitIgnore(testPath, expectedAddedGitIgnorePattern)
 
 		if assert.NoError(t, err) {
 			fileContentInBytes, err := os.ReadFile(gitignorePath)
 			if assert.NoError(t, err) {
-				assert.Equal(t, tool.ToolIDFileName, string(fileContentInBytes))
+				assert.Equal(t, expectedAddedGitIgnorePattern, string(fileContentInBytes))
 			}
 		}
 	})

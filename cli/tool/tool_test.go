@@ -2,6 +2,7 @@ package tool
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -50,4 +51,47 @@ func TestReadAppID(t *testing.T) {
 		require.ErrorIs(t, err, ErrAppIDNotFound)
 		assert.Equal(t, "", actualAppID)
 	})
+}
+
+func TestAppIDExistsInCurrentDir(t *testing.T) {
+	someAppID := "app-id-goes-here"
+
+	t.Run(AppIDFileName+" exists", func(t *testing.T) {
+		tmpDir := createTempDirAndChdir(t)
+		test.WriteFile(t, filepath.Join(tmpDir, AppIDFileName), []byte(someAppID))
+
+		exists, err := AppIDExistsInCurrentDir(tmpDir)
+
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run(ToolIDFileName+" exists", func(t *testing.T) {
+		tmpDir := createTempDirAndChdir(t)
+		test.WriteFile(t, filepath.Join(tmpDir, ToolIDFileName), []byte(someAppID))
+
+		exists, err := AppIDExistsInCurrentDir(tmpDir)
+
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("no app ID file exists", func(t *testing.T) {
+		tmpDir := createTempDirAndChdir(t)
+
+		exists, err := AppIDExistsInCurrentDir(tmpDir)
+
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+}
+
+func createTempDirAndChdir(t *testing.T) string {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	err := os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	return tmpDir
 }

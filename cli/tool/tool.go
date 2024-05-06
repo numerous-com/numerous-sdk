@@ -24,18 +24,20 @@ type Tool struct {
 	CoverImage       string
 }
 
-func AppIDExistsInCurrentDir(t *Tool, basePath string) (bool, error) {
-	_, err := os.Stat(filepath.Join(basePath, AppIDFileName))
-	if !errors.Is(err, os.ErrNotExist) {
+func AppIDExistsInCurrentDir(basePath string) (bool, error) {
+	appIDFilePath := filepath.Join(basePath, AppIDFileName)
+	_, err := os.Stat(appIDFilePath)
+	if err == nil {
 		return true, nil
-	} else if err != nil {
-		return false, err
+	} else if !errors.Is(err, os.ErrNotExist) && err.Error() != "no such file or directory" {
+		return true, err
 	}
 
-	_, err = os.Stat(filepath.Join(basePath, ToolIDFileName))
-	if !errors.Is(err, os.ErrNotExist) {
+	toolIDFilePath := filepath.Join(basePath, ToolIDFileName)
+	_, err = os.Stat(toolIDFilePath)
+	if err == nil {
 		return true, nil
-	} else if err != nil {
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return false, err
 	}
 

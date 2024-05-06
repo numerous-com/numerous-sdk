@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/tool"
 )
 
@@ -45,7 +46,7 @@ func CreateAndWriteIfFileNotExist(path string, content string) error {
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		fmt.Printf("Could not write to %s\n", path)
+		output.PrintErrorDetails("Could not write to %q", err, path)
 	}
 
 	return nil
@@ -55,14 +56,14 @@ func CreateAndWriteIfFileNotExist(path string, content string) error {
 func writeOrAppendFile(path string, content string) error {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		fmt.Printf("Could not open '%s'\n", path)
+		output.PrintErrorDetails("Could not open %q", err, path)
 		return err
 	}
 	defer file.Close()
 
 	fileStat, err := file.Stat()
 	if err != nil {
-		fmt.Printf("Could not determine file size of '%s'\n", path)
+		output.PrintErrorDetails("Could not determine the file size of %q", err, path)
 		return err
 	} else if fileStat.Size() != 0 {
 		content = "\n" + content
@@ -70,28 +71,28 @@ func writeOrAppendFile(path string, content string) error {
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		fmt.Printf("Could not write to '%s'\n", path)
+		output.PrintErrorDetails("Could not write to %q", err, path)
 	}
 
 	return nil
 }
 
 // Generates and creates file containing the tools id
-func createToolIDFile(path string, id string) error {
-	toolFile := filepath.Join(path, tool.ToolIDFileName)
-	if err := createFile(toolFile); err != nil {
-		fmt.Printf("Error creating tool id file\nError: %s", err)
+func createAppIDFile(path string, id string) error {
+	appIDFile := filepath.Join(path, tool.AppIDFileName)
+	if err := createFile(appIDFile); err != nil {
+		output.PrintUnknownError(err)
 		return err
 	}
 
-	return writeOrAppendFile(toolFile, id)
+	return writeOrAppendFile(appIDFile, id)
 }
 
 // Creates and adds the item to .gitignore
 func addToGitIgnore(path string, toIgnore string) error {
 	gitignorePath := filepath.Join(path, ".gitignore")
 	if err := createFile(gitignorePath); err != nil {
-		fmt.Println("Error creating .gitignore")
+		output.PrintUnknownError(err)
 		return err
 	}
 
