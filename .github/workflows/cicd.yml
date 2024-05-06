@@ -45,6 +45,7 @@ jobs:
       - run: coverage run -m pytest -vv ./python/tests/
       - run: coverage report | grep 'TOTAL' | awk '{print "COVERAGE_PCT=" $4}' >> $GITHUB_ENV
       - name: Publish SDK test coverage
+        if: github.ref == 'refs/heads/main'
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_ACCESS_TOKEN }}
@@ -136,6 +137,8 @@ jobs:
   test-cli:
     name: Unit test CLI
     runs-on: ubuntu-latest
+    if:
+
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
@@ -150,6 +153,7 @@ jobs:
         working-directory: cli
         run: go tool cover -func c.out | fgrep total | awk '{print "COVERAGE_PCT=" $3}' >> $GITHUB_ENV
       - name: Publish Test Coverage
+        if: github.ref == 'refs/heads/main'
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_ACCESS_TOKEN }}
@@ -161,6 +165,7 @@ jobs:
           maxColorRange: 80
           valColorRange: ${{ env.COVERAGE_PCT }}
   release:
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 15
     runs-on: ubuntu-latest
     name: Release
