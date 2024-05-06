@@ -196,4 +196,4 @@ jobs:
       - run: pip install python-semantic-release==9.6.0 twine==5.0.0
       - run: semantic-release version --commit --tag --push
       - run: semantic-release publish
-      - run: twine upload --non-interactive dist/*
+      - run: twine upload --skip-existing --non-interactive dist/*
