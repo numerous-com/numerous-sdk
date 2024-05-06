@@ -43,10 +43,10 @@ func getClient() *graphql.SubscriptionClient {
 	return client
 }
 
-func getLogs(appID string) error {
+func getLogs(appID string, timestamp bool) error {
 	client := getClient()
 	defer client.Close()
-	err := logsSubscription(client, appID, true)
+	err := logsSubscription(client, appID, timestamp, true)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func getLogs(appID string) error {
 	return err
 }
 
-func logsSubscription(client *graphql.SubscriptionClient, appID string, verbose bool) error {
+func logsSubscription(client *graphql.SubscriptionClient, appID string, timestamps, verbose bool) error {
 	var sub subscription
 	out := os.Stdout
 	variables := map[string]any{"appId": graphql.ID(appID)}
@@ -72,7 +72,7 @@ func logsSubscription(client *graphql.SubscriptionClient, appID string, verbose 
 		if err := json.Unmarshal(dataValue, &data); err != nil {
 			return err
 		}
-		ProcessLogEntry(data, out, verbose)
+		ProcessLogEntry(data, out, timestamps, verbose)
 
 		return nil
 	})
@@ -80,17 +80,23 @@ func logsSubscription(client *graphql.SubscriptionClient, appID string, verbose 
 	return err
 }
 
-func ProcessLogEntry(entry LogsContainer, out io.Writer, verbose bool) {
+func ProcessLogEntry(entry LogsContainer, out io.Writer, timestamps, verbose bool) {
 	if entry.Logs.Message != "" {
-		printVerbose(out, entry.Logs.Message, verbose)
+		printVerbose(out, entry.Logs, verbose, timestamps)
 	}
 }
 
-func printVerbose(out io.Writer, message string, verbose bool) {
-	if verbose {
-		_, err := out.Write([]byte(message + "\n"))
-		if err != nil {
-			slog.Error("Error writing message", err)
-		}
+func printVerbose(out io.Writer, entry LogEntry, timestamps, verbose bool) {
+	if !verbose {
+		return
+	}
+
+	logMsg := entry.Message + "\n"
+	if timestamps {
+		logMsg = entry.Time.Format(time.RFC3339) + " " + logMsg
+	}
+
+	if _, err := out.Write([]byte(logMsg)); err != nil {
+		slog.Error("Error writing message", err)
 	}
 }

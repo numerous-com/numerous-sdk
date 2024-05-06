@@ -1,15 +1,15 @@
 package log
 
 import (
-	"fmt"
-	"log/slog"
 	"os"
-	"path/filepath"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/tool"
 
 	"github.com/spf13/cobra"
 )
+
+var timestamps = false
 
 var LogCmd = &cobra.Command{
 	Use:   "log",
@@ -20,35 +20,35 @@ var LogCmd = &cobra.Command{
 }
 
 func log(cmd *cobra.Command, args []string) {
-	msg := "Now streaming log entries from the last hour and all new entries..."
-	fmt.Println(msg)
-	userDir, err := os.Getwd()
+	appDir, err := os.Getwd()
 	if err != nil {
-		slog.Info("An error occurred when trying to get the current user path with log command.", slog.String("error", err.Error()))
-		fmt.Println(err)
-
+		output.PrintUnknownError(err)
 		return
 	}
+
 	if len(args) > 0 {
-		userDir = args[0]
+		appDir = args[0]
 	}
 
-	if err := os.Chdir(userDir); err != nil {
-		fmt.Printf("Could not access \"%s\"", userDir)
+	if err := os.Chdir(appDir); err != nil {
+		output.PrintUnknownError(err)
 		return
 	}
 
-	appID, err := os.ReadFile(filepath.Join(userDir, tool.ToolIDFileName))
-	if err != nil {
-		slog.Info("An error occurred when trying read tool id file.", slog.String("error", err.Error()))
-		fmt.Println(tool.ErrAppIDNotFound)
-		fmt.Println("Remember to be in the app directory or pass it as an argument to the numerous log command!")
+	appID, err := tool.ReadAppID(appDir)
+	if err == tool.ErrAppIDNotFound {
+		output.PrintError("Could not find App ID in %q.", "", appDir)
+	} else if err != nil {
+		output.PrintUnknownError(err)
+	}
 
+	err = getLogs(appID, timestamps)
+	if err != nil {
+		output.PrintUnknownError(err)
 		return
 	}
+}
 
-	err = getLogs(string(appID))
-	if err != nil {
-		fmt.Println("Error listening for logs.", err)
-	}
+func init() {
+	LogCmd.Flags().BoolVarP(&timestamps, "timestamps", "t", false, "Show timestamps for log entries.")
 }
