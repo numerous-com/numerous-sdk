@@ -2,6 +2,17 @@
 
 
 
+## v0.1.2 (2024-05-06)
+
+### Fix
+
+* fix(cli): improve &#39;numerous log&#39; output
+
+* A bit of refactoring
+* Adds flag to print timestamps
+* Adds standardized error printing functions ([`1b3e7e5`](https://github.com/numerous-com/numerous-sdk/commit/1b3e7e52545d290b330eba6690a0191fabc1df14))
+
+
 ## v0.1.1 (2024-05-06)
 
 ### Documentation
