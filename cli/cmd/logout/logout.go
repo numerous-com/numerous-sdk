@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"numerous/cli/auth"
+	"numerous/cli/cmd/output"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ var LogoutCmd = &cobra.Command{
 	Short: "Logout of the Numerous CLI",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := logout(auth.NumerousTenantAuthenticator); err != nil {
-			fmt.Println("Error: ", err)
+			output.PrintUnknownError(err)
 			os.Exit(1)
 		}
 	},
@@ -24,16 +25,16 @@ var LogoutCmd = &cobra.Command{
 func logout(a auth.Authenticator) error {
 	user := a.GetLoggedInUserFromKeyring()
 	if user == nil {
-		fmt.Println("You are not logged in.")
+		output.PrintError("You are not logged in.", "")
 		return nil
 	}
 
 	_ = a.RevokeRefreshToken(http.DefaultClient, user.RefreshToken)
 	if err := a.RemoveLoggedInUserFromKeyring(); err != nil {
-		fmt.Println("A problem occurred when signing out")
+		output.PrintUnknownError(err)
 		return err
 	}
-	fmt.Println("Successfully logged out!")
+	fmt.Println("✅ Successfully logged out!")
 
 	return nil
 }

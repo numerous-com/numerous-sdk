@@ -12,7 +12,7 @@ func PrintError(header, body string, args ...any) {
 		body += "\n"
 	}
 
-	f := "⛔ " + header + "\n" + body
+	f := "❌ " + header + "\n" + body
 	fmt.Printf(f, args...)
 }
 

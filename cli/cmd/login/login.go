@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"numerous/cli/auth"
+	"numerous/cli/cmd/output"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ var LoginCmd = &cobra.Command{
 		if user == nil {
 			Login(auth.NumerousTenantAuthenticator, cmd.Context())
 		} else {
-			fmt.Println("Great, you are already logged in!")
+			fmt.Println("✅ Great, you are already logged in!")
 		}
 	},
 }
@@ -32,17 +33,27 @@ func Login(a auth.Authenticator, ctx context.Context) *auth.User {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\n%s\n\n", "You are logging into Numerous. \nWhen you press Enter, a browser window will automatically open. \nPlease verify that the code in the browser matches the code below to complete authentication and click 'Confirm'.")
-	fmt.Println("Verification code: " + state.UserCode)
-	fmt.Println("Press Enter to continue...")
+	fmt.Printf(`You are logging into Numerous.
+
+When you press Enter, a browser window will automatically open.
+
+Please verify that the code in the browser matches the code below to
+complete authentication and click 'Confirm'.
+
+Verification code: %s
+
+Press Enter to continue...
+`, state.UserCode)
 
 	if _, err = fmt.Scanln(); err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 
 	if err := a.OpenURL(state.VerificationURI); err != nil {
-		fmt.Printf("Whoops, we ran into an error opening the verification URL in your browser. \nPlease copy and paste the following URL into your browser: %s\n", state.VerificationURI)
+		fmt.Printf(
+			"The browser could not be opened automatically, please go to this site to continue\n" +
+				"the log-in: " + state.VerificationURI,
+		)
 	}
 
 	result, err := a.WaitUntilUserLogsIn(ctx, http.DefaultClient, state)
@@ -51,15 +62,22 @@ func Login(a auth.Authenticator, ctx context.Context) *auth.User {
 	}
 
 	if err := a.StoreAccessToken(result.AccessToken); err != nil {
-		fmt.Printf("An error occurred while storing your access token. We could not log you in. %s\n", err)
+		output.PrintError(
+			"Login failed.",
+			"Error occurred storing access token in your keyring.\nError details: %s",
+			err.Error(),
+		)
 		os.Exit(1)
 	}
 	if err := a.StoreRefreshToken(result.RefreshToken); err != nil {
-		fmt.Printf("An error occurred while storing your refresh token to the keyring. %s\n", err)
-		fmt.Printf("You will need to login again when your access token expire.\n\n")
+		output.PrintError(
+			"Error occurred storing refresh token in your keyring.",
+			"When your access token expires, you will need to log in again.\n"+
+				"Error details: "+err.Error(),
+		)
 	}
 
-	fmt.Println("You are now logged in to Numerous!")
+	fmt.Println("🎉 You are now logged in to Numerous!")
 
 	return a.GetLoggedInUserFromKeyring()
 }
