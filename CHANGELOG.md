@@ -2,6 +2,13 @@
 
 
 
+## v0.1.3 (2024-05-06)
+
+### Fix
+
+* fix(cli): login and logout output ([`becb0ae`](https://github.com/numerous-com/numerous-sdk/commit/becb0ae7145f4a46a3b682be961f70ef681029cf))
+
+
 ## v0.1.2 (2024-05-06)
 
 ### Fix
