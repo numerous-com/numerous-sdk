@@ -69,7 +69,8 @@ jobs:
         with:
           go-version: "1.21"
           cache: false
-      - run: python3 -m pip install build>=1.2.1
+      - run: python3 -m pip install python-semantic-release==9.6.0 build>=1.2.1
+      - run: semantic-release version --no-commit --no-tag --no-push --no-changelog  # update version locally to build new version
       - run: make package
       - uses: actions/upload-artifact@v4
         with:
