@@ -36,6 +36,8 @@ const (
 	shootingStarEmoji = "\U0001F320"
 )
 
+var ErrNotAuthorized = errors.New("not authorized")
+
 var (
 	logLevel logging.Level = logging.LevelError
 	rootCmd                = &cobra.Command{
@@ -57,22 +59,25 @@ var (
 			"",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if commandRequiresAuthentication(cmd.CommandPath()) {
-				user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
-				if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
-					if runtime.GOOS == "windows" {
-						fmt.Printf("\"%s\" can only be used when logged in.\n", cmd.CommandPath())
-						fmt.Println("Use \"numerous login\" to enable this command.")
-					} else {
-						fmt.Printf("The use of %s%s%s command can only be done when logged in %s\n", cyanBold, cmd.CommandPath(), resetPrompt, raiseHandEmoji)
-						fmt.Printf("To enable it, please first proceed with %snumerous login%s %s\n", cyanBold, resetPrompt, shootingStarEmoji)
-					}
+			if !commandRequiresAuthentication(cmd.CommandPath()) {
+				return nil
+			}
 
-					return errors.New("not authorized")
+			user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+			if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
+				if runtime.GOOS == "windows" {
+					fmt.Printf("\"%s\" can only be used when logged in.\n", cmd.CommandPath())
+					fmt.Println("Use \"numerous login\" to enable this command.")
+				} else {
+					fmt.Printf("The use of %s%s%s command can only be done when logged in %s\n", cyanBold, cmd.CommandPath(), resetPrompt, raiseHandEmoji)
+					fmt.Printf("To enable it, please first proceed with %snumerous login%s %s\n", cyanBold, resetPrompt, shootingStarEmoji)
 				}
-				if err := login.RefreshAccessToken(user, http.DefaultClient, auth.NumerousTenantAuthenticator); err != nil {
-					return err
-				}
+
+				return ErrNotAuthorized
+			}
+
+			if err := login.RefreshAccessToken(user, http.DefaultClient, auth.NumerousTenantAuthenticator); err != nil {
+				return err
 			}
 
 			return nil
