@@ -2,6 +2,17 @@
 
 
 
+## v0.3.0 (2024-05-07)
+
+### Feature
+
+* feat(cli): `push` reads `.env` and sends secrets
+
+Read and parse `.env` in the app directory, and send the parsed
+environment to the server for it to configure the resulting app
+deployment with the secrets from the `.env`. ([`c019861`](https://github.com/numerous-com/numerous-sdk/commit/c019861e47d99b2109e0091cd57f29e0c950fd72))
+
+
 ## v0.2.0 (2024-05-07)
 
 ### Feature
