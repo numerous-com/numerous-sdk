@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"os"
@@ -34,7 +35,7 @@ func TestPush(t *testing.T) {
 		}`
 		c := createTestGqlClient(response)
 		appID := "app_id"
-		actualBuild, err := Push(tmpFile, appID, c)
+		actualBuild, err := Push(tmpFile, appID, c, nil)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedBuild, actualBuild)
@@ -45,7 +46,7 @@ func TestPush(t *testing.T) {
 		c := createTestGqlClient(buildPushFailedResponse)
 
 		appID := "app_id"
-		actualBuild, err := Push(tmpFile, appID, c)
+		actualBuild, err := Push(tmpFile, appID, c, nil)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "Something went wrong")
@@ -65,4 +66,20 @@ func createTestGqlClient(response string) *gqlclient.Client {
 	}
 
 	return gqlclient.New("http://localhost:8080", &http.Client{Transport: &ts})
+}
+
+func TestAppSecretsFromMap(t *testing.T) {
+	secretValue := "my secret value"
+	secretName := "MY_SECRET"
+	secrets := map[string]string{secretName: secretValue}
+	expected := []*appSecret{
+		{
+			Name:        secretName,
+			Base64Value: base64.StdEncoding.EncodeToString([]byte(secretValue)),
+		},
+	}
+
+	actual := appSecretsFromMap(secrets)
+
+	assert.Equal(t, expected, actual)
 }

@@ -108,6 +108,10 @@ cli-dep:
 	cd cli && go mod download
 	cd cli && go mod tidy  > /dev/null
 
+gqlgen:
+	@echo "-- Generating GraphQL code"
+	cd python && ariadne-codegen
+
 help:
 	@echo "Make targets (help is default):"
 	@echo "    test         Run all tests"

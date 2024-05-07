@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
+	"numerous/cli/internal/gql/build"
 	"numerous/cli/manifest"
 	"numerous/cli/tool"
 
@@ -127,7 +129,8 @@ func push(cmd *cobra.Command, args []string) {
 	fmt.Println(greenCheckmark + "  Preparing upload...Done")
 	fmt.Print(unicodeHourglass + "  Uploading app......")
 
-	buildID, err := uploadZipFile(zipFileName, string(toolID))
+	secrets := loadSecretsFromEnv(appDir)
+	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
 	if err != nil {
 		fmt.Println("Sorry! An error occurred uploading your app")
 
@@ -177,6 +180,53 @@ func push(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Printf("\nShareable url: %s\n", pushedTool.SharedURL)
+}
+
+func pushBuild(zipFilePath string, appID string, secrets map[string]string) (string, error) {
+	var filePermission fs.FileMode = 0o666
+	zipFile, err := os.OpenFile(zipFilePath, os.O_CREATE|os.O_RDWR, filePermission)
+	if err != nil {
+		return "", err
+	}
+	defer zipFile.Close()
+
+	build, err := build.Push(zipFile, appID, gql.GetClient(), secrets)
+	if err != nil {
+		return "", err
+	}
+
+	return build.BuildID, nil
+}
+
+// Loads .env in the given appDir, and parses it as an .env file
+// ignoring everything after a '#' comment symbol, splitting key/value pairs
+// by '=', and trimming any whitespace.
+func loadSecretsFromEnv(appDir string) map[string]string {
+	env, err := os.ReadFile(path.Join(appDir, ".env"))
+	if err != nil {
+		return nil
+	}
+
+	secrets := make(map[string]string)
+	envLines := strings.Split(string(env), "\n")
+	for _, envLine := range envLines {
+		commentIdx := strings.Index(envLine, "#")
+		if commentIdx != -1 {
+			envLine = envLine[:commentIdx] // remove everything after #
+		}
+
+		keyvalue := strings.SplitN(envLine, "=", 2) // nolint: gomnd
+		if len(keyvalue) != 2 {                     // nolint: gomnd
+			continue
+		}
+
+		name := strings.TrimSpace(keyvalue[0])
+		value := strings.TrimSpace(keyvalue[1])
+
+		secrets[name] = value
+	}
+
+	return secrets
 }
 
 func init() {
