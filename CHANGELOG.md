@@ -2,6 +2,26 @@
 
 
 
+## v0.2.0 (2024-05-07)
+
+### Feature
+
+* feat(cli): create `.app_id.txt` to store App ID
+
+Includes backwards compatibility for projects initialized with `.tool_id.txt`. Also includes various improvements to output
+formatting related to files bootstrapping. ([`7a8f682`](https://github.com/numerous-com/numerous-sdk/commit/7a8f68238319e714c94851b43904f0e5a3e8f703))
+
+### Fix
+
+* fix(cli): improved output for commands, and minor refactors
+
+Use common error printing functions, and improve the phrasing of some error and informative messages. ([`15bdc92`](https://github.com/numerous-com/numerous-sdk/commit/15bdc92e8747cf40e4a1ebe3139c4a317ae8b784))
+
+* fix(cli): bug `numerous push` fails due to only reading deprecated App ID file
+
+Use the common function read the App ID, which can read from `.app_id.txt`, since it is now created by the `numerous init`command ([`f80458b`](https://github.com/numerous-com/numerous-sdk/commit/f80458b3a49aa8e2e1823d82c3e8a02274214695))
+
+
 ## v0.1.3 (2024-05-06)
 
 ### Fix
