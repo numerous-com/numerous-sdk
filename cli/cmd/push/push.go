@@ -67,7 +67,7 @@ func push(cmd *cobra.Command, args []string) {
 		appPath = rt
 	}
 
-	toolID, readToolErr := os.ReadFile(filepath.Join(appDir, tool.ToolIDFileName))
+	toolID, readToolErr := tool.ReadAppID(appDir)
 	m, readManifestErr := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if readToolErr != nil || readManifestErr != nil {
 		fmt.Println("The current directory is not a numerous app",
