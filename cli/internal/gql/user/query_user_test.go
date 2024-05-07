@@ -1,7 +1,6 @@
 package user
 
 import (
-	"os"
 	"testing"
 
 	"numerous/cli/internal/gql/organization"
@@ -12,8 +11,6 @@ import (
 
 func TestQueryUser(t *testing.T) {
 	t.Run("can return user on user query", func(t *testing.T) {
-		wd, err := os.Getwd()
-		println(wd, err)
 		membership := organization.OrganizationMembership{
 			Role: organization.Admin,
 			Organization: organization.Organization{
