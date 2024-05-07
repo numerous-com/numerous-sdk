@@ -4,6 +4,7 @@ scalar Upload
 directive @client on QUERY | FIELD
 directive @trackOperation(eventName: String!) on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
+directive @canManageApp on FIELD_DEFINITION
 
 ###############################################################################
 ### Auth
@@ -33,11 +34,14 @@ enum Role {
 type OrganizationMembership {
   organization: Organization!
   role: Role!
+  user: User!
 }
 
 type User {
+  id: ID!
   fullName: String!
   memberships: [OrganizationMembership!]!
+  email: String!
 }
 
 type Query {
@@ -58,6 +62,7 @@ type Organization {
   slug: String!
   apps: [App!]!
   members: [OrganizationMembership!]!
+  pendingInvitations: [OrganizationInvitation!]! @hasRole(role: ADMIN)
 }
 
 type OrganizationInvitation {
@@ -118,6 +123,11 @@ union OrganizationInvitationCreateResult =
 
 union OrganizationInvitationAcceptResult = Organization | OrganizationNotFound
 
+union OrganizationInvitationDeleteResult =
+  | OrganizationInvitation
+  | OrganizationNotFound
+  | OrganizationInvitationNotFound
+
 extend type Query {
   organization(organizationSlug: ID): OrganizationQueryResult!
     @hasRole(role: USER)
@@ -138,6 +148,9 @@ type Mutation {
   organizationInvitationAccept(
     invitationId: ID!
   ): OrganizationInvitationAcceptResult @canAccessInvitation
+  organizationInvitationDelete(
+    invitationId: ID!
+  ): OrganizationInvitationDeleteResult @hasRole(role: ADMIN)
 }
 
 ###############################################################################
@@ -149,16 +162,6 @@ type Mutation {
 ###############################################################################
 
 type Tool {
-  id: ID!
-  name: String!
-  description: String
-  user: User!
-  publicUrl: String
-  sharedUrl: String
-  createdAt: Time!
-}
-
-type App {
   id: ID!
   name: String!
   description: String
@@ -197,28 +200,70 @@ type ToolDeleteFailure {
 
 union ToolDeleteResult = ToolDeleteSuccess | ToolDeleteFailure
 
-type AppDeploy {
-  app: App!
-  buildId: ID!
-}
-
 extend type Mutation {
   toolCreate(input: NewTool!): Tool! @trackOperation(eventName: "App Create")
   toolPublish(id: ID!): Tool! @trackOperation(eventName: "App Publish")
   toolUnpublish(id: ID!): Tool! @trackOperation(eventName: "App Unpublish")
   toolDelete(id: ID!): ToolDeleteResult!
     @trackOperation(eventName: "App Delete")
-  organizationAppDeploy(
-    appId: ID!
-    organizationSlug: ID!
-    appArchive: Upload!
-  ): AppDeploy! @hasRole(role: USER)
 }
 
 ###############################################################################
 ### End of tool management
 ###############################################################################
+###############################################################################
+### App management
+###############################################################################
 
+type AppDeployment {
+  id: ID!
+  name: String!
+  url: String!
+}
+
+type AppVersion {
+  id: ID!
+}
+
+type App {
+  id: ID!
+  name: String!
+  displayName: String!
+  description: String!
+  createdBy: User!
+  createdAt: Time!
+  defaultDeployment: AppDeployment
+}
+
+type AppVersionUploadURL {
+  url: String!
+}
+
+input AppCreateInfo {
+  name: String!
+  displayName: String!
+  description: String!
+}
+
+extend type Query {
+  app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)
+}
+
+
+extend type Mutation {
+  appCreate(organizationSlug: String!, appData: AppCreateInfo!): App! @hasRole(role: USER)
+  appVersionCreate(appID: ID!): AppVersion! @canManageApp
+  appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
+  appDeploy(appVersionID: ID!): AppDeployment! @canManageApp
+}
+
+extend type Subscription {
+    appDeployLogs(appDeploymentID: ID!): LogMessage!
+}
+
+###############################################################################
+### End of App management
+###############################################################################
 ###############################################################################
 ### Job management
 ###############################################################################
@@ -443,8 +488,17 @@ type BuildEventInfo {
 
 union BuildEvent = BuildEventSuccess | BuildEventFailure | BuildEventInfo
 
+input AppSecret {
+  name: String!
+  base64Value: String!
+}
+
+input BuildPushInput {
+  secrets: [AppSecret!]
+}
+
 extend type Mutation {
-  buildPush(file: Upload!, id: ID!): buildConfiguration!
+  buildPush(file: Upload!, id: ID!, input: BuildPushInput): buildConfiguration!
     @trackOperation(eventName: "App Push")
 }
 
