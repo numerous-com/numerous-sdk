@@ -17,7 +17,7 @@ func TestCreate(t *testing.T) {
 			Slug: "slug",
 		}
 		response := organizationToQueryResult("organizationCreate", expectedOrganization)
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualOrganization, err := Create(expectedOrganization.Name, c)
 
@@ -27,7 +27,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("can return error on OrganizationCreate mutation if name contains invalid character", func(t *testing.T) {
 		organizationInvalidCharactersResponse := `{"errors":[{"message":"organization name contains invalid characters","path":["organizationCreate"]}],"data":null}`
-		c := test.CreateTestGqlClient(organizationInvalidCharactersResponse)
+		c := test.CreateTestGqlClient(t, organizationInvalidCharactersResponse)
 
 		actualOrganization, err := Create("!", c)
 
@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("can return error on OrganizationCreate mutation if unknown error", func(t *testing.T) {
 		organizationErrorResponse := `{"errors":[{"message":"unknown error","path":["organizationCreate"]}],"data":null}`
-		c := test.CreateTestGqlClient(organizationErrorResponse)
+		c := test.CreateTestGqlClient(t, organizationErrorResponse)
 
 		actualOrganization, err := Create("", c)
 

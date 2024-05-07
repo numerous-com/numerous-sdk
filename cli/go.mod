@@ -17,6 +17,7 @@ require (
 	github.com/rs/cors v1.10.1
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
+	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.5.11
 	github.com/zalando/go-keyring v0.2.3
 	gorm.io/gorm v1.25.6

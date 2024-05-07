@@ -1,6 +1,7 @@
 package user
 
 import (
+	"os"
 	"testing"
 
 	"numerous/cli/internal/gql/organization"
@@ -11,6 +12,8 @@ import (
 
 func TestQueryUser(t *testing.T) {
 	t.Run("can return user on user query", func(t *testing.T) {
+		wd, err := os.Getwd()
+		println(wd, err)
 		membership := organization.OrganizationMembership{
 			Role: organization.Admin,
 			Organization: organization.Organization{
@@ -43,7 +46,7 @@ func TestQueryUser(t *testing.T) {
 				}
 			}
 		}`
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualUser, err := QueryUser(c)
 
@@ -53,7 +56,7 @@ func TestQueryUser(t *testing.T) {
 
 	t.Run("can return permission denied error", func(t *testing.T) {
 		userNotFoundResponse := `{"errors":[{"message":"permission denied","path":["me"]}],"data":null}`
-		c := test.CreateTestGqlClient(userNotFoundResponse)
+		c := test.CreateTestGqlClient(t, userNotFoundResponse)
 
 		actualUser, err := QueryUser(c)
 

@@ -19,7 +19,7 @@ func TestUnpublish(t *testing.T) {
 			CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		}
 		response := test.AppToQueryResult("toolUnpublish", expectedApp)
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualApp, err := Unpublish(expectedApp.ID, c)
 
@@ -29,7 +29,7 @@ func TestUnpublish(t *testing.T) {
 
 	t.Run("can return error on AppUnpublish mutation", func(t *testing.T) {
 		appNotFoundResponse := `{"errors":[{"message":"record not found","path":["toolUnpublish"]}],"data":null}`
-		c := test.CreateTestGqlClient(appNotFoundResponse)
+		c := test.CreateTestGqlClient(t, appNotFoundResponse)
 
 		actualApp, err := Unpublish("id", c)
 

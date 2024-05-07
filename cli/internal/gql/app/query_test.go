@@ -19,7 +19,7 @@ func TestQuery(t *testing.T) {
 			CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		}
 		response := test.AppToQueryResult("tool", expectedApp)
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualApp, err := Query("id", c)
 
@@ -29,7 +29,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("can return error on app query", func(t *testing.T) {
 		appNotFoundResponse := `{"errors":[{"message":"record not found","path":["tool"]}],"data":null}`
-		c := test.CreateTestGqlClient(appNotFoundResponse)
+		c := test.CreateTestGqlClient(t, appNotFoundResponse)
 
 		actualApp, err := Query("non-existing-id", c)
 

@@ -33,7 +33,7 @@ func TestQueryList(t *testing.T) {
 				"tools": [` + strings.Join(appsAsStrings, ", ") + `]
 			}
 		}`
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualApps, err := QueryList(c)
 
@@ -43,7 +43,7 @@ func TestQueryList(t *testing.T) {
 
 	t.Run("can return permission denied error", func(t *testing.T) {
 		appNotFoundResponse := `{"errors":[{"message":"permission denied","path":["tools"]}],"data":null}`
-		c := test.CreateTestGqlClient(appNotFoundResponse)
+		c := test.CreateTestGqlClient(t, appNotFoundResponse)
 
 		actualApps, err := QueryList(c)
 

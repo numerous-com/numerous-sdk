@@ -28,7 +28,7 @@ func TestCreate(t *testing.T) {
 			CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		}
 		response := test.AppToQueryResult("toolCreate", expectedApp)
-		c := test.CreateTestGqlClient(response)
+		c := test.CreateTestGqlClient(t, response)
 
 		actualApp, err := Create(testApp, c)
 
@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("can return error on AppCreate mutation", func(t *testing.T) {
 		appNotFoundResponse := `{"errors":[{"message":"Something went wrong","path":["toolCreate"]}],"data":null}`
-		c := test.CreateTestGqlClient(appNotFoundResponse)
+		c := test.CreateTestGqlClient(t, appNotFoundResponse)
 
 		actualApp, err := Create(testApp, c)
 
