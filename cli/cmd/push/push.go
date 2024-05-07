@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/manifest"
@@ -67,12 +68,14 @@ func push(cmd *cobra.Command, args []string) {
 		appPath = rt
 	}
 
-	toolID, readToolErr := tool.ReadAppID(appDir)
-	m, readManifestErr := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
-	if readToolErr != nil || readManifestErr != nil {
-		fmt.Println("The current directory is not a numerous app",
-			"\nrun \"numerous init\" to initialize a numerous app in the current directory")
+	toolID, err := tool.ReadAppIDAndPrintErrors(appDir)
+	if err != nil {
+		return
+	}
 
+	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
+	if err != nil {
+		output.PrintErrorAppNotInitialized()
 		return
 	}
 
@@ -83,7 +86,7 @@ func push(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	_, err := app.Query(string(toolID), gql.GetClient())
+	_, err = app.Query(string(toolID), gql.GetClient())
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") { // TODO: replace strings-check with GraphQL error type, when GraphQL types exist.
 			fmt.Println("Sorry, we can't find that app ID in our database. Please make sure you have the correct app ID entered.",

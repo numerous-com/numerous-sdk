@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"numerous/cli/auth"
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 
@@ -17,7 +18,7 @@ var ListCmd = &cobra.Command{
 	Short: "List all your apps (login required)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := list(auth.NumerousTenantAuthenticator, gql.GetClient()); err != nil {
-			fmt.Println("Error: ", err)
+			output.PrintUnknownError(err)
 			os.Exit(1)
 		}
 	},
@@ -26,12 +27,16 @@ var ListCmd = &cobra.Command{
 func list(a auth.Authenticator, c *gqlclient.Client) error {
 	user := a.GetLoggedInUserFromKeyring()
 	if user == nil {
-		fmt.Printf("Command requires login.\n Use \"numerous login\" to login or sign up.\n")
+		output.PrintError(
+			"Command requires login.",
+			"Use \"numerous login\" to login or sign up.\n",
+		)
+
 		return nil
 	}
 	apps, err := app.QueryList(c)
 	if err != nil {
-		fmt.Println(err)
+		output.PrintUnknownError(err)
 		return err
 	}
 

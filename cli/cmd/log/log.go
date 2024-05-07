@@ -35,11 +35,9 @@ func log(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	appID, err := tool.ReadAppID(appDir)
-	if err == tool.ErrAppIDNotFound {
-		output.PrintError("Could not find App ID in %q.", "", appDir)
-	} else if err != nil {
-		output.PrintUnknownError(err)
+	appID, err := tool.ReadAppIDAndPrintErrors(appDir)
+	if err != nil {
+		return
 	}
 
 	err = getLogs(appID, timestamps)

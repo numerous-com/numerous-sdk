@@ -26,10 +26,10 @@ func createFile(path string) error {
 	return nil
 }
 
-func CreateAndWriteIfFileNotExist(path string, content string) error {
+func createAndWriteIfFileNotExist(path string, content string) error {
 	_, err := os.Stat(path)
 	if err == nil {
-		fmt.Printf("Skipping creation of app file: %s already exists\n", path)
+		fmt.Printf("Skipping creation of %q; it already exists\n", path)
 		return nil
 	}
 
@@ -44,8 +44,7 @@ func CreateAndWriteIfFileNotExist(path string, content string) error {
 
 	defer file.Close()
 
-	_, err = file.WriteString(content)
-	if err != nil {
+	if _, err = file.WriteString(content); err != nil {
 		output.PrintErrorDetails("Could not write to %q", err, path)
 	}
 

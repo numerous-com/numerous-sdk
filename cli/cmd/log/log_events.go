@@ -2,12 +2,12 @@ package log
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"time"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 
 	"github.com/hasura/go-graphql-client"
@@ -31,10 +31,18 @@ func getClient() *graphql.SubscriptionClient {
 	client := gql.GetSubscriptionClient()
 	client = client.OnError(func(sc *graphql.SubscriptionClient, err error) error {
 		if previousError != nil {
-			fmt.Printf("Error occurred listening for deploy logs. This does not mean that you app will be unavailable.\nFirst error: %s\nSecond error: %s\n", previousError, err)
+			output.PrintError(
+				"Error occurred subscribing to app logs",
+				"This does not mean that you app will be unavailable.\n"+
+					"First error: %s\n"+
+					"Second error: %s\n",
+				previousError, err,
+			)
+
 			return err
 		}
-		fmt.Printf("Error occurred listening for deploy logs.\nError: %s\nRetrying...\n", err)
+
+		output.PrintErrorDetails("Error occurred subscribing to app logs. Retrying...", err)
 		previousError = err
 
 		return nil

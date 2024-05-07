@@ -24,16 +24,8 @@ var PublishCmd = &cobra.Command{
 }
 
 func publish(client *gqlclient.Client) error {
-	appID, err := tool.ReadAppID(".")
-	if err == tool.ErrAppIDNotFound {
-		fmt.Println("The current directory is not a numerous app",
-			"\nrun \"numerous init\" to initialize a numerous app in the current directory")
-
-		return err
-	} else if err != nil {
-		fmt.Println("An error occurred reading the app ID")
-		fmt.Println("Error: ", err)
-
+	appID, err := tool.ReadAppIDAndPrintErrors(".")
+	if err != nil {
 		return err
 	}
 

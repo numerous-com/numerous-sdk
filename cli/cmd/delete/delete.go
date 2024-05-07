@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/tool"
@@ -28,45 +29,36 @@ This action cannot be undone.`,
 
 func deleteApp(client *gqlclient.Client, args []string) error {
 	var appID string
-	var err error
-
 	if len(args) == 1 {
 		appID = args[0]
+	} else if readAppID, err := tool.ReadAppIDAndPrintErrors("."); err != nil {
+		return err
 	} else {
-		appID, err = tool.ReadAppID(".")
-		if err == tool.ErrAppIDNotFound {
-			fmt.Println("Sorry, we could not recognize your app in the specified directory.",
-				"\nRun \"numerous init\" to initialize the app in Numerous.")
-
-			return err
-		} else if err != nil {
-			fmt.Println("Whoops! An error occurred when reading the app ID. \n Please make sure you are in the correct directory and try again.")
-			fmt.Println("Error: ", err)
-
-			return err
-		}
+		appID = readAppID
 	}
 
 	if _, err := app.Query(appID, client); err != nil {
-		fmt.Println(
-			"Sorry, we could not find the app in our database. \nPlease, make sure that the App ID in the .tool_id.txt file is correct and try again.")
+		output.PrintError(
+			"Sorry, we could not find the app in our database.",
+			"Please, make sure that the App ID in the %q file is correct and try again.",
+			tool.AppIDFileName,
+		)
 
 		return err
 	}
 
 	if result, err := app.Delete(appID, client); err != nil {
-		fmt.Println("An error occurred while removing the app from Numerous. Please try again.")
-		fmt.Println("Error: ", err)
+		output.PrintUnknownError(err)
 
 		return err
 	} else {
 		if result.ToolDelete.Typename == "ToolDeleteSuccess" {
 			fmt.Println("The app has been successfully removed from Numerous")
 		} else if result.ToolDelete.Typename == "ToolDeleteFailure" {
-			fmt.Println("An error occurred while removing the app from Numerous. Please try again.")
-			fmt.Println("Error: ", result.ToolDelete.Result)
+			err := errors.New(result.ToolDelete.Result)
+			output.PrintUnknownError(err)
 
-			return errors.New(result.ToolDelete.Result)
+			return err
 		}
 
 		return nil

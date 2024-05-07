@@ -2,12 +2,12 @@ package initialize
 
 import (
 	"bytes"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"numerous/cli/assets"
+	"numerous/cli/cmd/output"
 	"numerous/cli/manifest"
 	"numerous/cli/tool"
 )
@@ -15,28 +15,27 @@ import (
 func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
 	manifestToml, err := manifest.FromTool(t).ToToml()
 	if err != nil {
-		fmt.Println("Error encoding manifest file")
+		output.PrintErrorDetails("Error encoding manifest file", err)
 
 		return err
 	}
 
-	err = createAppIDFile(basePath, toolID)
-	if err != nil {
-		return err
-	}
-	if err = addToGitIgnore(basePath, "# added by numerous init\n"+tool.ToolIDFileName); err != nil {
+	if err = createAppIDFile(basePath, toolID); err != nil {
 		return err
 	}
 
-	if err = CreateAndWriteIfFileNotExist(filepath.Join(basePath, t.AppFile), t.Library.DefaultAppFile()); err != nil {
+	if err = addToGitIgnore(basePath, "# added by numerous init\n"+tool.AppIDFileName); err != nil {
 		return err
 	}
 
-	for _, path := range []string{t.RequirementsFile} {
-		if err = createFile(filepath.Join(basePath, path)); err != nil {
-			return err
-		}
+	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, t.AppFile), t.Library.DefaultAppFile()); err != nil {
+		return err
 	}
+
+	if err = createFile(filepath.Join(basePath, t.RequirementsFile)); err != nil {
+		return err
+	}
+
 	if err := bootstrapRequirements(t, basePath); err != nil {
 		return err
 	}
@@ -44,7 +43,7 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
 		return err
 	}
 
-	if err = CreateAndWriteIfFileNotExist(filepath.Join(basePath, manifest.ManifestPath), manifestToml); err != nil {
+	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, manifest.ManifestPath), manifestToml); err != nil {
 		return err
 	}
 

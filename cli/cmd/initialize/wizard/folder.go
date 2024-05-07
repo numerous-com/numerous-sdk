@@ -28,7 +28,7 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 	var confirm bool
 
 	prompt := &survey.Confirm{
-		Message: fmt.Sprintf("The selected folder '%s' does not exist. Create it? (default: yes)", folderPath),
+		Message: fmt.Sprintf("Create new folder %q? (default: yes)", folderPath),
 		Default: true,
 	}
 
@@ -49,7 +49,7 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 func confirmFolderSurvey(folderPath string, in terminal.FileReader) (bool, error) {
 	var confirm bool
 
-	msg := fmt.Sprintf("Do you want to use the existing folder '%s' for your app? (default: yes)", folderPath)
+	msg := fmt.Sprintf("Use the existing folder %q for your app? (default: yes)", folderPath)
 	prompt := &survey.Confirm{Message: msg, Default: true}
 	err := survey.AskOne(prompt, &confirm, func(options *survey.AskOptions) error { options.Stdio.In = in; return nil })
 	if err != nil {

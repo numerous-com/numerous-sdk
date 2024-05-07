@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"numerous/cli/cmd/initialize/wizard"
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/tool"
@@ -50,9 +51,13 @@ func runInit(cmd *cobra.Command, args []string) {
 	}
 
 	if exist, _ := tool.AppIDExistsInCurrentDir(projectFolderPath); exist {
-		fmt.Printf("Error: An app is already initialized in '%s'\n", projectFolderPath)
-		fmt.Println("You can initialize an app in a folder by specifying a path in the command, like below:")
-		fmt.Println("    numerous init ./my-app-folder")
+		output.PrintError(
+			"An app is already initialized in %q",
+			"💡 You can initialize an app in another folder by specifying a\n"+
+				"   path in the command, like below:\n\n"+
+				"numerous init ./my-app-folder\n\n",
+			projectFolderPath,
+		)
 
 		return
 	}
@@ -65,7 +70,7 @@ func runInit(cmd *cobra.Command, args []string) {
 	setPython(&newApp)
 
 	if continueBootstrap, err := wizard.RunInitAppWizard(projectFolderPath, &newApp); err != nil {
-		fmt.Println("Error running initialization wizard:", err)
+		output.PrintErrorDetails("Error running initialization wizard", err)
 		return
 	} else if !continueBootstrap {
 		return
@@ -74,12 +79,12 @@ func runInit(cmd *cobra.Command, args []string) {
 	// Initialize and boostrap project files
 	a, err := app.Create(newApp, gql.GetClient())
 	if err != nil {
-		fmt.Printf("Error creating app in the database.\n error: %s)", err)
+		output.PrintErrorDetails("Error registering app remotely.", err)
 		return
 	}
 
 	if err := bootstrapFiles(newApp, a.ID, projectFolderPath); err != nil {
-		fmt.Printf("Error bootstrapping files.\n error: %s)", err)
+		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return
 	}
 
