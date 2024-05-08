@@ -95,7 +95,7 @@ func FromTool(t tool.Tool) *Manifest {
 		RequirementsFile: t.RequirementsFile,
 		Port:             t.Library.Port,
 		CoverImage:       t.CoverImage,
-		Exclude:          []string{"*venv", "venv*", ".git"},
+		Exclude:          []string{"*venv", "venv*", ".git", ".env"},
 	}
 }
 

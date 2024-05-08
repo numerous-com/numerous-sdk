@@ -163,55 +163,56 @@ class MyApp:
 appdef = MyApp
 `
 
-func TestBootstrapAppFile(t *testing.T) {
-	testCases := []struct {
-		name            string
-		library         tool.Library
-		expectedAppFile string
-	}{
-		{
-			name:            "numerous",
-			library:         tool.LibraryNumerous,
-			expectedAppFile: expectedNumerousApp,
-		},
-		{
-			name:            "streamlit",
-			library:         tool.LibraryStreamlit,
-			expectedAppFile: "",
-		},
-		{
-			name:            "dash",
-			library:         tool.LibraryPlotlyDash,
-			expectedAppFile: "",
-		},
-		{
-			name:            "marimo",
-			library:         tool.LibraryMarimo,
-			expectedAppFile: "",
-		},
-	}
+func TestBootstrapFiles(t *testing.T) {
+	t.Run("bootstraps app file", func(t *testing.T) {
+		testCases := []struct {
+			name            string
+			library         tool.Library
+			expectedAppFile string
+		}{
+			{
+				name:            "numerous",
+				library:         tool.LibraryNumerous,
+				expectedAppFile: expectedNumerousApp,
+			},
+			{
+				name:            "streamlit",
+				library:         tool.LibraryStreamlit,
+				expectedAppFile: "",
+			},
+			{
+				name:            "dash",
+				library:         tool.LibraryPlotlyDash,
+				expectedAppFile: "",
+			},
+			{
+				name:            "marimo",
+				library:         tool.LibraryMarimo,
+				expectedAppFile: "",
+			},
+		}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			require.NoError(t, os.Chdir(t.TempDir()))
-			testTool := tool.Tool{
-				Library:          testCase.library,
-				AppFile:          "app.py",
-				RequirementsFile: "requirements.txt",
-				CoverImage:       "cover_image.png",
-			}
-			tempDir, err := os.Getwd()
-			require.NoError(t, err)
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
+				require.NoError(t, os.Chdir(t.TempDir()))
+				testTool := tool.Tool{
+					Library:          testCase.library,
+					AppFile:          "app.py",
+					RequirementsFile: "requirements.txt",
+					CoverImage:       "cover_image.png",
+				}
+				tempDir, err := os.Getwd()
+				require.NoError(t, err)
 
-			err = bootstrapFiles(testTool, "tool id", tempDir)
+				err = bootstrapFiles(testTool, "tool id", tempDir)
 
-			require.NoError(t, err)
-			appContent, err := os.ReadFile("app.py")
-			require.NoError(t, err)
-			assert.Equal(t, testCase.expectedAppFile, string(appContent))
-		})
-	}
-
+				require.NoError(t, err)
+				appContent, err := os.ReadFile("app.py")
+				require.NoError(t, err)
+				assert.Equal(t, testCase.expectedAppFile, string(appContent))
+			})
+		}
+	})
 	t.Run("adds expected lines to existing .gitignore", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
@@ -232,5 +233,23 @@ func TestBootstrapAppFile(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, expectedGitIgnoreContent, string(actualGitIgnoreContent))
 		}
+	})
+
+	t.Run("writes manifest with expected excludes", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		toolID := "tool-id"
+		tool := tool.Tool{
+			RequirementsFile: "requirements.txt",
+			AppFile:          "app.py",
+			CoverImage:       "conver_img.png",
+		}
+
+		bootErr := bootstrapFiles(tool, toolID, tmpDir)
+		manifest, manifestErr := manifest.LoadManifest(tmpDir + "/" + manifest.ManifestFileName)
+
+		assert.NoError(t, bootErr)
+		assert.NoError(t, manifestErr)
+		expectedExclude := []string{"*venv", "venv*", ".git", ".env"}
+		assert.Equal(t, expectedExclude, manifest.Exclude)
 	})
 }
