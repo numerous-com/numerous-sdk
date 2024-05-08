@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
@@ -202,7 +203,7 @@ func pushBuild(zipFilePath string, appID string, secrets map[string]string) (str
 // ignoring everything after a '#' comment symbol, splitting key/value pairs
 // by '=', and trimming any whitespace.
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, err := os.ReadFile(path.Join(appDir, ".env"))
+	env, err := os.ReadFile(path.Join(appDir, initialize.EnvFileName))
 	if err != nil {
 		return nil
 	}
@@ -223,6 +224,7 @@ func loadSecretsFromEnv(appDir string) map[string]string {
 		name := strings.TrimSpace(keyvalue[0])
 		value := strings.TrimSpace(keyvalue[1])
 
+		println("loading secret", name, value)
 		secrets[name] = value
 	}
 

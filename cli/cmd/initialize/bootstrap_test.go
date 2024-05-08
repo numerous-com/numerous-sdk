@@ -2,10 +2,12 @@ package initialize
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"numerous/cli/manifest"
+	"numerous/cli/test"
 	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
@@ -209,4 +211,26 @@ func TestBootstrapAppFile(t *testing.T) {
 			assert.Equal(t, testCase.expectedAppFile, string(appContent))
 		})
 	}
+
+	t.Run("adds expected lines to existing .gitignore", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		toolID := "tool-id"
+		tool := tool.Tool{
+			RequirementsFile: "requirements.txt",
+			AppFile:          "app.py",
+			CoverImage:       "conver_img.png",
+		}
+		initialGitIgnoreContent := "some/ignore/pattern\nanother-ignore-pattern"
+		expectedGitIgnoreContent := initialGitIgnoreContent + "\n# added by numerous init\n\n.app_id.txt\n.env"
+		gitignoreFilePath := filepath.Join(tmpDir, ".gitignore")
+		test.WriteFile(t, gitignoreFilePath, []byte(initialGitIgnoreContent))
+
+		err := bootstrapFiles(tool, toolID, tmpDir)
+
+		assert.NoError(t, err)
+		actualGitIgnoreContent, err := os.ReadFile(gitignoreFilePath)
+		if assert.NoError(t, err) {
+			assert.Equal(t, expectedGitIgnoreContent, string(actualGitIgnoreContent))
+		}
+	})
 }

@@ -12,7 +12,9 @@ import (
 	"numerous/cli/tool"
 )
 
-func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
+const EnvFileName string = ".env"
+
+func bootstrapFiles(t tool.Tool, toolID string, basePath string) error {
 	manifestToml, err := manifest.FromTool(t).ToToml()
 	if err != nil {
 		output.PrintErrorDetails("Error encoding manifest file", err)
@@ -24,15 +26,17 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) (err error) {
 		return err
 	}
 
-	if err = addToGitIgnore(basePath, "# added by numerous init\n"+tool.AppIDFileName); err != nil {
+	if err = addToGitIgnore(basePath, []string{"# added by numerous init\n", tool.AppIDFileName, EnvFileName}); err != nil {
 		return err
 	}
 
-	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, t.AppFile), t.Library.DefaultAppFile()); err != nil {
+	appFilePath := filepath.Join(basePath, t.AppFile)
+	if err = createAndWriteIfFileNotExist(appFilePath, t.Library.DefaultAppFile()); err != nil {
 		return err
 	}
 
-	if err = createFile(filepath.Join(basePath, t.RequirementsFile)); err != nil {
+	requirementsFilePath := filepath.Join(basePath, t.RequirementsFile)
+	if err = createFile(requirementsFilePath); err != nil {
 		return err
 	}
 

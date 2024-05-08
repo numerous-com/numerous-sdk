@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"numerous/cli/cmd/output"
 	"numerous/cli/tool"
@@ -88,12 +89,12 @@ func createAppIDFile(path string, id string) error {
 }
 
 // Creates and adds the item to .gitignore
-func addToGitIgnore(path string, toIgnore string) error {
+func addToGitIgnore(path string, toIgnore []string) error {
 	gitignorePath := filepath.Join(path, ".gitignore")
 	if err := createFile(gitignorePath); err != nil {
 		output.PrintUnknownError(err)
 		return err
 	}
 
-	return writeOrAppendFile(gitignorePath, toIgnore)
+	return writeOrAppendFile(gitignorePath, strings.Join(toIgnore, "\n"))
 }

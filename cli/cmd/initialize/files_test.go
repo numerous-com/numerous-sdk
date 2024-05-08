@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"numerous/cli/test"
 	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 
 const expectedAddedGitIgnorePattern = "expected-added-gitignore-pattern"
 
-const mockGitIgnore string = `
+const initialGitIgnore string = `
 some.txt
 *.go
 another.yaml`
@@ -48,19 +49,14 @@ func TestAddToGitIgnore(t *testing.T) {
 		err := os.Chdir(testPath)
 		require.NoError(t, err)
 		gitignorePath := filepath.Join(testPath, ".gitignore")
+		test.WriteFile(t, gitignorePath, []byte(initialGitIgnore))
 
-		file, err := os.Create(gitignorePath)
-		require.NoError(t, err)
-		_, err = file.WriteString(mockGitIgnore)
-		require.NoError(t, err)
-		require.NoError(t, file.Close())
-
-		err = addToGitIgnore(testPath, expectedAddedGitIgnorePattern)
+		err = addToGitIgnore(testPath, []string{expectedAddedGitIgnorePattern})
 
 		if assert.NoError(t, err) {
-			fileContentInBytes, err := os.ReadFile(gitignorePath)
+			actualGitIgnore, err := os.ReadFile(gitignorePath)
 			if assert.NoError(t, err) {
-				assert.Equal(t, expectedGitIgnore, string(fileContentInBytes))
+				assert.Equal(t, expectedGitIgnore, string(actualGitIgnore))
 			}
 		}
 	})
@@ -72,19 +68,19 @@ func TestAddToGitIgnore(t *testing.T) {
 		gitignorePath := filepath.Join(testPath, ".gitignore")
 		require.NoFileExists(t, gitignorePath)
 
-		err = addToGitIgnore(testPath, expectedAddedGitIgnorePattern)
+		err = addToGitIgnore(testPath, []string{expectedAddedGitIgnorePattern})
 
 		if assert.NoError(t, err) {
-			fileContentInBytes, err := os.ReadFile(gitignorePath)
+			actualGitIgnore, err := os.ReadFile(gitignorePath)
 			if assert.NoError(t, err) {
-				assert.Equal(t, expectedAddedGitIgnorePattern, string(fileContentInBytes))
+				assert.Equal(t, expectedAddedGitIgnorePattern, string(actualGitIgnore))
 			}
 		}
 	})
 }
 
 func TestWriteFiles(t *testing.T) {
-	expectedContent := "some text input"
+	expectedContent := "some text input\n"
 
 	t.Run("Can write to existing file", func(t *testing.T) {
 		filePath := filepath.Join(t.TempDir(), "test_file.txt")
