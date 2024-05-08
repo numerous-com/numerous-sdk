@@ -61,11 +61,11 @@ func push(cmd *cobra.Command, args []string) {
 		projectDir = args[0]
 		result, rt, err := CheckAndReturnSubpath(projectDir, appDir)
 		if err != nil {
-			fmt.Printf("Error occurred validating app and project arguments:\n %s", err)
+			output.PrintErrorDetails("Error occurred validating app and project arguments.", err)
 		}
 
 		if !result {
-			fmt.Printf("Error: Application path %s is not a subpath of project path %s", appDir, projectDir)
+			output.PrintError("Application path %s is not a subpath of project path %s", "", appDir, projectDir)
 			return
 		}
 		appPath = rt
@@ -83,7 +83,7 @@ func push(cmd *cobra.Command, args []string) {
 	}
 
 	if validated, err := m.ValidateApp(); err != nil {
-		fmt.Printf("An error occurred validating the app: %s", err)
+		output.PrintErrorDetails("An error occurred validating the app", err)
 		os.Exit(1)
 	} else if !validated {
 		os.Exit(1)
@@ -92,16 +92,24 @@ func push(cmd *cobra.Command, args []string) {
 	_, err = app.Query(string(toolID), gql.GetClient())
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") { // TODO: replace strings-check with GraphQL error type, when GraphQL types exist.
-			fmt.Println("Sorry, we can't find that app ID in our database. Please make sure you have the correct app ID entered.",
-				"\nIf you have used the \"numerous delete\" command to delete your app, please delete your .app_id",
-				"\nfile and reinitialize your app using the \"numerous init\" command.")
+			output.PrintError(
+				"Sorry, we can't find that app ID in our database.",
+				strings.Join(
+					[]string{
+						"Please make sure you have the correct app ID entered.",
+						"If you have used the \"numerous delete\" command to delete your app, please delete your .app_id",
+						"file and reinitialize your app using the \"numerous init\" command.",
+					},
+					"\n",
+				),
+			)
 
 			return
 		}
 	}
 
 	if err := os.Chdir(projectDir); err != nil {
-		fmt.Printf("Could not access \"%s\"", projectDir)
+		output.PrintError("Could not access %q", "", projectDir)
 		return
 	}
 
@@ -116,13 +124,13 @@ func push(cmd *cobra.Command, args []string) {
 	var filePermission fs.FileMode = 0o666
 	zipFile, err := os.OpenFile(zipFileName, os.O_CREATE|os.O_RDWR, filePermission)
 	if err != nil {
-		fmt.Printf("Error preparing app.\nError: %s", err)
+		output.PrintErrorDetails("Error preparing app.", err)
 		return
 	}
 	defer os.Remove(zipFileName)
 
 	if err := ZipFolder(zipFile, m.Exclude); err != nil {
-		fmt.Printf("Error preparing app.\nError: %s", err)
+		output.PrintErrorDetails("Error preparing app", err)
 		return
 	}
 	zipFile.Close()
@@ -136,10 +144,13 @@ func push(cmd *cobra.Command, args []string) {
 		fmt.Println("Sorry! An error occurred uploading your app")
 
 		if strings.Contains(err.Error(), "server failure: failed to read file for key file") {
-			fmt.Println("The app folder is too large. The maximum size of an app folder is currently 256MB.")
-			fmt.Println("If you have large files, which are not needed for your app, consider adding them to the 'exclude' field in 'numerous.toml'")
+			output.PrintError(
+				"The app folder is too large.",
+				"The maximum size of an app folder is currently 256MB.\n"+
+					"If you have large files, which are not needed for your app, consider adding them to the 'exclude' field in 'numerous.toml'",
+			)
 		} else {
-			fmt.Printf("Error in uploading app.\nError: %s", err)
+			output.PrintErrorDetails("Error occurred uploading app.", err)
 		}
 
 		return
@@ -154,22 +165,22 @@ func push(cmd *cobra.Command, args []string) {
 
 	err = getBuildEventLogs(buildID, appPath, verbose)
 	if err != nil {
-		fmt.Printf("Error listening for build logs.\nError: %s", err)
+		output.PrintErrorDetails("Error listening for build logs.", err)
 		return
 	}
-
 	fmt.Println(greenCheckmark + "  Building app.......Done")
+
 	fmt.Print(unicodeHourglass + "  Deploying app......")
 
 	err = stopJobs(string(toolID))
 	if err != nil {
-		fmt.Printf("Error stopping previous jobs.\nError: %s", err)
+		output.PrintErrorDetails("Error stopping previous jobs.", err)
 		return
 	}
 
 	err = getDeployEventLogs(string(toolID))
 	if err != nil {
-		fmt.Printf("Error listening for deploy logs.\nError: %s", err)
+		output.PrintErrorDetails("Error listening for deploy logs.", err)
 		return
 	}
 
@@ -177,7 +188,7 @@ func push(cmd *cobra.Command, args []string) {
 
 	pushedTool, err := app.Query(string(toolID), gql.GetClient())
 	if err != nil {
-		fmt.Printf("Error reading the app.\nError: %s\n", err)
+		output.PrintErrorDetails("Error reading the app.", err)
 		return
 	}
 	fmt.Printf("\nShareable url: %s\n", pushedTool.SharedURL)
@@ -224,7 +235,6 @@ func loadSecretsFromEnv(appDir string) map[string]string {
 		name := strings.TrimSpace(keyvalue[0])
 		value := strings.TrimSpace(keyvalue[1])
 
-		println("loading secret", name, value)
 		secrets[name] = value
 	}
 

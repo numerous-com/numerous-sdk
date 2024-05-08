@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"numerous/cli/cmd/output"
 	"numerous/cli/tool"
 
 	"github.com/BurntSushi/toml"
@@ -141,14 +141,17 @@ func (m *Manifest) validateNumerousApp() (bool, error) {
 	if strings.Contains(filecontent, "appdef =") || strings.Contains(filecontent, "class appdef") {
 		return true, nil
 	} else {
-		fmt.Println("Your app file must have an app definition called 'appdef'")
-		fmt.Println("You can solve this by assigning your app definition to this name, for example:")
-		fmt.Println("")
-		fmt.Println("@app")
-		fmt.Println("class MyApp:")
-		fmt.Println("    my_field: str")
-		fmt.Println("")
-		fmt.Println("appdef = MyApp")
+		output.PrintError("Your app file must have an app definition called 'appdef'", strings.Join(
+			[]string{
+				"You can solve this by assigning your app definition to this name, for example:",
+				"",
+				"@app",
+				"class MyApp:",
+				"    my_field: str",
+				"",
+				"appdef = MyApp",
+			}, "\n"),
+		)
 
 		return false, nil
 	}
