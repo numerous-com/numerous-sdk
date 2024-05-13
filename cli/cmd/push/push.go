@@ -10,6 +10,7 @@ import (
 
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
+	"numerous/cli/dotenv"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/internal/gql/build"
@@ -272,35 +273,9 @@ func pushBuild(zipFilePath string, appID string, secrets map[string]string) (str
 	return build.BuildID, nil
 }
 
-// Loads .env in the given appDir, and parses it as an .env file
-// ignoring everything after a '#' comment symbol, splitting key/value pairs
-// by '=', and trimming any whitespace.
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, err := os.ReadFile(path.Join(appDir, initialize.EnvFileName))
-	if err != nil {
-		return nil
-	}
-
-	secrets := make(map[string]string)
-	envLines := strings.Split(string(env), "\n")
-	for _, envLine := range envLines {
-		commentIdx := strings.Index(envLine, "#")
-		if commentIdx != -1 {
-			envLine = envLine[:commentIdx] // remove everything after #
-		}
-
-		keyvalue := strings.SplitN(envLine, "=", 2) // nolint: gomnd
-		if len(keyvalue) != 2 {                     // nolint: gomnd
-			continue
-		}
-
-		name := strings.TrimSpace(keyvalue[0])
-		value := strings.TrimSpace(keyvalue[1])
-
-		secrets[name] = value
-	}
-
-	return secrets
+	env, _ := dotenv.Load(path.Join(appDir, initialize.EnvFileName))
+	return env
 }
 
 func init() {
