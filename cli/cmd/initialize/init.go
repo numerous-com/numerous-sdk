@@ -143,7 +143,7 @@ The App ID %q is stored in %q and is used to identify the app in commands which 
 
 If %q is removed, the CLI cannot identify your app. 
 
-If you are logged in, you can use `numerous list` to find the App ID again.
+If you are logged in, you can use numerous list to find the App ID again.
 `, a.ID, tool.AppIDFileName, tool.AppIDFileName)
 }
 
