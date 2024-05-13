@@ -19,7 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const zipFileName string = ".zipped_project.zip"
+const (
+	zipFileName       string      = ".zipped_project.zip"
+	zipFilePermission fs.FileMode = 0o666
+)
 
 var verbose bool
 
@@ -47,39 +50,20 @@ A URL is generated which provides access to the tool, anyone with the URL can ac
 }
 
 func push(cmd *cobra.Command, args []string) {
-	appDir := "."
-	projectDir := "."
-	appPath := ""
-
-	if len(args) == ProjectArgLength {
-		appDir = args[0]
-		projectDir = args[0]
-	}
-
-	if len(args) == ProjectAndAppArgLength {
-		appDir = args[1]
-		projectDir = args[0]
-		result, rt, err := CheckAndReturnSubpath(projectDir, appDir)
-		if err != nil {
-			output.PrintErrorDetails("Error occurred validating app and project arguments.", err)
-		}
-
-		if !result {
-			output.PrintError("Application path %s is not a subpath of project path %s", "", appDir, projectDir)
-			return
-		}
-		appPath = rt
+	appDir, projectDir, appPath, ok := parseArguments(args)
+	if !ok {
+		os.Exit(1)
 	}
 
 	toolID, err := tool.ReadAppIDAndPrintErrors(appDir)
 	if err != nil {
-		return
+		os.Exit(1)
 	}
 
 	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
 		output.PrintErrorAppNotInitialized()
-		return
+		os.Exit(1)
 	}
 
 	if validated, err := m.ValidateApp(); err != nil {
@@ -110,7 +94,7 @@ func push(cmd *cobra.Command, args []string) {
 
 	if err := os.Chdir(projectDir); err != nil {
 		output.PrintError("Could not access %q", "", projectDir)
-		return
+		os.Exit(1)
 	}
 
 	// Remove if zip already exist
@@ -118,24 +102,81 @@ func push(cmd *cobra.Command, args []string) {
 		os.Remove(zipFileName)
 	}
 
-	if !verbose {
-		fmt.Print(unicodeHourglass + "  Preparing upload...")
+	if ok := prepareApp(m); !ok {
+		os.Exit(1)
 	}
-	var filePermission fs.FileMode = 0o666
-	zipFile, err := os.OpenFile(zipFileName, os.O_CREATE|os.O_RDWR, filePermission)
+
+	buildID, ok := uploadApp(appDir, toolID)
+	if !ok {
+		os.Exit(1)
+	}
+
+	if ok := buildApp(buildID, appPath); !ok {
+		os.Exit(1)
+	}
+
+	if ok := deployApp(toolID); !ok {
+		os.Exit(1)
+	}
+
+	if ok := printURL(toolID); !ok {
+		os.Exit(1)
+	}
+}
+
+func printURL(toolID string) (ok bool) {
+	pushedTool, err := app.Query(string(toolID), gql.GetClient())
 	if err != nil {
-		output.PrintErrorDetails("Error preparing app.", err)
-		return
+		output.PrintErrorDetails("Error reading the app.", err)
+		return false
 	}
+
+	fmt.Printf("\nShareable url: %s\n", pushedTool.SharedURL)
+
+	return true
+}
+
+func deployApp(toolID string) (ok bool) {
+	fmt.Print(unicodeHourglass + "  Deploying app......")
+
+	err := stopJobs(string(toolID))
+	if err != nil {
+		output.PrintErrorDetails("Error stopping previous jobs.", err)
+		return false
+	}
+
+	err = getDeployEventLogs(string(toolID))
+	if err != nil {
+		output.PrintErrorDetails("Error listening for deploy logs.", err)
+		return false
+	}
+
+	fmt.Println(greenCheckmark + "  Deploying app......Done")
+
+	return true
+}
+
+func buildApp(buildID string, appPath string) (ok bool) {
+	fmt.Print(unicodeHourglass + "  Building app.......")
+	if verbose {
+		// To allow nice printing of build messages from backend
+		fmt.Println()
+	}
+
+	err := getBuildEventLogs(buildID, appPath, verbose)
+	if err != nil {
+		output.PrintErrorDetails("Error listening for build logs.", err)
+		return false
+	}
+
+	fmt.Println(greenCheckmark + "  Building app.......Done")
+
+	return true
+}
+
+func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 	defer os.Remove(zipFileName)
 
-	if err := ZipFolder(zipFile, m.Exclude); err != nil {
-		output.PrintErrorDetails("Error preparing app", err)
-		return
-	}
-	zipFile.Close()
-
-	fmt.Println(greenCheckmark + "  Preparing upload...Done")
 	fmt.Print(unicodeHourglass + "  Uploading app......")
 
 	secrets := loadSecretsFromEnv(appDir)
@@ -153,45 +194,66 @@ func push(cmd *cobra.Command, args []string) {
 			output.PrintErrorDetails("Error occurred uploading app.", err)
 		}
 
-		return
+		return "", false
 	}
 
 	fmt.Println(greenCheckmark + "  Uploading app......Done")
 
-	fmt.Print(unicodeHourglass + "  Building app.......")
-	if verbose { // To allow nice printing of build messages from backend
-		fmt.Println()
+	return buildID, true
+}
+
+func prepareApp(m *manifest.Manifest) (ok bool) {
+	if !verbose {
+		fmt.Print(unicodeHourglass + "  Preparing upload...")
 	}
 
-	err = getBuildEventLogs(buildID, appPath, verbose)
+	zipFile, err := os.OpenFile(zipFileName, os.O_CREATE|os.O_RDWR, zipFilePermission)
 	if err != nil {
-		output.PrintErrorDetails("Error listening for build logs.", err)
-		return
-	}
-	fmt.Println(greenCheckmark + "  Building app.......Done")
+		output.PrintErrorDetails("Error preparing app.", err)
 
-	fmt.Print(unicodeHourglass + "  Deploying app......")
-
-	err = stopJobs(string(toolID))
-	if err != nil {
-		output.PrintErrorDetails("Error stopping previous jobs.", err)
-		return
+		return false
 	}
 
-	err = getDeployEventLogs(string(toolID))
-	if err != nil {
-		output.PrintErrorDetails("Error listening for deploy logs.", err)
-		return
+	if err := ZipFolder(zipFile, m.Exclude); err != nil {
+		output.PrintErrorDetails("Error preparing app.", err)
+		os.Remove(zipFileName)
+
+		return false
 	}
 
-	fmt.Println(greenCheckmark + "  Deploying app......Done")
+	zipFile.Close()
 
-	pushedTool, err := app.Query(string(toolID), gql.GetClient())
-	if err != nil {
-		output.PrintErrorDetails("Error reading the app.", err)
-		return
+	fmt.Println(greenCheckmark + "  Preparing upload...Done")
+
+	return true
+}
+
+func parseArguments(args []string) (string, string, string, bool) {
+	appDir := "."
+	projectDir := "."
+	appPath := ""
+
+	if len(args) == ProjectArgLength {
+		appDir = args[0]
+		projectDir = args[0]
 	}
-	fmt.Printf("\nShareable url: %s\n", pushedTool.SharedURL)
+
+	if len(args) == ProjectAndAppArgLength {
+		appDir = args[1]
+		projectDir = args[0]
+		result, rt, err := CheckAndReturnSubpath(projectDir, appDir)
+		if err != nil {
+			output.PrintErrorDetails("Error occurred validating app and project arguments.", err)
+		}
+
+		if !result {
+			output.PrintError("Application path %s is not a subpath of project path %s", "", appDir, projectDir)
+			return "", "", "", false
+		}
+		appPath = rt
+	}
+
+	return appDir, projectDir, appPath, true
 }
 
 func pushBuild(zipFilePath string, appID string, secrets map[string]string) (string, error) {
