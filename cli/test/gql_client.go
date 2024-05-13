@@ -2,22 +2,13 @@ package test
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
 	"git.sr.ht/~emersion/gqlclient"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/vektah/gqlparser/v2"
-	"github.com/vektah/gqlparser/v2/ast"
-	"github.com/vektah/gqlparser/v2/gqlerror"
-	"github.com/vektah/gqlparser/v2/parser"
-	"github.com/vektah/gqlparser/v2/validator"
 
 	_ "embed"
 )
@@ -39,9 +30,10 @@ func CreateTestGqlClient(t *testing.T, response string) *gqlclient.Client {
 			Response *http.Response
 			Error    error
 		} {
-			query, err := io.ReadAll(r.Body)
+			query, err := readQuery(r)
 			require.NoError(t, err)
-			doc := parseQuery(t, string(query))
+			doc := parseQuery(t, string(query.query))
+			query.updateDoc(t, &doc)
 			validateQuery(t, schema, doc)
 
 			return nil
@@ -73,73 +65,4 @@ func AddResponseToMockGqlClient(response string, ts *MockTransport) {
 		},
 		nil,
 	)
-}
-
-func loadSchema(t *testing.T) *ast.Schema {
-	t.Helper()
-
-	dots := findSchemaFilePath(t)
-
-	content, err := os.ReadFile(dots + "shared/schema.gql")
-	require.NoError(t, err)
-
-	schema, err := gqlparser.LoadSchema(&ast.Source{
-		Name:  "schema.gql",
-		Input: string(content),
-	})
-	require.NoError(t, err)
-
-	return schema
-}
-
-var schemaRelative = "/shared/schema.gql"
-
-func findSchemaFilePath(t *testing.T) string {
-	t.Helper()
-
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-	dots := ""
-	for {
-		if _, err := os.Stat(wd + schemaRelative); err == nil {
-			break
-		}
-
-		dir, _ := filepath.Split(wd)
-		wd = filepath.Clean(dir)
-		require.NotEmpty(t, wd)
-		require.NotEqual(t, "/", wd)
-
-		dots += "../"
-	}
-
-	return dots
-}
-
-func validateQuery(t *testing.T, schema *ast.Schema, doc *ast.QueryDocument) {
-	t.Helper()
-
-	require.NotEqual(t, []ast.Operation{}, doc.Operations)
-	listErr := validator.Validate(schema, doc)
-	require.Equal(t, []error{}, listErr.Unwrap())
-}
-
-func parseQuery(t *testing.T, query string) *ast.QueryDocument {
-	t.Helper()
-
-	var queryObj struct {
-		Query     string
-		Variables map[string]any
-	}
-
-	err := json.NewDecoder(strings.NewReader(query)).Decode(&queryObj)
-	require.NoError(t, err, "error decoding query")
-
-	doc, err := parser.ParseQuery(&ast.Source{Input: queryObj.Query})
-	if err != nil {
-		_, ok := err.(*gqlerror.Error)
-		require.False(t, ok, "error parsing query")
-	}
-
-	return doc
 }

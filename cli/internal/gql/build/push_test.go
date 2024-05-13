@@ -1,17 +1,13 @@
 package build
 
 import (
-	"bytes"
 	"encoding/base64"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"numerous/cli/test"
 
-	"git.sr.ht/~emersion/gqlclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,16 +22,10 @@ func TestPush(t *testing.T) {
 		expectedBuild := BuildConfiguration{
 			BuildID: "buildID",
 		}
-		response := `{
-			"data": {
-				"buildPush": {
-					"buildId": "buildID"
-				}
-			}
-		}`
-		c := createTestGqlClient(response)
+		response := `{"data": {"buildPush": {"buildId": "buildID"}}}`
+		c := test.CreateTestGqlClient(t, response)
 		appID := "app_id"
-		actualBuild, err := Push(tmpFile, appID, c, nil)
+		actualBuild, err := Push(tmpFile, appID, c, map[string]string{"SOME_SECRET": "SOME_VALUE"})
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedBuild, actualBuild)
@@ -43,7 +33,7 @@ func TestPush(t *testing.T) {
 
 	t.Run("can return error on AppCreate mutation", func(t *testing.T) {
 		buildPushFailedResponse := `{"errors":[{"message":"Something went wrong","path":["buildPush"]}],"data":null}`
-		c := createTestGqlClient(buildPushFailedResponse)
+		c := test.CreateTestGqlClient(t, buildPushFailedResponse)
 
 		appID := "app_id"
 		actualBuild, err := Push(tmpFile, appID, c, nil)
@@ -52,20 +42,6 @@ func TestPush(t *testing.T) {
 		assert.ErrorContains(t, err, "Something went wrong")
 		assert.Equal(t, BuildConfiguration{}, actualBuild)
 	})
-}
-
-func createTestGqlClient(response string) *gqlclient.Client {
-	h := http.Header{}
-	h.Add("Content-Type", "application/json")
-	ts := test.TestTransport{
-		WithResponse: &http.Response{
-			Header:     h,
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader([]byte(response))),
-		},
-	}
-
-	return gqlclient.New("http://localhost:8080", &http.Client{Transport: &ts})
 }
 
 func TestAppSecretsFromMap(t *testing.T) {
