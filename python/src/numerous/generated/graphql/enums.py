@@ -15,6 +15,18 @@ class Role(str, Enum):
     USER = "USER"
 
 
+class ShareOfferStatus(str, Enum):
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    PENDING = "PENDING"
+
+
+class AppSubscriptionStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    WITHDRAWN = "WITHDRAWN"
+
+
 class ToolHashType(str, Enum):
     public = "public"
     shared = "shared"
+    private = "private"

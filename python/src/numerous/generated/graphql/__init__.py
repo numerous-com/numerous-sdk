@@ -19,7 +19,7 @@ from .all_elements import (
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel, Upload
 from .client import Client
-from .enums import AuthRole, Role, ToolHashType
+from .enums import AppSubscriptionStatus, AuthRole, Role, ShareOfferStatus, ToolHashType
 from .exceptions import (
     GraphQLClientError,
     GraphQLClientGraphQLError,
@@ -48,6 +48,7 @@ from .input_types import (
     NewOrganization,
     NewTool,
     OrganizationInvitationInput,
+    ShareOfferInput,
 )
 from .update_element import UpdateElement, UpdateElementElementUpdate
 from .updates import (
@@ -88,6 +89,7 @@ __all__ = [
     "AllElementsSessionAllTextFieldGraphContext",
     "AppCreateInfo",
     "AppSecret",
+    "AppSubscriptionStatus",
     "AsyncBaseClient",
     "AuthRole",
     "BaseModel",
@@ -112,6 +114,8 @@ __all__ = [
     "NumberFieldValue",
     "OrganizationInvitationInput",
     "Role",
+    "ShareOfferInput",
+    "ShareOfferStatus",
     "SliderValue",
     "TextFieldValue",
     "ToolHashType",

@@ -29,6 +29,11 @@ class AppCreateInfo(BaseModel):
     description: str
 
 
+class ShareOfferInput(BaseModel):
+    email: str
+    app_id: str = Field(alias="appId")
+
+
 class ElementInput(BaseModel):
     element_id: str = Field(alias="elementID")
     text_value: Optional[str] = Field(alias="textValue", default=None)
