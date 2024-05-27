@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 
 	"numerous/cli/cmd/output"
@@ -26,7 +27,12 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 		return err
 	}
 
-	appInput := app.CreateAppInput{}
+	appInput := app.CreateAppInput{
+		OrganizationSlug: slug,
+		Name:             appName,
+		DisplayName:      manifest.Name,
+		Description:      manifest.Description,
+	}
 	appOutput, err := apps.Create(ctx, appInput)
 	if err != nil {
 		output.PrintErrorDetails("Error creating app remotely", err)
@@ -47,7 +53,7 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 		return err
 	}
 
-	tarPath := dir + "/.tmp_app_archive.tar"
+	tarPath := path.Join(dir, ".tmp_app_archive.tar")
 	err = archive.TarCreate(dir, tarPath, manifest.Exclude)
 	if err != nil {
 		output.PrintErrorDetails("Error archiving app source", err)
