@@ -10,6 +10,7 @@ import (
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
 	"numerous/cli/dotenv"
+	"numerous/cli/internal/archive"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/internal/gql/build"
@@ -214,7 +215,7 @@ func prepareApp(m *manifest.Manifest) (ok bool) {
 		return false
 	}
 
-	if err := ZipFolder(zipFile, m.Exclude); err != nil {
+	if err := archive.ZipFolder(zipFile, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)
 		os.Remove(zipFileName)
 
