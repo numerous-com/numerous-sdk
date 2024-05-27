@@ -10,16 +10,16 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCreate(t *testing.T) {
-	t.Run("create app returns expected output", func(t *testing.T) {
+func TestCreateVersion(t *testing.T) {
+	t.Run("create app version returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 
 		respBody := `
 			{
 				"data": {
-					"appCreate": {
-						"id": "some-app-id"
+					"appVersionCreate": {
+						"id": "some-app-version-id"
 					}
 				}
 			}
@@ -27,22 +27,15 @@ func TestCreate(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := CreateAppInput{
-			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
-			DisplayName:      "App Name",
-			Description:      "App description",
-		}
-		output, err := Create(context.TODO(), c, input)
+		input := CreateAppVersionInput{AppID: "some-app-id"}
+		output, err := CreateVersion(context.TODO(), c, input)
 
-		expected := CreateAppOutput{
-			AppID: "some-app-id",
-		}
+		expected := CreateAppVersionOutput{AppVersionID: "some-app-version-id"}
 		assert.NoError(t, err)
 		assert.Equal(t, expected, output)
 	})
 
-	t.Run("create app returns expected output", func(t *testing.T) {
+	t.Run("create app version returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 
@@ -51,22 +44,17 @@ func TestCreate(t *testing.T) {
 				"errors": [{
 					"message": "expected error message",
 					"location": [{"line": 1, "column": 1}],
-					"path": ["appCreate"]
+					"path": ["appVersionCreate"]
 				}]
 			}
 		`
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := CreateAppInput{
-			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
-			DisplayName:      "App Name",
-			Description:      "App description",
-		}
-		output, err := Create(context.TODO(), c, input)
+		input := CreateAppVersionInput{AppID: "some-app-id"}
+		output, err := CreateVersion(context.TODO(), c, input)
 
-		expected := CreateAppOutput{}
+		expected := CreateAppVersionOutput{}
 		assert.ErrorContains(t, err, "expected error message")
 		assert.Equal(t, expected, output)
 	})
