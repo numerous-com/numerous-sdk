@@ -217,10 +217,24 @@ extend type Mutation {
 ### App management
 ###############################################################################
 
+enum AppDeploymentStatus {
+  PENDING
+  RUNNING
+  ERROR
+  STOPPED
+  UNKNOWN
+}
+
+type AppDeploymentVersion {
+  id: ID!
+  status: AppDeploymentStatus!
+  proxyURL: String
+}
+
 type AppDeployment {
   id: ID!
   name: String!
-  url: String!
+  current: AppDeploymentVersion
 }
 
 type AppVersion {
@@ -256,7 +270,7 @@ extend type Mutation {
     @hasRole(role: USER)
   appVersionCreate(appID: ID!): AppVersion! @canManageApp
   appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
-  appDeploy(appVersionID: ID!): AppDeployment! @canManageApp
+  appDeploy(appVersionID: ID!): AppDeploymentVersion! @canManageApp
 }
 
 extend type Subscription {
@@ -358,6 +372,20 @@ type Job {
   createdAt: Time!
 }
 
+type JobNotFound {
+  id: ID!
+}
+
+type JobHeartbeatSuccess {
+  id: ID!
+}
+
+type JobHeartbeatFailure {
+  result: String!
+}
+
+union JobHeartbeatResult = JobHeartbeatSuccess | JobHeartbeatFailure | JobNotFound
+
 type StopJobPayload {
   message: String!
 }
@@ -370,13 +398,15 @@ enum ToolHashType {
 
 extend type Query {
   job(toolHash: ID!, hashType: ToolHashType!): Job!
+   @trackOperation(eventName: "App Use/Requested from Proxy")
   jobsByTool(id: ID!): [Job!]!
 }
 
 extend type Mutation {
   jobStart(toolHash: ID!, hashType: ToolHashType!): Job!
-    @trackOperation(eventName: "App Use/Requested from Proxy")
+    @trackOperation(eventName: "App started from Proxy")
   jobStop(id: ID!): StopJobPayload!
+  jobHeartbeat(id: ID!): JobHeartbeatResult!
 }
 
 ###############################################################################

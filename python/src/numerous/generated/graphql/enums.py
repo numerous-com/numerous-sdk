@@ -15,6 +15,14 @@ class Role(str, Enum):
     USER = "USER"
 
 
+class AppDeploymentStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    ERROR = "ERROR"
+    STOPPED = "STOPPED"
+    UNKNOWN = "UNKNOWN"
+
+
 class ShareOfferStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"

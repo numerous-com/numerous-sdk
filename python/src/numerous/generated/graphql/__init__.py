@@ -19,7 +19,14 @@ from .all_elements import (
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel, Upload
 from .client import Client
-from .enums import AppSubscriptionStatus, AuthRole, Role, ShareOfferStatus, ToolHashType
+from .enums import (
+    AppDeploymentStatus,
+    AppSubscriptionStatus,
+    AuthRole,
+    Role,
+    ShareOfferStatus,
+    ToolHashType,
+)
 from .exceptions import (
     GraphQLClientError,
     GraphQLClientGraphQLError,
@@ -88,6 +95,7 @@ __all__ = [
     "AllElementsSessionAllTextField",
     "AllElementsSessionAllTextFieldGraphContext",
     "AppCreateInfo",
+    "AppDeploymentStatus",
     "AppSecret",
     "AppSubscriptionStatus",
     "AsyncBaseClient",
