@@ -23,6 +23,17 @@ import (
 
 const schemaRelative = "/shared/schema.gql"
 
+func assertQuery(t *testing.T, r *http.Request) {
+	t.Helper()
+
+	schema := loadSchema(t)
+	query, err := readQuery(r)
+	require.NoError(t, err)
+	doc := parseQuery(t, string(query.query))
+	query.updateDoc(t, &doc)
+	validateQuery(t, schema, doc)
+}
+
 func loadSchema(t *testing.T) *ast.Schema {
 	t.Helper()
 
