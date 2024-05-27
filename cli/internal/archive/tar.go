@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-const filePermission = 0o755
-
+// TarCreate creates a tar file at `destPath`, from the given `srcDir`,
+// excluding files matching patterns in `exclude`.
 func TarCreate(srcDir string, destPath string, exclude []string) error {
 	tarFile, err := os.Create(destPath)
 	if err != nil {
@@ -69,41 +69,4 @@ func TarCreate(srcDir string, destPath string, exclude []string) error {
 	})
 
 	return err
-}
-
-func TarExtract(content io.Reader, dest string) error {
-	tr := tar.NewReader(content)
-	for {
-		header, err := tr.Next()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return err
-		case header == nil:
-			continue
-		}
-
-		target := filepath.Join(dest, header.Name)
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, filePermission); err != nil {
-					return err
-				}
-			}
-		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-
-			f.Close()
-		}
-	}
 }

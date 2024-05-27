@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTarCreate(t *testing.T) {
@@ -38,36 +37,6 @@ func TestTarCreate(t *testing.T) {
 		delete(expected, "dir/nested_file.txt")
 		assert.Equal(t, expected, actual)
 	})
-}
-
-func TestTarExtract(t *testing.T) {
-	untar := t.TempDir()
-	tarFile, err := os.Open("testdata/testfolder.tar")
-	require.NoError(t, err)
-
-	err = TarExtract(tarFile, untar)
-	assert.NoError(t, err)
-
-	expected := readFiles(t, "testdata/testfolder")
-	actual := readFiles(t, untar)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, actual)
-}
-
-func TestTarCreateTarExtract(t *testing.T) {
-	tarDir := t.TempDir()
-	tarFilePath := tarDir + "/test.tar"
-
-	err := TarCreate("testdata/testfolder/", tarFilePath, nil)
-	assert.NoError(t, err)
-	created, err := os.Open(tarFilePath)
-	assert.NoError(t, err)
-	err = TarExtract(created, tarDir+"/extracted")
-	assert.NoError(t, err)
-
-	expected := readFiles(t, "testdata/testfolder")
-	actual := readFiles(t, tarDir+"/extracted")
-	assert.Equal(t, expected, actual)
 }
 
 func readTarFile(tarFilePath string) (map[string][]byte, error) {
