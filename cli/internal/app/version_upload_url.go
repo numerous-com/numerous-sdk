@@ -2,15 +2,13 @@ package app
 
 import (
 	"context"
-
-	"github.com/hasura/go-graphql-client"
 )
 
-type GetAppVersionUploadURLInput struct {
+type AppVersionUploadURLInput struct {
 	AppVersionID string
 }
 
-type GetAppVersionUploadURLOutput struct {
+type AppVersionUploadURLOutput struct {
 	UploadURL string
 }
 
@@ -28,16 +26,16 @@ type appVersionUploadURLResponse struct {
 	}
 }
 
-func GetAppVersionUploadURL(ctx context.Context, client *graphql.Client, input GetAppVersionUploadURLInput) (GetAppVersionUploadURLOutput, error) {
+func (s *Service) AppVersionUploadURL(ctx context.Context, input AppVersionUploadURLInput) (AppVersionUploadURLOutput, error) {
 	var resp appVersionUploadURLResponse
 
 	variables := map[string]any{
 		"appVersionID": input.AppVersionID,
 	}
-	err := client.Exec(ctx, appVersionUploadURLText, &resp, variables)
+	err := s.client.Exec(ctx, appVersionUploadURLText, &resp, variables)
 	if err != nil {
-		return GetAppVersionUploadURLOutput{}, err
+		return AppVersionUploadURLOutput{}, err
 	}
 
-	return GetAppVersionUploadURLOutput{UploadURL: resp.AppVersionUploadURL.URL}, nil
+	return AppVersionUploadURLOutput{UploadURL: resp.AppVersionUploadURL.URL}, nil
 }

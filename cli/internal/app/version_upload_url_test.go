@@ -14,6 +14,7 @@ func TestGetAppVersionUploadURL(t *testing.T) {
 	t.Run("get app version upload url returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -27,10 +28,10 @@ func TestGetAppVersionUploadURL(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := GetAppVersionUploadURLInput{AppVersionID: "some-app-version-id"}
-		output, err := GetAppVersionUploadURL(context.TODO(), c, input)
+		input := AppVersionUploadURLInput{AppVersionID: "some-app-version-id"}
+		output, err := s.AppVersionUploadURL(context.TODO(), input)
 
-		expected := GetAppVersionUploadURLOutput{UploadURL: "https://upload-url.com/url-path"}
+		expected := AppVersionUploadURLOutput{UploadURL: "https://upload-url.com/url-path"}
 		if assert.NoError(t, err) {
 			assert.Equal(t, expected, output)
 		}
@@ -39,6 +40,7 @@ func TestGetAppVersionUploadURL(t *testing.T) {
 	t.Run("get app version upload url returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -52,10 +54,10 @@ func TestGetAppVersionUploadURL(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := GetAppVersionUploadURLInput{AppVersionID: "some-app-version-id"}
-		output, err := GetAppVersionUploadURL(context.TODO(), c, input)
+		input := AppVersionUploadURLInput{AppVersionID: "some-app-version-id"}
+		output, err := s.AppVersionUploadURL(context.TODO(), input)
 
-		expected := GetAppVersionUploadURLOutput{}
+		expected := AppVersionUploadURLOutput{}
 		if assert.ErrorContains(t, err, "expected error message") {
 			assert.Equal(t, expected, output)
 		}

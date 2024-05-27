@@ -1,10 +1,13 @@
 package deploy
 
 import (
+	"net/http"
 	"os"
 
 	"numerous/cli/app"
 	"numerous/cli/cmd/validate"
+	appinternal "numerous/cli/internal/app"
+	"numerous/cli/internal/gql"
 
 	"github.com/spf13/cobra"
 )
@@ -31,7 +34,8 @@ func deploy(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	err := app.Deploy(slug, appName)
+	s := appinternal.New(gql.NewClient(), http.DefaultClient)
+	err := app.Deploy(cmd.Context(), ".", slug, appName, s)
 	if err != nil {
 		os.Exit(1)
 	} else {

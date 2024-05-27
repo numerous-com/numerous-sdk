@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -31,7 +32,7 @@ func TarCreate(srcDir string, destPath string, exclude []string) error {
 			return err
 		}
 
-		if shouldExclude(exclude, relPath) {
+		if shouldExclude(exclude, relPath) || tarFile.Name() == path.Join(srcDir, fi.Name()) {
 			return nil
 		}
 

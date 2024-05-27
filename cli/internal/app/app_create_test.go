@@ -14,6 +14,7 @@ func TestCreate(t *testing.T) {
 	t.Run("create app returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -33,7 +34,7 @@ func TestCreate(t *testing.T) {
 			DisplayName:      "App Name",
 			Description:      "App description",
 		}
-		output, err := Create(context.TODO(), c, input)
+		output, err := s.Create(context.TODO(), input)
 
 		expected := CreateAppOutput{
 			AppID: "some-app-id",
@@ -45,6 +46,7 @@ func TestCreate(t *testing.T) {
 	t.Run("create app returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -64,7 +66,7 @@ func TestCreate(t *testing.T) {
 			DisplayName:      "App Name",
 			Description:      "App description",
 		}
-		output, err := Create(context.TODO(), c, input)
+		output, err := s.Create(context.TODO(), input)
 
 		expected := CreateAppOutput{}
 		assert.ErrorContains(t, err, "expected error message")

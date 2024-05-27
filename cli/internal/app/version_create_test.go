@@ -14,6 +14,7 @@ func TestCreateVersion(t *testing.T) {
 	t.Run("create app version returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -28,7 +29,7 @@ func TestCreateVersion(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
 		input := CreateAppVersionInput{AppID: "some-app-id"}
-		output, err := CreateVersion(context.TODO(), c, input)
+		output, err := s.CreateVersion(context.TODO(), input)
 
 		expected := CreateAppVersionOutput{AppVersionID: "some-app-version-id"}
 		assert.NoError(t, err)
@@ -38,6 +39,7 @@ func TestCreateVersion(t *testing.T) {
 	t.Run("create app version returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
+		s := Service{client: c}
 
 		respBody := `
 			{
@@ -52,7 +54,7 @@ func TestCreateVersion(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
 		input := CreateAppVersionInput{AppID: "some-app-id"}
-		output, err := CreateVersion(context.TODO(), c, input)
+		output, err := s.CreateVersion(context.TODO(), input)
 
 		expected := CreateAppVersionOutput{}
 		assert.ErrorContains(t, err, "expected error message")

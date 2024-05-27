@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-
-	"github.com/hasura/go-graphql-client"
 )
 
 type CreateAppVersionInput struct {
@@ -28,13 +26,13 @@ type appVersionCreateResponse struct {
 	}
 }
 
-func CreateVersion(ctx context.Context, client *graphql.Client, input CreateAppVersionInput) (CreateAppVersionOutput, error) {
+func (s *Service) CreateVersion(ctx context.Context, input CreateAppVersionInput) (CreateAppVersionOutput, error) {
 	var resp appVersionCreateResponse
 
 	variables := map[string]any{
 		"appID": input.AppID,
 	}
-	err := client.Exec(ctx, appVersionCreateText, &resp, variables)
+	err := s.client.Exec(ctx, appVersionCreateText, &resp, variables)
 	if err != nil {
 		return CreateAppVersionOutput{}, err
 	}

@@ -1,0 +1,9 @@
+name = "streamlit_example"
+description = ""
+library = "streamlit"
+python = "3.11"
+app_file = "app.py"
+requirements_file = "requirements.txt"
+port = 80
+cover_image = "app_cover.jpg"
+exclude = ["*venv", "venv*", ".git"]

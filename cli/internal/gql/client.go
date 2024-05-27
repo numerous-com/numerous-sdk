@@ -7,6 +7,7 @@ import (
 	"numerous/cli/auth"
 
 	"git.sr.ht/~emersion/gqlclient"
+	"github.com/hasura/go-graphql-client"
 )
 
 var (
@@ -46,5 +47,18 @@ func initClient() {
 
 func GetClient() *gqlclient.Client {
 	once.Do(initClient)
+	return client
+}
+
+func NewClient() *graphql.Client {
+	client := graphql.NewClient(httpURL, http.DefaultClient)
+
+	user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+	if user != nil {
+		client = client.WithRequestModifier(func(r *http.Request) {
+			r.Header.Set("Authorization", "Bearer "+user.AccessToken)
+		})
+	}
+
 	return client
 }
