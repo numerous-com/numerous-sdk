@@ -208,21 +208,12 @@ func prepareApp(m *manifest.Manifest) (ok bool) {
 		fmt.Print(unicodeHourglass + "  Preparing upload...")
 	}
 
-	zipFile, err := os.OpenFile(zipFileName, os.O_CREATE|os.O_RDWR, zipFilePermission)
-	if err != nil {
-		output.PrintErrorDetails("Error preparing app.", err)
-
-		return false
-	}
-
-	if err := archive.ZipFolder(zipFile, m.Exclude); err != nil {
+	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)
 		os.Remove(zipFileName)
 
 		return false
 	}
-
-	zipFile.Close()
 
 	fmt.Println(greenCheckmark + "  Preparing upload...Done")
 

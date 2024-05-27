@@ -1,57 +1,69 @@
 package archive
 
 import (
-	"fmt"
+	"archive/zip"
+	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestShouldExclude(t *testing.T) {
-	tests := []struct {
-		excludePatterns []string
-		includedFiles   []string
-		excludedFiles   []string
-	}{
-		{
-			excludePatterns: []string{"*.go"},
-			excludedFiles:   []string{"exclude_file.go", "included_folder/excluded_file.go"},
-			includedFiles:   []string{"included_file.py", "included_folder/included_file.py"},
-		},
-		{
-			excludePatterns: []string{"venv"},
-			excludedFiles:   []string{"venv/exclude_file.py", "venv/folder/excluded_file.py"},
-			includedFiles:   []string{"included_file.py", "included_folder/included_file.py"},
-		},
-		{
-			excludePatterns: []string{"*venv"},
-			excludedFiles:   []string{".venv/exclude_file.py", ".venv/folder/excluded_file.py", "venv/excluded_file.py"},
-			includedFiles:   []string{"included_file.py", "included_folder/included_file.py"},
-		},
-		{
-			excludePatterns: []string{"venv*"},
-			excludedFiles:   []string{"venv1/exclude_file.py", "venv1/folder/excluded_file.py", "venv/excluded_file.py"},
-			includedFiles:   []string{"included_file.py", "1venv/included_file.py"},
-		},
-		{
-			excludePatterns: []string{"venv"},
-			excludedFiles:   []string{"venv/exclude_file.py", "venv/folder/excluded_file.py"},
-			includedFiles:   []string{"included_file.py", "included_folder/included_file.py"},
-		},
-		{
-			excludePatterns: []string{"excluded_file.py"},
-			excludedFiles:   []string{"venv/excluded_file.py", "included_folder/excluded_file.py", "excluded_file.py"},
-			includedFiles:   []string{"included_file.py", "included_folder/included_file.py"},
-		},
+func TestZipCreate(t *testing.T) {
+	t.Run("creates zip with all files", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/test.zip"
+		err := ZipCreate("testdata/testfolder/", path, nil)
+		assert.NoError(t, err)
+		actual, err := readZipFile(t, path)
+		assert.NoError(t, err)
+
+		expected := readFiles(t, "testdata/testfolder")
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("creates zip without ignored file path", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/test.zip"
+
+		err := ZipCreate("testdata/testfolder/", path, []string{"dir/*"})
+		assert.NoError(t, err)
+		actual, err := readZipFile(t, path)
+		assert.NoError(t, err)
+
+		expected := readFiles(t, "testdata/testfolder")
+		delete(expected, "dir/nested_file.txt")
+		assert.Equal(t, expected, actual)
+	})
+}
+
+func readZipFile(t *testing.T, path string) (map[string][]byte, error) {
+	t.Helper()
+
+	stat, err := os.Stat(path)
+	require.NoError(t, err)
+
+	result := make(map[string][]byte)
+	file, err := os.Open(path)
+	require.NoError(t, err)
+
+	r, err := zip.NewReader(file, stat.Size())
+	require.NoError(t, err)
+
+	for _, file := range r.File {
+		if file.Mode().IsDir() {
+			continue
+		}
+
+		f, err := r.Open(file.Name)
+		require.NoError(t, err)
+
+		content, err := io.ReadAll(f)
+		require.NoError(t, err)
+
+		result[file.Name] = content
 	}
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("Testing pattern: %v", test.excludePatterns), func(t *testing.T) {
-			for _, path := range test.includedFiles {
-				assert.False(t, shouldExclude(test.excludePatterns, path), path)
-			}
-			for _, path := range test.excludedFiles {
-				assert.True(t, shouldExclude(test.excludePatterns, path), path)
-			}
-		})
-	}
+
+	return result, nil
 }
