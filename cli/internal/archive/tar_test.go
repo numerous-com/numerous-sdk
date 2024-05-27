@@ -12,16 +12,32 @@ import (
 )
 
 func TestTarCreate(t *testing.T) {
-	tarDir := t.TempDir()
-	tarFilePath := tarDir + "/test.tar"
+	t.Run("creates tar with all files", func(t *testing.T) {
+		tarDir := t.TempDir()
+		tarFilePath := tarDir + "/test.tar"
 
-	err := TarCreate("testdata/testfolder/", tarFilePath)
-	assert.NoError(t, err)
-	actual, err := readTarFile(tarFilePath)
-	assert.NoError(t, err)
+		err := TarCreate("testdata/testfolder/", tarFilePath, nil)
+		assert.NoError(t, err)
+		actual, err := readTarFile(tarFilePath)
+		assert.NoError(t, err)
 
-	expected := readFiles(t, "testdata/testfolder")
-	assert.Equal(t, expected, actual)
+		expected := readFiles(t, "testdata/testfolder")
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("creates tar without ignored file path", func(t *testing.T) {
+		tarDir := t.TempDir()
+		tarFilePath := tarDir + "/test.tar"
+
+		err := TarCreate("testdata/testfolder/", tarFilePath, []string{"dir/*"})
+		assert.NoError(t, err)
+		actual, err := readTarFile(tarFilePath)
+		assert.NoError(t, err)
+
+		expected := readFiles(t, "testdata/testfolder")
+		delete(expected, "dir/nested_file.txt")
+		assert.Equal(t, expected, actual)
+	})
 }
 
 func TestTarExtract(t *testing.T) {
@@ -42,7 +58,7 @@ func TestTarCreateTarExtract(t *testing.T) {
 	tarDir := t.TempDir()
 	tarFilePath := tarDir + "/test.tar"
 
-	err := TarCreate("testdata/testfolder/", tarFilePath)
+	err := TarCreate("testdata/testfolder/", tarFilePath, nil)
 	assert.NoError(t, err)
 	created, err := os.Open(tarFilePath)
 	assert.NoError(t, err)

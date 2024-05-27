@@ -10,7 +10,7 @@ import (
 
 const filePermission = 0o755
 
-func TarCreate(srcDir string, destPath string) error {
+func TarCreate(srcDir string, destPath string, exclude []string) error {
 	tarFile, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -29,6 +29,10 @@ func TarCreate(srcDir string, destPath string) error {
 		relPath, err := filepath.Rel(srcDir, fileName)
 		if err != nil {
 			return err
+		}
+
+		if shouldExclude(exclude, relPath) {
+			return nil
 		}
 
 		if relPath == "." {
