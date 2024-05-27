@@ -10,6 +10,7 @@ import (
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
 	"numerous/cli/dotenv"
+	"numerous/cli/internal/archive"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/internal/gql/build"
@@ -25,15 +26,6 @@ const (
 )
 
 var verbose bool
-
-var (
-	carriageReturn       = "\r"
-	greenColorEscapeANSI = "\033[32m"
-	resetColorEscapeANSI = "\033[0m"
-	unicodeCheckmark     = "\u2713"
-	greenCheckmark       = carriageReturn + greenColorEscapeANSI + unicodeCheckmark + resetColorEscapeANSI
-	unicodeHourglass     = "\u29D6"
-)
 
 const (
 	ProjectArgLength       = 1
@@ -62,7 +54,7 @@ func push(cmd *cobra.Command, args []string) {
 
 	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
-		output.PrintErrorAppNotInitialized()
+		output.PrintErrorAppNotInitialized(appDir)
 		os.Exit(1)
 	}
 
@@ -137,7 +129,7 @@ func printURL(toolID string) (ok bool) {
 }
 
 func deployApp(toolID string) (ok bool) {
-	fmt.Print(unicodeHourglass + "  Deploying app......")
+	task := output.StartTask("Deploying app")
 
 	err := stopJobs(string(toolID))
 	if err != nil {
@@ -151,13 +143,14 @@ func deployApp(toolID string) (ok bool) {
 		return false
 	}
 
-	fmt.Println(greenCheckmark + "  Deploying app......Done")
+	task.Done()
 
 	return true
 }
 
 func buildApp(buildID string, appPath string) (ok bool) {
-	fmt.Print(unicodeHourglass + "  Building app.......")
+	task := output.StartTask("Building app")
+
 	if verbose {
 		// To allow nice printing of build messages from backend
 		fmt.Println()
@@ -168,16 +161,14 @@ func buildApp(buildID string, appPath string) (ok bool) {
 		output.PrintErrorDetails("Error listening for build logs.", err)
 		return false
 	}
-
-	fmt.Println(greenCheckmark + "  Building app.......Done")
+	task.Done()
 
 	return true
 }
 
 func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 	defer os.Remove(zipFileName)
-
-	fmt.Print(unicodeHourglass + "  Uploading app......")
+	task := output.StartTask("Uploading app")
 
 	secrets := loadSecretsFromEnv(appDir)
 	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
@@ -197,33 +188,22 @@ func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 		return "", false
 	}
 
-	fmt.Println(greenCheckmark + "  Uploading app......Done")
+	task.Done()
 
 	return buildID, true
 }
 
 func prepareApp(m *manifest.Manifest) (ok bool) {
-	if !verbose {
-		fmt.Print(unicodeHourglass + "  Preparing upload...")
-	}
+	task := output.StartTask("Preparing upload.")
 
-	zipFile, err := os.OpenFile(zipFileName, os.O_CREATE|os.O_RDWR, zipFilePermission)
-	if err != nil {
-		output.PrintErrorDetails("Error preparing app.", err)
-
-		return false
-	}
-
-	if err := ZipFolder(zipFile, m.Exclude); err != nil {
+	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)
 		os.Remove(zipFileName)
 
 		return false
 	}
 
-	zipFile.Close()
-
-	fmt.Println(greenCheckmark + "  Preparing upload...Done")
+	task.Done()
 
 	return true
 }

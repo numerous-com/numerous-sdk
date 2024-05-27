@@ -70,7 +70,7 @@ func ReadAppID(basePath string) (string, error) {
 func ReadAppIDAndPrintErrors(appDir string) (string, error) {
 	appID, err := ReadAppID(appDir)
 	if err == ErrAppIDNotFound {
-		output.PrintErrorAppNotInitialized()
+		output.PrintErrorAppNotInitialized(appDir)
 		return "", err
 	} else if err != nil {
 		output.PrintErrorDetails("An error occurred reading the app ID", err)

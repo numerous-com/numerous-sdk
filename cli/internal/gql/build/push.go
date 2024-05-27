@@ -2,8 +2,9 @@ package build
 
 import (
 	"context"
-	"encoding/base64"
 	"os"
+
+	"numerous/cli/internal/gql/secret"
 
 	"git.sr.ht/~emersion/gqlclient"
 )
@@ -14,7 +15,7 @@ type pushResponse struct {
 
 func Push(file *os.File, appID string, client *gqlclient.Client, secrets map[string]string) (BuildConfiguration, error) {
 	resp := pushResponse{}
-	convertedSecrets := appSecretsFromMap(secrets)
+	convertedSecrets := secret.AppSecretsFromMap(secrets)
 
 	op := createBuildOperation(file, appID, convertedSecrets)
 
@@ -25,30 +26,11 @@ func Push(file *os.File, appID string, client *gqlclient.Client, secrets map[str
 	return resp.BuildPush, nil
 }
 
-func appSecretsFromMap(secrets map[string]string) []*appSecret {
-	convertedSecrets := make([]*appSecret, 0)
-
-	for name, value := range secrets {
-		secret := &appSecret{
-			Name:        name,
-			Base64Value: base64.StdEncoding.EncodeToString([]byte(value)),
-		}
-		convertedSecrets = append(convertedSecrets, secret)
-	}
-
-	return convertedSecrets
-}
-
-type appSecret struct {
-	Name        string `json:"name"`
-	Base64Value string `json:"base64Value"`
-}
-
 type buildPushInput struct {
-	Secrets []*appSecret `json:"secrets"`
+	Secrets []*secret.AppSecret `json:"secrets"`
 }
 
-func createBuildOperation(file *os.File, appID string, secrets []*appSecret) *gqlclient.Operation {
+func createBuildOperation(file *os.File, appID string, secrets []*secret.AppSecret) *gqlclient.Operation {
 	op := gqlclient.NewOperation(`
 		mutation BuildPush($file: Upload!, $appID: ID!, $input: BuildPushInput!) {
 			buildPush(file: $file, id: $appID, input: $input) {

@@ -8,7 +8,6 @@ import (
 
 	"git.sr.ht/~emersion/gqlclient"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 
 	_ "embed"
 )
@@ -16,7 +15,6 @@ import (
 func CreateTestGqlClient(t *testing.T, response string) *gqlclient.Client {
 	t.Helper()
 
-	schema := loadSchema(t)
 	h := http.Header{}
 	h.Add("Content-Type", "application/json")
 
@@ -30,12 +28,7 @@ func CreateTestGqlClient(t *testing.T, response string) *gqlclient.Client {
 			Response *http.Response
 			Error    error
 		} {
-			query, err := readQuery(r)
-			require.NoError(t, err)
-			doc := parseQuery(t, string(query.query))
-			query.updateDoc(t, &doc)
-			validateQuery(t, schema, doc)
-
+			assertGraphQLRequest(t, r)
 			return nil
 		},
 	}

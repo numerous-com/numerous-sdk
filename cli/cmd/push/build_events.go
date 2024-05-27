@@ -108,7 +108,7 @@ func buildEventSubscription(client subscriptionClient, buildID string, appPath s
 func getClient() *graphql.SubscriptionClient {
 	var previousError error
 
-	client := gql.GetSubscriptionClient()
+	client := gql.NewSubscriptionClient()
 	client = client.OnError(func(sc *graphql.SubscriptionClient, err error) error {
 		if previousError != nil {
 			fmt.Printf("Error occurred listening for deploy logs. This does not mean that you app will be unavailable.\nFirst error: %s\nSecond error: %s\n", previousError, err)

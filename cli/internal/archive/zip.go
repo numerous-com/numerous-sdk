@@ -1,4 +1,4 @@
-package push
+package archive
 
 import (
 	"archive/zip"
@@ -7,18 +7,28 @@ import (
 	"path/filepath"
 )
 
-// ZipFolder compresses the current directory into a zip-file.
+// ZipCreate compresses the given source directory into a zip-file.
 // It returns an error if anything fails, else nil.
-func ZipFolder(zipFile *os.File, exclude []string) error {
+func ZipCreate(srcDir, destPath string, exclude []string) error {
+	zipFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
-	return filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if shouldExclude(exclude, path) || info.Name() == zipFile.Name() {
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+
+		if shouldExclude(exclude, relPath) || info.Name() == zipFile.Name() {
 			return nil
 		}
 
@@ -28,10 +38,6 @@ func ZipFolder(zipFile *os.File, exclude []string) error {
 		}
 
 		// Ensure the header name is a relative path to avoid file path disclosure.
-		relPath, err := filepath.Rel(".", path)
-		if err != nil {
-			return err
-		}
 		header.Name = relPath
 
 		// Ensure folder names end with a slash to distinguish them in the zip.
@@ -59,14 +65,4 @@ func ZipFolder(zipFile *os.File, exclude []string) error {
 
 		return nil
 	})
-}
-
-func shouldExclude(excludedPatterns []string, path string) bool {
-	for _, pattern := range excludedPatterns {
-		if Match(pattern, path) {
-			return true
-		}
-	}
-
-	return false
 }

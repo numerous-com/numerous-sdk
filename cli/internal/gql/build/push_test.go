@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"numerous/cli/internal/gql/secret"
 	"numerous/cli/test"
 
 	"github.com/stretchr/testify/assert"
@@ -48,14 +49,14 @@ func TestAppSecretsFromMap(t *testing.T) {
 	secretValue := "my secret value"
 	secretName := "MY_SECRET"
 	secrets := map[string]string{secretName: secretValue}
-	expected := []*appSecret{
+	expected := []*secret.AppSecret{
 		{
 			Name:        secretName,
 			Base64Value: base64.StdEncoding.EncodeToString([]byte(secretValue)),
 		},
 	}
 
-	actual := appSecretsFromMap(secrets)
+	actual := secret.AppSecretsFromMap(secrets)
 
 	assert.Equal(t, expected, actual)
 }

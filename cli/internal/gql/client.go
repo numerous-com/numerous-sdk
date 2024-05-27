@@ -2,11 +2,13 @@ package gql
 
 import (
 	"net/http"
+	"os"
 	"sync"
 
 	"numerous/cli/auth"
 
 	"git.sr.ht/~emersion/gqlclient"
+	"github.com/hasura/go-graphql-client"
 )
 
 var (
@@ -47,4 +49,31 @@ func initClient() {
 func GetClient() *gqlclient.Client {
 	once.Do(initClient)
 	return client
+}
+
+func NewClient() *graphql.Client {
+	client := graphql.NewClient(httpURL, http.DefaultClient)
+
+	accessToken := getAccessToken()
+	if accessToken != nil {
+		client = client.WithRequestModifier(func(r *http.Request) {
+			r.Header.Set("Authorization", "Bearer "+*accessToken)
+		})
+	}
+
+	return client
+}
+
+func getAccessToken() *string {
+	token := os.Getenv("NUMEROUS_ACCESS_TOKEN")
+	if token != "" {
+		return &token
+	}
+
+	user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+	if user != nil {
+		return &user.AccessToken
+	}
+
+	return &token
 }

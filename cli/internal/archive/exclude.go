@@ -1,4 +1,4 @@
-package push
+package archive
 
 import (
 	"os"
@@ -8,8 +8,8 @@ import (
 
 const dblAsterisks = "**"
 
-// Match matches patterns in the same manner that gitignore does.
-func Match(pattern, value string) bool {
+// match matches patterns in the same manner that gitignore does.
+func match(pattern, value string) bool {
 	// A blank line matches no files, so it can serve as a separator for readability.
 	if pattern == "" {
 		return false
@@ -135,4 +135,15 @@ func matchFolder(pattern, value string) bool {
 			return true
 		}
 	}
+}
+
+// Returns true if path matches any of the given exclude patterns.
+func shouldExclude(excludedPatterns []string, path string) bool {
+	for _, pattern := range excludedPatterns {
+		if match(pattern, path) {
+			return true
+		}
+	}
+
+	return false
 }
