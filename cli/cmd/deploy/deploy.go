@@ -1,9 +1,10 @@
-package cmd
+package deploy
 
 import (
 	"os"
 
 	"numerous/cli/app"
+	"numerous/cli/cmd/validate"
 
 	"github.com/spf13/cobra"
 )
@@ -11,7 +12,7 @@ import (
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Run:   deploy,
-	Short: "Develop and run numerous app engine apps locally.",
+	Short: "Deploy an app to an organization.",
 }
 
 var (
@@ -20,12 +21,12 @@ var (
 )
 
 func deploy(cmd *cobra.Command, args []string) {
-	if !validIdent(slug) {
+	if !validate.IsValidIdentifier(slug) {
 		println("Error: Invalid organization '" + slug + "'. Must contain only lower-case alphanumerical characters and dashes.")
 		os.Exit(1)
 	}
 
-	if !validIdent(appName) {
+	if !validate.IsValidIdentifier(appName) {
 		println("Error: Invalid app name '" + appName + "'. Must contain only lower-case alphanumerical characters and dashes.")
 		os.Exit(1)
 	}

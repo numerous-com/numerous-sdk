@@ -1,4 +1,4 @@
-package cmd
+package validate
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidIdent(t *testing.T) {
+func TestIsValidIdentifier(t *testing.T) {
 	for _, invalid := range []string{
 		"abcæøå",
 		"abc[123",
@@ -24,7 +24,7 @@ func TestValidIdent(t *testing.T) {
 		"abcABC123",
 	} {
 		t.Run("fails for '"+""+invalid+"'", func(t *testing.T) {
-			actual := validIdent(invalid)
+			actual := IsValidIdentifier(invalid)
 			assert.False(t, actual)
 		})
 	}
@@ -38,7 +38,7 @@ func TestValidIdent(t *testing.T) {
 		"123456-abcdef",
 	} {
 		t.Run("succeeds for '"+valid+"'", func(t *testing.T) {
-			actual := validIdent(valid)
+			actual := IsValidIdentifier(valid)
 			assert.True(t, actual)
 		})
 	}

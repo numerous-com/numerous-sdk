@@ -10,6 +10,7 @@ import (
 
 	"numerous/cli/auth"
 	deleteapp "numerous/cli/cmd/delete"
+	"numerous/cli/cmd/deploy"
 	"numerous/cli/cmd/dev"
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/list"
@@ -116,7 +117,7 @@ func bindCommands() {
 	rootCmd.AddCommand(list.ListCmd)
 	rootCmd.AddCommand(report.ReportCmd)
 	rootCmd.AddCommand(organization.OrganizationRootCmd)
-	rootCmd.AddCommand(DeployCmd)
+	rootCmd.AddCommand(deploy.DeployCmd)
 	organization.OrganizationRootCmd.AddCommand(createorganization.OrganizationCreateCmd)
 	organization.OrganizationRootCmd.AddCommand(listorganization.OrganizationListCmd)
 }
