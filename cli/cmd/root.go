@@ -116,6 +116,7 @@ func bindCommands() {
 	rootCmd.AddCommand(list.ListCmd)
 	rootCmd.AddCommand(report.ReportCmd)
 	rootCmd.AddCommand(organization.OrganizationRootCmd)
+	rootCmd.AddCommand(DeployCmd)
 	organization.OrganizationRootCmd.AddCommand(createorganization.OrganizationCreateCmd)
 	organization.OrganizationRootCmd.AddCommand(listorganization.OrganizationListCmd)
 }
