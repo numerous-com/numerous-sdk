@@ -24,12 +24,30 @@ func TestDeploy(t *testing.T) {
 	const uploadURL = "https://upload/url"
 	const deployVersionID = "deploy-version-id"
 
-	t.Run("happy path can run", func(t *testing.T) {
+	t.Run("give no existing app then happy path can run", func(t *testing.T) {
 		dir := t.TempDir()
 		copyTo(t, "../../testdata/streamlit_app", dir)
 
 		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
 		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
+		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
+		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
+		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
+		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
+
+		err := Deploy(context.TODO(), dir, slug, appName, apps)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("give existing app then it does not create app", func(t *testing.T) {
+		dir := t.TempDir()
+		copyTo(t, "../../testdata/streamlit_app", dir)
+
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{AppID: appID}, nil)
 		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
 		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)

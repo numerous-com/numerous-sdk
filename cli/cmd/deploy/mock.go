@@ -15,6 +15,12 @@ type mockAppService struct {
 	mock.Mock
 }
 
+// ReadApp implements AppService.
+func (m *mockAppService) ReadApp(ctx context.Context, input app.ReadAppInput) (app.ReadAppOutput, error) {
+	args := m.Called(ctx, input)
+	return args.Get(0).(app.ReadAppOutput), args.Error(1)
+}
+
 // DeployEvents implements AppService.
 func (m *mockAppService) DeployEvents(ctx context.Context, input app.DeployEventsInput) error {
 	args := m.Called(ctx, input)

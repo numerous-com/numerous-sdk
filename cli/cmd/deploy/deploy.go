@@ -16,9 +16,10 @@ import (
 )
 
 type AppService interface {
-	AppVersionUploadURL(ctx context.Context, input app.AppVersionUploadURLInput) (app.AppVersionUploadURLOutput, error)
+	ReadApp(ctx context.Context, input app.ReadAppInput) (app.ReadAppOutput, error)
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
 	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
+	AppVersionUploadURL(ctx context.Context, input app.AppVersionUploadURLInput) (app.AppVersionUploadURLOutput, error)
 	UploadAppSource(uploadURL string, archive io.Reader) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
@@ -46,19 +47,12 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 		return err
 	}
 
-	appInput := app.CreateAppInput{
-		OrganizationSlug: slug,
-		Name:             appName,
-		DisplayName:      manifest.Name,
-		Description:      manifest.Description,
-	}
-	appOutput, err := apps.Create(ctx, appInput)
+	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest)
 	if err != nil {
-		output.PrintErrorDetails("Error creating app remotely", err)
 		return err
 	}
 
-	appVersionInput := app.CreateAppVersionInput(appOutput)
+	appVersionInput := app.CreateAppVersionInput{AppID: appID}
 	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
 	if err != nil {
 		output.PrintErrorDetails("Error creating app version remotely", err)
@@ -111,4 +105,33 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	}
 
 	return nil
+}
+
+func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName string, manifest *manifest.Manifest) (string, error) {
+	appReadInput := app.ReadAppInput{
+		OrganizationSlug: slug,
+		Name:             appName,
+	}
+	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
+	switch {
+	case err == nil:
+		return appReadOutput.AppID, nil
+	case errors.Is(err, app.ErrAppNotFound):
+		appCreateInput := app.CreateAppInput{
+			OrganizationSlug: slug,
+			Name:             appName,
+			DisplayName:      manifest.Name,
+			Description:      manifest.Description,
+		}
+		appCreateOutput, err := apps.Create(ctx, appCreateInput)
+		if err != nil {
+			output.PrintErrorDetails("Error creating app remotely", err)
+			return "", err
+		}
+
+		return appCreateOutput.AppID, nil
+	default:
+		output.PrintErrorDetails("Error reading remote app", err)
+		return "", err
+	}
 }
