@@ -63,6 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: main
     timeout-minutes: 15
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,15 +77,15 @@ jobs:
         uses: dawidd6/action-download-artifact@v3
         with:
           run_id: ${{ github.event.workflow_run.id }}
-          name: cli-coverage
-          path: cli-coverage.txt
+          name: package
+          path: dist
+      - run: pip install python-semantic-release==9.6.0 twine==5.0.0
       - run: |
-          pip install python-semantic-release==9.6.0 twine==5.0.0
           semantic-release version --commit --tag --push
           semantic-release publish
-          twine upload --skip-existing --non-interactive dist/*
         env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
+      - run: twine upload --skip-existing --non-interactive dist/*
+        env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
