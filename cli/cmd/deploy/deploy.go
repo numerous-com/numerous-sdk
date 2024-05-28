@@ -20,6 +20,7 @@ type AppService interface {
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
 	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
 	UploadAppSource(uploadURL string, archive io.Reader) error
+	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 }
 
 var (
@@ -90,7 +91,12 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 		return err
 	}
 
-	// TODO: actually execute app deploy mutation and listen to deployment logs
+	deployAppInput := app.DeployAppInput(appVersionOutput)
+	_, err = apps.DeployApp(ctx, deployAppInput)
+	if err != nil {
+		output.PrintErrorDetails("Error deploying app", err)
+	}
 
+	// TODO: show deploy progress
 	return nil
 }

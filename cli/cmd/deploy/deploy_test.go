@@ -17,17 +17,24 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
+	const slug = "organization-slug"
+	const appID = "app-id"
+	const appName = "app-name"
+	const appVersionID = "app-version-id"
+	const uploadURL = "https://upload/url"
+	const deployVersionID = "deploy-version-id"
 	t.Run("happy path", func(t *testing.T) {
 		dir := t.TempDir()
 		copyTo(t, "../../testdata/streamlit_app", dir)
 
 		apps := &mockAppService{}
-		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: "app-id"}, nil)
-		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: "app-version-id"}, nil)
-		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: "http://upload/url"}, nil)
+		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
+		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
 		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
+		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
 
-		err := Deploy(context.TODO(), dir, "organization-slug", "app-name", apps)
+		err := Deploy(context.TODO(), dir, slug, appName, apps)
 
 		assert.NoError(t, err)
 	})
@@ -35,19 +42,19 @@ func TestDeploy(t *testing.T) {
 	t.Run("given dir without numerous.toml then it returns error", func(t *testing.T) {
 		dir := t.TempDir()
 
-		err := Deploy(context.TODO(), dir, "organization-slug", "app-name", nil)
+		err := Deploy(context.TODO(), dir, slug, appName, nil)
 
 		assert.EqualError(t, err, "open "+dir+"/numerous.toml: no such file or directory")
 	})
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), ".", "Some Invalid Organization Slug", "app-name", nil)
+		err := Deploy(context.TODO(), ".", "Some Invalid Organization Slug", appName, nil)
 
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), ".", "organization-slug", "Some Invalid App Name", nil)
+		err := Deploy(context.TODO(), ".", slug, "Some Invalid App Name", nil)
 
 		assert.ErrorIs(t, err, ErrInvalidAppName)
 	})
