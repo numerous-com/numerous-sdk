@@ -1,11 +1,12 @@
-name: cicd
+name: Validate
 
 on:
   push:
     paths:
       - "python/**"
       - "cli/**"
-      - ".github/workflows/cicd.yml"
+      - ".github/workflows/validate.yml"
+      - ".github/workflows/release.yml"
 
 permissions:
   id-token: write

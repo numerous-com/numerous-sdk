@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [Validate]
+    types:
+      - completed
+  
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  publish-sdk-coverage:
+    name: Publish SDK test coverage
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Download coverage percentage
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: sdk-coverage
+          path: sdk-coverage.txt
+      - run: awk '{print "COVERAGE_PCT=" $1}' sdk-coverage.txt >> $GITHUB_ENV
+      - uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_ACCESS_TOKEN }}
+          gistID: a9b9bfdfa0620696fba9e76223790f53
+          filename: sdk-coverage.json
+          label: SDK coverage
+          message: ${{ env.COVERAGE_PCT }}
+          minColorRange: 50
+          maxColorRange: 80
+          valColorRange: ${{ env.COVERAGE_PCT }}
+
+  publish-cli-coverage:
+    name: Publish CLI test coverage
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Download coverage percentage
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: cli-coverage
+          path: cli-coverage.txt
+      - run: awk '{print "COVERAGE_PCT=" $1}' cli-coverage.txt >> $GITHUB_ENV
+      - uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_ACCESS_TOKEN }}
+          gistID: a9b9bfdfa0620696fba9e76223790f53
+          filename: cli-coverage.json
+          label: CLI coverage
+          message: ${{ env.COVERAGE_PCT }}
+          minColorRange: 50
+          maxColorRange: 80
+          valColorRange: ${{ env.COVERAGE_PCT }}
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    environment: main
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+      - name: Download build artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: cli-coverage
+          path: cli-coverage.txt
+      - run: |
+          pip install python-semantic-release==9.6.0 twine==5.0.0
+          semantic-release version --commit --tag --push
+          semantic-release publish
+          twine upload --skip-existing --non-interactive dist/*
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
