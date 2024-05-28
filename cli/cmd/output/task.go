@@ -11,9 +11,9 @@ var (
 )
 
 func PrintTaskStarted(message string) {
-	fmt.Print(unicodeHourglass + "  " + message)
+	fmt.Print(" " + unicodeHourglass + " " + message)
 }
 
 func PrintTaskDone(message string) {
-	fmt.Println("\r" + greenCheckmark + "  " + message + "Done")
+	fmt.Println("\r " + greenCheckmark + " " + message + "Done")
 }
