@@ -27,15 +27,6 @@ const (
 
 var verbose bool
 
-var (
-	carriageReturn       = "\r"
-	greenColorEscapeANSI = "\033[32m"
-	resetColorEscapeANSI = "\033[0m"
-	unicodeCheckmark     = "\u2713"
-	greenCheckmark       = carriageReturn + greenColorEscapeANSI + unicodeCheckmark + resetColorEscapeANSI
-	unicodeHourglass     = "\u29D6"
-)
-
 const (
 	ProjectArgLength       = 1
 	ProjectAndAppArgLength = 2
@@ -138,7 +129,7 @@ func printURL(toolID string) (ok bool) {
 }
 
 func deployApp(toolID string) (ok bool) {
-	fmt.Print(unicodeHourglass + "  Deploying app......")
+	output.PrintTaskStarted("Deploying app......")
 
 	err := stopJobs(string(toolID))
 	if err != nil {
@@ -152,13 +143,13 @@ func deployApp(toolID string) (ok bool) {
 		return false
 	}
 
-	fmt.Println(greenCheckmark + "  Deploying app......Done")
+	output.PrintTaskDone("Deploying app......")
 
 	return true
 }
 
 func buildApp(buildID string, appPath string) (ok bool) {
-	fmt.Print(unicodeHourglass + "  Building app.......")
+	output.PrintTaskStarted("Building app.......")
 	if verbose {
 		// To allow nice printing of build messages from backend
 		fmt.Println()
@@ -170,7 +161,7 @@ func buildApp(buildID string, appPath string) (ok bool) {
 		return false
 	}
 
-	fmt.Println(greenCheckmark + "  Building app.......Done")
+	output.PrintTaskDone("Building app.......")
 
 	return true
 }
@@ -178,7 +169,7 @@ func buildApp(buildID string, appPath string) (ok bool) {
 func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 	defer os.Remove(zipFileName)
 
-	fmt.Print(unicodeHourglass + "  Uploading app......")
+	output.PrintTaskStarted("Uploading app......")
 
 	secrets := loadSecretsFromEnv(appDir)
 	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
@@ -198,14 +189,14 @@ func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 		return "", false
 	}
 
-	fmt.Println(greenCheckmark + "  Uploading app......Done")
+	output.PrintTaskDone("Uploading app......Done")
 
 	return buildID, true
 }
 
 func prepareApp(m *manifest.Manifest) (ok bool) {
 	if !verbose {
-		fmt.Print(unicodeHourglass + "  Preparing upload...")
+		output.PrintTaskStarted("Preparing upload...")
 	}
 
 	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
@@ -215,7 +206,7 @@ func prepareApp(m *manifest.Manifest) (ok bool) {
 		return false
 	}
 
-	fmt.Println(greenCheckmark + "  Preparing upload...Done")
+	output.PrintTaskDone("Preparing upload...")
 
 	return true
 }
