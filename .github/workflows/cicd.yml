@@ -168,7 +168,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cli-coverage
-          path: ./cli-coverage.txt
+          path: cli/cli-coverage.txt
 
   publish-cli-coverage:
     name: Publish CLI test coverage
