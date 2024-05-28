@@ -129,7 +129,7 @@ func printURL(toolID string) (ok bool) {
 }
 
 func deployApp(toolID string) (ok bool) {
-	output.PrintTaskStarted("Deploying app......")
+	task := output.StartTask("Deploying app")
 
 	err := stopJobs(string(toolID))
 	if err != nil {
@@ -143,13 +143,14 @@ func deployApp(toolID string) (ok bool) {
 		return false
 	}
 
-	output.PrintTaskDone("Deploying app......")
+	task.Done()
 
 	return true
 }
 
 func buildApp(buildID string, appPath string) (ok bool) {
-	output.PrintTaskStarted("Building app.......")
+	task := output.StartTask("Building app")
+
 	if verbose {
 		// To allow nice printing of build messages from backend
 		fmt.Println()
@@ -160,16 +161,14 @@ func buildApp(buildID string, appPath string) (ok bool) {
 		output.PrintErrorDetails("Error listening for build logs.", err)
 		return false
 	}
-
-	output.PrintTaskDone("Building app.......")
+	task.Done()
 
 	return true
 }
 
 func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 	defer os.Remove(zipFileName)
-
-	output.PrintTaskStarted("Uploading app......")
+	task := output.StartTask("Uploading app......")
 
 	secrets := loadSecretsFromEnv(appDir)
 	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
@@ -189,15 +188,13 @@ func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 		return "", false
 	}
 
-	output.PrintTaskDone("Uploading app......Done")
+	task.Done()
 
 	return buildID, true
 }
 
 func prepareApp(m *manifest.Manifest) (ok bool) {
-	if !verbose {
-		output.PrintTaskStarted("Preparing upload...")
-	}
+	task := output.StartTask("Preparing upload...")
 
 	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)
@@ -206,7 +203,7 @@ func prepareApp(m *manifest.Manifest) (ok bool) {
 		return false
 	}
 
-	output.PrintTaskDone("Preparing upload...")
+	task.Done()
 
 	return true
 }
