@@ -11,10 +11,10 @@ import (
 )
 
 func TestGetAppVersionUploadURL(t *testing.T) {
-	t.Run("get app version upload url returns expected output", func(t *testing.T) {
+	t.Run("returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := Service{client: c}
+		s := New(c, nil)
 
 		respBody := `
 			{
@@ -37,10 +37,10 @@ func TestGetAppVersionUploadURL(t *testing.T) {
 		}
 	})
 
-	t.Run("get app version upload url returns expected error", func(t *testing.T) {
+	t.Run("returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := Service{client: c}
+		s := New(c, nil)
 
 		respBody := `
 			{

@@ -32,7 +32,7 @@ func TestDeploy(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("given dir without numerous.toml it returns error", func(t *testing.T) {
+	t.Run("given dir without numerous.toml then it returns error", func(t *testing.T) {
 		dir := t.TempDir()
 
 		err := Deploy(context.TODO(), dir, "organization-slug", "app-name", nil)
@@ -40,13 +40,13 @@ func TestDeploy(t *testing.T) {
 		assert.EqualError(t, err, "open "+dir+"/numerous.toml: no such file or directory")
 	})
 
-	t.Run("given invalid slug it returns error", func(t *testing.T) {
+	t.Run("given invalid slug then it returns error", func(t *testing.T) {
 		err := Deploy(context.TODO(), ".", "Some Invalid Organization Slug", "app-name", nil)
 
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
-	t.Run("given invalid app name it returns error", func(t *testing.T) {
+	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		err := Deploy(context.TODO(), ".", "organization-slug", "Some Invalid App Name", nil)
 
 		assert.ErrorIs(t, err, ErrInvalidAppName)

@@ -11,10 +11,10 @@ import (
 )
 
 func TestCreateVersion(t *testing.T) {
-	t.Run("create app version returns expected output", func(t *testing.T) {
+	t.Run("returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := Service{client: c}
+		s := New(c, nil)
 
 		respBody := `
 			{
@@ -36,10 +36,10 @@ func TestCreateVersion(t *testing.T) {
 		assert.Equal(t, expected, output)
 	})
 
-	t.Run("create app version returns expected error", func(t *testing.T) {
+	t.Run("returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := Service{client: c}
+		s := New(c, nil)
 
 		respBody := `
 			{

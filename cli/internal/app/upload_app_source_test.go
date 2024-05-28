@@ -16,7 +16,7 @@ import (
 func TestUploadAppSource(t *testing.T) {
 	testError := errors.New("some test error")
 
-	t.Run("returns error on http client error", func(t *testing.T) {
+	t.Run("given http client error then it returns error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		var nilResp *http.Response
 		doer.On("Do", mock.Anything, mock.Anything).Return(nilResp, testError)
@@ -27,7 +27,7 @@ func TestUploadAppSource(t *testing.T) {
 		assert.ErrorIs(t, err, testError)
 	})
 
-	t.Run("returns error with non-OK status code", func(t *testing.T) {
+	t.Run("given non-OK http status then it returns error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		resp := http.Response{Status: "Not OK", StatusCode: http.StatusBadRequest}
 		doer.On("Do", mock.Anything, mock.Anything).Return(&resp, nil)
@@ -38,7 +38,7 @@ func TestUploadAppSource(t *testing.T) {
 		assert.ErrorIs(t, err, ErrAppSourceUpload)
 	})
 
-	t.Run("returns error with invalid upload URL", func(t *testing.T) {
+	t.Run("given invalid upload URL then it returns error", func(t *testing.T) {
 		s := Service{uploadDoer: &test.MockDoer{}}
 
 		err := s.UploadAppSource("://invalid-url", nil)
@@ -46,7 +46,7 @@ func TestUploadAppSource(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("returns no error, when request succeeds", func(t *testing.T) {
+	t.Run("given successful request then it returns no error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		resp := http.Response{Status: "OK", StatusCode: http.StatusOK}
 		doer.On("Do", mock.Anything, mock.Anything).Return(&resp, nil)
