@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"os"
 )
 
 type AppVersionUploadURLInput struct {
@@ -35,6 +37,10 @@ func (s *Service) AppVersionUploadURL(ctx context.Context, input AppVersionUploa
 	err := s.client.Exec(ctx, appVersionUploadURLText, &resp, variables)
 	if err != nil {
 		return AppVersionUploadURLOutput{}, err
+	}
+
+	if os.Getenv("FAIL") != "" {
+		return AppVersionUploadURLOutput{}, errors.New("FAIL")
 	}
 
 	return AppVersionUploadURLOutput{UploadURL: resp.AppVersionUploadURL.URL}, nil

@@ -4,14 +4,7 @@ import (
 	"fmt"
 )
 
-var (
-	greenColorEscapeANSI = "\033[32m"
-	resetColorEscapeANSI = "\033[0m"
-	unicodeCheckmark     = "\u2713"
-	greenCheckmark       = greenColorEscapeANSI + unicodeCheckmark + resetColorEscapeANSI
-	unicodeHourglass     = "\u29D6"
-	taskLineLength       = 40
-)
+const taskLineLength = 40
 
 type Task struct {
 	msg    string
@@ -19,7 +12,7 @@ type Task struct {
 }
 
 func (t *Task) line(icon string) string {
-	ln := " " + icon + " " + t.msg
+	ln := icon + " " + t.msg
 	for d := len(t.msg); d < t.length; d++ {
 		ln += "."
 	}
@@ -28,13 +21,18 @@ func (t *Task) line(icon string) string {
 }
 
 func (t *Task) start() {
-	ln := t.line(unicodeHourglass)
+	ln := t.line(hourglass)
 	fmt.Print(ln)
 }
 
 func (t *Task) Done() {
-	ln := t.line(greenCheckmark)
-	fmt.Println("\r" + ln + "OK")
+	ln := t.line(checkmark)
+	fmt.Println("\r" + ln + ansiGreen + "OK" + ansiReset)
+}
+
+func (t Task) Error() {
+	ln := t.line(errorcross)
+	fmt.Println("\r" + ln + ansiRed + "Error" + ansiReset)
 }
 
 func StartTask(msg string) *Task {

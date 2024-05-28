@@ -44,7 +44,9 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	task := output.StartTask("Loading app configuration")
 	manifest, err := manifest.LoadManifest(filepath.Join(dir, manifest.ManifestPath))
 	if err != nil {
+		task.Error()
 		output.PrintErrorAppNotInitialized()
+
 		return err
 	}
 	task.Done()
@@ -52,13 +54,16 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	task = output.StartTask("Registering new version")
 	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest)
 	if err != nil {
+		task.Error()
 		return err
 	}
 
 	appVersionInput := app.CreateAppVersionInput{AppID: appID}
 	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error creating app version remotely", err)
+
 		return err
 	}
 	task.Done()
@@ -67,14 +72,18 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	tarPath := path.Join(dir, ".tmp_app_archive.tar")
 	err = archive.TarCreate(dir, tarPath, manifest.Exclude)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error archiving app source", err)
+
 		return err
 	}
 	defer os.Remove(tarPath)
 
 	archive, err := os.Open(tarPath)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error archiving app source", err)
+
 		return err
 	}
 	task.Done()
@@ -83,13 +92,17 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	uploadURLInput := app.AppVersionUploadURLInput(appVersionOutput)
 	uploadURLOutput, err := apps.AppVersionUploadURL(ctx, uploadURLInput)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error creating app version remotely", err)
+
 		return err
 	}
 
 	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error uploading app source archive", err)
+
 		return err
 	}
 	task.Done()
@@ -98,6 +111,7 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	deployAppInput := app.DeployAppInput(appVersionOutput)
 	deployAppOutput, err := apps.DeployApp(ctx, deployAppInput)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error deploying app", err)
 	}
 
@@ -110,6 +124,7 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	}
 	err = apps.DeployEvents(ctx, input)
 	if err != nil {
+		task.Error()
 		output.PrintErrorDetails("Error receiving deploy logs", err)
 	} else {
 		task.Done()

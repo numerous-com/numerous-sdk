@@ -12,7 +12,7 @@ func PrintError(header, body string, args ...any) {
 		body += "\n"
 	}
 
-	f := "❌ " + header + "\n" + body
+	f := errorcross + " " + ansiRed + header + ansiReset + "\n" + ansiYellow + body + ansiReset
 	fmt.Printf(f, args...)
 }
 
@@ -29,5 +29,5 @@ func PrintUnknownError(err error) {
 
 func PrintErrorAppNotInitialized() {
 	PrintError("The current directory is not a numerous app",
-		"\nrun \"numerous init\" to initialize a numerous app in the current directory")
+		"Run \"numerous init\" to initialize a numerous app in the current directory.")
 }
