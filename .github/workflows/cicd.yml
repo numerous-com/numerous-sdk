@@ -38,17 +38,19 @@ jobs:
           cache: "pip"
       - run: pip install -e .[dev]
       - run: coverage run -m pytest -vv ./python/tests/
-      - run: coverage report | grep 'TOTAL' | awk '{print $4}' > sdk-coverage.txt
+      - run: coverage report | grep 'TOTAL' | awk '{print $4}' > ./sdk-coverage.txt
       - uses: actions/upload-artifact@v4
         with:
           name: sdk-coverage
-          path: sdk-coverage.txt
+          path: ./sdk-coverage.txt
 
   publish-sdk-coverage:
     name: Publish SDK test coverage
     timeout-minutes: 5
     runs-on: ubuntu-latest
     environment: main
+    needs:
+      - test-sdk
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -166,10 +168,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cli-coverage
-          path: cli-coverage.txt
+          path: ./cli-coverage.txt
 
   publish-cli-coverage:
-    name: Publish Coverage
+    name: Publish CLI test coverage
     runs-on: ubuntu-latest
     environment: main
     needs:
