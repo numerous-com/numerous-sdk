@@ -22,7 +22,7 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	service := app.New(gql.NewClient(), http.DefaultClient)
+	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 	err := Deploy(cmd.Context(), ".", slug, appName, service)
 
 	if err != nil {

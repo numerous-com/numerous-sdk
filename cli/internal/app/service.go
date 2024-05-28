@@ -10,14 +10,21 @@ type UploadDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-type Service struct {
-	client     *graphql.Client
-	uploadDoer UploadDoer
+type SubscriptionClient interface {
+	Subscribe(v interface{}, variables map[string]interface{}, handler func(message []byte, err error) error, options ...graphql.Option) (string, error)
+	Run() error
 }
 
-func New(client *graphql.Client, uploadDoer UploadDoer) *Service {
+type Service struct {
+	client       *graphql.Client
+	subscription SubscriptionClient
+	uploadDoer   UploadDoer
+}
+
+func New(client *graphql.Client, subscription SubscriptionClient, uploadDoer UploadDoer) *Service {
 	return &Service{
-		client:     client,
-		uploadDoer: uploadDoer,
+		client:       client,
+		subscription: subscription,
+		uploadDoer:   uploadDoer,
 	}
 }

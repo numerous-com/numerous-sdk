@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vektah/gqlparser/v2"
@@ -23,15 +24,34 @@ import (
 
 const schemaRelative = "/shared/schema.gql"
 
-func assertQuery(t *testing.T, r *http.Request) {
+func assertGraphQLRequest(t *testing.T, r *http.Request) {
+	t.Helper()
+
+	query, err := readQuery(r)
+	require.NoError(t, err)
+
+	assertValidate(t, query)
+}
+
+func assertValidate(t *testing.T, unparsed unparsedGraphqlQuery) {
 	t.Helper()
 
 	schema := loadSchema(t)
-	query, err := readQuery(r)
-	require.NoError(t, err)
-	doc := parseQuery(t, string(query.query))
-	query.updateDoc(t, &doc)
+	doc := parseJSONQuery(t, string(unparsed.query))
+	unparsed.updateDoc(t, &doc)
 	validateQuery(t, schema, doc)
+}
+
+func assertSubscription(t *testing.T, v any, variables map[string]any) {
+	t.Helper()
+
+	sub, _, err := graphql.ConstructSubscription(v, variables)
+	assert.NoError(t, err)
+
+	parsed := parsedGraphQLQuery{Query: sub, Variables: variables}
+	schema := loadSchema(t)
+	parsed.doc = parseQuery(t, string(sub))
+	validateQuery(t, schema, parsed)
 }
 
 func loadSchema(t *testing.T) *ast.Schema {
@@ -82,7 +102,7 @@ type unparsedGraphqlQuery struct {
 	fileContents  map[string][]byte
 }
 
-func (q unparsedGraphqlQuery) updateDoc(t *testing.T, doc *parsedGraphQLQuery) {
+func (q unparsedGraphqlQuery) updateDoc(t *testing.T, parsed *parsedGraphQLQuery) {
 	t.Helper()
 
 	for filePartName, variablePath := range q.fileVariables {
@@ -91,7 +111,7 @@ func (q unparsedGraphqlQuery) updateDoc(t *testing.T, doc *parsedGraphQLQuery) {
 		varIdx := slices.Index(pathParts, "variables")
 		require.Equal(t, 0, varIdx)
 		// assume no reference to nested file variables
-		doc.Variables[pathParts[1]] = q.fileContents[filePartName]
+		parsed.Variables[pathParts[1]] = q.fileContents[filePartName]
 	}
 }
 
@@ -184,7 +204,7 @@ func validateQuery(t *testing.T, schema *ast.Schema, query parsedGraphQLQuery) {
 	assert.NoError(t, err, "invalid variable values")
 }
 
-func parseQuery(t *testing.T, query string) parsedGraphQLQuery {
+func parseJSONQuery(t *testing.T, query string) parsedGraphQLQuery {
 	t.Helper()
 
 	var parsedQuery parsedGraphQLQuery
@@ -192,13 +212,20 @@ func parseQuery(t *testing.T, query string) parsedGraphQLQuery {
 	err := json.NewDecoder(strings.NewReader(query)).Decode(&parsedQuery)
 	require.NoError(t, err, "error decoding query")
 
-	doc, err := parser.ParseQuery(&ast.Source{Input: parsedQuery.Query})
+	doc := parseQuery(t, parsedQuery.Query)
+	parsedQuery.doc = doc
+
+	return parsedQuery
+}
+
+func parseQuery(t *testing.T, query string) *ast.QueryDocument {
+	t.Helper()
+
+	doc, err := parser.ParseQuery(&ast.Source{Input: query})
 	if err != nil {
 		_, ok := err.(*gqlerror.Error)
 		require.False(t, ok, "error parsing query")
 	}
 
-	parsedQuery.doc = doc
-
-	return parsedQuery
+	return doc
 }

@@ -23,7 +23,7 @@ func (d *validateDoer) Do(r *http.Request) (*http.Response, error) {
 
 	data, err := io.ReadAll(resp.Body)
 	resp.Body = io.NopCloser(bytes.NewReader(data))
-	assertQuery(d.t, r)
+	assertGraphQLRequest(d.t, r)
 
 	// recreate body
 	resp.Body = io.NopCloser(bytes.NewReader(data))
@@ -57,4 +57,38 @@ func JSONResponse(json string) *http.Response {
 		StatusCode: http.StatusOK,
 		Body:       io.NopCloser(bytes.NewReader([]byte(json))),
 	}
+}
+
+type validatingSubscriptionClient struct {
+	t       *testing.T
+	handler func(message []byte, err error) error
+	ch      chan SubMessage
+}
+
+func (c *validatingSubscriptionClient) Run() error {
+	go func() {
+		for ev := range c.ch {
+			c.handler([]byte(ev.Msg), ev.Err) //nolint:errcheck
+		}
+	}()
+
+	return nil
+}
+
+func (c *validatingSubscriptionClient) Subscribe(v interface{}, variables map[string]interface{}, handler func(message []byte, err error) error, options ...graphql.Option) (string, error) {
+	assertSubscription(c.t, v, variables)
+	c.handler = handler
+
+	return "subID", nil
+}
+
+type SubMessage struct {
+	Msg string
+	Err error
+}
+
+func CreateTestSubscriptionClient(t *testing.T, ch chan SubMessage) *validatingSubscriptionClient {
+	t.Helper()
+
+	return &validatingSubscriptionClient{t, nil, ch}
 }

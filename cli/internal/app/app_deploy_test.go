@@ -14,7 +14,7 @@ func TestDeployApp(t *testing.T) {
 	t.Run("returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil)
+		s := New(c, nil, nil)
 
 		respBody := `
 			{
@@ -43,7 +43,7 @@ func TestDeployApp(t *testing.T) {
 	t.Run("returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil)
+		s := New(c, nil, nil)
 
 		respBody := `
 			{

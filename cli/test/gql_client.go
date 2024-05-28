@@ -28,7 +28,7 @@ func CreateTestGqlClient(t *testing.T, response string) *gqlclient.Client {
 			Response *http.Response
 			Error    error
 		} {
-			assertQuery(t, r)
+			assertGraphQLRequest(t, r)
 			return nil
 		},
 	}
