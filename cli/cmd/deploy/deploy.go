@@ -1,58 +1,96 @@
 package deploy
 
 import (
-	"net/http"
+	"context"
+	"errors"
+	"io"
 	"os"
+	"path"
+	"path/filepath"
 
-	"numerous/cli/app"
+	"numerous/cli/cmd/output"
 	"numerous/cli/cmd/validate"
-	appinternal "numerous/cli/internal/app"
-	"numerous/cli/internal/gql"
-
-	"github.com/spf13/cobra"
+	"numerous/cli/internal/app"
+	"numerous/cli/internal/archive"
+	"numerous/cli/manifest"
 )
 
-var DeployCmd = &cobra.Command{
-	Use:   "deploy",
-	Run:   deploy,
-	Short: "Deploy an app to an organization.",
+type AppService interface {
+	AppVersionUploadURL(ctx context.Context, input app.AppVersionUploadURLInput) (app.AppVersionUploadURLOutput, error)
+	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
+	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
+	UploadAppSource(uploadURL string, archive io.Reader) error
 }
 
 var (
-	slug    string
-	appName string
+	ErrInvalidSlug    = errors.New("invalid organization slug")
+	ErrInvalidAppName = errors.New("invalid app name")
 )
 
-func deploy(cmd *cobra.Command, args []string) {
+func Deploy(ctx context.Context, dir string, slug string, appName string, apps AppService) error {
 	if !validate.IsValidIdentifier(slug) {
-		println("Error: Invalid organization '" + slug + "'. Must contain only lower-case alphanumerical characters and dashes.")
-		os.Exit(1)
+		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+		return ErrInvalidSlug
 	}
 
 	if !validate.IsValidIdentifier(appName) {
-		println("Error: Invalid app name '" + appName + "'. Must contain only lower-case alphanumerical characters and dashes.")
-		os.Exit(1)
+		output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+		return ErrInvalidAppName
 	}
 
-	s := appinternal.New(gql.NewClient(), http.DefaultClient)
-	err := app.Deploy(cmd.Context(), ".", slug, appName, s)
+	manifest, err := manifest.LoadManifest(filepath.Join(dir, manifest.ManifestPath))
 	if err != nil {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
-}
-
-func init() {
-	flags := DeployCmd.Flags()
-	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
-
-	if err := DeployCmd.MarkFlagRequired("organization"); err != nil {
-		panic(err.Error())
+		output.PrintErrorAppNotInitialized()
+		return err
 	}
 
-	if err := DeployCmd.MarkFlagRequired("name"); err != nil {
-		panic(err.Error())
+	appInput := app.CreateAppInput{
+		OrganizationSlug: slug,
+		Name:             appName,
+		DisplayName:      manifest.Name,
+		Description:      manifest.Description,
 	}
+	appOutput, err := apps.Create(ctx, appInput)
+	if err != nil {
+		output.PrintErrorDetails("Error creating app remotely", err)
+		return err
+	}
+
+	appVersionInput := app.CreateAppVersionInput(appOutput)
+	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
+	if err != nil {
+		output.PrintErrorDetails("Error creating app version remotely", err)
+		return err
+	}
+
+	uploadURLInput := app.AppVersionUploadURLInput(appVersionOutput)
+	uploadURLOutput, err := apps.AppVersionUploadURL(ctx, uploadURLInput)
+	if err != nil {
+		output.PrintErrorDetails("Error creating app version remotely", err)
+		return err
+	}
+
+	tarPath := path.Join(dir, ".tmp_app_archive.tar")
+	err = archive.TarCreate(dir, tarPath, manifest.Exclude)
+	if err != nil {
+		output.PrintErrorDetails("Error archiving app source", err)
+		return err
+	}
+	defer os.Remove(tarPath)
+
+	archive, err := os.Open(tarPath)
+	if err != nil {
+		output.PrintErrorDetails("Error archiving app source", err)
+		return err
+	}
+
+	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
+	if err != nil {
+		output.PrintErrorDetails("Error uploading app source archive", err)
+		return err
+	}
+
+	// TODO: actually execute app deploy mutation and listen to deployment logs
+
+	return nil
 }
