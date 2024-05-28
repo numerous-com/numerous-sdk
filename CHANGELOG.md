@@ -2,6 +2,51 @@
 
 
 
+## v0.3.2 (2024-05-28)
+
+### Build
+
+* build(deps): bump golang.org/x/net from 0.22.0 to 0.23.0 in /cli (#3)
+
+Bumps [golang.org/x/net](https://github.com/golang/net) from 0.22.0 to 0.23.0.
+- [Commits](https://github.com/golang/net/compare/v0.22.0...v0.23.0)
+
+---
+updated-dependencies:
+- dependency-name: golang.org/x/net
+  dependency-type: indirect
+...
+
+Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
+Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt; ([`c2472bf`](https://github.com/numerous-com/numerous-sdk/commit/c2472bf3f55000150f7e9f546607bde8ca991579))
+
+* build(deps): bump github.com/lestrrat-go/jwx in /cli (#1)
+
+Bumps [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx) from 1.2.28 to 1.2.29.
+- [Release notes](https://github.com/lestrrat-go/jwx/releases)
+- [Changelog](https://github.com/lestrrat-go/jwx/blob/v1.2.29/Changes)
+- [Commits](https://github.com/lestrrat-go/jwx/compare/v1.2.28...v1.2.29)
+
+---
+updated-dependencies:
+- dependency-name: github.com/lestrrat-go/jwx
+  dependency-type: direct:production
+...
+
+Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
+Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt; ([`6b9c01a`](https://github.com/numerous-com/numerous-sdk/commit/6b9c01a21fc857c66e13143cd9def4b685dc643e))
+
+### Documentation
+
+* docs: typo and phrasing in CONTRIBUTING.md ([`079c661`](https://github.com/numerous-com/numerous-sdk/commit/079c661a09a367253f20a55d9a595aadaa0ca30b))
+
+* docs: add CONTRIBUTING.md ([`e71c27b`](https://github.com/numerous-com/numerous-sdk/commit/e71c27b0dd69211eb4e916793fd09f4a4d26e755))
+
+### Fix
+
+* fix(cli): bug causing logs to not be correctly read ([`e66e051`](https://github.com/numerous-com/numerous-sdk/commit/e66e051567ecc4ddffd96af4aee1798130869426))
+
+
 ## v0.3.1 (2024-05-08)
 
 ### Fix
