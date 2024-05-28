@@ -5,6 +5,8 @@ on:
     workflows: [Validate]
     types:
       - completed
+    branches:
+      - main
   
 permissions:
   id-token: write
