@@ -45,7 +45,7 @@ func deploy(cmd *cobra.Command, args []string) {
 
 func init() {
 	flags := DeployCmd.Flags()
-	flags.StringVarP(&slug, "organization", "o", "", "Find the organization slug in the browser URL, https://numerous.com/app/organization/<ORGANIZATION_SLUG>")
+	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier. List available organizations with 'numerous organization list'.")
 	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
 
 	if err := DeployCmd.MarkFlagRequired("organization"); err != nil {
