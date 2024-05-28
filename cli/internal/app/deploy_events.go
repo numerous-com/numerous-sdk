@@ -25,7 +25,7 @@ type DeployEventMessage struct {
 }
 
 type DeployEventsSubscription struct {
-	AppDeployLogs DeployEvent `graphql:"appDeployLogs(appDeploymentID: $deployVersionID)"`
+	AppDeployEvents DeployEvent `graphql:"appDeployEvents(appDeploymentVersionID: $deployVersionID)"`
 }
 
 type GraphQLID string
@@ -52,7 +52,7 @@ func (s *Service) DeployEvents(ctx context.Context, input DeployEventsInput) err
 			return err
 		}
 
-		ok := input.Handler(DeployEvent{Message: value.AppDeployLogs.Message})
+		ok := input.Handler(DeployEvent{Message: value.AppDeployEvents.Message})
 		if !ok {
 			return graphql.ErrSubscriptionStopped
 		}

@@ -87,7 +87,7 @@ func printVerbose(out io.Writer, entry LogEntry, timestamps, verbose bool) {
 
 func getClient() SubscriptionClient {
 	var previousError error
-	client := gql.GetSubscriptionClient()
+	client := gql.NewSubscriptionClient()
 	client = client.OnError(func(sc *graphql.SubscriptionClient, err error) error {
 		if previousError != nil {
 			output.PrintError(

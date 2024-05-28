@@ -23,7 +23,8 @@ func TestDeploy(t *testing.T) {
 	const appVersionID = "app-version-id"
 	const uploadURL = "https://upload/url"
 	const deployVersionID = "deploy-version-id"
-	t.Run("happy path", func(t *testing.T) {
+
+	t.Run("happy path can run", func(t *testing.T) {
 		dir := t.TempDir()
 		copyTo(t, "../../testdata/streamlit_app", dir)
 
@@ -33,6 +34,7 @@ func TestDeploy(t *testing.T) {
 		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
 		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
 		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
+		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
 
 		err := Deploy(context.TODO(), dir, slug, appName, apps)
 

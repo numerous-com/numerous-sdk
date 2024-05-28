@@ -24,9 +24,9 @@ func TestDeployEvents(t *testing.T) {
 			DeploymentVersionID: "some-id",
 		}
 		err := s.DeployEvents(context.TODO(), input)
-		ch <- test.SubMessage{Msg: `{"appDeployLogs": {"message": "message 1"}}`}
-		ch <- test.SubMessage{Msg: `{"appDeployLogs": {"message": "message 2"}}`}
-		ch <- test.SubMessage{Msg: `{"appDeployLogs": {"message": "message 3"}}`}
+		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 1"}}`}
+		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 2"}}`}
+		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 3"}}`}
 		close(ch)
 
 		expected := []DeployEvent{

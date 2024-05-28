@@ -6,7 +6,7 @@ import (
 	"github.com/hasura/go-graphql-client"
 )
 
-func GetSubscriptionClient() *graphql.SubscriptionClient {
+func NewSubscriptionClient() *graphql.SubscriptionClient {
 	client := graphql.NewSubscriptionClient(wsURL)
 
 	accessToken := getAccessToken()

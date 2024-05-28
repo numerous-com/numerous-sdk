@@ -21,6 +21,7 @@ type AppService interface {
 	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
 	UploadAppSource(uploadURL string, archive io.Reader) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
+	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
 }
 
 var (
@@ -92,11 +93,22 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	}
 
 	deployAppInput := app.DeployAppInput(appVersionOutput)
-	_, err = apps.DeployApp(ctx, deployAppInput)
+	deployAppOutput, err := apps.DeployApp(ctx, deployAppInput)
 	if err != nil {
 		output.PrintErrorDetails("Error deploying app", err)
 	}
 
-	// TODO: show deploy progress
+	input := app.DeployEventsInput{
+		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
+		Handler: func(de app.DeployEvent) bool {
+			println("DEPLOY:", de.Message)
+			return true
+		},
+	}
+	err = apps.DeployEvents(ctx, input)
+	if err != nil {
+		output.PrintErrorDetails("Error receiving deploy logs", err)
+	}
+
 	return nil
 }
