@@ -1,11 +1,5 @@
 name: cicd
 
-env:
-  PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  TWINE_USERNAME: __token__
-  TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-
 on:
   push:
     paths:
@@ -31,6 +25,7 @@ jobs:
       - run: pip install .[dev]
       - run: python -m ruff check ./python
       - run: python -m mypy --strict ./python
+
   test-sdk:
     name: Unit test python SDK
     timeout-minutes: 5
@@ -43,10 +38,24 @@ jobs:
           cache: "pip"
       - run: pip install -e .[dev]
       - run: coverage run -m pytest -vv ./python/tests/
-      - run: coverage report | grep 'TOTAL' | awk '{print "COVERAGE_PCT=" $4}' >> $GITHUB_ENV
-      - name: Publish SDK test coverage
-        if: github.ref == 'refs/heads/main'
-        uses: schneegans/dynamic-badges-action@v1.7.0
+      - run: coverage report | grep 'TOTAL' | awk '{print $4}' > sdk-coverage.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-coverage
+          path: sdk-coverage.txt
+
+  publish-sdk-coverage:
+    name: Publish SDK test coverage
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdk-coverage
+          path: sdk-coverage.txt
+      - run: awk '{print "COVERAGE_PCT=" $1}' sdk-coverage.txt >> $GITHUB_ENV
+      - uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_ACCESS_TOKEN }}
           gistID: a9b9bfdfa0620696fba9e76223790f53
@@ -56,6 +65,7 @@ jobs:
           minColorRange: 50
           maxColorRange: 80
           valColorRange: ${{ env.COVERAGE_PCT }}
+
   build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
@@ -79,11 +89,12 @@ jobs:
         with:
           name: package
           path: ./dist/*
+
   test-cli-windows:
     name: Test CLI on windows
+    runs-on: windows-latest
     needs:
       - build
-    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -102,6 +113,7 @@ jobs:
             pip install dist/$file
           }
       - run: numerous --help
+
   lint-cli:
     name: Lint CLI
     runs-on: ubuntu-latest
@@ -134,11 +146,10 @@ jobs:
             echo "$unformatted_files"
             exit 1
           fi
+
   test-cli:
     name: Unit test CLI
     runs-on: ubuntu-latest
-    if:
-
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
@@ -151,10 +162,25 @@ jobs:
         run: go test -coverprofile=c.out ./...
       - name: Extract Test Coverage Percentage
         working-directory: cli
-        run: go tool cover -func c.out | fgrep total | awk '{print "COVERAGE_PCT=" $3}' >> $GITHUB_ENV
-      - name: Publish Test Coverage
-        if: github.ref == 'refs/heads/main'
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        run: go tool cover -func c.out | fgrep total | awk '{print $3}' > ./cli-coverage.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-coverage
+          path: cli-coverage.txt
+
+  publish-cli-coverage:
+    name: Publish Coverage
+    runs-on: ubuntu-latest
+    environment: main
+    needs:
+      - test-cli
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-coverage
+          path: cli-coverage.txt
+      - run: awk '{print "COVERAGE_PCT=" $1}' cli-coverage.txt >> $GITHUB_ENV
+      - uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_ACCESS_TOKEN }}
           gistID: a9b9bfdfa0620696fba9e76223790f53
@@ -164,11 +190,12 @@ jobs:
           minColorRange: 50
           maxColorRange: 80
           valColorRange: ${{ env.COVERAGE_PCT }}
+
   release:
-    if: github.ref == 'refs/heads/main'
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
     name: Release
+    runs-on: ubuntu-latest
+    environment: main
+    timeout-minutes: 15
     needs: 
       - lint-cli
       - test-cli
@@ -180,6 +207,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.9"
@@ -189,11 +217,13 @@ jobs:
         with:
           name: package
           path: ./dist
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
-          cache: false
-      - run: pip install python-semantic-release==9.6.0 twine==5.0.0
-      - run: semantic-release version --commit --tag --push
-      - run: semantic-release publish
-      - run: twine upload --skip-existing --non-interactive dist/*
+      - run: |
+          pip install python-semantic-release==9.6.0 twine==5.0.0
+          semantic-release version --commit --tag --push
+          semantic-release publish
+          twine upload --skip-existing --non-interactive dist/*
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
