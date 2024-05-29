@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -61,7 +60,7 @@ func confirmFolderSurvey(folderPath string, in terminal.FileReader) (bool, error
 }
 
 func absPath(p string) (string, error) {
-	if path.IsAbs(p) {
+	if filepath.IsAbs(p) {
 		return p, nil
 	}
 
@@ -70,5 +69,5 @@ func absPath(p string) (string, error) {
 		return "", err
 	}
 
-	return filepath.Clean(path.Join(wd, p)), nil
+	return filepath.Join(wd, p), nil
 }

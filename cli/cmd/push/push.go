@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -274,7 +273,7 @@ func pushBuild(zipFilePath string, appID string, secrets map[string]string) (str
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(path.Join(appDir, initialize.EnvFileName))
+	env, _ := dotenv.Load(filepath.Join(appDir, initialize.EnvFileName))
 	return env
 }
 

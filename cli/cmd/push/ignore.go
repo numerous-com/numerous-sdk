@@ -2,7 +2,6 @@ package push
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -66,7 +65,7 @@ func Match(pattern, value string) bool {
 
 	// A leading slash matches the beginning of the pathname. For example, "/*.c" matches "cat-file.c" but not "mozilla-sha1/sha1.c".
 
-	matched, err := path.Match(pattern, value)
+	matched, err := filepath.Match(pattern, value)
 	if err != nil {
 		// maybe log?
 		return false
