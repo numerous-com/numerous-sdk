@@ -2,6 +2,16 @@
 
 
 
+## v0.3.3 (2024-05-29)
+
+### Fix
+
+* fix(cli): output formatting improvements
+* Clean paths to display better on Windows.
+* Format paths in output with string formatting, to avoid escaping.
+* Remove an errant quote in message. ([`3a2bc81`](https://github.com/numerous-com/numerous-sdk/commit/3a2bc81f0f310caef383e6cf1dd1e2df711d37d9))
+
+
 ## v0.3.2 (2024-05-28)
 
 ### Build
