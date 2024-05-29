@@ -52,7 +52,7 @@ func runInit(cmd *cobra.Command, args []string) {
 
 	if exist, _ := tool.AppIDExistsInCurrentDir(projectFolderPath); exist {
 		output.PrintError(
-			"An app is already initialized in %q",
+			"An app is already initialized in \"%s\"",
 			"💡 You can initialize an app in another folder by specifying a\n"+
 				"   path in the command, like below:\n\n"+
 				"numerous init ./my-app-folder\n\n",

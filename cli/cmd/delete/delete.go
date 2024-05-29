@@ -40,7 +40,7 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 	if _, err := app.Query(appID, client); err != nil {
 		output.PrintError(
 			"Sorry, we could not find the app in our database.",
-			"Please, make sure that the App ID in the %q file is correct and try again.",
+			"Please, make sure that the App ID in the \"%s\" file is correct and try again.",
 			tool.AppIDFileName,
 		)
 

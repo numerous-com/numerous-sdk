@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -28,7 +29,7 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 	var confirm bool
 
 	prompt := &survey.Confirm{
-		Message: fmt.Sprintf("Create new folder %q? (default: yes)", folderPath),
+		Message: fmt.Sprintf("Create new folder '%s'? (default: yes)", folderPath),
 		Default: true,
 	}
 
@@ -49,7 +50,7 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 func confirmFolderSurvey(folderPath string, in terminal.FileReader) (bool, error) {
 	var confirm bool
 
-	msg := fmt.Sprintf("Use the existing folder %q for your app? (default: yes)", folderPath)
+	msg := fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", folderPath)
 	prompt := &survey.Confirm{Message: msg, Default: true}
 	err := survey.AskOne(prompt, &confirm, func(options *survey.AskOptions) error { options.Stdio.In = in; return nil })
 	if err != nil {
@@ -69,5 +70,5 @@ func absPath(p string) (string, error) {
 		return "", err
 	}
 
-	return path.Join(wd, p), nil
+	return filepath.Clean(path.Join(wd, p)), nil
 }
