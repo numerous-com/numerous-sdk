@@ -2,6 +2,17 @@
 
 
 
+## v0.3.4 (2024-05-29)
+
+### Fix
+
+* fix(cli): `init` prompt for using existing folder
+
+Due to using OS unaware `path` library, absolute paths were not
+correctly identified, causing a strange doubled path being printed on
+Windows. ([`db8df4e`](https://github.com/numerous-com/numerous-sdk/commit/db8df4e013698cf63dc0a513db32a202c31a8154))
+
+
 ## v0.3.3 (2024-05-29)
 
 ### Fix
