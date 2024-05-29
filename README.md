@@ -18,7 +18,8 @@ Badges
 ------
 
 [![pypi badge](https://img.shields.io/pypi/v/numerous)](https://pypi.python.org/pypi/numerous)
-[![CICD badge](https://github.com/numerous-com/numerous-sdk/actions/workflows/cicd.yml/badge.svg)](https://github.com/numerous-com/numerous-sdk/actions/workflows/cicd.yml) 
+[![Validate workflow badge](https://github.com/numerous-com/numerous-sdk/actions/workflows/validate.yml/badge.svg)](https://github.com/numerous-com/numerous-sdk/actions/workflows/validate.yml) 
+[![Release workflow badge](https://github.com/numerous-com/numerous-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/numerous-com/numerous-sdk/actions/workflows/release.yml) 
 ![cli coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/cli-coverage.json)
 ![sdk coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/sdk-coverage.json)
 
