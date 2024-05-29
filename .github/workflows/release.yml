@@ -24,7 +24,6 @@ jobs:
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: sdk-coverage
-          path: sdk-coverage.txt
       - run: awk '{print "COVERAGE_PCT=" $1}' sdk-coverage.txt >> $GITHUB_ENV
       - uses: schneegans/dynamic-badges-action@v1.7.0
         with:
@@ -47,7 +46,6 @@ jobs:
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: cli-coverage
-          path: cli-coverage.txt
       - run: awk '{print "COVERAGE_PCT=" $1}' cli-coverage.txt >> $GITHUB_ENV
       - uses: schneegans/dynamic-badges-action@v1.7.0
         with:
