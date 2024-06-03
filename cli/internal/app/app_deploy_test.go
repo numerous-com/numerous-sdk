@@ -30,6 +30,7 @@ func TestDeployApp(t *testing.T) {
 
 		input := DeployAppInput{
 			AppVersionID: "some-app-version-id",
+			Secrets:      map[string]string{"SECRET1": "some secret value"},
 		}
 		output, err := s.DeployApp(context.TODO(), input)
 

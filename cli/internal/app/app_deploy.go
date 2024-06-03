@@ -1,9 +1,14 @@
 package app
 
-import "context"
+import (
+	"context"
+
+	"numerous/cli/internal/gql/secret"
+)
 
 type DeployAppInput struct {
 	AppVersionID string
+	Secrets      map[string]string
 }
 
 type DeployAppOutput struct {
@@ -11,8 +16,8 @@ type DeployAppOutput struct {
 }
 
 const appDeployText = `
-mutation AppDeploy($appVersionID: ID!) {
-	appDeploy(appVersionID: $appVersionID) {
+mutation AppDeploy($appVersionID: ID!, $secrets: [AppSecret!]) {
+	appDeploy(appVersionID: $appVersionID, input: {secrets: $secrets}) {
 		id
 	}
 }
@@ -26,7 +31,8 @@ type appDeployResponse struct {
 
 func (s *Service) DeployApp(ctx context.Context, input DeployAppInput) (DeployAppOutput, error) {
 	var resp appDeployResponse
-	variables := map[string]any{"appVersionID": input.AppVersionID}
+	convertedSecrets := secret.AppSecretsFromMap(input.Secrets)
+	variables := map[string]any{"appVersionID": input.AppVersionID, "secrets": convertedSecrets}
 
 	err := s.client.Exec(ctx, appDeployText, &resp, variables)
 	if err != nil {

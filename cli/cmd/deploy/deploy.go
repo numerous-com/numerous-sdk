@@ -8,8 +8,10 @@ import (
 	"path"
 	"path/filepath"
 
+	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
 	"numerous/cli/cmd/validate"
+	"numerous/cli/dotenv"
 	"numerous/cli/internal/app"
 	"numerous/cli/internal/archive"
 	"numerous/cli/manifest"
@@ -49,6 +51,8 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 
 		return err
 	}
+
+	secrets := loadSecretsFromEnv(dir)
 	task.Done()
 
 	task = output.StartTask("Registering new version")
@@ -108,7 +112,7 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	task.Done()
 
 	task = output.StartTask("Deploying app")
-	deployAppInput := app.DeployAppInput(appVersionOutput)
+	deployAppInput := app.DeployAppInput{AppVersionID: appVersionOutput.AppVersionID, Secrets: secrets}
 	deployAppOutput, err := apps.DeployApp(ctx, deployAppInput)
 	if err != nil {
 		task.Error()
@@ -160,4 +164,9 @@ func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName 
 		output.PrintErrorDetails("Error reading remote app", err)
 		return "", err
 	}
+}
+
+func loadSecretsFromEnv(appDir string) map[string]string {
+	env, _ := dotenv.Load(path.Join(appDir, initialize.EnvFileName))
+	return env
 }
