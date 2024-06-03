@@ -136,7 +136,7 @@ func setPython(a *tool.Tool) {
 
 func printSuccess(a app.App) {
 	fmt.Printf(`
-The app has been initialized! 🎉"
+The app has been initialized! 🎉
 
 The information you entered is now stored in "numerous.toml".
 The App ID %q is stored in %q and is used to identify the app in commands which manage it.
