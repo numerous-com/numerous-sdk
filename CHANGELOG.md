@@ -2,6 +2,17 @@
 
 
 
+## v0.3.5 (2024-06-03)
+
+### Documentation
+
+* docs: fix workflow badges in README.md ([`d186c8a`](https://github.com/numerous-com/numerous-sdk/commit/d186c8a9cf9af94e075d6bde3b114ff86fb371d5))
+
+### Fix
+
+* fix(cli): remove errant quotation mark ([`449e564`](https://github.com/numerous-com/numerous-sdk/commit/449e564ddde3f66a8de8c6e2875fe39732988d2c))
+
+
 ## v0.3.4 (2024-05-29)
 
 ### Fix
