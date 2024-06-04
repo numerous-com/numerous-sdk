@@ -2,6 +2,13 @@
 
 
 
+## v0.3.6 (2024-06-04)
+
+### Fix
+
+* fix(cli): bug with authorization header only being added on first request ([`7a782b1`](https://github.com/numerous-com/numerous-sdk/commit/7a782b1b14f3f81fc1bb90abe8d94e84197663e4))
+
+
 ## v0.3.5 (2024-06-03)
 
 ### Documentation
