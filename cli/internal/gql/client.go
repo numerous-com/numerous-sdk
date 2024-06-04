@@ -2,7 +2,6 @@ package gql
 
 import (
 	"net/http"
-	"net/url"
 	"sync"
 
 	"numerous/cli/auth"
@@ -15,20 +14,31 @@ var (
 	once   sync.Once
 )
 
+var _ http.RoundTripper = &AuthenticatingRoundTripper{}
+
+type AuthenticatingRoundTripper struct {
+	proxied http.RoundTripper
+	user    *auth.User
+}
+
+// RoundTrip implements http.RoundTripper.
+func (a *AuthenticatingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	if a.user != nil {
+		r.Header.Set("Authorization", "Bearer "+a.user.AccessToken)
+	}
+
+	return a.proxied.RoundTrip(r)
+}
+
 func initClient() {
 	var httpClient *http.Client
 
-	if user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring(); user != nil {
-		httpClient = &http.Client{
-			Transport: &http.Transport{
-				Proxy: func(r *http.Request) (*url.URL, error) {
-					r.Header.Set("Authorization", "Bearer "+user.AccessToken)
-					return nil, nil
-				},
-			},
-		}
-	} else {
-		httpClient = http.DefaultClient
+	user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+	httpClient = &http.Client{
+		Transport: &AuthenticatingRoundTripper{
+			proxied: http.DefaultTransport,
+			user:    user,
+		},
 	}
 
 	client = gqlclient.New(httpURL, httpClient)
