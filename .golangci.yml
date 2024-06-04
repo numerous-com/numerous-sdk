@@ -12,7 +12,7 @@ linters-settings:
 linters:
   enable:
     - gocritic
-    - gomnd
+    - mnd
     - misspell
     - nlreturn
     - perfsprint

@@ -102,7 +102,7 @@ jobs:
       - name: Lint (golangci-lint)
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.56.2
+          version: v1.59.0
           working-directory: cli
           args: --config=../.golangci.yml --verbose
       - name: Install gofumpt
