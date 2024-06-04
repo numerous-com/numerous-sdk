@@ -81,7 +81,7 @@ func printVerbose(out io.Writer, entry LogEntry, timestamps, verbose bool) {
 	}
 
 	if _, err := out.Write([]byte(logMsg)); err != nil {
-		slog.Error("Error writing message", err)
+		slog.Error("Error writing message", slog.String("error", err.Error()))
 	}
 }
 

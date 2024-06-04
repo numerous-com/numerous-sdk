@@ -31,8 +31,8 @@ func parse(content []byte) map[string]string {
 			envLine = envLine[:commentIdx]
 		}
 
-		keyvalue := strings.SplitN(envLine, "=", 2) // nolint: gomnd
-		if len(keyvalue) != 2 {                     // nolint: gomnd
+		keyvalue := strings.SplitN(envLine, "=", 2) // nolint: mnd
+		if len(keyvalue) != 2 {                     // nolint: mnd
 			continue
 		}
 
