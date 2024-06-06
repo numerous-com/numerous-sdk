@@ -2,39 +2,61 @@ package report
 
 import (
 	"errors"
-	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"numerous.com/cli/cmd/output"
 )
 
 const numerousReportURL = "https://numerous.com"
+
+var (
+	ErrWSLCheck        = errors.New("error when checking windows subsystem for linux")
+	ErrOSCheck         = errors.New("error identifying the current OS")
+	ErrGrepBashCommand = errors.New("error in the grep bash command execution")
+)
 
 var ReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Opens numerous report and feedback page.",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := openURL(numerousReportURL); err != nil {
-			fmt.Println("Error:", err)
+		if err := openURL(numerousReportURL, runtime.GOOS, Exec{}); err != nil {
+			os.Exit(1)
 		}
 	},
 }
 
-func openURL(url string) error {
-	cmd, args, err := setCmdByOS()
-	if err != nil {
-		return err
-	}
-	fmt.Println("Opening the report page in your default browser.")
-	args = append(args, url)
-
-	return exec.Command(cmd, args...).Start()
+type CommandExecutor interface {
+	Output(command string, args ...string) ([]byte, error)
+	Start(command string, args ...string) error
 }
 
-func setCmdByOS() (string, []string, error) {
-	switch runtime.GOOS {
+type Exec struct{}
+
+func (oe Exec) Output(command string, args ...string) ([]byte, error) {
+	return exec.Command(command, args...).Output()
+}
+
+func (oe Exec) Start(command string, args ...string) error {
+	return exec.Command(command, args...).Start()
+}
+
+func openURL(url string, os string, exec CommandExecutor) error {
+	cmd, args, err := cmdByOS(os, exec, osOrWSL)
+	if err != nil {
+		output.PrintErrorDetails("An error occurred when opening the numerous report page.", err)
+		return err
+	}
+	args = append(args, url)
+
+	return exec.Start(cmd, args...)
+}
+
+func cmdByOS(os string, exec CommandExecutor, osOrWSL func(exec CommandExecutor) (string, error)) (string, []string, error) {
+	switch os {
 	case "windows":
 		return "cmd", []string{"/c", "start"}, nil
 	case "darwin":
@@ -42,17 +64,28 @@ func setCmdByOS() (string, []string, error) {
 	case "freebsd", "openbsd", "netbsd":
 		return "xdg-open", nil, nil
 	case "linux":
-		out, err := exec.Command("sh", "-c", "grep -i Microsoft /proc/version").Output()
+		check, err := osOrWSL(exec)
 		if err != nil {
-			fmt.Println("Error:", err)
-			return "", nil, err
+			return "", nil, ErrWSLCheck
 		}
-		if string(out) != "" {
+		if check == "wsl" {
 			return "sensible-browser", nil, nil
 		} else {
 			return "xdg-open", nil, nil
 		}
 	default:
-		return "", nil, errors.New("it wasn't possible to identify your OS")
+		return "", nil, ErrOSCheck
+	}
+}
+
+func osOrWSL(exec CommandExecutor) (string, error) {
+	out, err := exec.Output("sh", "-c", "grep -i Windows /proc/version")
+	if err != nil && err.Error() != "exit status 1" {
+		return "", ErrGrepBashCommand
+	}
+	if len(out) > 0 {
+		return "wsl", nil
+	} else {
+		return "os", nil
 	}
 }
