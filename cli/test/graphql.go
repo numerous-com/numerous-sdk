@@ -5,8 +5,10 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/hasura/go-graphql-client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -63,6 +65,7 @@ type validatingSubscriptionClient struct {
 	t       *testing.T
 	handler func(message []byte, err error) error
 	ch      chan SubMessage
+	done    chan struct{}
 }
 
 func (c *validatingSubscriptionClient) Run() error {
@@ -70,6 +73,7 @@ func (c *validatingSubscriptionClient) Run() error {
 		for ev := range c.ch {
 			c.handler([]byte(ev.Msg), ev.Err) //nolint:errcheck
 		}
+		close(c.done)
 	}()
 
 	return nil
@@ -82,6 +86,17 @@ func (c *validatingSubscriptionClient) Subscribe(v interface{}, variables map[st
 	return "subID", nil
 }
 
+func (c *validatingSubscriptionClient) Wait() {
+	c.t.Helper()
+
+	select {
+	case <-c.done:
+		return
+	case <-time.After(time.Second):
+		assert.Fail(c.t, "timed out waiting for subscription to close")
+	}
+}
+
 type SubMessage struct {
 	Msg string
 	Err error
@@ -90,5 +105,5 @@ type SubMessage struct {
 func CreateTestSubscriptionClient(t *testing.T, ch chan SubMessage) *validatingSubscriptionClient {
 	t.Helper()
 
-	return &validatingSubscriptionClient{t, nil, ch}
+	return &validatingSubscriptionClient{t, nil, ch, make(chan struct{})}
 }

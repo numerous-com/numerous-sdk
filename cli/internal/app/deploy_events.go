@@ -8,8 +8,12 @@ import (
 	"github.com/hasura/go-graphql-client/pkg/jsonutil"
 )
 
-type DeployEvent struct {
-	Message string
+type AppBuildMessageEvent struct {
+	Message string `json:"message"`
+}
+
+type AppDeploymentStatusEvent struct {
+	Status string
 }
 
 type DeployEventsInput struct {
@@ -19,9 +23,10 @@ type DeployEventsInput struct {
 
 var ErrNoDeployEventsHandler = errors.New("no deploy events handler defined")
 
-type DeployEventMessage struct {
-	Typename string `json:"__typename"`
-	Message  string
+type DeployEvent struct {
+	Typename         string                   `graphql:"__typename"`
+	DeploymentStatus AppDeploymentStatusEvent `graphql:"... on AppDeploymentStatusEvent"`
+	BuildMessage     AppBuildMessageEvent     `graphql:"... on AppBuildMessageEvent"`
 }
 
 type DeployEventsSubscription struct {
@@ -52,7 +57,9 @@ func (s *Service) DeployEvents(ctx context.Context, input DeployEventsInput) err
 			return err
 		}
 
-		ok := input.Handler(DeployEvent{Message: value.AppDeployEvents.Message})
+		de := value.AppDeployEvents
+
+		ok := input.Handler(de)
 		if !ok {
 			return graphql.ErrSubscriptionStopped
 		}

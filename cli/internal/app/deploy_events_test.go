@@ -10,31 +10,65 @@ import (
 )
 
 func TestDeployEvents(t *testing.T) {
-	t.Run("returns expected output", func(t *testing.T) {
-		ch := make(chan test.SubMessage)
-		c := test.CreateTestSubscriptionClient(t, ch)
-		s := New(nil, c, nil)
-
-		actualEvents := []DeployEvent{}
-		input := DeployEventsInput{
-			Handler: func(ev DeployEvent) bool {
-				actualEvents = append(actualEvents, ev)
-				return true
+	testCases := []struct {
+		name     string
+		sms      []test.SubMessage
+		expected []DeployEvent
+	}{
+		{
+			name: "returns expected build messages",
+			sms: []test.SubMessage{
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildMessageEvent", "message": "message 1"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildMessageEvent", "message": "message 2"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildMessageEvent", "message": "message 3"}}`},
 			},
-			DeploymentVersionID: "some-id",
-		}
-		err := s.DeployEvents(context.TODO(), input)
-		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 1"}}`}
-		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 2"}}`}
-		ch <- test.SubMessage{Msg: `{"appDeployEvents": {"message": "message 3"}}`}
-		close(ch)
+			expected: []DeployEvent{
+				{Typename: "AppBuildMessageEvent", BuildMessage: AppBuildMessageEvent{Message: "message 1"}},
+				{Typename: "AppBuildMessageEvent", BuildMessage: AppBuildMessageEvent{Message: "message 2"}},
+				{Typename: "AppBuildMessageEvent", BuildMessage: AppBuildMessageEvent{Message: "message 3"}},
+			},
+		},
+		{
+			name: "returns expected deploy status events",
+			sms: []test.SubMessage{
+				{Msg: `{"appDeployEvents": {"__typename": "AppDeploymentStatusEvent", "status": "PENDING"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppDeploymentStatusEvent", "status": "RUNNING"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppDeploymentStatusEvent", "status": "STOPPED"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppDeploymentStatusEvent", "status": "ERROR"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppDeploymentStatusEvent", "status": "UNKNOWN"}}`},
+			},
+			expected: []DeployEvent{
+				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "PENDING"}},
+				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "RUNNING"}},
+				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "STOPPED"}},
+				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "ERROR"}},
+				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "UNKNOWN"}},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ch := make(chan test.SubMessage, 10)
+			c := test.CreateTestSubscriptionClient(t, ch)
+			s := New(nil, c, nil)
 
-		expected := []DeployEvent{
-			{Message: "message 1"},
-			{Message: "message 2"},
-			{Message: "message 3"},
-		}
-		assert.NoError(t, err)
-		assert.Equal(t, expected, actualEvents)
-	})
+			actual := []DeployEvent{}
+			input := DeployEventsInput{
+				Handler: func(ev DeployEvent) bool {
+					actual = append(actual, ev)
+					return true
+				},
+				DeploymentVersionID: "some-id",
+			}
+			err := s.DeployEvents(context.TODO(), input)
+			for _, sm := range tc.sms {
+				ch <- sm
+			}
+			close(ch)
+			c.Wait()
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }

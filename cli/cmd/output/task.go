@@ -7,8 +7,9 @@ import (
 const taskLineLength = 40
 
 type Task struct {
-	msg    string
-	length int
+	msg       string
+	length    int
+	lineAdded bool
 }
 
 func (t *Task) line(icon string) string {
@@ -25,14 +26,28 @@ func (t *Task) start() {
 	fmt.Print(ln)
 }
 
+func (t *Task) AddLine(prefix string, line string) {
+	if !t.lineAdded {
+		fmt.Println()
+	}
+	fmt.Println(ansiFaint, prefix, ansiReset, line)
+	t.lineAdded = true
+}
+
 func (t *Task) Done() {
 	ln := t.line(checkmark)
-	fmt.Println("\r" + ln + ansiGreen + "OK" + ansiReset)
+	if !t.lineAdded {
+		fmt.Print("\r")
+	}
+	fmt.Println(ln + ansiGreen + "OK" + ansiReset)
 }
 
 func (t Task) Error() {
 	ln := t.line(errorcross)
-	fmt.Println("\r" + ln + ansiRed + "Error" + ansiReset)
+	if !t.lineAdded {
+		fmt.Print("\r")
+	}
+	fmt.Println(ln + ansiRed + "Error" + ansiReset)
 }
 
 func StartTask(msg string) *Task {

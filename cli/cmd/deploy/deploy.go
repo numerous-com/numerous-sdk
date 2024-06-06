@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/output"
@@ -123,7 +124,16 @@ func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName 
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) bool {
 			if verbose {
+				switch {
+				case de.BuildMessage != app.AppBuildMessageEvent{}:
+					for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
+						task.AddLine("Build>", l)
+					}
+				case de.DeploymentStatus != app.AppDeploymentStatusEvent{}:
+					task.AddLine("Deploy>", "Status: "+de.DeploymentStatus.Status)
+				}
 			}
+
 			return true
 		},
 	}
