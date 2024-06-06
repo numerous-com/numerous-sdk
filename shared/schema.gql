@@ -11,6 +11,7 @@ directive @canManageApp on FIELD_DEFINITION
 ###############################################################################
 
 directive @hasRole(role: AuthRole!) on FIELD_DEFINITION
+directive @isMe on FIELD_DEFINITION
 
 enum AuthRole {
   AUTHENTICATED
@@ -40,7 +41,7 @@ type OrganizationMembership {
 type User {
   id: ID!
   fullName: String!
-  memberships: [OrganizationMembership!]!
+  memberships: [OrganizationMembership!]! @isMe
   email: String!
 }
 
@@ -61,7 +62,7 @@ type Organization {
   name: String!
   slug: String!
   apps: [App!]!
-  members: [OrganizationMembership!]!
+  members: [OrganizationMembership!]! @hasRole(role: USER)
   pendingInvitations: [OrganizationInvitation!]! @hasRole(role: ADMIN)
   createdAt: Time!
 }
@@ -82,13 +83,9 @@ type OrganizationMemberExists {
   email: String!
 }
 
-input OrganizationInvitationInput {
-  role: Role!
-  email: String!
-}
-
 input NewOrganization {
   name: String!
+  slug: String
 }
 
 type OrganizationNotFound {
@@ -107,8 +104,50 @@ union OrganizationRenameResult =
 
 union OrganizationQueryResult = Organization | OrganizationNotFound
 
+type OrganizationSlugOccupied {
+  slug: String!
+}
+
+type OrganizationSlugInvalid {
+  slug: String!
+}
+
+union OrganizationCreateResult = Organization | OrganizationSlugOccupied | OrganizationSlugInvalid
+
+extend type Query {
+  organization(organizationSlug: String!): OrganizationQueryResult!
+    @hasRole(role: USER)
+  organizationInvitation(invitationId: ID!): OrganizationInvitationQueryResult
+    @canAccessInvitation
+}
+
+type Mutation {
+  organizationCreate(input: NewOrganization!): OrganizationCreateResult!
+    @hasRole(role: AUTHENTICATED)
+  organizationRename(
+    organizationId: ID!
+    name: String!
+  ): OrganizationRenameResult! @hasRole(role: ADMIN)
+}
+###############################################################################
+### End of organization management
+###############################################################################
+
+###############################################################################
+### Organization invitation management
+###############################################################################
+
+input OrganizationInvitationInput {
+  role: Role!
+  email: String!
+}
+
 type OrganizationInvitationNotFound {
   id: ID!
+}
+
+type OrganizationInvitationExists {
+  email: String!
 }
 
 union OrganizationInvitationQueryResult =
@@ -121,27 +160,20 @@ union OrganizationInvitationCreateResult =
   | OrganizationNotFound
   | InvalidEmail
   | OrganizationMemberExists
+  | OrganizationInvitationExists
 
 union OrganizationInvitationAcceptResult = Organization | OrganizationNotFound
 
+type OrganizationInvitationDeleted {
+  id: ID!
+}
+
 union OrganizationInvitationDeleteResult =
-    OrganizationInvitation
+    OrganizationInvitationDeleted
   | OrganizationNotFound
   | OrganizationInvitationNotFound
 
-extend type Query {
-  organization(organizationSlug: String!): OrganizationQueryResult!
-    @hasRole(role: USER)
-  organizationInvitation(invitationId: ID!): OrganizationInvitationQueryResult
-    @canAccessInvitation
-}
-type Mutation {
-  organizationCreate(input: NewOrganization!): Organization!
-    @hasRole(role: AUTHENTICATED)
-  organizationRename(
-    organizationId: ID!
-    name: String!
-  ): OrganizationRenameResult! @hasRole(role: ADMIN)
+extend type Mutation {
   organizationInvitationCreate(
     organizationId: ID!
     input: OrganizationInvitationInput
@@ -155,8 +187,10 @@ type Mutation {
 }
 
 ###############################################################################
-### End of organization management
+### End of organization invitation management
 ###############################################################################
+
+
 
 ###############################################################################
 ### Tool management
@@ -261,6 +295,20 @@ input AppCreateInfo {
   description: String!
 }
 
+input AppDeployInput {
+  secrets: [AppSecret!]
+}
+
+type AppBuildMessageEvent {
+  message: String!
+}
+
+type AppDeploymentStatusEvent {
+  status: AppDeploymentStatus
+}
+
+union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent
+
 extend type Query {
   app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)
 }
@@ -270,11 +318,12 @@ extend type Mutation {
     @hasRole(role: USER)
   appVersionCreate(appID: ID!): AppVersion! @canManageApp
   appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
-  appDeploy(appVersionID: ID!): AppDeploymentVersion! @canManageApp
+  appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
+    @canManageApp
 }
 
 extend type Subscription {
-  appDeployLogs(appDeploymentID: ID!): LogMessage!
+  appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
 }
 
 ###############################################################################
@@ -282,12 +331,12 @@ extend type Subscription {
 ###############################################################################
 
 ###############################################################################
-### Share offers / subscriptions
+### Subscriptions
 ###############################################################################
 
-directive @canAccessShareOffer on FIELD_DEFINITION
+directive @canAccessSubscriptionOffer on FIELD_DEFINITION
 
-enum ShareOfferStatus {
+enum SubscriptionOfferStatus {
   ACCEPTED
   REJECTED
   PENDING
@@ -306,20 +355,20 @@ type AppSubscription {
   status: AppSubscriptionStatus!
 }
 
-type ShareOffer {
+type SubscriptionOffer {
   id: ID!
   email: String!
   app: App!
   offeringOrganization: Organization!
-  status: ShareOfferStatus!
+  status: SubscriptionOfferStatus!
 }
 
-input ShareOfferInput {
+input SubscriptionOfferInput {
   email: String!
-  appId: ID!
+  appName: String!
 }
 
-type ShareOfferNotFound {
+type SubscriptionOfferNotFound {
   id: ID!
 }
 
@@ -327,14 +376,18 @@ type AppSubscriptionNotFound {
   id: ID!
 }
 
-union ShareOfferResult = ShareOffer | ShareOfferNotFound
+union SubscriptionOfferCreateResult = SubscriptionOffer | InvalidEmail
 
-union ShareOfferAcceptResult = AppSubscription | ShareOfferNotFound
+union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
+
+union SubscriptionOfferAcceptResult =
+    AppSubscription
+  | SubscriptionOfferNotFound
 
 union AppSubscriptionResult = AppSubscription | AppSubscriptionNotFound
 
 extend type Organization {
-  outboundShareOffers: [ShareOffer!]!
+  outboundSubscriptionOffers: [SubscriptionOffer!]!
   outboundSubscriptions: [AppSubscription!]!
 }
 
@@ -343,21 +396,29 @@ extend type App {
 }
 
 extend type Query {
-  shareOffer(shareOfferId: ID!): ShareOfferResult! @canAccessShareOffer
+  subscriptionOffer(subscriptionOfferId: ID!): SubscriptionOfferResult!
+    @canAccessSubscriptionOffer
 }
 
 extend type Mutation {
-  shareOfferCreate(input: ShareOfferInput!): ShareOffer! @hasRole(role: ADMIN)
-  shareOfferAccept(shareOfferId: ID!): ShareOfferAcceptResult!
-    @canAccessShareOffer
-  shareOfferReject(shareOfferId: ID!): ShareOfferResult! @canAccessShareOffer
-  shareOfferWithdraw(shareOfferId: ID!): ShareOfferResult! @canAccessShareOffer
+  subscriptionOfferCreate(
+    input: SubscriptionOfferInput!
+    organizationId: ID!
+  ): SubscriptionOfferCreateResult! @hasRole(role: ADMIN)
+  subscriptionOfferAccept(
+    subscriptionOfferId: ID!
+    organizationId: ID!
+  ): SubscriptionOfferAcceptResult! @canAccessSubscriptionOffer
+  subscriptionOfferReject(subscriptionOfferId: ID!): SubscriptionOfferResult!
+    @canAccessSubscriptionOffer
+  subscriptionOfferWithdraw(subscriptionOfferId: ID!): SubscriptionOfferResult!
+    @canAccessSubscriptionOffer
   subscriptionCancel(subscriptionId: ID!): AppSubscriptionResult!
     @hasRole(role: ADMIN)
 }
 
 ###############################################################################
-### End of Share offers / subscriptions
+### End of Subscriptions
 ###############################################################################
 
 ###############################################################################
@@ -384,7 +445,10 @@ type JobHeartbeatFailure {
   result: String!
 }
 
-union JobHeartbeatResult = JobHeartbeatSuccess | JobHeartbeatFailure | JobNotFound
+union JobHeartbeatResult =
+    JobHeartbeatSuccess
+  | JobHeartbeatFailure
+  | JobNotFound
 
 type StopJobPayload {
   message: String!
@@ -398,13 +462,12 @@ enum ToolHashType {
 
 extend type Query {
   job(toolHash: ID!, hashType: ToolHashType!): Job!
-   @trackOperation(eventName: "App Use/Requested from Proxy")
   jobsByTool(id: ID!): [Job!]!
 }
 
 extend type Mutation {
   jobStart(toolHash: ID!, hashType: ToolHashType!): Job!
-    @trackOperation(eventName: "App started from Proxy")
+    @trackOperation(eventName: "App Use/Requested from Proxy")
   jobStop(id: ID!): StopJobPayload!
   jobHeartbeat(id: ID!): JobHeartbeatResult!
 }

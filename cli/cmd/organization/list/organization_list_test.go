@@ -36,16 +36,13 @@ func TestList(t *testing.T) {
 					Slug: fmt.Sprintf("name-%s-slug", id),
 				},
 			}
-			organizationsAsStrings = append(organizationsAsStrings, test.OrganizationMembershipToResponse(struct {
-				Role         test.Role
-				Organization struct {
-					ID   string
-					Name string
-					Slug string
-				}
-			}{
-				Role:         test.Role(organization.Role),
-				Organization: organization.Organization,
+			organizationsAsStrings = append(organizationsAsStrings, test.OrganizationMembershipToResponse(test.Membership{
+				Role: test.Role(organization.Role),
+				Organization: test.Organization{
+					ID:   organization.Organization.ID,
+					Name: organization.Organization.Name,
+					Slug: organization.Organization.Slug,
+				},
 			}))
 		}
 

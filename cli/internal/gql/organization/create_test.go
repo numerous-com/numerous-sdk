@@ -12,9 +12,10 @@ import (
 func TestCreate(t *testing.T) {
 	t.Run("can return organization on OrganizationCreate mutation", func(t *testing.T) {
 		expectedOrganization := Organization{
-			ID:   "id",
-			Name: "name",
-			Slug: "slug",
+			Typename: "Organization",
+			ID:       "id",
+			Name:     "name",
+			Slug:     "slug",
 		}
 		response := organizationToQueryResult("organizationCreate", expectedOrganization)
 		c := test.CreateTestGqlClient(t, response)
@@ -46,6 +47,18 @@ func TestCreate(t *testing.T) {
 		assert.NotErrorIs(t, err, ErrOrganizationNameInvalidCharacter)
 		assert.Equal(t, Organization{}, actualOrganization)
 	})
+
+	t.Run("given non-organization return type it returns the type as an error", func(t *testing.T) {
+		o := Organization{Typename: "OrganizationSlugOccupied"}
+		response := organizationToQueryResult("organizationCreate", o)
+		c := test.CreateTestGqlClient(t, response)
+
+		_, err := Create("", c)
+
+		if assert.Error(t, err) {
+			assert.Equal(t, "OrganizationSlugOccupied", err.Error())
+		}
+	})
 }
 
 func organizationToQueryResult(queryName string, o Organization) string {
@@ -58,8 +71,9 @@ func organizationToQueryResult(queryName string, o Organization) string {
 
 func organizationToResponse(o Organization) string {
 	return fmt.Sprintf(`{
+		"__typename": "%s",
 		"id": "%s",
 		"name": "%s",
 		"slug": "%s"
-	}`, o.ID, o.Name, o.Slug)
+	}`, o.Typename, o.ID, o.Name, o.Slug)
 }

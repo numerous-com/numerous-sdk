@@ -23,7 +23,7 @@ class AppDeploymentStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class ShareOfferStatus(str, Enum):
+class SubscriptionOfferStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
     PENDING = "PENDING"

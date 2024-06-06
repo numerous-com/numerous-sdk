@@ -23,16 +23,13 @@ func TestQueryUser(t *testing.T) {
 			FullName:    "Test User",
 			Memberships: []organization.OrganizationMembership{membership},
 		}
-		membershipAsString := test.OrganizationMembershipToResponse(struct {
-			Role         test.Role
-			Organization struct {
-				ID   string
-				Name string
-				Slug string
-			}
-		}{
-			Role:         test.Role(membership.Role),
-			Organization: membership.Organization,
+		membershipAsString := test.OrganizationMembershipToResponse(test.Membership{
+			Role: test.Role(membership.Role),
+			Organization: test.Organization{
+				ID:   membership.Organization.ID,
+				Name: membership.Organization.Name,
+				Slug: membership.Organization.Slug,
+			},
 		})
 
 		response := `{

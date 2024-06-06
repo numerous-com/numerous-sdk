@@ -52,15 +52,18 @@ const (
 	User  Role = "USER"
 )
 
-func OrganizationMembershipToResponse(o struct {
+type Organization struct {
+	ID   string
+	Name string
+	Slug string
+}
+
+type Membership struct {
 	Role         Role
-	Organization struct {
-		ID   string
-		Name string
-		Slug string
-	}
-},
-) string {
+	Organization Organization
+}
+
+func OrganizationMembershipToResponse(o Membership) string {
 	return fmt.Sprintf(`{
 		"role": "%s",
 		"organization": {

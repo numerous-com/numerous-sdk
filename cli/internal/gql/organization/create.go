@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"errors"
 
 	"git.sr.ht/~emersion/gqlclient"
 )
@@ -22,6 +23,10 @@ func Create(name string, client *gqlclient.Client) (Organization, error) {
 		return resp.OrganizationCreate, err
 	}
 
+	if resp.OrganizationCreate.Typename != "Organization" {
+		return resp.OrganizationCreate, errors.New(resp.OrganizationCreate.Typename)
+	}
+
 	return resp.OrganizationCreate, nil
 }
 
@@ -29,9 +34,12 @@ func createOrganizationCreateOperation(name string) *gqlclient.Operation {
 	op := gqlclient.NewOperation(`
 	mutation OrganizationCreate($name: String!) {
 		organizationCreate(input: { name: $name }) {
-			id
-			name
-			slug
+			__typename
+			... on Organization {
+				id
+				name
+				slug
+			}
 		}
 	}
 `)

@@ -1,9 +1,10 @@
 package organization
 
 type Organization struct {
-	ID   string
-	Name string
-	Slug string
+	Typename string `json:"__typename"`
+	ID       string
+	Name     string
+	Slug     string
 }
 
 type Role string

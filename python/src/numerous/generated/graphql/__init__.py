@@ -24,7 +24,7 @@ from .enums import (
     AppSubscriptionStatus,
     AuthRole,
     Role,
-    ShareOfferStatus,
+    SubscriptionOfferStatus,
     ToolHashType,
 )
 from .exceptions import (
@@ -47,6 +47,7 @@ from .fragments import (
 )
 from .input_types import (
     AppCreateInfo,
+    AppDeployInput,
     AppSecret,
     BuildPushInput,
     ElementInput,
@@ -55,7 +56,7 @@ from .input_types import (
     NewOrganization,
     NewTool,
     OrganizationInvitationInput,
-    ShareOfferInput,
+    SubscriptionOfferInput,
 )
 from .update_element import UpdateElement, UpdateElementElementUpdate
 from .updates import (
@@ -95,6 +96,7 @@ __all__ = [
     "AllElementsSessionAllTextField",
     "AllElementsSessionAllTextFieldGraphContext",
     "AppCreateInfo",
+    "AppDeployInput",
     "AppDeploymentStatus",
     "AppSecret",
     "AppSubscriptionStatus",
@@ -122,9 +124,9 @@ __all__ = [
     "NumberFieldValue",
     "OrganizationInvitationInput",
     "Role",
-    "ShareOfferInput",
-    "ShareOfferStatus",
     "SliderValue",
+    "SubscriptionOfferInput",
+    "SubscriptionOfferStatus",
     "TextFieldValue",
     "ToolHashType",
     "UpdateElement",

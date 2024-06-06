@@ -9,13 +9,14 @@ from .base_model import BaseModel
 from .enums import Role
 
 
+class NewOrganization(BaseModel):
+    name: str
+    slug: Optional[str] = None
+
+
 class OrganizationInvitationInput(BaseModel):
     role: Role
     email: str
-
-
-class NewOrganization(BaseModel):
-    name: str
 
 
 class NewTool(BaseModel):
@@ -29,9 +30,13 @@ class AppCreateInfo(BaseModel):
     description: str
 
 
-class ShareOfferInput(BaseModel):
+class AppDeployInput(BaseModel):
+    secrets: Optional[List["AppSecret"]] = None
+
+
+class SubscriptionOfferInput(BaseModel):
     email: str
-    app_id: str = Field(alias="appId")
+    app_name: str = Field(alias="appName")
 
 
 class ElementInput(BaseModel):
