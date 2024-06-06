@@ -32,7 +32,7 @@ var (
 	ErrInvalidAppName = errors.New("invalid app name")
 )
 
-func Deploy(ctx context.Context, dir string, slug string, appName string, apps AppService) error {
+func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName string, apps AppService) error {
 	if !validate.IsValidIdentifier(slug) {
 		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
 		return ErrInvalidSlug
@@ -122,7 +122,8 @@ func Deploy(ctx context.Context, dir string, slug string, appName string, apps A
 	input := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) bool {
-			// TODO: display status based on deploy events
+			if verbose {
+			}
 			return true
 		},
 	}

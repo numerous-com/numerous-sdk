@@ -37,7 +37,7 @@ func TestDeploy(t *testing.T) {
 		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
 		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
 
-		err := Deploy(context.TODO(), dir, slug, appName, apps)
+		err := Deploy(context.TODO(), dir, slug, false, appName, apps)
 
 		assert.NoError(t, err)
 	})
@@ -54,7 +54,7 @@ func TestDeploy(t *testing.T) {
 		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
 		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
 
-		err := Deploy(context.TODO(), dir, slug, appName, apps)
+		err := Deploy(context.TODO(), dir, slug, false, appName, apps)
 
 		assert.NoError(t, err)
 	})
@@ -62,19 +62,19 @@ func TestDeploy(t *testing.T) {
 	t.Run("given dir without numerous.toml then it returns error", func(t *testing.T) {
 		dir := t.TempDir()
 
-		err := Deploy(context.TODO(), dir, slug, appName, nil)
+		err := Deploy(context.TODO(), dir, slug, false, appName, nil)
 
 		assert.EqualError(t, err, "open "+dir+"/numerous.toml: no such file or directory")
 	})
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), ".", "Some Invalid Organization Slug", appName, nil)
+		err := Deploy(context.TODO(), ".", "Some Invalid Organization Slug", false, appName, nil)
 
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), ".", slug, "Some Invalid App Name", nil)
+		err := Deploy(context.TODO(), ".", slug, false, "Some Invalid App Name", nil)
 
 		assert.ErrorIs(t, err, ErrInvalidAppName)
 	})

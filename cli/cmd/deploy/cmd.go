@@ -19,11 +19,12 @@ var DeployCmd = &cobra.Command{
 var (
 	slug    string
 	appName string
+	verbose bool
 )
 
 func run(cmd *cobra.Command, args []string) {
 	service := app.New(gql.NewClient(), gql.NewSubscriptionClient(), http.DefaultClient)
-	err := Deploy(cmd.Context(), ".", slug, appName, service)
+	err := Deploy(cmd.Context(), ".", slug, verbose, appName, service)
 
 	if err != nil {
 		os.Exit(1)
@@ -36,6 +37,7 @@ func init() {
 	flags := DeployCmd.Flags()
 	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier. List available organizations with 'numerous organization list'.")
 	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
+	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
 
 	if err := DeployCmd.MarkFlagRequired("organization"); err != nil {
 		panic(err.Error())
