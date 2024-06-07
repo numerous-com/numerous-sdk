@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"errors"
 	"net/http"
 	"os"
 
@@ -33,17 +34,33 @@ be pushed to the organization "organization-slug-a3ecfh2b", and the app name
 
 	numerous deploy --organization "organization-slug-a3ecfh2b" --name "my-app"
 	`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			fn := cmd.HelpFunc()
+			fn(cmd, args)
+
+			return errors.New("only accepts zero or one positional arguments")
+		}
+
+		if len(args) == 1 {
+			appDir = args[0]
+		}
+
+		return nil
+	},
 }
 
 var (
-	slug    string
-	appName string
-	verbose bool
+	slug       string
+	appName    string
+	verbose    bool
+	appDir     string = "."
+	projectDir string = "."
 )
 
 func run(cmd *cobra.Command, args []string) {
 	service := app.New(gql.NewClient(), gql.NewSubscriptionClient(), http.DefaultClient)
-	err := Deploy(cmd.Context(), ".", slug, verbose, appName, service)
+	err := Deploy(cmd.Context(), service, appDir, projectDir, slug, appName, verbose)
 
 	if err != nil {
 		os.Exit(1)
@@ -57,6 +74,7 @@ func init() {
 	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier. List available organizations with 'numerous organization list'.")
 	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
+	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 
 	if err := DeployCmd.MarkFlagRequired("organization"); err != nil {
 		panic(err.Error())

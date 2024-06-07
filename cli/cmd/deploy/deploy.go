@@ -33,7 +33,7 @@ var (
 	ErrInvalidAppName = errors.New("invalid app name")
 )
 
-func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName string, apps AppService) error {
+func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug string, appName string, verbose bool) error {
 	if !validate.IsValidIdentifier(slug) {
 		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
 		return ErrInvalidSlug
@@ -45,15 +45,15 @@ func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName 
 	}
 
 	task := output.StartTask("Loading app configuration")
-	manifest, err := manifest.LoadManifest(filepath.Join(dir, manifest.ManifestPath))
+	manifest, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
 		task.Error()
-		output.PrintErrorAppNotInitialized()
+		output.PrintErrorAppNotInitialized(appDir)
 
 		return err
 	}
 
-	secrets := loadSecretsFromEnv(dir)
+	secrets := loadSecretsFromEnv(appDir)
 	task.Done()
 
 	task = output.StartTask("Registering new version")
@@ -74,8 +74,12 @@ func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName 
 	task.Done()
 
 	task = output.StartTask("Creating app archive")
-	tarPath := path.Join(dir, ".tmp_app_archive.tar")
-	err = archive.TarCreate(dir, tarPath, manifest.Exclude)
+	tarSrcDir := appDir
+	if projectDir != "" {
+		tarSrcDir = projectDir
+	}
+	tarPath := path.Join(tarSrcDir, ".tmp_app_archive.tar")
+	err = archive.TarCreate(tarSrcDir, tarPath, manifest.Exclude)
 	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error archiving app source", err)
@@ -127,10 +131,10 @@ func Deploy(ctx context.Context, dir string, slug string, verbose bool, appName 
 				switch {
 				case de.BuildMessage != app.AppBuildMessageEvent{}:
 					for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
-						task.AddLine("Build>", l)
+						task.AddLine("Build", l)
 					}
 				case de.DeploymentStatus != app.AppDeploymentStatusEvent{}:
-					task.AddLine("Deploy>", "Status: "+de.DeploymentStatus.Status)
+					task.AddLine("Deploy", "Status: "+de.DeploymentStatus.Status)
 				}
 			}
 

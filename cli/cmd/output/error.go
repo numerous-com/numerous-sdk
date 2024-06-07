@@ -27,7 +27,13 @@ func PrintUnknownError(err error) {
 	PrintErrorDetails("Sorry! An unexpected error occurred.", err)
 }
 
-func PrintErrorAppNotInitialized() {
-	PrintError("The current directory is not a numerous app",
-		"Run \"numerous init\" to initialize a numerous app in the current directory.")
+func PrintErrorAppNotInitialized(appDir string) {
+	if appDir == "." {
+		PrintError("The current directory is not a numerous app",
+			"Run \"numerous init\" to initialize a numerous app in the current directory.")
+	} else {
+		PrintError("The select directory \"%s\" is not a numerous app",
+			"Run \"numerous init %s\" to initialize a numerous app.",
+			appDir, appDir)
+	}
 }
