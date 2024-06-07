@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"strings"
 )
 
 type ReadAppInput struct {
@@ -35,7 +36,7 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 
 	variables := map[string]any{"slug": input.OrganizationSlug, "name": input.Name}
 	err := s.client.Exec(ctx, queryAppText, &resp, variables)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "app not found") {
 		return ReadAppOutput{}, err
 	}
 
