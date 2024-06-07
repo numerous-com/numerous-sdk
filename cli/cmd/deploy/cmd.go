@@ -11,9 +11,28 @@ import (
 )
 
 var DeployCmd = &cobra.Command{
-	Use:   "deploy",
+	Use:   "deploy [app directory]",
 	Run:   run,
 	Short: "Deploy an app to an organization.",
+	Long: `Deploys an application to an organization on the Numerous platform.
+
+An apps deployment is identified with the <name> and <organization> identifier.
+Deploying an app to a given <name> and <organization> combination, will override
+the existing version.
+
+The <name> must contain only lower-case alphanumeric characters and dashes.
+
+After deployment the deployed version of the app is available in the
+organization's apps page.
+
+If no [app directory] is specified, the current working directory is used.`,
+	Example: `
+If an app has been initialized in the current working directory, and it should
+be pushed to the organization "organization-slug-a3ecfh2b", and the app name
+"my-app", the following command can be used:
+
+	numerous deploy --organization "organization-slug-a3ecfh2b" --name "my-app"
+	`,
 }
 
 var (
