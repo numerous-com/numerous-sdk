@@ -57,9 +57,8 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 	task.Done()
 
 	task = output.StartTask("Registering new version")
-	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest)
+	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest, task)
 	if err != nil {
-		task.Error()
 		return err
 	}
 
@@ -152,7 +151,7 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 	return nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName string, manifest *manifest.Manifest) (string, error) {
+func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName string, manifest *manifest.Manifest, task *output.Task) (string, error) {
 	appReadInput := app.ReadAppInput{
 		OrganizationSlug: slug,
 		Name:             appName,
@@ -170,13 +169,17 @@ func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName 
 		}
 		appCreateOutput, err := apps.Create(ctx, appCreateInput)
 		if err != nil {
+			task.Error()
 			output.PrintErrorDetails("Error creating app remotely", err)
+
 			return "", err
 		}
 
 		return appCreateOutput.AppID, nil
 	default:
 		output.PrintErrorDetails("Error reading remote app", err)
+		task.Error()
+
 		return "", err
 	}
 }
