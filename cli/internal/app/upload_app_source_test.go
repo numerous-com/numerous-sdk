@@ -19,7 +19,7 @@ func TestUploadAppSource(t *testing.T) {
 	t.Run("given http client error then it returns error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		var nilResp *http.Response
-		doer.On("Do", mock.Anything, mock.Anything).Return(nilResp, testError)
+		doer.On("Do", mock.Anything).Return(nilResp, testError)
 		s := Service{uploadDoer: &doer}
 
 		err := s.UploadAppSource("http://some-upload-url", nil)
@@ -30,7 +30,7 @@ func TestUploadAppSource(t *testing.T) {
 	t.Run("given non-OK http status then it returns error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		resp := http.Response{Status: "Not OK", StatusCode: http.StatusBadRequest}
-		doer.On("Do", mock.Anything, mock.Anything).Return(&resp, nil)
+		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
 		err := s.UploadAppSource("http://some-upload-url", nil)
@@ -49,11 +49,24 @@ func TestUploadAppSource(t *testing.T) {
 	t.Run("given successful request then it returns no error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		resp := http.Response{Status: "OK", StatusCode: http.StatusOK}
-		doer.On("Do", mock.Anything, mock.Anything).Return(&resp, nil)
+		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
 		err := s.UploadAppSource("http://some-upload-url", io.NopCloser(bytes.NewReader([]byte(""))))
 
 		assert.NoError(t, err)
+	})
+
+	t.Run("it sends expected content-length header", func(t *testing.T) {
+		doer := test.MockDoer{}
+		resp := http.Response{Status: "OK", StatusCode: http.StatusOK}
+		doer.On("Do", mock.Anything).Return(&resp, nil)
+		s := Service{uploadDoer: &doer}
+		err := s.UploadAppSource("http://some-upload-url", io.NopCloser(bytes.NewReader([]byte("some data"))))
+
+		assert.NoError(t, err)
+		doer.AssertCalled(t, "Do", mock.MatchedBy(func(r *http.Request) bool {
+			return r.ContentLength == 9
+		}))
 	})
 }
