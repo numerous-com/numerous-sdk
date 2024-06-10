@@ -22,7 +22,7 @@ func TestUploadAppSource(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(nilResp, testError)
 		s := Service{uploadDoer: &doer}
 
-		err := s.UploadAppSource("http://some-upload-url", nil)
+		err := s.UploadAppSource("http://some-upload-url", io.NopCloser(bytes.NewReader([]byte(""))))
 
 		assert.ErrorIs(t, err, testError)
 	})
@@ -33,7 +33,7 @@ func TestUploadAppSource(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
-		err := s.UploadAppSource("http://some-upload-url", nil)
+		err := s.UploadAppSource("http://some-upload-url", io.NopCloser(bytes.NewReader([]byte(""))))
 
 		assert.ErrorIs(t, err, ErrAppSourceUpload)
 	})
@@ -41,7 +41,7 @@ func TestUploadAppSource(t *testing.T) {
 	t.Run("given invalid upload URL then it returns error", func(t *testing.T) {
 		s := Service{uploadDoer: &test.MockDoer{}}
 
-		err := s.UploadAppSource("://invalid-url", nil)
+		err := s.UploadAppSource("://invalid-url", io.NopCloser(bytes.NewReader([]byte(""))))
 
 		assert.Error(t, err)
 	})

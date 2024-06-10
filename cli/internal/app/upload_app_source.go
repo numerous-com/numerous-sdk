@@ -15,7 +15,7 @@ func (s *Service) UploadAppSource(uploadURL string, archive io.Reader) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPut, uploadURL, archive)
+	req, err := http.NewRequest(http.MethodPut, uploadURL, &buf)
 	if err != nil {
 		return err
 	}
