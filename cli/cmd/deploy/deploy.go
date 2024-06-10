@@ -141,8 +141,7 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 			case "AppDeployStatusEvent":
 				task.AddLine("Deploy", "Status: "+de.DeploymentStatus.Status)
 				switch de.DeploymentStatus.Status {
-				case "PENDING":
-				case "RUNNING":
+				case "PENDING", "RUNNING":
 				default:
 					return fmt.Errorf("got status %s while deploying", de.DeploymentStatus.Status)
 				}
