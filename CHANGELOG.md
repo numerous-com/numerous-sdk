@@ -2,6 +2,16 @@
 
 
 
+## v0.4.0 (2024-06-10)
+
+### Feature
+
+* feat(cli): add deploy command
+
+The command `numerous deploy` deploys an app to an organization, where
+it is accessible only to authorized users. ([`1e8b86b`](https://github.com/numerous-com/numerous-sdk/commit/1e8b86b344c53ec671db4b0fcc0a8d423eee1892))
+
+
 ## v0.3.6 (2024-06-04)
 
 ### Fix
