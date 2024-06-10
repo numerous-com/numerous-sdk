@@ -8,7 +8,6 @@ import (
 	"numerous/cli/internal/app"
 	"numerous/cli/internal/gql"
 
-	"github.com/hasura/go-graphql-client"
 	"github.com/spf13/cobra"
 )
 
@@ -60,7 +59,7 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	sc := gql.NewSubscriptionClient().OnError(func(sc *graphql.SubscriptionClient, err error) error { println("ERROR", err.Error()); return err })
+	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 	err := Deploy(cmd.Context(), service, appDir, projectDir, slug, appName, verbose)
 

@@ -30,7 +30,7 @@ func (t *Task) AddLine(prefix string, line string) {
 	if !t.lineAdded {
 		fmt.Println()
 	}
-	fmt.Println(ansiFaint, prefix, ansiReset, line)
+	fmt.Println(ansiReset+ansiFaint+prefix+ansiReset, line)
 	t.lineAdded = true
 }
 

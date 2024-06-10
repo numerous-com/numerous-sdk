@@ -52,7 +52,7 @@ func (s *Service) DeployEvents(ctx context.Context, input DeployEventsInput) err
 
 	var handlerError error
 	variables := map[string]any{"deployVersionID": GraphQLID(input.DeploymentVersionID)}
-	_, err := s.subscription.Subscribe(&DeployEventsSubscription{}, variables, func(message []byte, err error) error {
+	handler := func(message []byte, err error) error {
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,9 @@ func (s *Service) DeployEvents(ctx context.Context, input DeployEventsInput) err
 		}
 
 		return nil
-	})
+	}
+
+	_, err := s.subscription.Subscribe(&DeployEventsSubscription{}, variables, handler)
 	if err != nil {
 		return nil
 	}
