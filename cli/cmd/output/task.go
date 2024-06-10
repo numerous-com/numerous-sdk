@@ -42,7 +42,7 @@ func (t *Task) Done() {
 	fmt.Println(ln + ansiGreen + "OK" + ansiReset)
 }
 
-func (t Task) Error() {
+func (t *Task) Error() {
 	ln := t.line(errorcross)
 	if !t.lineAdded {
 		fmt.Print("\r")

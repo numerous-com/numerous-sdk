@@ -168,7 +168,7 @@ func buildApp(buildID string, appPath string) (ok bool) {
 
 func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 	defer os.Remove(zipFileName)
-	task := output.StartTask("Uploading app......")
+	task := output.StartTask("Uploading app")
 
 	secrets := loadSecretsFromEnv(appDir)
 	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
@@ -194,7 +194,7 @@ func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 }
 
 func prepareApp(m *manifest.Manifest) (ok bool) {
-	task := output.StartTask("Preparing upload...")
+	task := output.StartTask("Preparing upload.")
 
 	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)

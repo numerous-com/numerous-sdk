@@ -95,6 +95,7 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 
 		return err
 	}
+	defer archive.Close()
 	task.Done()
 
 	task = output.StartTask("Uploading app archive")

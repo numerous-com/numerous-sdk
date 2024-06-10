@@ -1,7 +1,7 @@
 package deploy
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -39,7 +39,7 @@ be pushed to the organization "organization-slug-a3ecfh2b", and the app name
 			fn := cmd.HelpFunc()
 			fn(cmd, args)
 
-			return errors.New("only accepts zero or one positional arguments")
+			return fmt.Errorf("accepts only an optional [app directory] as a positional argument, you provided %d arguments", len(args))
 		}
 
 		if len(args) == 1 {
