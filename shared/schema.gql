@@ -304,11 +304,15 @@ type AppBuildMessageEvent {
   message: String!
 }
 
+type AppBuildErrorEvent {
+  message: String!
+}
+
 type AppDeploymentStatusEvent {
   status: AppDeploymentStatus
 }
 
-union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent
+union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent | AppBuildErrorEvent
 
 extend type Query {
   app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)

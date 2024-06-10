@@ -86,6 +86,8 @@ func (c *validatingSubscriptionClient) Subscribe(v interface{}, variables map[st
 	return "subID", nil
 }
 
+func (c *validatingSubscriptionClient) Close() error { return nil }
+
 func (c *validatingSubscriptionClient) Wait() {
 	c.t.Helper()
 

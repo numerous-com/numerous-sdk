@@ -8,6 +8,7 @@ import (
 	"numerous/cli/internal/app"
 	"numerous/cli/internal/gql"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +60,8 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	service := app.New(gql.NewClient(), gql.NewSubscriptionClient(), http.DefaultClient)
+	sc := gql.NewSubscriptionClient().OnError(func(sc *graphql.SubscriptionClient, err error) error { println("ERROR", err.Error()); return err })
+	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 	err := Deploy(cmd.Context(), service, appDir, projectDir, slug, appName, verbose)
 
 	if err != nil {

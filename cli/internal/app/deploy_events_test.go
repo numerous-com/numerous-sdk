@@ -45,6 +45,19 @@ func TestDeployEvents(t *testing.T) {
 				{Typename: "AppDeploymentStatusEvent", DeploymentStatus: AppDeploymentStatusEvent{Status: "UNKNOWN"}},
 			},
 		},
+		{
+			name: "returns expected build errors",
+			sms: []test.SubMessage{
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildErrorEvent", "message": "error 1"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildErrorEvent", "message": "error 2"}}`},
+				{Msg: `{"appDeployEvents": {"__typename": "AppBuildErrorEvent", "message": "error 3"}}`},
+			},
+			expected: []DeployEvent{
+				{Typename: "AppBuildErrorEvent", BuildError: AppBuildErrorEvent{Message: "error 1"}},
+				{Typename: "AppBuildErrorEvent", BuildError: AppBuildErrorEvent{Message: "error 2"}},
+				{Typename: "AppBuildErrorEvent", BuildError: AppBuildErrorEvent{Message: "error 3"}},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -54,9 +67,9 @@ func TestDeployEvents(t *testing.T) {
 
 			actual := []DeployEvent{}
 			input := DeployEventsInput{
-				Handler: func(ev DeployEvent) bool {
+				Handler: func(ev DeployEvent) error {
 					actual = append(actual, ev)
-					return true
+					return nil
 				},
 				DeploymentVersionID: "some-id",
 			}

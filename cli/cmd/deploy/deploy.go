@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -125,25 +126,35 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 
 	input := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
-		Handler: func(de app.DeployEvent) bool {
-			if verbose {
-				switch {
-				case de.BuildMessage != app.AppBuildMessageEvent{}:
-					for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
-						task.AddLine("Build", l)
-					}
-				case de.DeploymentStatus != app.AppDeploymentStatusEvent{}:
-					task.AddLine("Deploy", "Status: "+de.DeploymentStatus.Status)
+		Handler: func(de app.DeployEvent) error {
+			switch de.Typename {
+			case "AppBuildMessageEvent":
+				for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
+					task.AddLine("Build", l)
+				}
+			case "AppBuildErrorEvent":
+				for _, l := range strings.Split(de.BuildError.Message, "\n") {
+					task.AddLine("Error", l)
+				}
+
+				return fmt.Errorf("build error: %s", de.BuildError.Message)
+			case "AppDeployStatusEvent":
+				task.AddLine("Deploy", "Status: "+de.DeploymentStatus.Status)
+				switch de.DeploymentStatus.Status {
+				case "PENDING":
+				case "RUNNING":
+				default:
+					return fmt.Errorf("got status %s while deploying", de.DeploymentStatus.Status)
 				}
 			}
 
-			return true
+			return nil
 		},
 	}
 	err = apps.DeployEvents(ctx, input)
 	if err != nil {
 		task.Error()
-		output.PrintErrorDetails("Error receiving deploy logs", err)
+		output.PrintErrorDetails("Error occurred during deploy", err)
 	} else {
 		task.Done()
 	}

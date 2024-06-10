@@ -13,6 +13,7 @@ type UploadDoer interface {
 type SubscriptionClient interface {
 	Subscribe(v interface{}, variables map[string]interface{}, handler func(message []byte, err error) error, options ...graphql.Option) (string, error)
 	Run() error
+	Close() error
 }
 
 type Service struct {
