@@ -2,6 +2,13 @@
 
 
 
+## v0.4.3 (2024-06-11)
+
+### Fix
+
+* fix(cli): use production auth tenant in production builds ([`7855854`](https://github.com/numerous-com/numerous-sdk/commit/7855854a7ee6a7145e88134eced09c7c81427109))
+
+
 ## v0.4.2 (2024-06-11)
 
 ### Fix
