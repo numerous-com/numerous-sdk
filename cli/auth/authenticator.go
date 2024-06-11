@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	numerousAuth0Domain   string = "numerous.eu.auth0.com"
-	numerousAuth0ClientID string = "h5U41HhtgJ5OXdIvzi2Aw7VNFQMoLzgF"
+	auth0Domain   string = "numerous-dev.eu.auth0.com"
+	auth0ClientID string = "fzPy9It2ERYZUi4AG5U0vmDSKC7oOxHe"
 )
 
-var NumerousTenantAuthenticator = NewTenantAuthenticator(numerousAuth0Domain, numerousAuth0ClientID)
+var NumerousTenantAuthenticator = NewTenantAuthenticator(auth0Domain, auth0ClientID)
 
 type Authenticator interface {
 	GetDeviceCode(ctx context.Context, client *http.Client) (DeviceCodeState, error)
