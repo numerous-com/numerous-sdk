@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"numerous/cli/internal/gql"
 	"numerous/cli/test"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestAppRead(t *testing.T) {
 		assert.Equal(t, expected, output)
 	})
 
-	t.Run("given empty response then it returns not found error", func(t *testing.T) {
+	t.Run("given app not found error then it returns not found error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 		s := New(c, nil, nil)
@@ -50,7 +51,12 @@ func TestAppRead(t *testing.T) {
 			{
 				"data": {
 					"app": null
-				}
+				},
+				"errors": [{
+					"message": "app not found",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["app"]
+				}]
 			}
 		`
 		resp := test.JSONResponse(respBody)
@@ -62,9 +68,35 @@ func TestAppRead(t *testing.T) {
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 
-		expected := ReadAppOutput{}
 		assert.ErrorIs(t, err, ErrAppNotFound)
-		assert.Equal(t, expected, output)
+		assert.Equal(t, ReadAppOutput{}, output)
+	})
+
+	t.Run("given access denied error then it returns access denied error", func(t *testing.T) {
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+
+		respBody := `
+			{
+				"errors": [{
+					"message": "access denied",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["app"]
+				}]
+			}
+		`
+		resp := test.JSONResponse(respBody)
+		doer.On("Do", mock.Anything).Return(resp, nil)
+
+		input := ReadAppInput{
+			OrganizationSlug: "organization-slug",
+			Name:             "app-name",
+		}
+		output, err := s.ReadApp(context.TODO(), input)
+
+		assert.ErrorIs(t, err, gql.ErrAccesDenied)
+		assert.Equal(t, ReadAppOutput{}, output)
 	})
 
 	t.Run("given graphql error then it returns expected error", func(t *testing.T) {
@@ -77,7 +109,7 @@ func TestAppRead(t *testing.T) {
 				"errors": [{
 					"message": "expected error message",
 					"location": [{"line": 1, "column": 1}],
-					"path": ["appCreate"]
+					"path": ["app"]
 				}]
 			}
 		`

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"strings"
+
+	"numerous/cli/internal/gql"
 )
 
 type ReadAppInput struct {
@@ -36,14 +38,14 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 
 	variables := map[string]any{"slug": input.OrganizationSlug, "name": input.Name}
 	err := s.client.Exec(ctx, queryAppText, &resp, variables)
-	if err != nil && !strings.Contains(err.Error(), "app not found") {
-		return ReadAppOutput{}, err
+	if err == nil {
+		return ReadAppOutput{AppID: resp.App.ID}, nil
 	}
 
-	empty := appResponse{}
-	if resp == empty {
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "app not found") {
 		return ReadAppOutput{}, ErrAppNotFound
 	}
 
-	return ReadAppOutput{AppID: resp.App.ID}, nil
+	return ReadAppOutput{}, gql.CheckAccessDenied(err)
 }

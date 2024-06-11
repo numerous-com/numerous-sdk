@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"numerous/cli/internal/gql"
 	"numerous/cli/test"
 
 	"github.com/stretchr/testify/assert"
@@ -41,6 +42,32 @@ func TestDeployApp(t *testing.T) {
 		assert.Equal(t, expected, output)
 	})
 
+	t.Run("returns access denied error", func(t *testing.T) {
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+
+		respBody := `
+			{
+				"errors": [{
+					"message": "access denied",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["appDeploy"]
+				}]
+			}
+		`
+		resp := test.JSONResponse(respBody)
+		doer.On("Do", mock.Anything).Return(resp, nil)
+		input := DeployAppInput{
+			AppVersionID: "some-app-version-id",
+		}
+		output, err := s.DeployApp(context.TODO(), input)
+
+		expected := DeployAppOutput{}
+		assert.ErrorIs(t, err, gql.ErrAccesDenied)
+		assert.Equal(t, expected, output)
+	})
+
 	t.Run("returns expected error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
@@ -51,7 +78,7 @@ func TestDeployApp(t *testing.T) {
 				"errors": [{
 					"message": "expected error message",
 					"location": [{"line": 1, "column": 1}],
-					"path": ["appCreate"]
+					"path": ["appDeploy"]
 				}]
 			}
 		`

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/secret"
 )
 
@@ -36,7 +37,7 @@ func (s *Service) DeployApp(ctx context.Context, input DeployAppInput) (DeployAp
 
 	err := s.client.Exec(ctx, appDeployText, &resp, variables)
 	if err != nil {
-		return DeployAppOutput{}, err
+		return DeployAppOutput{}, gql.CheckAccessDenied(err)
 	}
 
 	return DeployAppOutput{DeploymentVersionID: resp.AppDeploy.ID}, nil

@@ -188,8 +188,8 @@ func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName 
 
 		return appCreateOutput.AppID, nil
 	default:
-		output.PrintErrorDetails("Error reading remote app", err)
 		task.Error()
+		output.PrintErrorDetails("Error reading remote app", err)
 
 		return "", err
 	}
