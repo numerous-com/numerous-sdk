@@ -130,17 +130,23 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 		Handler: func(de app.DeployEvent) error {
 			switch de.Typename {
 			case "AppBuildMessageEvent":
-				for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
-					task.AddLine("Build", l)
+				if verbose {
+					for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
+						task.AddLine("Build", l)
+					}
 				}
 			case "AppBuildErrorEvent":
-				for _, l := range strings.Split(de.BuildError.Message, "\n") {
-					task.AddLine("Error", l)
+				if verbose {
+					for _, l := range strings.Split(de.BuildError.Message, "\n") {
+						task.AddLine("Error", l)
+					}
 				}
 
 				return fmt.Errorf("build error: %s", de.BuildError.Message)
-			case "AppDeployStatusEvent":
-				task.AddLine("Deploy", "Status: "+de.DeploymentStatus.Status)
+			case "AppDeploymentStatusEvent":
+				if verbose {
+					task.AddLine("Deploy", "Status is "+de.DeploymentStatus.Status)
+				}
 				switch de.DeploymentStatus.Status {
 				case "PENDING", "RUNNING":
 				default:
