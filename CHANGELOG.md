@@ -2,6 +2,17 @@
 
 
 
+## v0.4.1 (2024-06-11)
+
+### Fix
+
+* fix(cli): `login` and `logout` output improvements
+
+* Display errors using functions from `output`.
+* Add `output.PrintlnOK` for printing affirmative messages.
+* Use non-emoji symbols with ansi coloring. ([`6a98b6b`](https://github.com/numerous-com/numerous-sdk/commit/6a98b6bd3ca7a3f525151f17424cfc4e50530763))
+
+
 ## v0.4.0 (2024-06-10)
 
 ### Feature
