@@ -2,6 +2,15 @@
 
 
 
+## v0.4.2 (2024-06-11)
+
+### Fix
+
+* fix(cli): hide verbose `deploy` output unless requested ([`f635d61`](https://github.com/numerous-com/numerous-sdk/commit/f635d616d17810f6d212ef98161fa17a9c055de9))
+
+* fix(cli): simpler output for some access denied errors ([`2abcd15`](https://github.com/numerous-com/numerous-sdk/commit/2abcd157417b0a54a8e5ecda1ef643b1669caaa4))
+
+
 ## v0.4.1 (2024-06-11)
 
 ### Fix
