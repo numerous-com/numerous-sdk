@@ -10,11 +10,6 @@ import (
 	"github.com/pkg/browser"
 )
 
-const (
-	auth0Domain   string = "numerous-dev.eu.auth0.com"
-	auth0ClientID string = "fzPy9It2ERYZUi4AG5U0vmDSKC7oOxHe"
-)
-
 var NumerousTenantAuthenticator = NewTenantAuthenticator(auth0Domain, auth0ClientID)
 
 type Authenticator interface {
