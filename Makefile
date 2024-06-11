@@ -24,8 +24,8 @@ AUTH0_CLIENT_ID = h5U41HhtgJ5OXdIvzi2Aw7VNFQMoLzgF
 LDFLAGS = -s -w \
           -X "numerous/cli/internal/gql.httpURL=$(GQL_HTTP_URL)" \
           -X "numerous/cli/internal/gql.wsURL=$(GQL_WS_URL)" \
-		  -X "numerous/auth.auth0Domain=$(AUTH0_DOMAIN)" \
-		  -X "numerous/auth.auth0ClientID=$(AUTH0_CLIENT_ID)"
+		  -X "numerous/cli/auth.auth0Domain=$(AUTH0_DOMAIN)" \
+		  -X "numerous/cli/auth.auth0ClientID=$(AUTH0_CLIENT_ID)"
 
 
 # Python SDK related variables
