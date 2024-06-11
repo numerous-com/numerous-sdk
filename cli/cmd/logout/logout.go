@@ -1,7 +1,6 @@
 package logout
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -34,7 +33,7 @@ func logout(a auth.Authenticator) error {
 		output.PrintUnknownError(err)
 		return err
 	}
-	fmt.Println("✅ Successfully logged out!")
+	output.PrintlnOK("You are now logged out.")
 
 	return nil
 }

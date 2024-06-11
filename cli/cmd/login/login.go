@@ -3,7 +3,6 @@ package login
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -22,7 +21,7 @@ var LoginCmd = &cobra.Command{
 		if user == nil {
 			Login(auth.NumerousTenantAuthenticator, cmd.Context())
 		} else {
-			fmt.Println("✅ Great, you are already logged in!")
+			output.PrintlnOK("Great, you are already logged in!")
 		}
 	},
 }
@@ -30,7 +29,8 @@ var LoginCmd = &cobra.Command{
 func Login(a auth.Authenticator, ctx context.Context) *auth.User {
 	state, err := a.GetDeviceCode(ctx, http.DefaultClient)
 	if err != nil {
-		log.Fatal(err)
+		output.PrintErrorDetails("Error getting device code", err)
+		os.Exit(1)
 	}
 
 	fmt.Printf(`You are logging into Numerous.
@@ -46,7 +46,8 @@ Press Enter to continue...
 `, state.UserCode)
 
 	if _, err = fmt.Scanln(); err != nil {
-		log.Fatal(err)
+		output.PrintErrorDetails("Error getting keystroke", err)
+		os.Exit(1)
 	}
 
 	if err := a.OpenURL(state.VerificationURI); err != nil {
@@ -58,17 +59,15 @@ Press Enter to continue...
 
 	result, err := a.WaitUntilUserLogsIn(ctx, http.DefaultClient, state)
 	if err != nil {
-		log.Fatal(err)
+		output.PrintErrorDetails("Error waiting for login", err)
+		os.Exit(1)
 	}
 
 	if err := a.StoreAccessToken(result.AccessToken); err != nil {
-		output.PrintError(
-			"Login failed.",
-			"Error occurred storing access token in your keyring.\nError details: %s",
-			err.Error(),
-		)
+		output.PrintErrorDetails("Login failed. Could not store credentials in keyring.", err)
 		os.Exit(1)
 	}
+
 	if err := a.StoreRefreshToken(result.RefreshToken); err != nil {
 		output.PrintError(
 			"Error occurred storing refresh token in your keyring.",
@@ -77,7 +76,7 @@ Press Enter to continue...
 		)
 	}
 
-	fmt.Println("🎉 You are now logged in to Numerous!")
+	output.PrintlnOK("You are now logged in to Numerous!")
 
 	return a.GetLoggedInUserFromKeyring()
 }
