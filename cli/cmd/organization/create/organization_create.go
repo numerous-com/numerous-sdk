@@ -7,6 +7,7 @@ import (
 
 	"numerous/cli/auth"
 	"numerous/cli/cmd/organization/create/wizard"
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 
 	"numerous/cli/internal/gql/organization"
@@ -30,7 +31,7 @@ var OrganizationCreateCmd = &cobra.Command{
 func organizationCreate(a auth.Authenticator, c *gqlclient.Client) error {
 	user := a.GetLoggedInUserFromKeyring()
 	if user == nil {
-		fmt.Printf("Command requires login.\nUse \"numerous login\" to login or sign up.\n")
+		output.PrintErrorLogin()
 		return nil
 	}
 

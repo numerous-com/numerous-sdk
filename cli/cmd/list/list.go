@@ -27,13 +27,10 @@ var ListCmd = &cobra.Command{
 func list(a auth.Authenticator, c *gqlclient.Client) error {
 	user := a.GetLoggedInUserFromKeyring()
 	if user == nil {
-		output.PrintError(
-			"Command requires login.",
-			"Use \"numerous login\" to login or sign up.\n",
-		)
-
+		output.PrintErrorLogin()
 		return nil
 	}
+
 	apps, err := app.QueryList(c)
 	if err != nil {
 		output.PrintUnknownError(err)

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"numerous/cli/auth"
+	"numerous/cli/cmd/output"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/user"
 
@@ -26,7 +27,7 @@ var OrganizationListCmd = &cobra.Command{
 func list(a auth.Authenticator, g *gqlclient.Client) error {
 	u := a.GetLoggedInUserFromKeyring()
 	if u == nil {
-		fmt.Printf("Command requires login.\n Use \"numerous login\" to login or sign up.\n")
+		output.PrintErrorLogin()
 		return nil
 	}
 

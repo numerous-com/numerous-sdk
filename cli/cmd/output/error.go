@@ -37,3 +37,10 @@ func PrintErrorAppNotInitialized(appDir string) {
 			appDir, appDir)
 	}
 }
+
+func PrintErrorLogin() {
+	PrintError(
+		"Command requires login.",
+		"Use \"numerous login\" to login or sign up.\n",
+	)
+}
