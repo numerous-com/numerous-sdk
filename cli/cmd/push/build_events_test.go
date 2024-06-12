@@ -1,6 +1,7 @@
 package push
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/hasura/go-graphql-client"
@@ -30,12 +31,14 @@ func TestBuildEvents(t *testing.T) {
 	client := fakeSubscriptionClient{
 		events: []fakeSubscriptionEvent{
 			{
-				message: []byte("{}"),
+				message: []byte(`{"buildEvents": {"__typename": "BuildEventInfo", "result": "{\"stream\": \"Some message\"}"}}`),
 			},
 		},
 	}
 
-	err := buildEventSubscription(&client, "some build ID", "", false)
+	buf := bytes.NewBuffer(nil)
+	err := buildEventSubscription(&client, buf, "some build ID", "", true)
 
 	assert.NoError(t, err)
+	assert.Equal(t, "Some message", buf.String())
 }

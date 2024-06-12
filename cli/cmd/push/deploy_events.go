@@ -4,35 +4,27 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/hasura/go-graphql-client"
 )
 
 type DeployEvent struct {
-	Typename string `json:"__typename"`
-	Result   string `json:"result"`
+	Typename string             `graphql:"__typename"`
+	Success  *BuildEventSuccess `graphql:"... on BuildEventSuccess"`
+	Failure  *BuildEventFailure `graphql:"... on BuildEventFailure"`
+	Info     *BuildEventInfo    `graphql:"... on BuildEventInfo"`
 }
 
-type subscription3 struct {
-	DeployEvents DeployEvent `json:"deployEvents"`
+type DeployEventsSubscription struct {
+	DeployEvents DeployEvent `graphql:"deployEvents(toolID: $toolID)"`
 }
 
-type subscription2 struct {
-	DeployEvents struct {
-		Typename string             `graphql:"__typename"`
-		Success  *BuildEventSuccess `graphql:"... on BuildEventSuccess"`
-		Failure  *BuildEventFailure `graphql:"... on BuildEventFailure"`
-		Info     *BuildEventInfo    `graphql:"... on BuildEventInfo"`
-	} `graphql:"deployEvents(toolID: $toolID)"`
-}
-
-func getDeployEventLogs(toolID string) error {
+func getDeployEventLogs(w io.Writer, toolID string) error {
 	client := getClient()
 	defer client.Close()
 
-	err := deployEventSubscription(client, toolID, true)
+	err := deployEventSubscription(client, w, toolID, true)
 	if err != nil {
 		return err
 	}
@@ -44,21 +36,20 @@ func getDeployEventLogs(toolID string) error {
 	return err
 }
 
-func deployEventSubscription(client *graphql.SubscriptionClient, toolID string, verbose bool) error {
-	var sub subscription2
-	var out io.Writer = os.Stdout
-
+func deployEventSubscription(client *graphql.SubscriptionClient, w io.Writer, toolID string, verbose bool) error {
 	variables := map[string]any{"toolID": graphql.ID(toolID)}
-	_, err := client.Subscribe(&sub, variables, func(dataValue []byte, err error) error {
+	_, err := client.Subscribe(&DeployEventsSubscription{}, variables, func(dataValue []byte, err error) error {
 		if err != nil {
 			return err
 		}
-		data := subscription3{}
-		if err := json.Unmarshal([]byte(dataValue), &data); err != nil {
+
+		deployEvent := DeployEventsSubscription{}
+		if err := json.Unmarshal([]byte(dataValue), &deployEvent); err != nil {
 			return err
 		}
-		if data.DeployEvents.Typename == "BuildEventInfo" {
-			for _, msg := range strings.Split(data.DeployEvents.Result, "\r\n") {
+
+		if deployEvent.DeployEvents.Typename == "BuildEventInfo" {
+			for _, msg := range strings.Split(deployEvent.DeployEvents.Info.Result, "\r\n") {
 				var b BuildEventMessage
 
 				if err := json.Unmarshal([]byte(msg), &b); err != nil {
@@ -67,18 +58,18 @@ func deployEventSubscription(client *graphql.SubscriptionClient, toolID string, 
 				}
 
 				if b.Message != "" {
-					printVerbose(out, b.Message, verbose)
+					printVerbose(w, b.Message, verbose)
 				}
 			}
 		}
 
-		if data.DeployEvents.Typename == "BuildEventFailure" {
-			ProcessBuildEvent(data.DeployEvents.Result, out, true)
+		if deployEvent.DeployEvents.Typename == "BuildEventFailure" {
+			ProcessBuildEvent(w, deployEvent.DeployEvents.Failure.Result, true)
 			return nil
 		}
 
-		if data.DeployEvents.Typename == "BuildEventSuccess" {
-			ProcessBuildEvent(data.DeployEvents.Result, out, true)
+		if deployEvent.DeployEvents.Typename == "BuildEventSuccess" {
+			ProcessBuildEvent(w, deployEvent.DeployEvents.Success.Result, true)
 			return nil
 		}
 

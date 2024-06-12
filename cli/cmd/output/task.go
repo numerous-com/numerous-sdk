@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"io"
 )
 
 const taskLineLength = 40
@@ -55,4 +56,20 @@ func StartTask(msg string) *Task {
 	t.start()
 
 	return &t
+}
+
+var _ io.Writer = &TaskLineWriter{}
+
+type TaskLineWriter struct {
+	task   *Task
+	prefix string
+}
+
+func NewTaskLineWriter(t *Task, prefix string) *TaskLineWriter {
+	return &TaskLineWriter{t, prefix}
+}
+
+func (tlw *TaskLineWriter) Write(buf []byte) (int, error) {
+	tlw.task.AddLine(tlw.prefix, string(buf))
+	return len(buf), nil
 }

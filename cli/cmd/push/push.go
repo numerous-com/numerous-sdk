@@ -137,7 +137,8 @@ func deployApp(toolID string) (ok bool) {
 		return false
 	}
 
-	err = getDeployEventLogs(string(toolID))
+	w := output.NewTaskLineWriter(task, "Deploy")
+	err = getDeployEventLogs(w, string(toolID))
 	if err != nil {
 		output.PrintErrorDetails("Error listening for deploy logs.", err)
 		return false
@@ -151,12 +152,8 @@ func deployApp(toolID string) (ok bool) {
 func buildApp(buildID string, appPath string) (ok bool) {
 	task := output.StartTask("Building app")
 
-	if verbose {
-		// To allow nice printing of build messages from backend
-		fmt.Println()
-	}
-
-	err := getBuildEventLogs(buildID, appPath, verbose)
+	w := output.NewTaskLineWriter(task, "Build")
+	err := getBuildEventLogs(w, buildID, appPath, verbose)
 	if err != nil {
 		output.PrintErrorDetails("Error listening for build logs.", err)
 		return false
