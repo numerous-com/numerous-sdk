@@ -2,6 +2,13 @@
 
 
 
+## v0.4.4 (2024-06-12)
+
+### Fix
+
+* fix(cli): prettier `push` verbose output ([`3f526ff`](https://github.com/numerous-com/numerous-sdk/commit/3f526ff619214bcf9914a0e7ed3fc3b46658c04d))
+
+
 ## v0.4.3 (2024-06-11)
 
 ### Fix
