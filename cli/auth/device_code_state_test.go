@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetDeviceCode(t *testing.T) {
-	testTenant := NewTenantAuthenticator("numerous-test.com", "test-client-id")
+	testTenant := NewTenantAuthenticator("numerous-test.com", "test-client-id", "numerous-test.com/api/v2/")
 	t.Run("successfully retrieve state from response", func(t *testing.T) {
 		transport := &test.TestTransport{
 			WithResponse: &http.Response{

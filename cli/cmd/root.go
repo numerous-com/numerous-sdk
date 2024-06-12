@@ -125,7 +125,6 @@ func bindCommands() {
 
 func Execute() {
 	err := rootCmd.Execute()
-	// fmt.Println(auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring().AccessToken)
 	if err != nil {
 		os.Exit(1)
 	}

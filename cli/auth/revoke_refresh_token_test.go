@@ -13,7 +13,7 @@ import (
 )
 
 func TestRevokeRefreshToken(t *testing.T) {
-	testTenant := NewTenantAuthenticator("numerous-test.com", "test-client-id")
+	testTenant := NewTenantAuthenticator("numerous-test.com", "test-client-id", "numerous-test.com/api/v2/")
 	t.Run("successfully revoke token", func(t *testing.T) {
 		transport := &test.TestTransport{
 			WithResponse: &http.Response{

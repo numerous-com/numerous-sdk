@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/browser"
 )
 
-var NumerousTenantAuthenticator = NewTenantAuthenticator(auth0Domain, auth0ClientID)
+var NumerousTenantAuthenticator = NewTenantAuthenticator(auth0Domain, auth0ClientID, auth0Audience)
 
 type Authenticator interface {
 	GetDeviceCode(ctx context.Context, client *http.Client) (DeviceCodeState, error)
@@ -29,13 +29,13 @@ type TenantAuthenticator struct {
 	credentials Credentials
 }
 
-func NewTenantAuthenticator(tenant string, clientID string) *TenantAuthenticator {
+func NewTenantAuthenticator(tenant string, clientID string, audience string) *TenantAuthenticator {
 	baseURL := "https://" + tenant
 	return &TenantAuthenticator{
 		tenant: tenant,
 		credentials: Credentials{
 			ClientID:            clientID,
-			Audience:            baseURL + "/api/v2/",
+			Audience:            audience,
 			DeviceCodeEndpoint:  baseURL + "/oauth/device/code/",
 			OauthTokenEndpoint:  baseURL + "/oauth/token/",
 			RevokeTokenEndpoint: baseURL + "/oauth/revoke/",

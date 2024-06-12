@@ -19,13 +19,15 @@ getarch = $(word 4,$(subst _, ,$(subst /, ,$@)))
 
 GQL_HTTP_URL = https://api.numerous.com/query
 GQL_WS_URL = wss://api.numerous.com/query
-AUTH0_DOMAIN = numerous.eu.auth0.com
+AUTH0_DOMAIN = auth.numerous.com
 AUTH0_CLIENT_ID = h5U41HhtgJ5OXdIvzi2Aw7VNFQMoLzgF
+AUTH0_AUDIENCE = https://numerous.eu.auth0.com/api/v2/
 LDFLAGS = -s -w \
           -X "numerous/cli/internal/gql.httpURL=$(GQL_HTTP_URL)" \
           -X "numerous/cli/internal/gql.wsURL=$(GQL_WS_URL)" \
 		  -X "numerous/cli/auth.auth0Domain=$(AUTH0_DOMAIN)" \
-		  -X "numerous/cli/auth.auth0ClientID=$(AUTH0_CLIENT_ID)"
+		  -X "numerous/cli/auth.auth0ClientID=$(AUTH0_CLIENT_ID)" \
+		  -X "numerous/cli/auth.auth0Audience=$(AUTH0_AUDIENCE)"
 
 
 # Python SDK related variables
