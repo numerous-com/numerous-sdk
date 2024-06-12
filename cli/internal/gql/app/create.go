@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"numerous/cli/manifest"
-	"numerous/cli/tool"
 
 	"git.sr.ht/~emersion/gqlclient"
 )
@@ -13,9 +12,9 @@ type appCreateResponse struct {
 	ToolCreate App
 }
 
-func Create(a tool.Tool, client *gqlclient.Client) (App, error) {
+func Create(m *manifest.Manifest, client *gqlclient.Client) (App, error) {
 	resp := appCreateResponse{}
-	jsonManifest, err := manifest.FromTool(a).ToJSON()
+	jsonManifest, err := m.ToJSON()
 	if err != nil {
 		return resp.ToolCreate, err
 	}

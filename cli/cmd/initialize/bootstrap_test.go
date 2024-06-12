@@ -8,7 +8,6 @@ import (
 
 	"numerous/cli/manifest"
 	"numerous/cli/test"
-	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,9 +41,9 @@ func allFilesExist(fileNames []string) error {
 func TestBootstrapAllFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	require.NoError(t, os.Chdir(tempDir))
-	lib, err := tool.GetLibraryByKey("streamlit")
+	lib, err := manifest.GetLibraryByKey("streamlit")
 	require.NoError(t, err)
-	testTool := tool.Tool{
+	m := manifest.Manifest{
 		Library:          lib,
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
@@ -53,12 +52,12 @@ func TestBootstrapAllFiles(t *testing.T) {
 	expectedFiles := []string{
 		".gitignore",
 		manifest.ManifestFileName,
-		testTool.AppFile,
-		testTool.RequirementsFile,
-		testTool.CoverImage,
+		m.AppFile,
+		m.RequirementsFile,
+		m.CoverImage,
 	}
 
-	err = bootstrapFiles(testTool, "some-id", tempDir)
+	err = bootstrapFiles(&m, "some-id", tempDir)
 
 	if assert.NoError(t, err) {
 		err = allFilesExist(expectedFiles)
@@ -74,49 +73,49 @@ func TestBootstrapRequirementsFile(t *testing.T) {
 
 	testCases := []struct {
 		name                 string
-		library              tool.Library
+		library              manifest.Library
 		initialRequirements  string
 		expectedRequirements string
 	}{
 		{
 			name:                 "plotly-dash without initial requirements",
-			library:              tool.LibraryPlotlyDash,
+			library:              manifest.LibraryPlotlyDash,
 			initialRequirements:  "",
 			expectedRequirements: "dash\ngunicorn\n",
 		},
 		{
 			name:                 "streamlit without initial requirements",
-			library:              tool.LibraryStreamlit,
+			library:              manifest.LibraryStreamlit,
 			initialRequirements:  "",
 			expectedRequirements: "streamlit\n",
 		},
 		{
 			name:                 "marimo without initial requirements",
-			library:              tool.LibraryMarimo,
+			library:              manifest.LibraryMarimo,
 			initialRequirements:  "",
 			expectedRequirements: "marimo\n",
 		},
 		{
 			name:                 "numerous without initial requirements",
-			library:              tool.LibraryNumerous,
+			library:              manifest.LibraryNumerous,
 			initialRequirements:  "",
 			expectedRequirements: "numerous\n",
 		},
 		{
 			name:                 "marimo with initial requirements with newline appends at end",
-			library:              tool.LibraryMarimo,
+			library:              manifest.LibraryMarimo,
 			initialRequirements:  dummyRequirementsWithNewLine,
 			expectedRequirements: dummyRequirementsWithNewLine + "marimo\n",
 		},
 		{
 			name:                 "marimo with initial requirements without newline appends at end",
-			library:              tool.LibraryMarimo,
+			library:              manifest.LibraryMarimo,
 			initialRequirements:  dummyRequirementsWithoutNewLine,
 			expectedRequirements: dummyRequirementsWithNewLine + "marimo\n",
 		},
 		{
 			name:                 "marimo with initial requirements and library is part of requirements, nothing changes",
-			library:              tool.LibraryMarimo,
+			library:              manifest.LibraryMarimo,
 			initialRequirements:  "marimo\n" + dummyRequirementsWithNewLine,
 			expectedRequirements: "marimo\n" + dummyRequirementsWithNewLine,
 		},
@@ -125,21 +124,21 @@ func TestBootstrapRequirementsFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			require.NoError(t, os.Chdir(tempDir))
-			testTool := tool.Tool{
+			m := manifest.Manifest{
 				Library:          testCase.library,
 				AppFile:          "app.py",
 				RequirementsFile: "requirements.txt",
 				CoverImage:       "cover_image.png",
 			}
 			if testCase.initialRequirements != "" {
-				err := os.WriteFile(testTool.RequirementsFile, []byte(testCase.initialRequirements), 0o644)
+				err := os.WriteFile(m.RequirementsFile, []byte(testCase.initialRequirements), 0o644)
 				require.NoError(t, err)
 			}
 
-			err := bootstrapFiles(testTool, "some-id", tempDir)
+			err := bootstrapFiles(&m, "some-id", tempDir)
 
 			require.NoError(t, err)
-			actualRequirements, err := os.ReadFile(testTool.RequirementsFile)
+			actualRequirements, err := os.ReadFile(m.RequirementsFile)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expectedRequirements, string(actualRequirements))
 		})
@@ -167,27 +166,27 @@ func TestBootstrapFiles(t *testing.T) {
 	t.Run("bootstraps app file", func(t *testing.T) {
 		testCases := []struct {
 			name            string
-			library         tool.Library
+			library         manifest.Library
 			expectedAppFile string
 		}{
 			{
 				name:            "numerous",
-				library:         tool.LibraryNumerous,
+				library:         manifest.LibraryNumerous,
 				expectedAppFile: expectedNumerousApp,
 			},
 			{
 				name:            "streamlit",
-				library:         tool.LibraryStreamlit,
+				library:         manifest.LibraryStreamlit,
 				expectedAppFile: "",
 			},
 			{
 				name:            "dash",
-				library:         tool.LibraryPlotlyDash,
+				library:         manifest.LibraryPlotlyDash,
 				expectedAppFile: "",
 			},
 			{
 				name:            "marimo",
-				library:         tool.LibraryMarimo,
+				library:         manifest.LibraryMarimo,
 				expectedAppFile: "",
 			},
 		}
@@ -195,7 +194,7 @@ func TestBootstrapFiles(t *testing.T) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				require.NoError(t, os.Chdir(t.TempDir()))
-				testTool := tool.Tool{
+				m := manifest.Manifest{
 					Library:          testCase.library,
 					AppFile:          "app.py",
 					RequirementsFile: "requirements.txt",
@@ -204,7 +203,7 @@ func TestBootstrapFiles(t *testing.T) {
 				tempDir, err := os.Getwd()
 				require.NoError(t, err)
 
-				err = bootstrapFiles(testTool, "tool id", tempDir)
+				err = bootstrapFiles(&m, "tool id", tempDir)
 
 				require.NoError(t, err)
 				appContent, err := os.ReadFile("app.py")
@@ -216,7 +215,7 @@ func TestBootstrapFiles(t *testing.T) {
 	t.Run("adds expected lines to existing .gitignore", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
-		tool := tool.Tool{
+		m := manifest.Manifest{
 			RequirementsFile: "requirements.txt",
 			AppFile:          "app.py",
 			CoverImage:       "conver_img.png",
@@ -226,7 +225,7 @@ func TestBootstrapFiles(t *testing.T) {
 		gitignoreFilePath := filepath.Join(tmpDir, ".gitignore")
 		test.WriteFile(t, gitignoreFilePath, []byte(initialGitIgnoreContent))
 
-		err := bootstrapFiles(tool, toolID, tmpDir)
+		err := bootstrapFiles(&m, toolID, tmpDir)
 
 		assert.NoError(t, err)
 		actualGitIgnoreContent, err := os.ReadFile(gitignoreFilePath)
@@ -238,18 +237,20 @@ func TestBootstrapFiles(t *testing.T) {
 	t.Run("writes manifest with expected excludes", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
-		tool := tool.Tool{
+		m := manifest.Manifest{
 			RequirementsFile: "requirements.txt",
 			AppFile:          "app.py",
 			CoverImage:       "conver_img.png",
+			Library:          manifest.LibraryMarimo,
+			Exclude:          []string{"*venv", "venv*", ".git", ".env"},
 		}
 
-		bootErr := bootstrapFiles(tool, toolID, tmpDir)
-		manifest, manifestErr := manifest.LoadManifest(tmpDir + "/" + manifest.ManifestFileName)
+		bootErr := bootstrapFiles(&m, toolID, tmpDir)
+		loaded, manifestErr := manifest.LoadManifest(tmpDir + "/" + manifest.ManifestFileName)
 
 		assert.NoError(t, bootErr)
 		assert.NoError(t, manifestErr)
 		expectedExclude := []string{"*venv", "venv*", ".git", ".env"}
-		assert.Equal(t, expectedExclude, manifest.Exclude)
+		assert.Equal(t, expectedExclude, loaded.Exclude)
 	})
 }

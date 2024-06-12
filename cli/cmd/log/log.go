@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"numerous/cli/cmd/output"
-	"numerous/cli/tool"
+	"numerous/cli/internal/dir"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +35,7 @@ func log(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	appID, err := tool.ReadAppIDAndPrintErrors(appDir)
+	appID, err := dir.ReadAppIDAndPrintErrors(appDir)
 	if err != nil {
 		return
 	}

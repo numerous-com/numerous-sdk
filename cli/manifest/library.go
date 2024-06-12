@@ -1,7 +1,21 @@
-package tool
+package manifest
 
 import (
 	"fmt"
+)
+
+var (
+	streamlitPort uint = 80
+	plotyPort     uint = 8050
+	marimoPort    uint = 8000
+	numerousPort  uint = 7001
+)
+
+var (
+	LibraryStreamlit  = Library{Name: "Streamlit", Key: "streamlit", Port: streamlitPort, Requirements: []string{"streamlit"}}
+	LibraryPlotlyDash = Library{Name: "Plotly-dash", Key: "plotly", Port: plotyPort, Requirements: []string{"dash", "gunicorn"}}
+	LibraryMarimo     = Library{Name: "Marimo", Key: "marimo", Port: marimoPort, Requirements: []string{"marimo"}}
+	LibraryNumerous   = Library{Name: "Numerous", Key: "numerous", Port: numerousPort, Requirements: []string{"numerous"}}
 )
 
 type Library struct {
@@ -28,6 +42,24 @@ class MyApp:
 appdef = MyApp
 `
 
+func (l *Library) MarshalText() ([]byte, error) {
+	return []byte(l.Key), nil
+}
+
+func (l *Library) UnmarshalText(text []byte) error {
+	parsed, err := GetLibraryByKey(string(text))
+	if err != nil {
+		return err
+	}
+
+	l.Key = parsed.Key
+	l.Name = parsed.Name
+	l.Port = parsed.Port
+	l.Requirements = parsed.Requirements
+
+	return nil
+}
+
 func (l *Library) DefaultAppFile() string {
 	switch l.Key {
 	case "numerous":
@@ -37,19 +69,6 @@ func (l *Library) DefaultAppFile() string {
 	}
 }
 
-var (
-	streamlitPort uint = 80
-	plotyPort     uint = 8050
-	marimoPort    uint = 8000
-	numerousPort  uint = 7001
-)
-
-var (
-	LibraryStreamlit  = Library{Name: "Streamlit", Key: "streamlit", Port: streamlitPort, Requirements: []string{"streamlit"}}
-	LibraryPlotlyDash = Library{Name: "Plotly-dash", Key: "plotly", Port: plotyPort, Requirements: []string{"dash", "gunicorn"}}
-	LibraryMarimo     = Library{Name: "Marimo", Key: "marimo", Port: marimoPort, Requirements: []string{"marimo"}}
-	LibraryNumerous   = Library{Name: "Numerous", Key: "numerous", Port: numerousPort, Requirements: []string{"numerous"}}
-)
 var SupportedLibraries = []Library{LibraryStreamlit, LibraryPlotlyDash, LibraryMarimo, LibraryNumerous}
 
 func GetLibraryByKey(key string) (Library, error) {

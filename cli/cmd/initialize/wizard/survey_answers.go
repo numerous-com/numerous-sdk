@@ -3,7 +3,7 @@ package wizard
 import (
 	"strings"
 
-	"numerous/cli/tool"
+	"numerous/cli/manifest"
 )
 
 type surveyAnswers struct {
@@ -14,20 +14,22 @@ type surveyAnswers struct {
 	RequirementsFile string
 }
 
-func (s surveyAnswers) appendAnswersToApp(a *tool.Tool) {
-	a.Name = s.Name
-	a.Description = s.Description
-	a.Library, _ = tool.GetLibraryByName(s.LibraryName)
-	a.AppFile = strings.Trim(s.AppFile, " 	")
-	a.RequirementsFile = strings.Trim(s.RequirementsFile, " 	")
+func (s surveyAnswers) updateManifest(m *manifest.Manifest) {
+	lib, _ := manifest.GetLibraryByName(s.LibraryName)
+	m.Name = s.Name
+	m.Description = s.Description
+	m.Library = lib
+	m.AppFile = strings.Trim(s.AppFile, " 	")
+	m.RequirementsFile = strings.Trim(s.RequirementsFile, " 	")
+	m.Port = lib.Port
 }
 
-func fromApp(a *tool.Tool) *surveyAnswers {
-	return &surveyAnswers{
-		Name:             a.Name,
-		Description:      a.Description,
-		LibraryName:      a.Library.Name,
-		AppFile:          a.AppFile,
-		RequirementsFile: a.RequirementsFile,
+func answersFromManifest(m *manifest.Manifest) surveyAnswers {
+	return surveyAnswers{
+		Name:             m.Name,
+		Description:      m.Description,
+		LibraryName:      m.Library.Name,
+		AppFile:          m.AppFile,
+		RequirementsFile: m.RequirementsFile,
 	}
 }

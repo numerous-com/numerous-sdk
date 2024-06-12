@@ -42,7 +42,7 @@ type encodeTOMLTestCase struct {
 var streamlitManifest = Manifest{
 	Name:             "Tool Name",
 	Description:      "A description",
-	Library:          "streamlit",
+	Library:          LibraryStreamlit,
 	Python:           "3.11",
 	Port:             80,
 	AppFile:          "app.py",
@@ -193,8 +193,12 @@ func TestManifestValidateApp(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			appfile := test.WriteTempFile(t, "appfile.py", []byte(testCase.appfileContent))
-			m := Manifest{Library: testCase.library, AppFile: appfile}
+			l, err := GetLibraryByKey(testCase.library)
+			require.NoError(t, err)
+
+			m := Manifest{Library: l, AppFile: appfile}
 			validated, err := m.ValidateApp()
+
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expected, validated)
 		})

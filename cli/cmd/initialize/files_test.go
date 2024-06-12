@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"numerous/cli/internal/dir"
 	"numerous/cli/test"
-	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestCreateAppIdFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	err := os.Chdir(tmpDir)
 	require.NoError(t, err)
-	appIDPath := filepath.Join(tmpDir, tool.AppIDFileName)
+	appIDPath := filepath.Join(tmpDir, dir.AppIDFileName)
 	appID := "some-id"
 
 	err = createAppIDFile(tmpDir, appID)

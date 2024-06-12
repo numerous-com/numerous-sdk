@@ -4,13 +4,21 @@ import (
 	"fmt"
 	"os"
 
-	"numerous/cli/tool"
+	"numerous/cli/manifest"
 
 	"github.com/AlecAivazis/survey/v2"
 )
 
-func RunInitAppWizard(projectFolderPath string, a *tool.Tool) (bool, error) {
-	questions := getQuestions(*a)
+type InitWizardOptions struct {
+	Name             string
+	Description      string
+	LibraryKey       string
+	AppFile          string
+	RequirementsFile string
+}
+
+func RunInitAppWizard(projectFolderPath string, m *manifest.Manifest) (bool, error) {
+	questions := getQuestions(m)
 	if len(questions) == 1 && questions[0].Name == "Description" {
 		return false, nil
 	}
@@ -26,42 +34,43 @@ func RunInitAppWizard(projectFolderPath string, a *tool.Tool) (bool, error) {
 		return false, nil
 	}
 
-	answers := fromApp(a)
-	if err := survey.Ask(questions, answers); err != nil {
+	answers := answersFromManifest(m)
+	if err := survey.Ask(questions, &answers); err != nil {
 		return false, err
 	}
 
-	answers.appendAnswersToApp(a)
+	answers.updateManifest(m)
 
 	return true, nil
 }
 
-func getQuestions(a tool.Tool) []*survey.Question {
-	q := []*survey.Question{}
+func getQuestions(m *manifest.Manifest) []*survey.Question {
+	qs := []*survey.Question{}
 
-	if a.Name == "" {
-		q = append(q, getTextQuestion("Name",
-			"Name your app:",
-			true))
+	if m.Name == "" {
+		q := getTextQuestion("Name", "Name your app:", true)
+		qs = append(qs, q)
 	}
-	if a.Description == "" {
-		q = append(q, getTextQuestion("Description",
-			"Provide a short description for your app:",
-			false))
+
+	if m.Description == "" {
+		q := getTextQuestion("Description", "Provide a short description for your app:", false)
+		qs = append(qs, q)
 	}
-	if a.Library.Key == "" {
-		q = append(q, getLibraryQuestion("LibraryName",
-			"Select which app library you are using:"))
+
+	if m.Library.Key == "" {
+		q := getLibraryQuestion("LibraryName", "Select which app library you are using:")
+		qs = append(qs, q)
 	}
-	if a.AppFile == "" {
-		q = append(q, getFileQuestion("AppFile",
+
+	if m.AppFile == "" {
+		qs = append(qs, getFileQuestion("AppFile",
 			"Provide the path to your app:", "app.py", ".py"))
 	}
-	if a.RequirementsFile == "" {
-		q = append(q, getFileQuestion("RequirementsFile",
-			"Provide the path to your requirements file:",
-			"requirements.txt", ".txt"))
+
+	if m.RequirementsFile == "" {
+		q := getFileQuestion("RequirementsFile", "Provide the path to your requirements file:", "requirements.txt", ".txt")
+		qs = append(qs, q)
 	}
 
-	return q
+	return qs
 }

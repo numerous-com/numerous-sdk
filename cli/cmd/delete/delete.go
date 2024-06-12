@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"numerous/cli/cmd/output"
+	"numerous/cli/internal/dir"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
-	"numerous/cli/tool"
 
 	"git.sr.ht/~emersion/gqlclient"
 	"github.com/spf13/cobra"
@@ -31,7 +31,7 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 	var appID string
 	if len(args) == 1 {
 		appID = args[0]
-	} else if readAppID, err := tool.ReadAppIDAndPrintErrors("."); err != nil {
+	} else if readAppID, err := dir.ReadAppIDAndPrintErrors("."); err != nil {
 		return err
 	} else {
 		appID = readAppID
@@ -41,7 +41,7 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 		output.PrintError(
 			"Sorry, we could not find the app in our database.",
 			"Please, make sure that the App ID in the \"%s\" file is correct and try again.",
-			tool.AppIDFileName,
+			dir.AppIDFileName,
 		)
 
 		return err
