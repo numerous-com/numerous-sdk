@@ -35,16 +35,6 @@ var (
 )
 
 func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug string, appName string, verbose bool) error {
-	if !validate.IsValidIdentifier(slug) {
-		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
-		return ErrInvalidSlug
-	}
-
-	if !validate.IsValidIdentifier(appName) {
-		output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
-		return ErrInvalidAppName
-	}
-
 	task := output.StartTask("Loading app configuration")
 	manifest, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
@@ -55,6 +45,29 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 	}
 
 	secrets := loadSecretsFromEnv(appDir)
+
+	if slug == "" && manifest.Deployment != nil {
+		slug = manifest.Deployment.OrganizationSlug
+	}
+
+	if !validate.IsValidIdentifier(slug) {
+		task.Error()
+		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+
+		return ErrInvalidSlug
+	}
+
+	if appName == "" && manifest.Deployment != nil {
+		appName = manifest.Deployment.AppName
+	}
+
+	if !validate.IsValidIdentifier(appName) {
+		task.Error()
+		output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+
+		return ErrInvalidAppName
+	}
+
 	task.Done()
 
 	task = output.StartTask("Registering new version")

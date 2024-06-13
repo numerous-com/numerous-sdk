@@ -68,15 +68,63 @@ func TestDeploy(t *testing.T) {
 	})
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), nil, ".", "", "Some Invalid Organization Slug", appName, false)
+		appDir := t.TempDir()
+		copyTo(t, "../../testdata/streamlit_app", appDir)
+
+		err := Deploy(context.TODO(), nil, appDir, "", "Some Invalid Organization Slug", appName, false)
 
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
-		err := Deploy(context.TODO(), nil, ".", "", slug, "Some Invalid App Name", false)
+		appDir := t.TempDir()
+		copyTo(t, "../../testdata/streamlit_app", appDir)
+
+		err := Deploy(context.TODO(), nil, appDir, "", slug, "Some Invalid App Name", false)
 
 		assert.ErrorIs(t, err, ErrInvalidAppName)
+	})
+
+	t.Run("given no slug or app name arguments and manifest with deployment and then it uses manifest deployment", func(t *testing.T) {
+		appDir := t.TempDir()
+		copyTo(t, "../../testdata/streamlit_app", appDir)
+
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
+		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
+		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
+		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
+		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
+		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
+
+		err := Deploy(context.TODO(), apps, appDir, "", "", "", false)
+
+		if assert.NoError(t, err) {
+			expectedInput := app.CreateAppInput{OrganizationSlug: "organization-slug-in-manifest", Name: "app-name-in-manifest", DisplayName: "Streamlit App With Deploy"}
+			apps.AssertCalled(t, "Create", mock.Anything, expectedInput)
+		}
+	})
+
+	t.Run("given slug or app name arguments and manifest with deployment and then arguments override manifest deployment", func(t *testing.T) {
+		appDir := t.TempDir()
+		copyTo(t, "../../testdata/streamlit_app", appDir)
+
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
+		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
+		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
+		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
+		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
+		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
+
+		err := Deploy(context.TODO(), apps, appDir, "", "organization-slug-in-argument", "app-name-in-argument", false)
+
+		if assert.NoError(t, err) {
+			expectedInput := app.CreateAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument", DisplayName: "Streamlit App With Deploy"}
+			apps.AssertCalled(t, "Create", mock.Anything, expectedInput)
+		}
 	})
 }
 
