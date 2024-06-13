@@ -2,6 +2,16 @@
 
 
 
+## v0.4.5 (2024-06-13)
+
+### Fix
+
+* fix: github login (#8)
+
+* separate domain and audience and authenticator constructor
+ * use custom auth0 domain for authenticator ([`0d87102`](https://github.com/numerous-com/numerous-sdk/commit/0d871028fe7b64aee4e4903b3cdd9719ca05310e))
+
+
 ## v0.4.4 (2024-06-12)
 
 ### Fix
