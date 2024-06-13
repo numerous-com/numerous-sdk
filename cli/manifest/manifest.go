@@ -16,15 +16,16 @@ const ManifestFileName string = "numerous.toml"
 var ManifestPath string = filepath.Join(".", ManifestFileName)
 
 type Manifest struct {
-	Name             string   `toml:"name" json:"name"`
-	Description      string   `toml:"description" json:"description"`
-	Library          Library  `toml:"library" json:"library"`
-	Python           string   `toml:"python" json:"python"`
-	AppFile          string   `toml:"app_file" json:"app_file"`
-	RequirementsFile string   `toml:"requirements_file" json:"requirements_file"`
-	Port             uint     `toml:"port" json:"port"`
-	CoverImage       string   `toml:"cover_image" json:"cover_image"`
-	Exclude          []string `toml:"exclude" json:"exclude"`
+	Name             string      `toml:"name" json:"name"`
+	Description      string      `toml:"description" json:"description"`
+	Library          Library     `toml:"library" json:"library"`
+	Python           string      `toml:"python" json:"python"`
+	AppFile          string      `toml:"app_file" json:"app_file"`
+	RequirementsFile string      `toml:"requirements_file" json:"requirements_file"`
+	Port             uint        `toml:"port" json:"port"`
+	CoverImage       string      `toml:"cover_image" json:"cover_image"`
+	Exclude          []string    `toml:"exclude" json:"exclude"`
+	Deployment       *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 
 type DeprecatedManifest struct {
@@ -37,6 +38,11 @@ type DeprecatedManifest struct {
 	Port             string   `toml:"port" json:"port"`
 	CoverImage       string   `toml:"cover_image" json:"cover_image"`
 	Exclude          []string `toml:"exclude" json:"exclude"`
+}
+
+type Deployment struct {
+	OrganizationSlug string `toml:"organization" json:"organization"`
+	AppName          string `toml:"name" json:"name"`
 }
 
 func LoadManifest(filePath string) (*Manifest, error) {
