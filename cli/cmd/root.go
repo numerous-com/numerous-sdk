@@ -9,8 +9,8 @@ import (
 	"runtime"
 
 	"numerous/cli/auth"
+	"numerous/cli/cmd/app"
 	deleteapp "numerous/cli/cmd/delete"
-	"numerous/cli/cmd/deploy"
 	"numerous/cli/cmd/dev"
 	"numerous/cli/cmd/initialize"
 	"numerous/cli/cmd/list"
@@ -18,8 +18,6 @@ import (
 	"numerous/cli/cmd/login"
 	"numerous/cli/cmd/logout"
 	"numerous/cli/cmd/organization"
-	createorganization "numerous/cli/cmd/organization/create"
-	listorganization "numerous/cli/cmd/organization/list"
 	"numerous/cli/cmd/publish"
 	"numerous/cli/cmd/push"
 	"numerous/cli/cmd/report"
@@ -93,7 +91,7 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous log",
 		"numerous organization create",
 		"numerous organization list",
-		"numerous deploy",
+		"numerous app deploy",
 	}
 
 	for _, cmd := range commandsWithAuthRequired {
@@ -118,9 +116,7 @@ func bindCommands() {
 	rootCmd.AddCommand(list.ListCmd)
 	rootCmd.AddCommand(report.ReportCmd)
 	rootCmd.AddCommand(organization.OrganizationRootCmd)
-	rootCmd.AddCommand(deploy.DeployCmd)
-	organization.OrganizationRootCmd.AddCommand(createorganization.OrganizationCreateCmd)
-	organization.OrganizationRootCmd.AddCommand(listorganization.OrganizationListCmd)
+	rootCmd.AddCommand(app.AppRootCmd)
 }
 
 func Execute() {

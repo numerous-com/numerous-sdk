@@ -3,6 +3,9 @@ package organization
 import (
 	"os"
 
+	"numerous/cli/cmd/organization/create"
+	"numerous/cli/cmd/organization/list"
+
 	"github.com/spf13/cobra"
 )
 
@@ -18,4 +21,9 @@ var OrganizationRootCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func init() {
+	OrganizationRootCmd.AddCommand(create.OrganizationCreateCmd)
+	OrganizationRootCmd.AddCommand(list.OrganizationListCmd)
 }

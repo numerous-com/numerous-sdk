@@ -32,7 +32,7 @@ If an app has been initialized in the current working directory, and it should
 be pushed to the organization "organization-slug-a3ecfh2b", and the app name
 "my-app", the following command can be used:
 
-	numerous deploy --organization "organization-slug-a3ecfh2b" --name "my-app"
+	numerous app deploy --organization "organization-slug-a3ecfh2b" --name "my-app"
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
