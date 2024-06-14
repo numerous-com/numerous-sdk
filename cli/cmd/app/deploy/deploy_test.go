@@ -26,7 +26,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("give no existing app then happy path can run", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		apps := &mockAppService{}
 		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
@@ -44,7 +44,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("give existing app then it does not create app", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		apps := &mockAppService{}
 		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{AppID: appID}, nil)
@@ -69,7 +69,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		err := Deploy(context.TODO(), nil, appDir, "", "Some Invalid Organization Slug", appName, false)
 
@@ -78,7 +78,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		err := Deploy(context.TODO(), nil, appDir, "", slug, "Some Invalid App Name", false)
 
@@ -87,7 +87,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no slug or app name arguments and manifest with deployment and then it uses manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		apps := &mockAppService{}
 		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
@@ -108,7 +108,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given slug or app name arguments and manifest with deployment and then arguments override manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
-		copyTo(t, "../../testdata/streamlit_app", appDir)
+		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
 		apps := &mockAppService{}
 		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
