@@ -1,8 +1,9 @@
-package tool
+package manifest
 
 import (
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,5 +80,24 @@ func TestDefaultAppFile(t *testing.T) {
 	for _, testCase := range testCases {
 		actual := testCase.library.DefaultAppFile()
 		assert.Equal(t, testCase.expected, actual)
+	}
+}
+
+func TestUnmarshalLibrary(t *testing.T) {
+	testCases := SupportedLibraries
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			type Container struct {
+				Library Library
+			}
+
+			var c Container
+			data := []byte("library = \"" + tc.Key + "\"")
+			err := toml.Unmarshal(data, &c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Container{Library: tc}, c)
+		})
 	}
 }

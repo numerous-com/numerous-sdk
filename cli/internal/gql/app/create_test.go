@@ -4,16 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"numerous/cli/manifest"
 	"numerous/cli/test"
-	"numerous/cli/tool"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreate(t *testing.T) {
-	testApp := tool.Tool{
+	m := &manifest.Manifest{
 		Name:             "name",
-		Library:          tool.LibraryMarimo,
+		Library:          manifest.LibraryMarimo,
 		Python:           "3.11",
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 		response := test.AppToQueryResult("toolCreate", expectedApp)
 		c := test.CreateTestGqlClient(t, response)
 
-		actualApp, err := Create(testApp, c)
+		actualApp, err := Create(m, c)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedApp, actualApp)
@@ -40,7 +40,7 @@ func TestCreate(t *testing.T) {
 		appNotFoundResponse := `{"errors":[{"message":"Something went wrong","path":["toolCreate"]}],"data":null}`
 		c := test.CreateTestGqlClient(t, appNotFoundResponse)
 
-		actualApp, err := Create(testApp, c)
+		actualApp, err := Create(m, c)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "Something went wrong")

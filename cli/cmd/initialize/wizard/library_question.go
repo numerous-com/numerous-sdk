@@ -1,14 +1,14 @@
 package wizard
 
 import (
-	"numerous/cli/tool"
+	"numerous/cli/manifest"
 
 	"github.com/AlecAivazis/survey/v2"
 )
 
 func getLibraryQuestion(name, prompt string) *survey.Question {
 	libraryNames := []string{}
-	for _, lib := range tool.SupportedLibraries {
+	for _, lib := range manifest.SupportedLibraries {
 		libraryNames = append(libraryNames, lib.Name)
 	}
 

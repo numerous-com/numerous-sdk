@@ -108,7 +108,7 @@ cli-lint:
 
 cli-test:
 	@echo "-- Running CLI tests"
-	cd cli && go test -coverprofile=c.out ./...
+	cd cli && gotestsum -f testname -- -coverprofile=c.out ./...
 
 cli-dep:
 	@echo "-- Installing CLI dependencies"

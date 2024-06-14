@@ -8,14 +8,14 @@ import (
 
 	"numerous/cli/assets"
 	"numerous/cli/cmd/output"
+	"numerous/cli/internal/dir"
 	"numerous/cli/manifest"
-	"numerous/cli/tool"
 )
 
 const EnvFileName string = ".env"
 
-func bootstrapFiles(t tool.Tool, toolID string, basePath string) error {
-	manifestToml, err := manifest.FromTool(t).ToToml()
+func bootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error {
+	manifestToml, err := m.ToToml()
 	if err != nil {
 		output.PrintErrorDetails("Error encoding manifest file", err)
 
@@ -26,24 +26,24 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) error {
 		return err
 	}
 
-	if err = addToGitIgnore(basePath, []string{"# added by numerous init\n", tool.AppIDFileName, EnvFileName}); err != nil {
+	if err = addToGitIgnore(basePath, []string{"# added by numerous init\n", dir.AppIDFileName, EnvFileName}); err != nil {
 		return err
 	}
 
-	appFilePath := filepath.Join(basePath, t.AppFile)
-	if err = createAndWriteIfFileNotExist(appFilePath, t.Library.DefaultAppFile()); err != nil {
+	appFilePath := filepath.Join(basePath, m.AppFile)
+	if err = createAndWriteIfFileNotExist(appFilePath, m.Library.DefaultAppFile()); err != nil {
 		return err
 	}
 
-	requirementsFilePath := filepath.Join(basePath, t.RequirementsFile)
+	requirementsFilePath := filepath.Join(basePath, m.RequirementsFile)
 	if err = createFile(requirementsFilePath); err != nil {
 		return err
 	}
 
-	if err := bootstrapRequirements(t, basePath); err != nil {
+	if err := bootstrapRequirements(m, basePath); err != nil {
 		return err
 	}
-	if err = assets.CopyToolPlaceholderCover(filepath.Join(basePath, t.CoverImage)); err != nil {
+	if err = assets.CopyToolPlaceholderCover(filepath.Join(basePath, m.CoverImage)); err != nil {
 		return err
 	}
 
@@ -54,8 +54,8 @@ func bootstrapFiles(t tool.Tool, toolID string, basePath string) error {
 	return nil
 }
 
-func bootstrapRequirements(t tool.Tool, basePath string) error {
-	requirementsPath := filepath.Join(basePath, t.RequirementsFile)
+func bootstrapRequirements(m *manifest.Manifest, basePath string) error {
+	requirementsPath := filepath.Join(basePath, m.RequirementsFile)
 	content, err := os.ReadFile(requirementsPath)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func bootstrapRequirements(t tool.Tool, basePath string) error {
 	}
 	defer file.Close()
 
-	for _, requirement := range t.Library.Requirements {
+	for _, requirement := range m.Library.Requirements {
 		if err := addRequirementToFile(file, content, requirement); err != nil {
 			return err
 		}

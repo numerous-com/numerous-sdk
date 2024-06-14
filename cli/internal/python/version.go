@@ -1,7 +1,8 @@
-package initialize
+package python
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
 	"regexp"
 )
@@ -10,6 +11,28 @@ var (
 	ErrDetectPythonExecutable = errors.New("could not detect python executable")
 	ErrDetectPythonVersion    = errors.New("could not detect python version")
 )
+
+// Returns the python version used in the environment, or 3.11 as a fallback if
+// it cannot be detected.
+func PythonVersion() string {
+	fallbackVersion := "3.11"
+
+	version, err := getPythonVersion()
+
+	if err == nil {
+		return version
+	}
+
+	if errors.Is(err, ErrDetectPythonExecutable) {
+		fmt.Printf("Python interpeter not found, setting Python version to '%s' for the app.\n", fallbackVersion)
+	}
+
+	if errors.Is(err, ErrDetectPythonVersion) {
+		fmt.Printf("Could not parse python version '%s', setting Python version to '%s' for the app.\n", version, fallbackVersion)
+	}
+
+	return fallbackVersion
+}
 
 func getPythonVersion() (string, error) {
 	p, err := execPythonVersionCommand()

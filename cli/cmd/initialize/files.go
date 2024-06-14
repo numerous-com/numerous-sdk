@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"numerous/cli/cmd/output"
-	"numerous/cli/tool"
+	"numerous/cli/internal/dir"
 )
 
 // Creates file if it does not exists
@@ -81,7 +81,7 @@ func writeOrAppendFile(path string, content string) error {
 
 // Generates and creates file containing the tools id
 func createAppIDFile(path string, id string) error {
-	appIDFile := filepath.Join(path, tool.AppIDFileName)
+	appIDFile := filepath.Join(path, dir.AppIDFileName)
 	if err := createFile(appIDFile); err != nil {
 		output.PrintUnknownError(err)
 		return err

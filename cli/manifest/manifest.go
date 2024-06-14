@@ -7,10 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
-
-	"numerous/cli/cmd/output"
-	"numerous/cli/tool"
 
 	"github.com/BurntSushi/toml"
 )
@@ -22,7 +18,7 @@ var ManifestPath string = filepath.Join(".", ManifestFileName)
 type Manifest struct {
 	Name             string   `toml:"name" json:"name"`
 	Description      string   `toml:"description" json:"description"`
-	Library          string   `toml:"library" json:"library"`
+	Library          Library  `toml:"library" json:"library"`
 	Python           string   `toml:"python" json:"python"`
 	AppFile          string   `toml:"app_file" json:"app_file"`
 	RequirementsFile string   `toml:"requirements_file" json:"requirements_file"`
@@ -34,7 +30,7 @@ type Manifest struct {
 type DeprecatedManifest struct {
 	Name             string   `toml:"name" json:"name"`
 	Description      string   `toml:"description" json:"description"`
-	Library          string   `toml:"library" json:"library"`
+	Library          Library  `toml:"library" json:"library"`
 	Python           string   `toml:"python" json:"python"`
 	AppFile          string   `toml:"app_file" json:"app_file"`
 	RequirementsFile string   `toml:"requirements_file" json:"requirements_file"`
@@ -85,16 +81,16 @@ func (d *DeprecatedManifest) ToManifest() (*Manifest, error) {
 	return &m, nil
 }
 
-func FromTool(t tool.Tool) *Manifest {
+func New(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
 	return &Manifest{
-		Name:             t.Name,
-		Description:      t.Description,
-		Library:          t.Library.Key,
-		Python:           t.Python,
-		AppFile:          t.AppFile,
-		RequirementsFile: t.RequirementsFile,
-		Port:             t.Library.Port,
-		CoverImage:       t.CoverImage,
+		Name:             name,
+		Description:      description,
+		Library:          lib,
+		Python:           python,
+		AppFile:          appFile,
+		RequirementsFile: requirementsFile,
+		Port:             lib.Port,
+		CoverImage:       "app_cover.jpg",
 		Exclude:          []string{"*venv", "venv*", ".git", ".env"},
 	}
 }
@@ -117,42 +113,4 @@ func (m *Manifest) ToJSON() (string, error) {
 	manifest, err := json.Marshal(m)
 
 	return string(manifest), err
-}
-
-// Validates that the app defined in the manifest is valid. Returns false, if
-// the app is in a state, where it does not make sense, to be able to push the
-// app.
-func (m *Manifest) ValidateApp() (bool, error) {
-	switch m.Library {
-	case "numerous":
-		return m.validateNumerousApp()
-	default:
-		return true, nil
-	}
-}
-
-func (m *Manifest) validateNumerousApp() (bool, error) {
-	data, err := os.ReadFile(m.AppFile)
-	if err != nil {
-		return false, err
-	}
-
-	filecontent := string(data)
-	if strings.Contains(filecontent, "appdef =") || strings.Contains(filecontent, "class appdef") {
-		return true, nil
-	} else {
-		output.PrintError("Your app file must have an app definition called 'appdef'", strings.Join(
-			[]string{
-				"You can solve this by assigning your app definition to this name, for example:",
-				"",
-				"@app",
-				"class MyApp:",
-				"    my_field: str",
-				"",
-				"appdef = MyApp",
-			}, "\n"),
-		)
-
-		return false, nil
-	}
 }

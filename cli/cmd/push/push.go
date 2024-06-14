@@ -11,11 +11,11 @@ import (
 	"numerous/cli/cmd/output"
 	"numerous/cli/dotenv"
 	"numerous/cli/internal/archive"
+	"numerous/cli/internal/dir"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
 	"numerous/cli/internal/gql/build"
 	"numerous/cli/manifest"
-	"numerous/cli/tool"
 
 	"github.com/spf13/cobra"
 )
@@ -47,7 +47,7 @@ func push(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	toolID, err := tool.ReadAppIDAndPrintErrors(appDir)
+	toolID, err := dir.ReadAppIDAndPrintErrors(appDir)
 	if err != nil {
 		os.Exit(1)
 	}

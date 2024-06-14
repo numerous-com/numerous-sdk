@@ -1,8 +1,7 @@
-package tool
+package dir
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -16,18 +15,8 @@ const (
 
 var ErrAppIDNotFound = errors.New("app id not found")
 
-type Tool struct {
-	Name             string
-	Description      string
-	Library          Library
-	Python           string
-	AppFile          string
-	RequirementsFile string
-	CoverImage       string
-}
-
-func AppIDExistsInCurrentDir(basePath string) (bool, error) {
-	appIDFilePath := filepath.Join(basePath, AppIDFileName)
+func AppIDExists(dir string) (bool, error) {
+	appIDFilePath := filepath.Join(dir, AppIDFileName)
 	_, err := os.Stat(appIDFilePath)
 	if err == nil {
 		return true, nil
@@ -35,7 +24,7 @@ func AppIDExistsInCurrentDir(basePath string) (bool, error) {
 		return true, err
 	}
 
-	toolIDFilePath := filepath.Join(basePath, ToolIDFileName)
+	toolIDFilePath := filepath.Join(dir, ToolIDFileName)
 	_, err = os.Stat(toolIDFilePath)
 	if err == nil {
 		return true, nil
@@ -78,17 +67,4 @@ func ReadAppIDAndPrintErrors(appDir string) (string, error) {
 	}
 
 	return appID, nil
-}
-
-func (t Tool) String() string {
-	return fmt.Sprintf(`
-Tool:
-	name             %s
-	description      %s
-	library          %s
-	python			 %s
-	appFile          %s
-	requirementsFile %s
-	coverImage       %s
-	`, t.Name, t.Description, t.Library.Key, t.Python, t.AppFile, t.RequirementsFile, t.CoverImage)
 }

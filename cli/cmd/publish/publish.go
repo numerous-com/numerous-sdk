@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"numerous/cli/internal/dir"
 	"numerous/cli/internal/gql"
 	"numerous/cli/internal/gql/app"
-	"numerous/cli/tool"
 
 	"git.sr.ht/~emersion/gqlclient"
 	"github.com/spf13/cobra"
@@ -24,7 +24,7 @@ var PublishCmd = &cobra.Command{
 }
 
 func publish(client *gqlclient.Client) error {
-	appID, err := tool.ReadAppIDAndPrintErrors(".")
+	appID, err := dir.ReadAppIDAndPrintErrors(".")
 	if err != nil {
 		return err
 	}
