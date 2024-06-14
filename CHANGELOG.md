@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## Unreleased
+
+## v0.5.0 (2024-06-14)
 
 ### Build
-
 
 * build(deps): bump github.com/vektah/gqlparser/v2 in /cli (#10) ([`5d2d9f0`](https://github.com/numerous-com/numerous-sdk/commit/5d2d9f0519f8346317d513ad4084d03ad2ff4f08))
 
@@ -20,6 +20,17 @@
   > 
   > Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
   > Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt;
+
+
+
+### Feature
+
+* feat(cli): configure deployment in manifest (#9) ([`b4fd668`](https://github.com/numerous-com/numerous-sdk/commit/b4fd6680fa7bde8aa3d317279faa1b56672f24ca))
+
+  > 
+  > Add the ability to write a `deploy` section in `numerous.toml`, where `organization` and `name` (app name) can be defined, so that `numerous deploy` can be run without arguments.
+
+
 
 
 ## v0.4.5 (2024-06-13)
