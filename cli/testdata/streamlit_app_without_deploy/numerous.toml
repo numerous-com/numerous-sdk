@@ -1,4 +1,4 @@
-name = "Streamlit App With Deploy"
+name = "Streamlit App Without Deploy"
 description = ""
 library = "streamlit"
 python = "3.11"
@@ -7,7 +7,3 @@ requirements_file = "requirements.txt"
 port = 80
 cover_image = "app_cover.jpg"
 exclude = ["*venv", "venv*", ".git"]
-
-[deploy]
-organization = "organization-slug-in-manifest"
-name = "app-name-in-manifest"
