@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.6.0 (2024-06-14)
+
+### Feature
+
+* feat(cli): app subcommand (#11) ([`351680e`](https://github.com/numerous-com/numerous-sdk/commit/351680ec009253f0030134cbf2cdf67bc3bc1a31))
+
+
+
+
 ## v0.5.0 (2024-06-14)
 
 ### Build
