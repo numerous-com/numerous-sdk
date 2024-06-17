@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.6.1 (2024-06-17)
+
+### Fix
+
+* fix(cli): `app deploy` help possessive apostrophe, and slug example ([`35fe75d`](https://github.com/numerous-com/numerous-sdk/commit/35fe75da7499dbc1d8e525bd5ab620f6ae349697))
+
+
+
+
 ## v0.6.0 (2024-06-14)
 
 ### Feature
