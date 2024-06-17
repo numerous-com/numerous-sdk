@@ -2,7 +2,11 @@ package logs
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+
+	"numerous/cli/internal/app"
+	"numerous/cli/internal/gql"
 
 	"github.com/spf13/cobra"
 )
@@ -55,14 +59,16 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	var printer func(AppDeployLogEntry)
+	var printer func(app.AppDeployLogEntry)
 	if timestamps {
 		printer = TimestampPrinter
 	} else {
 		printer = TextPrinter
 	}
+	sc := gql.NewSubscriptionClient().WithSyncMode(true)
+	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 
-	if err := Logs(cmd.Context(), nil, appDir, slug, appName, printer); err != nil {
+	if err := Logs(cmd.Context(), service, appDir, slug, appName, printer); err != nil {
 		os.Exit(1)
 	} else {
 		os.Exit(0)

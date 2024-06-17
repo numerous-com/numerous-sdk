@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"numerous/cli/internal/app"
 	"numerous/cli/test"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func dummyPrinter(entry AppDeployLogEntry) {}
+func dummyPrinter(entry app.AppDeployLogEntry) {}
 
 func TestLogs(t *testing.T) {
 	const slug = "organization-slug"
@@ -54,7 +55,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("given slug and app name arguments but not app dir then it calls service as expected", func(t *testing.T) {
-		closedCh := make(chan AppDeployLogEntry)
+		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", slug, appName).Return(closedCh, nil)
@@ -68,7 +69,7 @@ func TestLogs(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
 
-		closedCh := make(chan AppDeployLogEntry)
+		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", "organization-slug-in-manifest", "app-name-in-manifest").Return(closedCh, nil)
@@ -80,7 +81,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("it stops when context is cancelled", func(t *testing.T) {
-		ch := make(chan AppDeployLogEntry)
+		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", slug, appName).Return(ch, nil)
 
@@ -95,7 +96,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("given app service returns error, it returns the error", func(t *testing.T) {
-		var nilChan chan AppDeployLogEntry = nil
+		var nilChan chan app.AppDeployLogEntry = nil
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", slug, appName).Return(nilChan, testError)
 
@@ -105,15 +106,15 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("prints expected entries", func(t *testing.T) {
-		ch := make(chan AppDeployLogEntry)
+		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", slug, appName).Return(ch, nil)
 
-		entry1 := AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)}
-		entry2 := AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 2, 2, 2, 2, time.UTC)}
-		expected := []AppDeployLogEntry{entry1, entry2}
-		actual := []AppDeployLogEntry{}
-		printer := func(e AppDeployLogEntry) {
+		entry1 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)}
+		entry2 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 2, 2, 2, 2, time.UTC)}
+		expected := []app.AppDeployLogEntry{entry1, entry2}
+		actual := []app.AppDeployLogEntry{}
+		printer := func(e app.AppDeployLogEntry) {
 			actual = append(actual, e)
 		}
 		go func() {

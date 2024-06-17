@@ -9,6 +9,7 @@ import (
 
 	"numerous/cli/cmd/output"
 	"numerous/cli/cmd/validate"
+	"numerous/cli/internal/app"
 	"numerous/cli/manifest"
 )
 
@@ -17,16 +18,11 @@ var (
 	ErrInvalidAppName = errors.New("invalid app name")
 )
 
-type AppDeployLogEntry struct {
-	Timestamp time.Time
-	Text      string
-}
-
 type AppService interface {
-	AppDeployLogs(slug, appName string) (chan AppDeployLogEntry, error)
+	AppDeployLogs(slug, appName string) (chan app.AppDeployLogEntry, error)
 }
 
-func Logs(ctx context.Context, apps AppService, appDir, slug, appName string, printer func(AppDeployLogEntry)) error {
+func Logs(ctx context.Context, apps AppService, appDir, slug, appName string, printer func(app.AppDeployLogEntry)) error {
 	slug, appName, err := getAppIdentifier(appDir, slug, appName)
 	if err != nil {
 		return err
@@ -92,11 +88,11 @@ func getAppIdentifier(appDir string, slug string, appName string) (string, strin
 	return slug, appName, nil
 }
 
-func TimestampPrinter(entry AppDeployLogEntry) {
+func TimestampPrinter(entry app.AppDeployLogEntry) {
 	ts := output.AnsiFaint + entry.Timestamp.Format(time.RFC3339) + output.AnsiReset
 	fmt.Println(ts + " " + entry.Text)
 }
 
-func TextPrinter(entry AppDeployLogEntry) {
+func TextPrinter(entry app.AppDeployLogEntry) {
 	fmt.Println(entry.Text)
 }
