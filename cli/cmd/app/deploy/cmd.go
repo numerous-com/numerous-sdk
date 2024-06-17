@@ -1,10 +1,10 @@
 package deploy
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
+	"numerous/cli/cmd/args"
 	"numerous/cli/internal/app"
 	"numerous/cli/internal/gql"
 
@@ -34,20 +34,7 @@ be pushed to the organization "organization-slug-a2ecf59b", and the app name
 
 	numerous app deploy --organization "organization-slug-a2ecf59b" --name "my-app"
 	`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			fn := cmd.HelpFunc()
-			fn(cmd, args)
-
-			return fmt.Errorf("accepts only an optional [app directory] as a positional argument, you provided %d arguments", len(args))
-		}
-
-		if len(args) == 1 {
-			appDir = args[0]
-		}
-
-		return nil
-	},
+	Args: args.OptionalAppDir(&appDir),
 }
 
 var (

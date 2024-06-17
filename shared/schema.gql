@@ -324,6 +324,16 @@ type AppDeployLogEntry {
   text: String!
 }
 
+type AppDeleted {
+    appName: String!
+    organizationSlug: String
+}
+
+input AppDeleteInput {
+    appName: String!
+    organizationSlug: String!
+}
+
 extend type Query {
   app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)
 }
@@ -335,6 +345,7 @@ extend type Mutation {
   appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
   appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
     @canManageApp
+  appDelete(input: AppDeleteInput!): AppDeleted! @canManageApp
 }
 
 extend type Subscription {
@@ -413,7 +424,7 @@ union SubscriptionOfferAcceptResult =
 union AppSubscriptionCancelResult = AppSubscription | AppSubscriptionNotFound | AppSubscriptionInvalidStatus
 
 extend type Organization {
-  outboundSubscriptionOffers: [SubscriptionOffer!]!
+  outboundSubscriptionOffers: [SubscriptionOffer!]! @hasRole(role: ADMIN)
   outboundSubscriptions: [AppSubscription!]!
 }
 

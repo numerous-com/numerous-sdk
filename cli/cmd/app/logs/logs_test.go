@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"numerous/cli/cmd/app/appident"
 	"numerous/cli/internal/app"
 	"numerous/cli/test"
 
@@ -22,13 +23,13 @@ func TestLogs(t *testing.T) {
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
 		err := Logs(context.TODO(), nil, appDir, "Some Invalid Organization Slug", appName, dummyPrinter)
 
-		assert.ErrorIs(t, err, ErrInvalidSlug)
+		assert.ErrorIs(t, err, appident.ErrInvalidSlug)
 	})
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		err := Logs(context.TODO(), nil, appDir, slug, "Some Invalid App Name", dummyPrinter)
 
-		assert.ErrorIs(t, err, ErrInvalidAppName)
+		assert.ErrorIs(t, err, appident.ErrInvalidAppName)
 	})
 
 	t.Run("given neither slug nor app name arguments and numerous.toml without deploy then it returns error", func(t *testing.T) {
@@ -37,7 +38,7 @@ func TestLogs(t *testing.T) {
 
 		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
 
-		assert.ErrorIs(t, err, ErrInvalidSlug)
+		assert.ErrorIs(t, err, appident.ErrInvalidSlug)
 	})
 
 	t.Run("given no slug and app name arguments and app dir without numerous.toml then it returns error", func(t *testing.T) {
