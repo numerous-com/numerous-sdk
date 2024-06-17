@@ -65,16 +65,24 @@ type validatingSubscriptionClient struct {
 	t       *testing.T
 	handler func(message []byte, err error) error
 	ch      chan SubMessage
-	done    chan struct{}
 }
 
 func (c *validatingSubscriptionClient) Run() error {
+	done := make(chan struct{})
+
 	go func() {
+		defer close(done)
 		for ev := range c.ch {
 			c.handler([]byte(ev.Msg), ev.Err) //nolint:errcheck
 		}
-		close(c.done)
 	}()
+
+	select {
+	case <-done:
+		break
+	case <-time.After(time.Second):
+		assert.Fail(c.t, "timed out waiting for subscription to close")
+	}
 
 	return nil
 }
@@ -88,17 +96,6 @@ func (c *validatingSubscriptionClient) Subscribe(v interface{}, variables map[st
 
 func (c *validatingSubscriptionClient) Close() error { return nil }
 
-func (c *validatingSubscriptionClient) Wait() {
-	c.t.Helper()
-
-	select {
-	case <-c.done:
-		return
-	case <-time.After(time.Second):
-		assert.Fail(c.t, "timed out waiting for subscription to close")
-	}
-}
-
 type SubMessage struct {
 	Msg string
 	Err error
@@ -107,5 +104,5 @@ type SubMessage struct {
 func CreateTestSubscriptionClient(t *testing.T, ch chan SubMessage) *validatingSubscriptionClient {
 	t.Helper()
 
-	return &validatingSubscriptionClient{t, nil, ch, make(chan struct{})}
+	return &validatingSubscriptionClient{t, nil, ch}
 }

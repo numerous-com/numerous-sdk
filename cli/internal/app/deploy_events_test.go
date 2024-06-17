@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"testing"
+	"time"
 
 	"numerous/cli/test"
 
@@ -73,12 +74,14 @@ func TestDeployEvents(t *testing.T) {
 				},
 				DeploymentVersionID: "some-id",
 			}
+			go func() {
+				defer close(ch)
+				time.Sleep(time.Millisecond * 10)
+				for _, sm := range tc.sms {
+					ch <- sm
+				}
+			}()
 			err := s.DeployEvents(context.TODO(), input)
-			for _, sm := range tc.sms {
-				ch <- sm
-			}
-			close(ch)
-			c.Wait()
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, actual)
