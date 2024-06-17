@@ -48,6 +48,7 @@ from .fragments import (
 from .input_types import (
     AppCreateInfo,
     AppDeployInput,
+    AppDeployLogsInput,
     AppSecret,
     BuildPushInput,
     ElementInput,
@@ -97,6 +98,7 @@ __all__ = [
     "AllElementsSessionAllTextFieldGraphContext",
     "AppCreateInfo",
     "AppDeployInput",
+    "AppDeployLogsInput",
     "AppDeploymentStatus",
     "AppSecret",
     "AppSubscriptionStatus",
