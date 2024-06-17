@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.6.2 (2024-06-17)
+
+### Fix
+
+* fix(cli): `app deploy` optional organization/name flags ([`f061947`](https://github.com/numerous-com/numerous-sdk/commit/f0619470605bec7b06facbb65a07749cbee0f7b0))
+
+  > 
+  > Makes it possible to load deployment configuration from the manifest
+  > by making it possible to call the command without `--organization` and `--name` flags.
+
+
+
+
 ## v0.6.1 (2024-06-17)
 
 ### Fix
