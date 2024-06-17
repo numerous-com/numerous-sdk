@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"runtime"
 
 	"numerous/cli/auth"
 	"numerous/cli/cmd/app"
@@ -18,6 +16,7 @@ import (
 	"numerous/cli/cmd/login"
 	"numerous/cli/cmd/logout"
 	"numerous/cli/cmd/organization"
+	"numerous/cli/cmd/output"
 	"numerous/cli/cmd/publish"
 	"numerous/cli/cmd/push"
 	"numerous/cli/cmd/report"
@@ -25,14 +24,6 @@ import (
 	"numerous/cli/logging"
 
 	"github.com/spf13/cobra"
-)
-
-// TODO: add lipgloss lib here instead of using bash and unicode hardcoded! Check cli/appdev/output
-const (
-	resetPrompt       = "\033[0m"
-	cyanBold          = "\033[1;36m"
-	raiseHandEmoji    = "\U0000270B"
-	shootingStarEmoji = "\U0001F320"
 )
 
 var ErrNotAuthorized = errors.New("not authorized")
@@ -64,14 +55,7 @@ var (
 
 			user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
 			if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
-				if runtime.GOOS == "windows" {
-					fmt.Printf("\"%s\" can only be used when logged in.\n", cmd.CommandPath())
-					fmt.Println("Use \"numerous login\" to enable this command.")
-				} else {
-					fmt.Printf("The use of %s%s%s command can only be done when logged in %s\n", cyanBold, cmd.CommandPath(), resetPrompt, raiseHandEmoji)
-					fmt.Printf("To enable it, please first proceed with %snumerous login%s %s\n", cyanBold, resetPrompt, shootingStarEmoji)
-				}
-
+				output.PrintErrorLoginForCommand(cmd)
 				return ErrNotAuthorized
 			}
 

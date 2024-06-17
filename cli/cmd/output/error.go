@@ -3,6 +3,8 @@ package output
 import (
 	"fmt"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // Prints an error message prefixed with an error symbol. Variadic arguments are
@@ -12,7 +14,7 @@ func PrintError(header, body string, args ...any) {
 		body += "\n"
 	}
 
-	f := errorcross + " " + ansiRed + header + ansiReset + "\n" + ansiYellow + body + ansiReset
+	f := errorcross + " " + AnsiRed + header + AnsiReset + "\n" + AnsiYellow + body + AnsiReset
 	fmt.Printf(f, args...)
 }
 
@@ -30,22 +32,27 @@ func PrintUnknownError(err error) {
 // Prints a standardized error message about the given appDir not being
 // initialized.
 func PrintErrorAppNotInitialized(appDir string) {
-	if appDir == "." {
+	if appDir == "." || appDir == "" {
 		PrintError("The current directory is not a numerous app",
 			"Run \"numerous init\" to initialize a numerous app in the current directory.")
 	} else {
-		PrintError("The select directory \"%s\" is not a numerous app",
+		PrintError("The selected directory \"%s\" is not a numerous app",
 			"Run \"numerous init %s\" to initialize a numerous app.",
 			appDir, appDir)
 	}
 }
 
-// Print an error message requesting that the user logs in.
+// Prints an error message requesting that the user logs in.
 func PrintErrorLogin() {
 	PrintError(
 		"Command requires login.",
 		"Use \"numerous login\" to login or sign up.\n",
 	)
+}
+
+func PrintErrorLoginForCommand(cmd *cobra.Command) {
+	fmt.Println("The command " + highlight(cmd.CommandPath()) + " can only be used when logged in." + symbol(" "+raiseHand))
+	fmt.Println("Use " + highlight("numerous login") + " to enable this command." + symbol(" "+shootingStar))
 }
 
 func PrintErrorMissingAppName() {

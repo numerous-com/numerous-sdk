@@ -31,7 +31,7 @@ func (t *Task) AddLine(prefix string, line string) {
 	if !t.lineAdded {
 		fmt.Println()
 	}
-	fmt.Println(ansiReset+ansiFaint+prefix+ansiReset, line)
+	fmt.Println(AnsiReset+AnsiFaint+prefix+AnsiReset, line)
 	t.lineAdded = true
 }
 
@@ -40,7 +40,7 @@ func (t *Task) Done() {
 	if !t.lineAdded {
 		fmt.Print("\r")
 	}
-	fmt.Println(ln + ansiGreen + "OK" + ansiReset)
+	fmt.Println(ln + AnsiGreen + "OK" + AnsiReset)
 }
 
 func (t *Task) Error() {
@@ -48,7 +48,7 @@ func (t *Task) Error() {
 	if !t.lineAdded {
 		fmt.Print("\r")
 	}
-	fmt.Println(ln + ansiRed + "Error" + ansiReset)
+	fmt.Println(ln + AnsiRed + "Error" + AnsiReset)
 }
 
 func StartTask(msg string) *Task {
