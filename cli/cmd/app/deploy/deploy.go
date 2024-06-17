@@ -54,12 +54,9 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 		task.Error()
 
 		if slug == "" {
-			output.PrintError(
-				"Missing organization identifier.",
-				`An organization identifier must be given as either a command flag, or in the "deploy" section of the app manifest.`,
-			)
+			output.PrintErrorMissingOrganizationSlug()
 		} else {
-			output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+			output.PrintErrorInvalidOrganizationSlug(slug)
 		}
 
 		return ErrInvalidSlug
@@ -73,12 +70,9 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 		task.Error()
 
 		if appName == "" {
-			output.PrintError(
-				"Missing app name.",
-				`An app name must be given as either a command flag, or in the "deploy" section of the app manifest.`,
-			)
+			output.PrintErrorMissingAppName()
 		} else {
-			output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+			output.PrintErrorInvalidAppName(appName)
 		}
 
 		return ErrInvalidAppName

@@ -27,6 +27,8 @@ func PrintUnknownError(err error) {
 	PrintErrorDetails("Sorry! An unexpected error occurred.", err)
 }
 
+// Prints a standardized error message about the given appDir not being
+// initialized.
 func PrintErrorAppNotInitialized(appDir string) {
 	if appDir == "." {
 		PrintError("The current directory is not a numerous app",
@@ -38,9 +40,32 @@ func PrintErrorAppNotInitialized(appDir string) {
 	}
 }
 
+// Print an error message requesting that the user logs in.
 func PrintErrorLogin() {
 	PrintError(
 		"Command requires login.",
 		"Use \"numerous login\" to login or sign up.\n",
 	)
+}
+
+func PrintErrorMissingAppName() {
+	PrintError(
+		"Missing app name.",
+		`An app name must be given as either a command flag, or in the "deploy" section of the app manifest.`,
+	)
+}
+
+func PrintErrorMissingOrganizationSlug() {
+	PrintError(
+		"Missing organization identifier.",
+		`An organization identifier must be given as either a command flag, or in the "deploy" section of the app manifest.`,
+	)
+}
+
+func PrintErrorInvalidOrganizationSlug(slug string) {
+	PrintError("Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+}
+
+func PrintErrorInvalidAppName(appName string) {
+	PrintError("Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
 }
