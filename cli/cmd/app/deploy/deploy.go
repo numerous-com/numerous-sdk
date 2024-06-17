@@ -52,7 +52,15 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 
 	if !validate.IsValidIdentifier(slug) {
 		task.Error()
-		output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+
+		if slug == "" {
+			output.PrintError(
+				"Missing organization identifier.",
+				`An organization identifier must be given as either a command flag, or in the "deploy" section of the app manifest.`,
+			)
+		} else {
+			output.PrintError("Error: Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
+		}
 
 		return ErrInvalidSlug
 	}
@@ -63,7 +71,15 @@ func Deploy(ctx context.Context, apps AppService, appDir, projectDir, slug strin
 
 	if !validate.IsValidIdentifier(appName) {
 		task.Error()
-		output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+
+		if appName == "" {
+			output.PrintError(
+				"Missing app name.",
+				`An app name must be given as either a command flag, or in the "deploy" section of the app manifest.`,
+			)
+		} else {
+			output.PrintError("Error: Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+		}
 
 		return ErrInvalidAppName
 	}

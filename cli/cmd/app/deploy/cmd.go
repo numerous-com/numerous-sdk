@@ -76,12 +76,4 @@ func init() {
 	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
 	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
-
-	if err := DeployCmd.MarkFlagRequired("organization"); err != nil {
-		panic(err.Error())
-	}
-
-	if err := DeployCmd.MarkFlagRequired("name"); err != nil {
-		panic(err.Error())
-	}
 }

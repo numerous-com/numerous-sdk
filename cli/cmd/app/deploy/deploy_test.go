@@ -76,6 +76,15 @@ func TestDeploy(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
+	t.Run("given no slug argument and no manifest deployment then it returns error", func(t *testing.T) {
+		appDir := t.TempDir()
+		copyTo(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+
+		err := Deploy(context.TODO(), nil, appDir, "", "", appName, false)
+
+		assert.ErrorIs(t, err, ErrInvalidSlug)
+	})
+
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
 		copyTo(t, "../../../testdata/streamlit_app", appDir)
@@ -85,7 +94,16 @@ func TestDeploy(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidAppName)
 	})
 
-	t.Run("given no slug or app name arguments and manifest with deployment and then it uses manifest deployment", func(t *testing.T) {
+	t.Run("given no app name argument and no manifest deployment then it returns error", func(t *testing.T) {
+		appDir := t.TempDir()
+		copyTo(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+
+		err := Deploy(context.TODO(), nil, appDir, "", slug, "", false)
+
+		assert.ErrorIs(t, err, ErrInvalidAppName)
+	})
+
+	t.Run("given no slug or app name arguments and manifest with deployment then it uses manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
 		copyTo(t, "../../../testdata/streamlit_app", appDir)
 
