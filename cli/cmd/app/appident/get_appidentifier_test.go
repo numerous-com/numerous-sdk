@@ -30,7 +30,7 @@ func TestGetAppIdentifier(t *testing.T) {
 	t.Run("given invalid app name then invalid app name error is returned", func(t *testing.T) {
 		actual, err := GetAppIdentifier("", slug, "Some Invalid App Name")
 
-		assert.Equal(t, expected, actual)
+		assert.Equal(t, AppIdentifier{}, actual)
 		assert.ErrorIs(t, err, ErrInvalidAppName)
 	})
 

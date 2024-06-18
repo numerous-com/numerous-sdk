@@ -18,6 +18,7 @@ func dummyPrinter(entry app.AppDeployLogEntry) {}
 func TestLogs(t *testing.T) {
 	const slug = "organization-slug"
 	const appName = "app-name"
+	ai := appident.AppIdentifier{OrganizationSlug: slug, Name: appName}
 	testError := errors.New("test error")
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
@@ -53,7 +54,7 @@ func TestLogs(t *testing.T) {
 		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", slug, appName).Return(closedCh, nil)
+		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
 
 		err := Logs(context.TODO(), apps, "", slug, appName, dummyPrinter)
 
@@ -67,7 +68,8 @@ func TestLogs(t *testing.T) {
 		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", "organization-slug-in-manifest", "app-name-in-manifest").Return(closedCh, nil)
+		ai := appident.AppIdentifier{OrganizationSlug: "organization-slug-in-manifest", Name: "app-name-in-manifest"}
+		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
 
 		err := Logs(context.TODO(), apps, appDir, "", "", dummyPrinter)
 
@@ -78,7 +80,7 @@ func TestLogs(t *testing.T) {
 	t.Run("it stops when context is cancelled", func(t *testing.T) {
 		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", slug, appName).Return(ch, nil)
+		apps.On("AppDeployLogs", ai).Return(ch, nil)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
@@ -93,7 +95,7 @@ func TestLogs(t *testing.T) {
 	t.Run("given app service returns error, it returns the error", func(t *testing.T) {
 		var nilChan chan app.AppDeployLogEntry = nil
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", slug, appName).Return(nilChan, testError)
+		apps.On("AppDeployLogs", ai).Return(nilChan, testError)
 
 		err := Logs(context.TODO(), apps, "", slug, appName, dummyPrinter)
 
@@ -103,7 +105,7 @@ func TestLogs(t *testing.T) {
 	t.Run("prints expected entries", func(t *testing.T) {
 		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", slug, appName).Return(ch, nil)
+		apps.On("AppDeployLogs", ai).Return(ch, nil)
 
 		entry1 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)}
 		entry2 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 2, 2, 2, 2, time.UTC)}
