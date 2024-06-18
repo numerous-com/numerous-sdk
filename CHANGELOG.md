@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.7.0 (2024-06-18)
+
+### Feature
+
+* feat(cli): add `app logs` command (#12) ([`6ab6c24`](https://github.com/numerous-com/numerous-sdk/commit/6ab6c2426c606ace3474a3b71469ad1f20141d82))
+
+  > 
+  > Adds the command numerous app logs which prints the app logs from a deployment of an app.
+
+
+
+
 ## v0.6.2 (2024-06-17)
 
 ### Fix
