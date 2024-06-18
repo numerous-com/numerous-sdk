@@ -38,7 +38,7 @@ func TestAppDelete(t *testing.T) {
 		assert.ErrorIs(t, err, gql.ErrAccesDenied)
 	})
 
-	t.Run("given graphql error then it returns access denied error", func(t *testing.T) {
+	t.Run("given graphql error then it returns given graphql error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 		s := New(c, nil, nil)
