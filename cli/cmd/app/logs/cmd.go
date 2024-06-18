@@ -19,7 +19,7 @@ var LogsCmd = &cobra.Command{
 Numerous platform.
 
 If <name> and <organization> flags are set, they define the app to read logs
-from. If they are not the default deployment section in the manifest is used,
+from. If they are not, the default deployment section in the manifest is used,
 if it is defined.
 
 If [app directory] is specified, that directory will be used to read the
