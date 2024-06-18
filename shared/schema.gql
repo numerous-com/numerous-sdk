@@ -425,7 +425,7 @@ union AppSubscriptionCancelResult = AppSubscription | AppSubscriptionNotFound | 
 
 extend type Organization {
   outboundSubscriptionOffers: [SubscriptionOffer!]! @hasRole(role: ADMIN)
-  outboundSubscriptions: [AppSubscription!]!
+  outboundSubscriptions: [AppSubscription!]! @hasRole(role: ADMIN)
 }
 
 extend type App {
