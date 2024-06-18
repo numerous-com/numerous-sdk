@@ -35,6 +35,11 @@ class AppDeployInput(BaseModel):
     secrets: Optional[List["AppSecret"]] = None
 
 
+class AppDeployLogsInput(BaseModel):
+    organization_slug: str = Field(alias="organizationSlug")
+    app_name: str = Field(alias="appName")
+
+
 class SubscriptionOfferInput(BaseModel):
     email: str
     app_name: str = Field(alias="appName")

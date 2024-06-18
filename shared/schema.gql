@@ -314,6 +314,16 @@ type AppDeploymentStatusEvent {
 
 union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent | AppBuildErrorEvent
 
+input AppDeployLogsInput {
+    organizationSlug: String!
+    appName: String!
+}
+
+type AppDeployLogEntry {
+  timestamp: Time!
+  text: String!
+}
+
 extend type Query {
   app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)
 }
@@ -329,6 +339,7 @@ extend type Mutation {
 
 extend type Subscription {
   appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
+  appDeployLogs(input: AppDeployLogsInput!): AppDeployLogEntry!
 }
 
 ###############################################################################
@@ -340,6 +351,7 @@ extend type Subscription {
 ###############################################################################
 
 directive @canAccessSubscriptionOffer on FIELD_DEFINITION
+directive @canManageSubscription on FIELD_DEFINITION
 
 enum SubscriptionOfferStatus {
   ACCEPTED
@@ -377,7 +389,15 @@ type SubscriptionOfferNotFound {
   id: ID!
 }
 
+type SubscriptionOfferInvalidStatus {
+  id: ID!
+}
+
 type AppSubscriptionNotFound {
+  id: ID!
+}
+
+type AppSubscriptionInvalidStatus {
   id: ID!
 }
 
@@ -388,8 +408,9 @@ union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
 union SubscriptionOfferAcceptResult =
     AppSubscription
   | SubscriptionOfferNotFound
+  | SubscriptionOfferInvalidStatus
 
-union AppSubscriptionResult = AppSubscription | AppSubscriptionNotFound
+union AppSubscriptionCancelResult = AppSubscription | AppSubscriptionNotFound | AppSubscriptionInvalidStatus
 
 extend type Organization {
   outboundSubscriptionOffers: [SubscriptionOffer!]!
@@ -418,8 +439,8 @@ extend type Mutation {
     @canAccessSubscriptionOffer
   subscriptionOfferWithdraw(subscriptionOfferId: ID!): SubscriptionOfferResult!
     @canAccessSubscriptionOffer
-  subscriptionCancel(subscriptionId: ID!): AppSubscriptionResult!
-    @hasRole(role: ADMIN)
+  subscriptionCancel(subscriptionId: ID!): AppSubscriptionCancelResult!
+    @canManageSubscription
 }
 
 ###############################################################################

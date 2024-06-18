@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"numerous/cli/cmd/app/deploy"
+	"numerous/cli/cmd/app/logs"
 
 	"github.com/spf13/cobra"
 )
@@ -24,4 +25,5 @@ var AppRootCmd = &cobra.Command{
 
 func init() {
 	AppRootCmd.AddCommand(deploy.DeployCmd)
+	AppRootCmd.AddCommand(logs.LogsCmd)
 }
