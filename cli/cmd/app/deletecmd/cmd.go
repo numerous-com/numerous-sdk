@@ -2,7 +2,6 @@ package deletecmd
 
 import (
 	"net/http"
-	"os"
 
 	"numerous/cli/cmd/args"
 	"numerous/cli/internal/app"
@@ -13,7 +12,7 @@ import (
 
 var DeleteCmd = &cobra.Command{
 	Use:   "delete [app directory]",
-	Run:   run,
+	RunE:  run,
 	Short: "Delete an app from an organization.",
 	Long: `Deletes the specified app from the organization.
 
@@ -43,14 +42,9 @@ var (
 	appDir  string = "."
 )
 
-func run(cmd *cobra.Command, args []string) {
+func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-
-	if err := Delete(cmd.Context(), service, appDir, slug, appName); err != nil {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+	return Delete(cmd.Context(), service, appDir, slug, appName)
 }
 
 func init() {
