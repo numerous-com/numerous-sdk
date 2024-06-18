@@ -41,7 +41,9 @@ exclude = [
     "./setup.py",
     "./python/docs",
     "./examples",
-    "./cli/**",
+    "./internal/**",
+    "./cmd/**",
+    "./testdata/**",
 ]
 
 [tool.ruff.lint]

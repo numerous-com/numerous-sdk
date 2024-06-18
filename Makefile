@@ -4,18 +4,14 @@ TARGET_ARCHS := amd64 arm64
 
 # CLI related variables
 GO_ENV = CGO_ENABLED=0
-GO_BUILD = cd cli && $(GO_ENV) go build
-
-CLI_DIR=./cli
-CLI_BUILD_DIR_NAME=build
-CLI_BUILD_DIR=$(CLI_DIR)/$(CLI_BUILD_DIR_NAME)
-CLI_SOURCE_FILES=$(shell find $(CLI_DIR) -name *.go -type f)
-
+GO_BUILD = $(GO_ENV) go build
+CLI_BUILD_DIR=build
+CLI_SOURCE_FILES=$(shell find . -name *.go -type f)
 CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
-getsystem = $(word 3,$(subst _, ,$(subst /, ,$@)))
-getarch = $(word 4,$(subst _, ,$(subst /, ,$@)))
+getsystem = $(word 2,$(subst _, ,$(subst /, ,$@)))
+getarch = $(word 3,$(subst _, ,$(subst /, ,$@)))
 
 GQL_HTTP_URL = https://api.numerous.com/query
 GQL_WS_URL = wss://api.numerous.com/query
@@ -91,29 +87,29 @@ cli-all: $(CLI_BUILD_TARGETS)
 
 $(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES)
 	@echo "-- Building CLI for OS $(getsystem) architecture $(getarch) in $@"
-	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o ../$@ .
+	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o $@ .
 
 cli-local:
 	@echo "-- Building local CLI"
-	$(GO_BUILD) -o $(CLI_BUILD_DIR_NAME)/local .
+	$(GO_BUILD) -o $(CLI_BUILD_DIR)/local .
 
 cli-build:
 	@echo "-- Building CLI"
-	$(GO_BUILD) -ldflags '$(LDFLAGS)' -o $(CLI_BUILD_DIR_NAME)/numerous .
+	$(GO_BUILD) -ldflags '$(LDFLAGS)' -o $(CLI_BUILD_DIR)/numerous .
 
 cli-lint:
 	@echo "-- Running CLI linters"
-	cd cli && golangci-lint run
-	cd cli && gofumpt -l -w .
+	golangci-lint run
+	gofumpt -l -w .
 
 cli-test:
 	@echo "-- Running CLI tests"
-	cd cli && gotestsum -f testname -- -coverprofile=c.out ./...
+	gotestsum -f testname -- -coverprofile=c.out ./...
 
 cli-dep:
 	@echo "-- Installing CLI dependencies"
-	cd cli && go mod download
-	cd cli && go mod tidy  > /dev/null
+	go mod download
+	go mod tidy  > /dev/null
 
 gqlgen:
 	@echo "-- Generating GraphQL code"

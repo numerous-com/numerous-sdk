@@ -64,7 +64,7 @@ And the linters
 Development of go CLI 🐹
 ------------------------
 
-The numerous CLI enables tool development.
+The numerous CLI enables app development.
 
 ### Building and running
 
@@ -73,8 +73,9 @@ as `cli/build/numerous`
 
 ### Development
 
-While developing you can run the CLI like below, inside the `cli` folder.
+While developing you can run the CLI like below.
 
+    # Run the CLI
     go run .
 
     # e.g.
