@@ -11,16 +11,16 @@ import (
 )
 
 type AppService interface {
-	AppDeployLogs(slug, appName string) (chan app.AppDeployLogEntry, error)
+	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
 func Logs(ctx context.Context, apps AppService, appDir, slug, appName string, printer func(app.AppDeployLogEntry)) error {
-	slug, appName, err := appident.GetAppIdentifier(appDir, slug, appName)
+	ai, err := appident.GetAppIdentifier(appDir, slug, appName)
 	if err != nil {
 		return err
 	}
 
-	ch, err := apps.AppDeployLogs(slug, appName)
+	ch, err := apps.AppDeployLogs(ai)
 	if err != nil {
 		return err
 	}

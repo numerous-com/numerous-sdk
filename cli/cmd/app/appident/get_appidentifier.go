@@ -8,14 +8,19 @@ import (
 	"numerous/cli/manifest"
 )
 
+type AppIdentifier struct {
+	OrganizationSlug string
+	Name             string
+}
+
 // Uses the given slug and appName, or loads from manifest, and validates.
-func GetAppIdentifier(appDir string, slug string, appName string) (string, string, error) {
+func GetAppIdentifier(appDir string, slug string, appName string) (AppIdentifier, error) {
 	if slug == "" && appName == "" {
 		manifest, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 		if err != nil {
 			output.PrintErrorAppNotInitialized(appDir)
 
-			return "", "", err
+			return AppIdentifier{}, err
 		}
 
 		if slug == "" && manifest.Deployment != nil {
@@ -34,7 +39,7 @@ func GetAppIdentifier(appDir string, slug string, appName string) (string, strin
 			output.PrintErrorInvalidOrganizationSlug(slug)
 		}
 
-		return "", "", ErrInvalidSlug
+		return AppIdentifier{}, ErrInvalidSlug
 	}
 
 	if !validate.IsValidIdentifier(appName) {
@@ -44,8 +49,8 @@ func GetAppIdentifier(appDir string, slug string, appName string) (string, strin
 			output.PrintErrorInvalidAppName(appName)
 		}
 
-		return "", "", ErrInvalidAppName
+		return AppIdentifier{}, ErrInvalidAppName
 	}
 
-	return slug, appName, nil
+	return AppIdentifier{OrganizationSlug: slug, Name: appName}, nil
 }
