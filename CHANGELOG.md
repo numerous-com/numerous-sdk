@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.8.0 (2024-06-19)
+
+### Feature
+
+* feat(cli): add `app delete` command (#13) ([`e1c4536`](https://github.com/numerous-com/numerous-sdk/commit/e1c4536774bcb73cbdbbccfc6008e0b017c87625))
+
+  > 
+  > Adds the command `numerous app delete` which deletes an app from Numerous, all associated information, and stops all related workloads.
+
+
+
+
 ## v0.7.0 (2024-06-18)
 
 ### Feature
