@@ -1,10 +1,10 @@
 package logs
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
+	"numerous/cli/cmd/args"
 	"numerous/cli/internal/app"
 	"numerous/cli/internal/gql"
 
@@ -35,20 +35,7 @@ Otherwise, assuming an app has been initialized in the directory
 
     numerous app logs my_project/my_app
 `,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			fn := cmd.HelpFunc()
-			fn(cmd, args)
-
-			return fmt.Errorf("accepts only an optional [app directory] as a positional argument, you provided %d arguments", len(args))
-		}
-
-		if len(args) == 1 {
-			appDir = args[0]
-		}
-
-		return nil
-	},
+	Args: args.OptionalAppDir(&appDir),
 }
 
 var (

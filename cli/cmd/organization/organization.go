@@ -1,8 +1,7 @@
 package organization
 
 import (
-	"os"
-
+	"numerous/cli/cmd/args"
 	"numerous/cli/cmd/organization/create"
 	"numerous/cli/cmd/organization/list"
 
@@ -10,17 +9,8 @@ import (
 )
 
 var OrganizationRootCmd = &cobra.Command{
-	Use: "organization",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			if err := cmd.Help(); err != nil {
-				return err
-			}
-			os.Exit(0)
-		}
-
-		return nil
-	},
+	Use:  "organization",
+	Args: args.SubCommandRequired,
 }
 
 func init() {

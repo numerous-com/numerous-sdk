@@ -40,6 +40,11 @@ class AppDeployLogsInput(BaseModel):
     app_name: str = Field(alias="appName")
 
 
+class AppDeleteInput(BaseModel):
+    app_name: str = Field(alias="appName")
+    organization_slug: str = Field(alias="organizationSlug")
+
+
 class SubscriptionOfferInput(BaseModel):
     email: str
     app_name: str = Field(alias="appName")
