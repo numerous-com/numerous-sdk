@@ -5,7 +5,9 @@ import (
 )
 
 type CreateAppVersionInput struct {
-	AppID string
+	AppID   string
+	Version string
+	Message string
 }
 
 type CreateAppVersionOutput struct {
@@ -13,8 +15,8 @@ type CreateAppVersionOutput struct {
 }
 
 const appVersionCreateText = `
-mutation AppVersionCreate($appID: ID!) {
-	appVersionCreate(appID: $appID) {
+mutation AppVersionCreate($appID: ID!, $version: String, $message: String!) {
+	appVersionCreate(appID: $appID, input: {version: $version, message: $message}) {
 		id
 	}
 }
@@ -30,8 +32,14 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateAppVersionInput
 	var resp appVersionCreateResponse
 
 	variables := map[string]any{
-		"appID": input.AppID,
+		"appID":   input.AppID,
+		"message": input.Message,
 	}
+
+	if input.Version != "" {
+		variables["version"] = input.Version
+	}
+
 	err := s.client.Exec(ctx, appVersionCreateText, &resp, variables)
 	if err != nil {
 		return CreateAppVersionOutput{}, err

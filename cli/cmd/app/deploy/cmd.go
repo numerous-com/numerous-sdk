@@ -43,12 +43,23 @@ var (
 	verbose    bool
 	appDir     string = "."
 	projectDir string = "."
+	message    string
+	version    string
 )
 
 func run(cmd *cobra.Command, args []string) {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
-	err := Deploy(cmd.Context(), service, appDir, projectDir, slug, appName, verbose)
+	input := DeployInput{
+		AppDir:     appDir,
+		ProjectDir: projectDir,
+		Slug:       slug,
+		AppName:    appName,
+		Message:    message,
+		Version:    version,
+		Verbose:    verbose,
+	}
+	err := Deploy(cmd.Context(), service, input)
 
 	if err != nil {
 		os.Exit(1)
