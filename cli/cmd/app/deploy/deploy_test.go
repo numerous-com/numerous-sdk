@@ -19,23 +19,35 @@ func TestDeploy(t *testing.T) {
 	const uploadURL = "https://upload/url"
 	const deployVersionID = "deploy-version-id"
 
-	mockService := func() *mockAppService {
-		apps := &mockAppService{}
-		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
-		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+	mockVersionDeploy := func(apps *mockAppService) {
 		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
 		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
 		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
 		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
+	}
+
+	mockAppExists := func() *mockAppService {
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{AppID: appID}, nil)
+		mockVersionDeploy(apps)
 
 		return apps
 	}
 
-	t.Run("give no existing app then happy path can run", func(t *testing.T) {
+	mockAppNotExists := func() *mockAppService {
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{}, app.ErrAppNotFound)
+		apps.On("Create", mock.Anything, mock.Anything).Return(app.CreateAppOutput{AppID: appID}, nil)
+		mockVersionDeploy(apps)
+
+		return apps
+	}
+
+	t.Run("given no existing app then happy path can run", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
-		apps := mockService()
+		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}
 		err := Deploy(context.TODO(), apps, input)
@@ -43,15 +55,16 @@ func TestDeploy(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("give existing app then it does not create app", func(t *testing.T) {
+	t.Run("given existing app then it does not create app", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
-		apps := mockService()
+		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}
 		err := Deploy(context.TODO(), apps, input)
 
 		assert.NoError(t, err)
+		apps.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("given dir without numerous.toml then it returns error", func(t *testing.T) {
@@ -106,7 +119,7 @@ func TestDeploy(t *testing.T) {
 	t.Run("given no slug or app name arguments and manifest with deployment then it uses manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
-		apps := mockService()
+		apps := mockAppNotExists()
 
 		err := Deploy(context.TODO(), apps, DeployInput{AppDir: appDir})
 
@@ -119,7 +132,7 @@ func TestDeploy(t *testing.T) {
 	t.Run("given slug or app name arguments and manifest with deployment and then arguments override manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
-		apps := mockService()
+		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, Slug: "organization-slug-in-argument", AppName: "app-name-in-argument"}
 		err := Deploy(context.TODO(), apps, input)
@@ -135,7 +148,7 @@ func TestDeploy(t *testing.T) {
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
 		expectedVersion := "v1.2.3"
 		expectedMessage := "expected message"
-		apps := mockService()
+		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName, Version: expectedVersion, Message: expectedMessage}
 		err := Deploy(context.TODO(), apps, input)
@@ -153,7 +166,7 @@ func TestDeploy(t *testing.T) {
 	t.Run("given no message and version arguments it creates app version with empty values", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
-		apps := mockService()
+		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}
 		err := Deploy(context.TODO(), apps, input)
