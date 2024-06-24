@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.9.0 (2024-06-24)
+
+### Feature
+
+* feat(cli): add `--version` and `--message` flags to `app deploy` (#15) ([`d41290b`](https://github.com/numerous-com/numerous-sdk/commit/d41290bd49b74c3da20454da79ef380f9ed07882))
+
+  > 
+  > Allow marking deployed versions with a version number and a message.
+
+
+
+
 ## v0.8.0 (2024-06-19)
 
 ### Feature
