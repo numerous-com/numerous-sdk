@@ -2,11 +2,6 @@ name: Validate
 
 on:
   push:
-    paths:
-      - "python/**"
-      - "cli/**"
-      - ".github/workflows/validate.yml"
-      - ".github/workflows/release.yml"
 
 jobs:
   lint-sdk:
@@ -103,8 +98,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: v1.59.0
-          working-directory: cli
-          args: --config=../.golangci.yml --verbose
+          args: --verbose
       - name: Install gofumpt
         shell: bash
         run: |
@@ -133,12 +127,10 @@ jobs:
           go-version: "1.21"
           cache: false
       - name: Tests
-        working-directory: cli
         run: go test -coverprofile=c.out ./...
       - name: Extract Test Coverage Percentage
-        working-directory: cli
         run: go tool cover -func c.out | fgrep total | awk '{print $3}' > ./cli-coverage.txt
       - uses: actions/upload-artifact@v4
         with:
           name: cli-coverage
-          path: cli/cli-coverage.txt
+          path: cli-coverage.txt
