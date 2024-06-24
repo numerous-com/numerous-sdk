@@ -69,7 +69,7 @@ The numerous CLI enables app development.
 ### Building and running
 
 To build simply run `make build` without arguments, and the executable is stored
-as `cli/build/numerous`
+as `build/numerous`
 
 ### Development
 
@@ -82,7 +82,7 @@ While developing you can run the CLI like below.
     go run . init
     go run . dev
 
-From the root folder, you can lint with:
+You can lint with:
 
     make cli-lint
 
@@ -103,5 +103,5 @@ information about how to install it.
 For example, if you built using `make cli-build`, you can run
 
 ```
-./cli/build/numerous dev examples/numerous/parameters.py:ParameterApp
+./build/numerous dev examples/numerous/parameters.py:ParameterApp
 ```
