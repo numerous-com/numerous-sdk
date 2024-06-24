@@ -14,7 +14,7 @@ import (
 var LogsCmd = &cobra.Command{
 	Use:   "logs [app directory]",
 	Run:   run,
-	Short: "Deploy an app to an organization.",
+	Short: "Display running application logs",
 	Long: `Read the logs of an application deployed to an organization on the
 Numerous platform.
 
