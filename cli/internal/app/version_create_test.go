@@ -28,7 +28,7 @@ func TestCreateVersion(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := CreateAppVersionInput{AppID: "some-app-id"}
+		input := CreateAppVersionInput{AppID: "some-app-id", Message: "some message", Version: "v1.2.3"}
 		output, err := s.CreateVersion(context.TODO(), input)
 
 		expected := CreateAppVersionOutput{AppVersionID: "some-app-version-id"}

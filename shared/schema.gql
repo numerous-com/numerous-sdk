@@ -273,6 +273,13 @@ type AppDeployment {
 
 type AppVersion {
   id: ID!
+  version: String!
+  message: String!
+}
+
+input AppVersionInput {
+  version: String
+  message: String
 }
 
 type App {
@@ -341,7 +348,7 @@ extend type Query {
 extend type Mutation {
   appCreate(organizationSlug: String!, appData: AppCreateInfo!): App!
     @hasRole(role: USER)
-  appVersionCreate(appID: ID!): AppVersion! @canManageApp
+  appVersionCreate(appID: ID!, input: AppVersionInput): AppVersion! @canManageApp
   appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
   appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
     @canManageApp

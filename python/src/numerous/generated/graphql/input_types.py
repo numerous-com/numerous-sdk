@@ -24,6 +24,11 @@ class NewTool(BaseModel):
     manifest: str
 
 
+class AppVersionInput(BaseModel):
+    version: Optional[str] = None
+    message: Optional[str] = None
+
+
 class AppCreateInfo(BaseModel):
     name: str
     display_name: str = Field(alias="displayName")
