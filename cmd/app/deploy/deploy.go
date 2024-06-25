@@ -45,13 +45,36 @@ type DeployInput struct {
 }
 
 func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
+	manifest, secrets, err := loadAppConfiguration(input)
+	if err != nil {
+		return err
+	}
+
+	appVersionOutput, err := registerAppVersion(ctx, apps, input, manifest)
+	if err != nil {
+		return err
+	}
+
+	archive, err := createAppArchive(input, manifest)
+	if err != nil {
+		return err
+	}
+
+	if err := uploadAppArchive(ctx, apps, archive, appVersionOutput.AppVersionID); err != nil {
+		return err
+	}
+
+	return deployApp(ctx, appVersionOutput, secrets, apps, input)
+}
+
+func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
 	manifest, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
 	if err != nil {
 		task.Error()
 		output.PrintErrorAppNotInitialized(input.AppDir)
 
-		return err
+		return nil, nil, err
 	}
 
 	secrets := loadSecretsFromEnv(input.AppDir)
@@ -70,7 +93,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 			output.PrintErrorInvalidOrganizationSlug(slug)
 		}
 
-		return ErrInvalidSlug
+		return nil, nil, ErrInvalidSlug
 	}
 
 	appName := input.AppName
@@ -87,72 +110,15 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 			output.PrintErrorInvalidAppName(appName)
 		}
 
-		return ErrInvalidAppName
-	}
-
-	task.Done()
-
-	task = output.StartTask("Registering new version")
-	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest, task)
-	if err != nil {
-		return err
-	}
-
-	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.Version, Message: input.Message}
-	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Error creating app version remotely", err)
-
-		return err
+		return nil, nil, ErrInvalidAppName
 	}
 	task.Done()
 
-	task = output.StartTask("Creating app archive")
-	tarSrcDir := input.AppDir
-	if input.ProjectDir != "" {
-		tarSrcDir = input.ProjectDir
-	}
-	tarPath := path.Join(tarSrcDir, ".tmp_app_archive.tar")
-	err = archive.TarCreate(tarSrcDir, tarPath, manifest.Exclude)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Error archiving app source", err)
+	return manifest, secrets, nil
+}
 
-		return err
-	}
-	defer os.Remove(tarPath)
-
-	archive, err := os.Open(tarPath)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Error archiving app source", err)
-
-		return err
-	}
-	defer archive.Close()
-	task.Done()
-
-	task = output.StartTask("Uploading app archive")
-	uploadURLInput := app.AppVersionUploadURLInput(appVersionOutput)
-	uploadURLOutput, err := apps.AppVersionUploadURL(ctx, uploadURLInput)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Error creating app version remotely", err)
-
-		return err
-	}
-
-	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Error uploading app source archive", err)
-
-		return err
-	}
-	task.Done()
-
-	task = output.StartTask("Deploying app")
+func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput) error {
+	task := output.StartTask("Deploying app")
 	deployAppInput := app.DeployAppInput{AppVersionID: appVersionOutput.AppVersionID, Secrets: secrets}
 	deployAppOutput, err := apps.DeployApp(ctx, deployAppInput)
 	if err != nil {
@@ -192,6 +158,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 			return nil
 		},
 	}
+
 	err = apps.DeployEvents(ctx, eventsInput)
 	if err != nil {
 		task.Error()
@@ -234,6 +201,77 @@ func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName 
 
 		return "", err
 	}
+}
+
+func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File, error) {
+	task := output.StartTask("Creating app archive")
+	tarSrcDir := input.AppDir
+	if input.ProjectDir != "" {
+		tarSrcDir = input.ProjectDir
+	}
+	tarPath := path.Join(tarSrcDir, ".tmp_app_archive.tar")
+
+	if err := archive.TarCreate(tarSrcDir, tarPath, manifest.Exclude); err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error archiving app source", err)
+
+		return nil, err
+	}
+	defer os.Remove(tarPath)
+
+	archive, err := os.Open(tarPath)
+	if err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error archiving app source", err)
+
+		return nil, err
+	}
+	task.Done()
+
+	return archive, nil
+}
+
+func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
+	task := output.StartTask("Registering new version")
+	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest, task)
+	if err != nil {
+		return app.CreateAppVersionOutput{}, err
+	}
+
+	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.Version, Message: input.Message}
+	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
+	if err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error creating app version remotely", err)
+
+		return app.CreateAppVersionOutput{}, err
+	}
+	task.Done()
+
+	return appVersionOutput, nil
+}
+
+func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, appVersionID string) error {
+	task := output.StartTask("Uploading app archive")
+	uploadURLInput := app.AppVersionUploadURLInput(app.AppVersionUploadURLInput{AppVersionID: appVersionID})
+	uploadURLOutput, err := apps.AppVersionUploadURL(ctx, uploadURLInput)
+	if err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error creating app version remotely", err)
+
+		return err
+	}
+
+	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
+	if err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error uploading app source archive", err)
+
+		return err
+	}
+	task.Done()
+
+	return nil
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
