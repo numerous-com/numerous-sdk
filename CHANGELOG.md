@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.9.1 (2024-06-25)
+
+### Documentation
+
+* docs: remove references to `cli` directory ([`259aa9f`](https://github.com/numerous-com/numerous-sdk/commit/259aa9f0c38993a2e5f981761dc4d389a451dab6))
+
+
+
+### Fix
+
+* fix(cli): help message for app logs (#16) ([`a9b5a48`](https://github.com/numerous-com/numerous-sdk/commit/a9b5a486f3333e7fb4650b7247e6df140347cfd5))
+
+
+
+
 ## v0.9.0 (2024-06-24)
 
 ### Feature
