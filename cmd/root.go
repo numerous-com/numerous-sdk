@@ -7,19 +7,14 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/app"
-	deleteapp "numerous.com/cli/cmd/delete"
 	"numerous.com/cli/cmd/dev"
 	"numerous.com/cli/cmd/initialize"
-	"numerous.com/cli/cmd/list"
-	"numerous.com/cli/cmd/log"
+	"numerous.com/cli/cmd/legacy"
 	"numerous.com/cli/cmd/login"
 	"numerous.com/cli/cmd/logout"
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
-	"numerous.com/cli/cmd/publish"
-	"numerous.com/cli/cmd/push"
 	"numerous.com/cli/cmd/report"
-	"numerous.com/cli/cmd/unpublish"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/logging"
 
@@ -87,22 +82,6 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 	return false
 }
 
-func bindCommands() {
-	rootCmd.AddCommand(initialize.InitCmd)
-	rootCmd.AddCommand(push.PushCmd)
-	rootCmd.AddCommand(log.LogCmd)
-	rootCmd.AddCommand(deleteapp.DeleteCmd)
-	rootCmd.AddCommand(login.LoginCmd)
-	rootCmd.AddCommand(logout.LogoutCmd)
-	rootCmd.AddCommand(dev.DevCmd)
-	rootCmd.AddCommand(publish.PublishCmd)
-	rootCmd.AddCommand(unpublish.UnpublishCmd)
-	rootCmd.AddCommand(list.ListCmd)
-	rootCmd.AddCommand(report.ReportCmd)
-	rootCmd.AddCommand(organization.OrganizationRootCmd)
-	rootCmd.AddCommand(app.AppRootCmd)
-}
-
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -112,7 +91,15 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().VarP(&logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
-	bindCommands()
+	rootCmd.AddCommand(initialize.InitCmd,
+		login.LoginCmd,
+		logout.LogoutCmd,
+		dev.DevCmd,
+		report.ReportCmd,
+		organization.OrganizationRootCmd,
+		app.AppRootCmd,
+		legacy.LegacyRootCmd,
+	)
 	cobra.OnInitialize(func() {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel.ToSlogLevel()})))
 	})
