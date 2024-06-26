@@ -14,7 +14,7 @@ import (
 
 const EnvFileName string = ".env"
 
-func bootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error {
+func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error {
 	manifestToml, err := m.ToToml()
 	if err != nil {
 		output.PrintErrorDetails("Error encoding manifest file", err)
@@ -22,11 +22,17 @@ func bootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error 
 		return err
 	}
 
-	if err = createAppIDFile(basePath, toolID); err != nil {
-		return err
+	if toolID != "" {
+		if err = createAppIDFile(basePath, toolID); err != nil {
+			return err
+		}
 	}
 
-	if err = addToGitIgnore(basePath, []string{"# added by numerous init\n", dir.AppIDFileName, EnvFileName}); err != nil {
+	gitignoreLines := []string{"# added by numerous init\n", EnvFileName}
+	if toolID != "" {
+		gitignoreLines = append(gitignoreLines, dir.AppIDFileName)
+	}
+	if err = addToGitIgnore(basePath, gitignoreLines); err != nil {
 		return err
 	}
 

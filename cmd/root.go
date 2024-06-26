@@ -93,6 +93,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().VarP(&logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
+
 	rootCmd.AddCommand(initialize.InitCmd,
 		login.LoginCmd,
 		logout.LogoutCmd,
@@ -103,8 +104,26 @@ func init() {
 		deletecmd.DeleteCmd,
 		deploy.DeployCmd,
 		logs.LogsCmd,
+
+		// dummy commands to display helpful messages for legacy commands
+		dummyLegacyCmd("push"),
+		dummyLegacyCmd("publish"),
+		dummyLegacyCmd("unpublish"),
+		dummyLegacyCmd("list"),
+		dummyLegacyCmd("log"),
 	)
+
 	cobra.OnInitialize(func() {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel.ToSlogLevel()})))
 	})
+}
+
+func dummyLegacyCmd(cmd string) *cobra.Command {
+	return &cobra.Command{
+		Hidden: true,
+		Use:    cmd,
+		Run: func(*cobra.Command, []string) {
+			output.NotifyCmdMoved("numerous "+cmd, "numerous legacy "+cmd)
+		},
+	}
 }

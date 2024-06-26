@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 
 	"github.com/spf13/cobra"
@@ -46,6 +48,11 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
+	if exists, _ := dir.AppIDExists(appDir); exists {
+		output.NotifyCmdMoved("numerous log", "numerous legacy log")
+		println()
+	}
+
 	var printer func(app.AppDeployLogEntry)
 	if timestamps {
 		printer = TimestampPrinter

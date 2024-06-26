@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 
 	"github.com/spf13/cobra"
@@ -43,7 +45,13 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) error {
+	if exists, _ := dir.AppIDExists(appDir); exists {
+		output.NotifyCmdMoved("numerous delete", "numerous legacy delete")
+		println()
+	}
+
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
+
 	return Delete(cmd.Context(), service, appDir, slug, appName)
 }
 

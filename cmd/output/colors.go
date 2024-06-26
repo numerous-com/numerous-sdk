@@ -11,7 +11,7 @@ const (
 	AnsiCyanBold = "\033[1;36m"
 )
 
-func highlight(value string) string {
+func Highlight(value string) string {
 	if runtime.GOOS == "windows" {
 		return "\"" + value + "\""
 	} else {

@@ -51,8 +51,8 @@ func PrintErrorLogin() {
 }
 
 func PrintErrorLoginForCommand(cmd *cobra.Command) {
-	fmt.Println("The command " + highlight(cmd.CommandPath()) + " can only be used when logged in." + symbol(" "+raiseHand))
-	fmt.Println("Use " + highlight("numerous login") + " to enable this command." + symbol(" "+shootingStar))
+	fmt.Println("The command " + Highlight(cmd.CommandPath()) + " can only be used when logged in." + symbol(" "+raiseHand))
+	fmt.Println("Use " + Highlight("numerous login") + " to enable this command." + symbol(" "+shootingStar))
 }
 
 func PrintErrorMissingAppName() {

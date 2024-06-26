@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/args"
 	deleteapp "numerous.com/cli/cmd/legacy/delete"
+	"numerous.com/cli/cmd/legacy/initialize"
 	"numerous.com/cli/cmd/legacy/list"
 	"numerous.com/cli/cmd/legacy/log"
 	"numerous.com/cli/cmd/legacy/publish"
@@ -24,4 +25,5 @@ func init() {
 	LegacyRootCmd.AddCommand(publish.PublishCmd)
 	LegacyRootCmd.AddCommand(unpublish.UnpublishCmd)
 	LegacyRootCmd.AddCommand(list.ListCmd)
+	LegacyRootCmd.AddCommand(initialize.InitCmd)
 }
