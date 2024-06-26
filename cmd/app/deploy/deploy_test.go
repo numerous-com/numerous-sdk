@@ -96,6 +96,20 @@ func TestDeploy(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidSlug)
 	})
 
+	t.Run("given slug and app name arguments and no manifest deployment then it uses arguments", func(t *testing.T) {
+		appDir := t.TempDir()
+		test.CopyDir(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+		apps := mockAppNotExists()
+
+		input := DeployInput{AppDir: appDir, AppName: "app-name-in-argument", Slug: "organization-slug-in-argument"}
+		err := Deploy(context.TODO(), apps, input)
+
+		if assert.NoError(t, err) {
+			apps.AssertCalled(t, "ReadApp", mock.Anything, app.ReadAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument"})
+			apps.AssertCalled(t, "Create", mock.Anything, app.CreateAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument", DisplayName: "Streamlit App Without Deploy"})
+		}
+	})
+
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
@@ -138,8 +152,8 @@ func TestDeploy(t *testing.T) {
 		err := Deploy(context.TODO(), apps, input)
 
 		if assert.NoError(t, err) {
-			expectedInput := app.CreateAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument", DisplayName: "Streamlit App With Deploy"}
-			apps.AssertCalled(t, "Create", mock.Anything, expectedInput)
+			apps.AssertCalled(t, "ReadApp", mock.Anything, app.ReadAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument"})
+			apps.AssertCalled(t, "Create", mock.Anything, app.CreateAppInput{OrganizationSlug: "organization-slug-in-argument", Name: "app-name-in-argument", DisplayName: "Streamlit App With Deploy"})
 		}
 	})
 

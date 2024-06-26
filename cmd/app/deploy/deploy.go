@@ -168,14 +168,16 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 }
 
 func readOrCreateApp(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (string, error) {
-	slug := manifest.Deployment.OrganizationSlug
-	if input.Slug != "" {
-		slug = input.Slug
-	}
+	slug := input.Slug
+	appName := input.AppName
+	if manifest.Deployment != nil {
+		if slug == "" {
+			slug = manifest.Deployment.OrganizationSlug
+		}
 
-	appName := manifest.Deployment.AppName
-	if input.AppName != "" {
-		appName = input.AppName
+		if appName == "" {
+			appName = manifest.Deployment.AppName
+		}
 	}
 
 	appReadInput := app.ReadAppInput{
