@@ -94,6 +94,15 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().VarP(&logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
 
+	rootCmd.AddGroup(&cobra.Group{
+		Title: "Numerous App Commands:",
+		ID:    "app-cmds",
+	})
+	rootCmd.AddGroup(&cobra.Group{
+		Title: "Additional Numerous Commands:",
+		ID:    "additional-cmds",
+	})
+
 	rootCmd.AddCommand(initialize.InitCmd,
 		login.LoginCmd,
 		logout.LogoutCmd,

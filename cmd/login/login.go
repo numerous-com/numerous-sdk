@@ -13,9 +13,10 @@ import (
 )
 
 var LoginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Login in to Numerous",
-	Args:  cobra.NoArgs,
+	Use:     "login",
+	Short:   "Login in to Numerous",
+	Args:    cobra.NoArgs,
+	GroupID: "additional-cmds",
 	Run: func(cmd *cobra.Command, args []string) {
 		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
 		if user == nil {

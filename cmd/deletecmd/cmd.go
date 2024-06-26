@@ -13,9 +13,10 @@ import (
 )
 
 var DeleteCmd = &cobra.Command{
-	Use:   "delete [app directory]",
-	RunE:  run,
-	Short: "Delete an app from an organization",
+	Use:     "delete [app directory]",
+	RunE:    run,
+	Short:   "Delete an app from an organization",
+	GroupID: "app-cmds",
 	Long: `Deletes the specified app from the organization.
 
 If <name> and <organization> flags are set, they define the app to delete. If

@@ -69,7 +69,7 @@ func push(cmd *cobra.Command, args []string) {
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") { // TODO: replace strings-check with GraphQL error type, when GraphQL types exist.
 			output.PrintError(
-				"Sorry, we can't find that app ID in our database.",
+				"Sorry, we can't find the app ID %s in our database.",
 				strings.Join(
 					[]string{
 						"Please make sure you have the correct app ID entered.",
@@ -78,6 +78,7 @@ func push(cmd *cobra.Command, args []string) {
 					},
 					"\n",
 				),
+				output.Highlight(toolID)+output.AnsiRed,
 			)
 
 			return

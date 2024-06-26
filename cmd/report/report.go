@@ -19,9 +19,10 @@ var (
 )
 
 var ReportCmd = &cobra.Command{
-	Use:   "report",
-	Short: "Opens Numerous report and feedback page",
-	Args:  cobra.NoArgs,
+	Use:     "report",
+	Short:   "Opens Numerous report and feedback page",
+	Args:    cobra.NoArgs,
+	GroupID: "additional-cmds",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := openURL(numerousReportURL, runtime.GOOS, Exec{}); err != nil {
 			os.Exit(1)

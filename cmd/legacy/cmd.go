@@ -13,9 +13,10 @@ import (
 )
 
 var LegacyRootCmd = &cobra.Command{
-	Use:   "legacy",
-	Short: "Commands for managing legacy apps on Numerous",
-	Args:  args.SubCommandRequired,
+	Use:     "legacy",
+	Short:   "Commands for managing legacy apps on Numerous",
+	Args:    args.SubCommandRequired,
+	GroupID: "additional-cmds",
 }
 
 func init() {

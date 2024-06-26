@@ -12,9 +12,10 @@ import (
 )
 
 var DeployCmd = &cobra.Command{
-	Use:   "deploy [app directory]",
-	Run:   run,
-	Short: "Deploy an app to an organization",
+	Use:     "deploy [app directory]",
+	Run:     run,
+	GroupID: "app-cmds",
+	Short:   "Deploy an app to an organization",
 	Long: `Deploys an application to an organization on the Numerous platform.
 
 An app's deployment is identified with the <name> and <organization> identifier.

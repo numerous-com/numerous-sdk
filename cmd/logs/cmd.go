@@ -14,9 +14,10 @@ import (
 )
 
 var LogsCmd = &cobra.Command{
-	Use:   "logs [app directory]",
-	Run:   run,
-	Short: "Display running application logs",
+	Use:     "logs [app directory]",
+	Run:     run,
+	Short:   "Display running application logs",
+	GroupID: "app-cmds",
 	Long: `Read the logs of an application deployed to an organization on the
 Numerous platform.
 
