@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v0.9.2 (2024-06-26)
+
+### Fix
+
+* fix(cli): `deploy` should fall back to manifest deployment section ([`28044e1`](https://github.com/numerous-com/numerous-sdk/commit/28044e1513a1b248bd651000215d7a37974213d1))
+
+  > 
+  > Fixes a bug where the manifest `deploy` section was not used in lieu of arguments.
+
+
+* fix(cli): better help message for access denied error in `deploy` ([`7c02663`](https://github.com/numerous-com/numerous-sdk/commit/7c02663ce759897c27a794aaea26f892881e0967))
+
+
+* fix(cli): build with production configuration ([`46de7fb`](https://github.com/numerous-com/numerous-sdk/commit/46de7fb8e4e435df8de2656e9e84ac7c327ddf8f))
+
+  > 
+  > After refactoring the module and package structure, the linking of
+  > configuration variables was broken.
+
+
+
+
 ## v0.9.1 (2024-06-25)
 
 ### Documentation
