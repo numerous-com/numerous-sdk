@@ -19,7 +19,7 @@ func TestDelete(t *testing.T) {
 
 	t.Run("given app with manifest then it deletes expected app", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		service := &MockAppService{}
 
 		expectedInput := app.DeleteAppInput{OrganizationSlug: "organization-slug-in-manifest", Name: "app-name-in-manifest"}

@@ -36,7 +36,7 @@ func TestGetAppIdentifier(t *testing.T) {
 
 	t.Run("given app dir but no slug and no app name then it is loaded from manifest", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		actual, err := GetAppIdentifier(appDir, "", "")
 

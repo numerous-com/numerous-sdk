@@ -46,7 +46,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no existing app then happy path can run", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}
@@ -57,7 +57,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given existing app then it does not create app", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}
@@ -78,7 +78,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		input := DeployInput{AppDir: appDir, Slug: "Some Invalid Organization Slug", AppName: appName}
 		err := Deploy(context.TODO(), nil, input)
@@ -88,7 +88,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no slug argument and no manifest deployment then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
 		input := DeployInput{AppDir: appDir, AppName: appName}
 		err := Deploy(context.TODO(), nil, input)
@@ -98,7 +98,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given slug and app name arguments and no manifest deployment then it uses arguments", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, AppName: "app-name-in-argument", Slug: "organization-slug-in-argument"}
@@ -112,7 +112,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given invalid app name then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: "Some Invalid App Name"}
 		err := Deploy(context.TODO(), nil, input)
@@ -122,7 +122,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no app name argument and no manifest deployment then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
 		input := DeployInput{AppDir: appDir, Slug: slug}
 		err := Deploy(context.TODO(), nil, input)
@@ -132,7 +132,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no slug or app name arguments and manifest with deployment then it uses manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppNotExists()
 
 		err := Deploy(context.TODO(), apps, DeployInput{AppDir: appDir})
@@ -145,7 +145,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given slug or app name arguments and manifest with deployment and then arguments override manifest deployment", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, Slug: "organization-slug-in-argument", AppName: "app-name-in-argument"}
@@ -159,7 +159,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given message and version arguments it creates app version with arguments", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		expectedVersion := "v1.2.3"
 		expectedMessage := "expected message"
 		apps := mockAppExists()
@@ -179,7 +179,7 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("given no message and version arguments it creates app version with empty values", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, Slug: slug, AppName: appName}

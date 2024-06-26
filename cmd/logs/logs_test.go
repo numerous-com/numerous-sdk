@@ -35,7 +35,7 @@ func TestLogs(t *testing.T) {
 
 	t.Run("given neither slug nor app name arguments and numerous.toml without deploy then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app_without_deploy", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
 		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
 
@@ -63,7 +63,7 @@ func TestLogs(t *testing.T) {
 
 	t.Run("given numerous.toml with deploy section then it calls service as expected", func(t *testing.T) {
 		appDir := t.TempDir()
-		test.CopyDir(t, "../../../testdata/streamlit_app", appDir)
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
