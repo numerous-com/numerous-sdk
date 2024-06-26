@@ -47,7 +47,7 @@ var (
 
 func run(cmd *cobra.Command, args []string) error {
 	if exists, _ := dir.AppIDExists(appDir); exists {
-		output.NotifyCmdMoved("numerous delete", "numerous legacy delete")
+		output.NotifyCmdChanged("numerous delete", "numerous legacy delete")
 		println()
 	}
 
