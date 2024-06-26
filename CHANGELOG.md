@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.9.3 (2024-06-26)
+
+### Fix
+
+* fix(cli): segfault in  without a  section in manifest ([`0478046`](https://github.com/numerous-com/numerous-sdk/commit/04780461ba85fbad76ba4801978793aaaad3e740))
+
+
+
+
 ## v0.9.2 (2024-06-26)
 
 ### Fix
