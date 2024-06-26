@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	"numerous.com/cli/cmd/app"
+	"numerous.com/cli/cmd/deletecmd"
+	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/dev"
 	"numerous.com/cli/cmd/initialize"
 	"numerous.com/cli/cmd/legacy"
 	"numerous.com/cli/cmd/login"
 	"numerous.com/cli/cmd/logout"
+	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/report"
@@ -97,8 +99,10 @@ func init() {
 		dev.DevCmd,
 		report.ReportCmd,
 		organization.OrganizationRootCmd,
-		app.AppRootCmd,
 		legacy.LegacyRootCmd,
+		deletecmd.DeleteCmd,
+		deploy.DeployCmd,
+		logs.LogsCmd,
 	)
 	cobra.OnInitialize(func() {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel.ToSlogLevel()})))

@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"numerous.com/cli/cmd/app/appident"
+	"numerous.com/cli/internal/appident"
 
 	"github.com/hasura/go-graphql-client/pkg/jsonutil"
 )

@@ -20,7 +20,7 @@ var (
 
 var ReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "Opens numerous report and feedback page",
+	Short: "Opens Numerous report and feedback page",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := openURL(numerousReportURL, runtime.GOOS, Exec{}); err != nil {

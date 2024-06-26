@@ -3,9 +3,9 @@ package deletecmd
 import (
 	"context"
 
-	"numerous.com/cli/cmd/app/appident"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 )
 
 type AppService interface {

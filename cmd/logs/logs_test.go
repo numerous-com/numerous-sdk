@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"numerous.com/cli/cmd/app/appident"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"

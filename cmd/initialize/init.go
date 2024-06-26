@@ -20,7 +20,7 @@ import (
 var InitCmd = &cobra.Command{
 	Use:     "init [flags]",
 	Aliases: []string{"initialize"},
-	Short:   "Initialize a numerous project",
+	Short:   "Initialize a Numerous project",
 	Long:    `Helps the user bootstrap a python project as a numerous project.`,
 	Args:    cobra.MaximumNArgs(1),
 	Run:     runInit,

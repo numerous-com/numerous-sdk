@@ -9,8 +9,9 @@ import (
 )
 
 var OrganizationRootCmd = &cobra.Command{
-	Use:  "organization",
-	Args: args.SubCommandRequired,
+	Use:   "organization",
+	Short: "Manage Numerous organizations",
+	Args:  args.SubCommandRequired,
 }
 
 func init() {

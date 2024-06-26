@@ -13,7 +13,7 @@ import (
 var DeleteCmd = &cobra.Command{
 	Use:   "delete [app directory]",
 	RunE:  run,
-	Short: "Delete an app from an organization.",
+	Short: "Delete an app from an organization",
 	Long: `Deletes the specified app from the organization.
 
 If <name> and <organization> flags are set, they define the app to delete. If
