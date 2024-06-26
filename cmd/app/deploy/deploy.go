@@ -148,8 +148,9 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
 	task := output.StartTask("Registering new version")
-	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest, task)
+	appID, err := readOrCreateApp(ctx, apps, input, manifest)
 	if err != nil {
+		task.Error()
 		return app.CreateAppVersionOutput{}, err
 	}
 
@@ -166,7 +167,17 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	return appVersionOutput, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName string, manifest *manifest.Manifest, task *output.Task) (string, error) {
+func readOrCreateApp(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (string, error) {
+	slug := manifest.Deployment.OrganizationSlug
+	if input.Slug != "" {
+		slug = input.Slug
+	}
+
+	appName := manifest.Deployment.AppName
+	if input.AppName != "" {
+		appName = input.AppName
+	}
+
 	appReadInput := app.ReadAppInput{
 		OrganizationSlug: slug,
 		Name:             appName,
@@ -175,29 +186,25 @@ func readOrCreateApp(ctx context.Context, apps AppService, slug string, appName 
 	switch {
 	case err == nil:
 		return appReadOutput.AppID, nil
-	case errors.Is(err, app.ErrAppNotFound):
-		appCreateInput := app.CreateAppInput{
-			OrganizationSlug: slug,
-			Name:             appName,
-			DisplayName:      manifest.Name,
-			Description:      manifest.Description,
-		}
-		appCreateOutput, err := apps.Create(ctx, appCreateInput)
-		if err != nil {
-			task.Error()
-			output.PrintErrorDetails("Error creating app remotely", err)
-		}
-
-		return appCreateOutput.AppID, nil
 	case errors.Is(err, gql.ErrAccesDenied):
-		task.Error()
 		output.PrintError("Access denied.", "Hint: You may have specified an organization name instead of an organization slug.")
-	default:
-		task.Error()
+	case !errors.Is(err, app.ErrAppNotFound):
 		output.PrintErrorDetails("Error reading remote app", err)
+		return "", err
 	}
 
-	return "", err
+	appCreateInput := app.CreateAppInput{
+		OrganizationSlug: slug,
+		Name:             appName,
+		DisplayName:      manifest.Name,
+		Description:      manifest.Description,
+	}
+	appCreateOutput, err := apps.Create(ctx, appCreateInput)
+	if err != nil {
+		output.PrintErrorDetails("Error creating app remotely", err)
+	}
+
+	return appCreateOutput.AppID, nil
 }
 
 func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, appVersionID string) error {
