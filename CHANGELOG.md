@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v0.9.4 (2024-06-27)
+
+### Fix
+
+* fix(cli): change report command and add tests (#6) ([`9d7198b`](https://github.com/numerous-com/numerous-sdk/commit/9d7198b4844e32e34a329942c72d49866aeb246c))
+
+  > 
+  > test(cli): add report command tests
+  > 
+  > test(cli): improves test logic and clarification
+  > 
+  > test(cli): changes error messages to use the numerous standard output
+  > 
+  > fix(cli): removes bool reference from wsl check
+  > 
+  > test(cli): changes after code review
+  > 
+  > refactor: changes wsl identification function
+
+
+
+
 ## v0.9.3 (2024-06-26)
 
 ### Fix
