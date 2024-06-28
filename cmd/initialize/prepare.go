@@ -34,16 +34,16 @@ func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 	}
 
 	lib, err := manifest.GetLibraryByKey(libraryKey)
-	if errors.Is(err, manifest.ErrUnsupportedLibrary) {
+	if libraryKey != "" && errors.Is(err, manifest.ErrUnsupportedLibrary) {
 		output.PrintError(
 			"Unsupported library",
 			"The specified library %s is not supported. Supported libraries are %s.",
-			output.Highlight(libraryKey),
+			libraryKey,
 			manifest.SupportedLibraryValuesList(),
 		)
 
 		return "", nil, err
-	} else if err != nil {
+	} else if libraryKey != "" && err != nil {
 		output.PrintErrorDetails("Unsupported library", err)
 	}
 

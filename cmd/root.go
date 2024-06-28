@@ -44,8 +44,7 @@ var (
 			"             °°°°°   \n" +
 			"                °°     \n" +
 			"",
-		SilenceUsage:  true,
-		SilenceErrors: true,
+		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if !commandRequiresAuthentication(cmd.CommandPath()) {
 				return nil
