@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.10.0 (2024-06-28)
+
+### Feature
+
+* feat(cli): promote organization app commands, and add `legacy`  namespace (#17) ([`86f951d`](https://github.com/numerous-com/numerous-sdk/commit/86f951d346434b34cce850f42d53922c9fd164a8))
+
+  > 
+  > * Promote commands related to organization apps (`deploy`, `delete`, `logs`) to be root commands.
+  > * Rename &#34;app name&#34; concept of new app commands to &#34;app slug&#34; to avoid confusion.
+  > * Move existing commands for managing apps with `.app_id.txt` to the `legacy` namespace.
+  > * Add new `numerous init` command  that does not register a legacy app in the Numerous server,
+  >   or create `.app_id.txt`. Move existing `init` to the `legacy` namespace.
+  > * Add helpful messages to direct the user to the correct commands.
+  > * For `numerous deploy`, `numerous logs`, and `numerous delete` if no app slug is provided
+  >   through CLI arguments, or in the manifest, use a sanitized version of the app display name
+  >   from the manifest
+
+
+
+
 ## v0.9.4 (2024-06-27)
 
 ### Fix
