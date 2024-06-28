@@ -15,8 +15,7 @@ type surveyAnswers struct {
 }
 
 func (s surveyAnswers) updateManifest(m *manifest.Manifest) {
-	// TODO: handle error here?
-	lib, _ := manifest.GetLibraryByName(s.LibraryName)
+	lib, _ := manifest.GetLibraryByName(s.LibraryName) // TODO: handle error here?
 	m.Name = s.Name
 	m.Description = s.Description
 	m.Library = lib
