@@ -42,7 +42,7 @@ type DeprecatedManifest struct {
 
 type Deployment struct {
 	OrganizationSlug string `toml:"organization" json:"organization"`
-	AppName          string `toml:"name" json:"name"`
+	AppSlug          string `toml:"app" json:"app"`
 }
 
 func LoadManifest(filePath string) (*Manifest, error) {
@@ -102,7 +102,12 @@ func New(lib Library, name string, description string, python string, appFile st
 }
 
 func ManifestExistsInCurrentDir() (bool, error) {
-	_, err := os.Stat(ManifestPath)
+	return ManifestExists(".")
+}
+
+func ManifestExists(appDir string) (bool, error) {
+	manifestPath := filepath.Join(appDir, ManifestFileName)
+	_, err := os.Stat(manifestPath)
 	exists := !errors.Is(err, os.ErrNotExist)
 
 	return exists, err

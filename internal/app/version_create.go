@@ -11,7 +11,9 @@ type CreateAppVersionInput struct {
 }
 
 type CreateAppVersionOutput struct {
-	AppVersionID string
+	AppVersionID     string
+	OrganizationSlug string
+	AppSlug          string
 }
 
 const appVersionCreateText = `

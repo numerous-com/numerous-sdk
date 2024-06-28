@@ -8,7 +8,7 @@ import (
 
 type CreateAppInput struct {
 	OrganizationSlug string
-	Name             string
+	AppSlug          string
 	DisplayName      string
 	Description      string
 }
@@ -18,8 +18,8 @@ type CreateAppOutput struct {
 }
 
 const appCreateText = `
-mutation AppCreate($slug: String!, $name: String!, $displayName: String!, $description: String!) {
-	appCreate(organizationSlug: $slug, appData: {name: $name, displayName: $displayName, description: $description}) {
+mutation AppCreate($orgSlug: String!, $appSlug: String!, $displayName: String!, $description: String!) {
+	appCreate(organizationSlug: $orgSlug, appData: {appSlug: $appSlug, displayName: $displayName, description: $description}) {
 		id
 	}
 }
@@ -35,8 +35,8 @@ func (s *Service) Create(ctx context.Context, input CreateAppInput) (CreateAppOu
 	var resp appCreateResponse
 
 	variables := map[string]any{
-		"slug":        input.OrganizationSlug,
-		"name":        input.Name,
+		"orgSlug":     input.OrganizationSlug,
+		"appSlug":     input.AppSlug,
 		"displayName": input.DisplayName,
 		"description": input.Description,
 	}

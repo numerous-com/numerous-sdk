@@ -2,11 +2,11 @@ package report
 
 import (
 	"errors"
-	"os"
 	"os/exec"
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 )
 
@@ -19,12 +19,13 @@ var (
 )
 
 var ReportCmd = &cobra.Command{
-	Use:   "report",
-	Short: "Opens numerous report and feedback page.",
-	Args:  cobra.NoArgs,
+	Use:     "report",
+	Short:   "Opens Numerous report and feedback page",
+	Args:    cobra.NoArgs,
+	GroupID: group.AdditionalCommandsGroupID,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := openURL(numerousReportURL, runtime.GOOS, Exec{}); err != nil {
-			os.Exit(1)
+			output.PrintErrorDetails("Error occurred opening feedback and report URL", err)
 		}
 	},
 }

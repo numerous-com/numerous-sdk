@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"numerous.com/cli/cmd/app/appident"
+	"numerous.com/cli/internal/appident"
 
 	"github.com/hasura/go-graphql-client/pkg/jsonutil"
 )
@@ -14,7 +14,7 @@ type AppDeployLogEntry struct {
 }
 
 type AppDeployLogsSubscription struct {
-	AppDeployLogs AppDeployLogEntry `graphql:"appDeployLogs(input: {organizationSlug: $slug, appName: $name})"`
+	AppDeployLogs AppDeployLogEntry `graphql:"appDeployLogs(input: {organizationSlug: $orgSlug, appSlug: $appSlug})"`
 }
 
 func (s *Service) AppDeployLogs(ai appident.AppIdentifier) (chan AppDeployLogEntry, error) {
@@ -38,8 +38,8 @@ func (s *Service) AppDeployLogs(ai appident.AppIdentifier) (chan AppDeployLogEnt
 	}
 
 	vars := make(map[string]any)
-	vars["slug"] = ai.OrganizationSlug
-	vars["name"] = ai.Name
+	vars["orgSlug"] = ai.OrganizationSlug
+	vars["appSlug"] = ai.AppSlug
 	_, err := s.subscription.Subscribe(&AppDeployLogsSubscription{}, vars, handler)
 	if err != nil {
 		return nil, err

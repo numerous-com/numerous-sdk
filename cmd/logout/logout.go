@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
 
@@ -11,8 +12,9 @@ import (
 )
 
 var LogoutCmd = &cobra.Command{
-	Use:   "logout",
-	Short: "Logout of the Numerous CLI",
+	Use:     "logout",
+	Short:   "Logout of the Numerous CLI",
+	GroupID: group.AdditionalCommandsGroupID,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := logout(auth.NumerousTenantAuthenticator); err != nil {
 			output.PrintUnknownError(err)

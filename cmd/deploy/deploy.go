@@ -12,11 +12,12 @@ import (
 
 	"numerous.com/cli/cmd/initialize"
 	"numerous.com/cli/cmd/output"
-	"numerous.com/cli/cmd/validate"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dotenv"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/links"
 	"numerous.com/cli/internal/manifest"
 )
 
@@ -30,16 +31,11 @@ type AppService interface {
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
 }
 
-var (
-	ErrInvalidSlug    = errors.New("invalid organization slug")
-	ErrInvalidAppName = errors.New("invalid app name")
-)
-
 type DeployInput struct {
 	AppDir     string
 	ProjectDir string
-	Slug       string
-	AppName    string
+	OrgSlug    string
+	AppSlug    string
 	Version    string
 	Message    string
 	Verbose    bool
@@ -51,7 +47,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 		return err
 	}
 
-	appVersionOutput, err := registerAppVersion(ctx, apps, input, manifest)
+	appVersionOutput, orgSlug, appSlug, err := registerAppVersion(ctx, apps, input, manifest)
 	if err != nil {
 		return err
 	}
@@ -65,12 +61,18 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 		return err
 	}
 
-	return deployApp(ctx, appVersionOutput, secrets, apps, input)
+	if err := deployApp(ctx, appVersionOutput, secrets, apps, input); err != nil {
+		return err
+	}
+
+	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
+
+	return nil
 }
 
 func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
-	manifest, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
+	m, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
 	if err != nil {
 		task.Error()
 		output.PrintErrorAppNotInitialized(input.AppDir)
@@ -80,42 +82,15 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 
 	secrets := loadSecretsFromEnv(input.AppDir)
 
-	slug := input.Slug
-	if slug == "" && manifest.Deployment != nil {
-		slug = manifest.Deployment.OrganizationSlug
+	// for validation
+	_, err = appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if !validate.IsValidIdentifier(slug) {
-		task.Error()
-
-		if slug == "" {
-			output.PrintErrorMissingOrganizationSlug()
-		} else {
-			output.PrintErrorInvalidOrganizationSlug(slug)
-		}
-
-		return nil, nil, ErrInvalidSlug
-	}
-
-	appName := input.AppName
-	if appName == "" && manifest.Deployment != nil {
-		appName = manifest.Deployment.AppName
-	}
-
-	if !validate.IsValidIdentifier(appName) {
-		task.Error()
-
-		if appName == "" {
-			output.PrintErrorMissingAppName()
-		} else {
-			output.PrintErrorInvalidAppName(appName)
-		}
-
-		return nil, nil, ErrInvalidAppName
-	}
 	task.Done()
 
-	return manifest, secrets, nil
+	return m, secrets, nil
 }
 
 func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File, error) {
@@ -146,12 +121,17 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 	return archive, nil
 }
 
-func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
-	task := output.StartTask("Registering new version")
-	appID, err := readOrCreateApp(ctx, apps, input, manifest)
+func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
+	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
+	if err != nil {
+		return app.CreateAppVersionOutput{}, "", "", err
+	}
+
+	task := output.StartTask("Registering new version for " + ai.OrganizationSlug + "/" + ai.AppSlug)
+	appID, err := readOrCreateApp(ctx, apps, ai.AppSlug, ai.OrganizationSlug, manifest)
 	if err != nil {
 		task.Error()
-		return app.CreateAppVersionOutput{}, err
+		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
 	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.Version, Message: input.Message}
@@ -160,29 +140,17 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 		task.Error()
 		output.PrintErrorDetails("Error creating app version remotely", err)
 
-		return app.CreateAppVersionOutput{}, err
+		return app.CreateAppVersionOutput{}, "", "", err
 	}
 	task.Done()
 
-	return appVersionOutput, nil
+	return appVersionOutput, ai.OrganizationSlug, ai.AppSlug, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (string, error) {
-	slug := input.Slug
-	appName := input.AppName
-	if manifest.Deployment != nil {
-		if slug == "" {
-			slug = manifest.Deployment.OrganizationSlug
-		}
-
-		if appName == "" {
-			appName = manifest.Deployment.AppName
-		}
-	}
-
+func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug string, manifest *manifest.Manifest) (string, error) {
 	appReadInput := app.ReadAppInput{
-		OrganizationSlug: slug,
-		Name:             appName,
+		OrganizationSlug: orgSlug,
+		AppSlug:          appSlug,
 	}
 	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
 	switch {
@@ -196,14 +164,15 @@ func readOrCreateApp(ctx context.Context, apps AppService, input DeployInput, ma
 	}
 
 	appCreateInput := app.CreateAppInput{
-		OrganizationSlug: slug,
-		Name:             appName,
+		OrganizationSlug: orgSlug,
+		AppSlug:          appSlug,
 		DisplayName:      manifest.Name,
 		Description:      manifest.Description,
 	}
 	appCreateOutput, err := apps.Create(ctx, appCreateInput)
 	if err != nil {
 		output.PrintErrorDetails("Error creating app remotely", err)
+		return "", err
 	}
 
 	return appCreateOutput.AppID, nil
@@ -278,9 +247,10 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error occurred during deploy", err)
-	} else {
-		task.Done()
+
+		return err
 	}
+	task.Done()
 
 	return nil
 }

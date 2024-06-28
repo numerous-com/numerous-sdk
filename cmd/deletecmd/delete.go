@@ -3,17 +3,17 @@ package deletecmd
 import (
 	"context"
 
-	"numerous.com/cli/cmd/app/appident"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 )
 
 type AppService interface {
 	Delete(ctx context.Context, input app.DeleteAppInput) error
 }
 
-func Delete(ctx context.Context, apps AppService, appDir, slug, appName string) error {
-	ai, err := appident.GetAppIdentifier(appDir, slug, appName)
+func Delete(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string) error {
+	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func Delete(ctx context.Context, apps AppService, appDir, slug, appName string) 
 		return err
 	}
 
-	output.PrintlnOK("Deleted app %s/%s", slug, appName)
+	output.PrintlnOK("Deleted app %s/%s", ai.OrganizationSlug, ai.AppSlug)
 
 	return nil
 }

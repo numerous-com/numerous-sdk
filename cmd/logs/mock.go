@@ -1,8 +1,8 @@
 package logs
 
 import (
-	"numerous.com/cli/cmd/app/appident"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 
 	"github.com/stretchr/testify/mock"
 )

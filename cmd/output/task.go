@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-const taskLineLength = 40
+const taskLineLength = 80
 
 type Task struct {
 	msg       string
@@ -14,12 +14,12 @@ type Task struct {
 }
 
 func (t *Task) line(icon string) string {
-	ln := icon + " " + t.msg
+	ln := icon + " " + t.msg + AnsiFaint
 	for d := len(t.msg); d < t.length; d++ {
 		ln += "."
 	}
 
-	return ln
+	return ln + AnsiReset
 }
 
 func (t *Task) start() {

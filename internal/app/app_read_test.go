@@ -31,7 +31,7 @@ func TestAppRead(t *testing.T) {
 
 		input := ReadAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 
@@ -64,7 +64,7 @@ func TestAppRead(t *testing.T) {
 
 		input := ReadAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 
@@ -91,7 +91,7 @@ func TestAppRead(t *testing.T) {
 
 		input := ReadAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 
@@ -118,7 +118,7 @@ func TestAppRead(t *testing.T) {
 
 		input := ReadAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 

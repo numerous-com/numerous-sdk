@@ -24,7 +24,7 @@ var (
 var DevCmd = &cobra.Command{
 	Use:   "dev MODULE:CLASS",
 	Run:   dev,
-	Short: "Develop and run numerous app engine apps locally.",
+	Short: "Develop and run Numerous App Engine apps locally",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return errors.New("an app module and class must be specified")

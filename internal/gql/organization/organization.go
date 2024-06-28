@@ -3,6 +3,8 @@ package organization
 import (
 	"errors"
 	"fmt"
+
+	"numerous.com/cli/internal/links"
 )
 
 var ErrOrganizationNameInvalidCharacter = errors.New("gqlclient: server failure: organization name contains invalid characters")
@@ -12,5 +14,5 @@ func (o Organization) String() string {
 Organization:
   name     %s
   url      %s
-	`, o.Name, "https://numerous.com/app/organization/"+o.Slug)
+	`, o.Name, links.GetOrganizationURL(o.Slug))
 }

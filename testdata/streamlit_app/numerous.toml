@@ -10,4 +10,4 @@ exclude = ["*venv", "venv*", ".git"]
 
 [deploy]
 organization = "organization-slug-in-manifest"
-name = "app-name-in-manifest"
+app = "app-slug-in-manifest"

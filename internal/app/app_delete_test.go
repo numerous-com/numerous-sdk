@@ -31,7 +31,7 @@ func TestAppDelete(t *testing.T) {
 
 		input := DeleteAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		err := s.Delete(context.TODO(), input)
 
@@ -57,7 +57,7 @@ func TestAppDelete(t *testing.T) {
 
 		input := DeleteAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		err := s.Delete(context.TODO(), input)
 
@@ -83,7 +83,7 @@ func TestAppDelete(t *testing.T) {
 
 		input := DeleteAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 		}
 		err := s.Delete(context.TODO(), input)
 

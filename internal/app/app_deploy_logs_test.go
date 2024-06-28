@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"numerous.com/cli/cmd/app/appident"
+	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ func TestAppDeployLogs(t *testing.T) {
 	c := test.CreateTestSubscriptionClient(t, clientCh)
 	s := New(nil, c, nil)
 
-	ch, err := s.AppDeployLogs(appident.AppIdentifier{OrganizationSlug: "organization-slug", Name: "app-name"})
+	ch, err := s.AppDeployLogs(appident.AppIdentifier{OrganizationSlug: "organization-slug", AppSlug: "app-slug"})
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

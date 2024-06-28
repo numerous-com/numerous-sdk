@@ -2,6 +2,7 @@ package organization
 
 import (
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/organization/create"
 	"numerous.com/cli/cmd/organization/list"
 
@@ -9,8 +10,10 @@ import (
 )
 
 var OrganizationRootCmd = &cobra.Command{
-	Use:  "organization",
-	Args: args.SubCommandRequired,
+	Use:     "organization",
+	Short:   "Manage Numerous organizations",
+	Args:    args.SubCommandRequired,
+	GroupID: group.AdditionalCommandsGroupID,
 }
 
 func init() {

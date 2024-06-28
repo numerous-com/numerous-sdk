@@ -7,8 +7,8 @@ import (
 )
 
 const deleteMutation string = `
-	mutation DeleteApp($slug: String!, $name: String!) {
-		appDelete(input: {organizationSlug: $slug, appName: $name}) {
+	mutation DeleteApp($orgSlug: String!, $appSlug: String!) {
+		appDelete(input: {organizationSlug: $orgSlug, appSlug: $appSlug}) {
 			__typename
 		}
 	}
@@ -22,12 +22,12 @@ type deleteAppResponse struct {
 
 type DeleteAppInput struct {
 	OrganizationSlug string
-	Name             string
+	AppSlug          string
 }
 
 func (s *Service) Delete(ctx context.Context, input DeleteAppInput) error {
 	resp := deleteAppResponse{}
-	vars := map[string]any{"slug": input.OrganizationSlug, "name": input.Name}
+	vars := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
 
 	err := s.client.Exec(ctx, deleteMutation, &resp, vars)
 	if err != nil {

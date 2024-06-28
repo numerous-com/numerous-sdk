@@ -14,6 +14,11 @@ class NewOrganization(BaseModel):
     slug: Optional[str] = None
 
 
+class Auth0WhiteLabelInvitationInput(BaseModel):
+    email: str
+    organization_id: str = Field(alias="organizationID")
+
+
 class OrganizationInvitationInput(BaseModel):
     role: Role
     email: str
@@ -30,7 +35,7 @@ class AppVersionInput(BaseModel):
 
 
 class AppCreateInfo(BaseModel):
-    name: str
+    app_slug: str = Field(alias="appSlug")
     display_name: str = Field(alias="displayName")
     description: str
 
@@ -42,17 +47,18 @@ class AppDeployInput(BaseModel):
 
 class AppDeployLogsInput(BaseModel):
     organization_slug: str = Field(alias="organizationSlug")
-    app_name: str = Field(alias="appName")
+    app_slug: str = Field(alias="appSlug")
 
 
 class AppDeleteInput(BaseModel):
-    app_name: str = Field(alias="appName")
+    app_slug: str = Field(alias="appSlug")
     organization_slug: str = Field(alias="organizationSlug")
 
 
 class SubscriptionOfferInput(BaseModel):
     email: str
-    app_name: str = Field(alias="appName")
+    app_slug: str = Field(alias="appSlug")
+    message: Optional[str] = None
 
 
 class ElementInput(BaseModel):

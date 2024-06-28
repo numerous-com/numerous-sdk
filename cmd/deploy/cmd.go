@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
 
@@ -12,9 +13,10 @@ import (
 )
 
 var DeployCmd = &cobra.Command{
-	Use:   "deploy [app directory]",
-	Run:   run,
-	Short: "Deploy an app to an organization.",
+	Use:     "deploy [app directory]",
+	Run:     run,
+	GroupID: group.AppCommandsGroupID,
+	Short:   "Deploy an app to an organization",
 	Long: `Deploys an application to an organization on the Numerous platform.
 
 An app's deployment is identified with the <name> and <organization> identifier.
@@ -29,17 +31,17 @@ organization's apps page.
 If no [app directory] is specified, the current working directory is used.`,
 	Example: `
 If an app has been initialized in the current working directory, and it should
-be pushed to the organization "organization-slug-a2ecf59b", and the app name
+be pushed to the organization "organization-slug-a2ecf59b", and the app slug
 "my-app", the following command can be used:
 
-	numerous app deploy --organization "organization-slug-a2ecf59b" --name "my-app"
+	numerous deploy --organization "organization-slug-a2ecf59b" --app "my-app"
 	`,
 	Args: args.OptionalAppDir(&appDir),
 }
 
 var (
-	slug       string
-	appName    string
+	orgSlug    string
+	appSlug    string
 	verbose    bool
 	appDir     string = "."
 	projectDir string = "."
@@ -53,8 +55,8 @@ func run(cmd *cobra.Command, args []string) {
 	input := DeployInput{
 		AppDir:     appDir,
 		ProjectDir: projectDir,
-		Slug:       slug,
-		AppName:    appName,
+		OrgSlug:    orgSlug,
+		AppSlug:    appSlug,
 		Message:    message,
 		Version:    version,
 		Verbose:    verbose,
@@ -70,8 +72,8 @@ func run(cmd *cobra.Command, args []string) {
 
 func init() {
 	flags := DeployCmd.Flags()
-	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appName, "name", "n", "", "A unique name for the application to deploy.")
+	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to deploy to. List available organizations with 'numerous organization list'.")
+	flags.StringVarP(&appSlug, "app", "n", "", "A app slug identifier of the app to deploy to.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
 	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 }

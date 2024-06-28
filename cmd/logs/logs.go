@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"numerous.com/cli/cmd/app/appident"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 )
 
 type AppService interface {
 	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
-func Logs(ctx context.Context, apps AppService, appDir, slug, appName string, printer func(app.AppDeployLogEntry)) error {
-	ai, err := appident.GetAppIdentifier(appDir, slug, appName)
+func Logs(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string, printer func(app.AppDeployLogEntry)) error {
+	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
 		return err
 	}

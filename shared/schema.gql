@@ -75,6 +75,7 @@ type OrganizationInvitation {
   role: Role!
 }
 
+
 type InvalidEmail {
   email: String!
 }
@@ -134,6 +135,30 @@ type Mutation {
 ###############################################################################
 
 ###############################################################################
+### Auth0 invitation management
+###############################################################################
+
+input Auth0WhiteLabelInvitationInput {
+  email: String!
+    organizationID: ID!
+}
+
+type Auth0WhiteLabelInvitation {
+  email: String!
+
+  invitedAt: Time!
+}
+extend type Mutation {
+  Auth0WhiteLabelInvitationCreate(
+    input: Auth0WhiteLabelInvitationInput
+  ): Auth0WhiteLabelInvitation! 
+
+}
+###############################################################################
+### End of Auth0Organization management
+###############################################################################
+
+###############################################################################
 ### Organization invitation management
 ###############################################################################
 
@@ -141,6 +166,10 @@ input OrganizationInvitationInput {
   role: Role!
   email: String!
 }
+
+
+
+
 
 type OrganizationInvitationNotFound {
   id: ID!
@@ -247,6 +276,7 @@ extend type Mutation {
 ###############################################################################
 ### End of tool management
 ###############################################################################
+
 ###############################################################################
 ### App management
 ###############################################################################
@@ -284,11 +314,12 @@ input AppVersionInput {
 
 type App {
   id: ID!
-  name: String!
+  slug: String!
   displayName: String!
   description: String!
   createdBy: User!
   createdAt: Time!
+  pictureUrl: String
   defaultDeployment: AppDeployment
 }
 
@@ -297,7 +328,7 @@ type AppVersionUploadURL {
 }
 
 input AppCreateInfo {
-  name: String!
+  appSlug: String!
   displayName: String!
   description: String!
 }
@@ -323,7 +354,7 @@ union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent | AppBuil
 
 input AppDeployLogsInput {
     organizationSlug: String!
-    appName: String!
+    appSlug: String!
 }
 
 type AppDeployLogEntry {
@@ -332,17 +363,17 @@ type AppDeployLogEntry {
 }
 
 type AppDeleted {
-    appName: String!
+    appSlug: String!
     organizationSlug: String
 }
 
 input AppDeleteInput {
-    appName: String!
+    appSlug: String!
     organizationSlug: String!
 }
 
 extend type Query {
-  app(organizationSlug: String!, appName: String!): App @hasRole(role: USER)
+  app(organizationSlug: String!, appSlug: String!): App @hasRole(role: USER)
 }
 
 extend type Mutation {
@@ -396,11 +427,13 @@ type SubscriptionOffer {
   app: App!
   offeringOrganization: Organization!
   status: SubscriptionOfferStatus!
+  message: String!
 }
 
 input SubscriptionOfferInput {
   email: String!
-  appName: String!
+  appSlug: String!
+  message: String
 }
 
 type SubscriptionOfferNotFound {
