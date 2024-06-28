@@ -10,31 +10,31 @@ import (
 
 func TestGetAppIdentifier(t *testing.T) {
 	const slug = "organization-slug"
-	const appName = "app-name"
-	expected := AppIdentifier{OrganizationSlug: slug, Name: appName}
+	const appSlug = "app-slug"
+	expected := AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}
 
-	t.Run("given valid slug and app name then they are returned", func(t *testing.T) {
-		actual, err := GetAppIdentifier("", slug, appName)
+	t.Run("given valid slug and app slug then they are returned", func(t *testing.T) {
+		actual, err := GetAppIdentifier("", slug, appSlug)
 
 		assert.Equal(t, expected, actual)
 		assert.NoError(t, err)
 	})
 
-	t.Run("given invalid slug then invalid slug error is returned", func(t *testing.T) {
-		appident, err := GetAppIdentifier("", "Some Invalid Slug", appName)
+	t.Run("given invalid organization slug then invalid organization slug error is returned", func(t *testing.T) {
+		appident, err := GetAppIdentifier("", "Some Invalid Organization Slug", appSlug)
 
 		assert.Empty(t, appident)
-		assert.ErrorIs(t, err, ErrInvalidSlug)
+		assert.ErrorIs(t, err, ErrInvalidOrganizationSlug)
 	})
 
-	t.Run("given invalid app name then invalid app name error is returned", func(t *testing.T) {
-		actual, err := GetAppIdentifier("", slug, "Some Invalid App Name")
+	t.Run("given invalid app slug then invalid app slug error is returned", func(t *testing.T) {
+		actual, err := GetAppIdentifier("", slug, "Some Invalid App Slug")
 
 		assert.Equal(t, AppIdentifier{}, actual)
-		assert.ErrorIs(t, err, ErrInvalidAppName)
+		assert.ErrorIs(t, err, ErrInvalidAppSlug)
 	})
 
-	t.Run("given app dir but no slug and no app name then it is loaded from manifest", func(t *testing.T) {
+	t.Run("given app dir but no slug and no app slug then it is loaded from manifest", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
@@ -42,7 +42,7 @@ func TestGetAppIdentifier(t *testing.T) {
 
 		expected := AppIdentifier{
 			OrganizationSlug: "organization-slug-in-manifest",
-			Name:             "app-name-in-manifest",
+			AppSlug:          "app-slug-in-manifest",
 		}
 		assert.Equal(t, expected, actual)
 		assert.NoError(t, err)

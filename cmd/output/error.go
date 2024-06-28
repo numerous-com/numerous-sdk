@@ -55,10 +55,10 @@ func PrintErrorLoginForCommand(cmd *cobra.Command) {
 	fmt.Println("Use " + Highlight("numerous login") + " to enable this command." + symbol(" "+shootingStar))
 }
 
-func PrintErrorMissingAppName() {
+func PrintErrorMissingAppSlug() {
 	PrintError(
-		"Missing app name.",
-		`An app name must be given as either a command flag, or in the "deploy" section of the app manifest.`,
+		"Missing app slug.",
+		`An app slug must be given as either a command flag, or in the "deploy" section of the app manifest.`,
 	)
 }
 
@@ -73,6 +73,6 @@ func PrintErrorInvalidOrganizationSlug(slug string) {
 	PrintError("Invalid organization %q.", "Must contain only lower-case alphanumerical characters and dashes.", slug)
 }
 
-func PrintErrorInvalidAppName(appName string) {
-	PrintError("Invalid app name %q.", "Must contain only lower-case alphanumerical characters and dashes.", appName)
+func PrintErrorInvalidAppSlug(appSlug string) {
+	PrintError("Invalid app %q.", "Must contain only lower-case alphanumerical characters and dashes.", appSlug)
 }

@@ -3,6 +3,6 @@ package appident
 import "errors"
 
 var (
-	ErrInvalidSlug    = errors.New("invalid organization slug")
-	ErrInvalidAppName = errors.New("invalid app name")
+	ErrInvalidOrganizationSlug = errors.New("invalid organization slug")
+	ErrInvalidAppSlug          = errors.New("invalid app slug")
 )

@@ -13,7 +13,7 @@ import (
 )
 
 func TestDelete(t *testing.T) {
-	const appName = "app-name"
+	const appSlug = "app-slug"
 	const slug = "organization-slug"
 	testError := errors.New("test error")
 
@@ -22,21 +22,21 @@ func TestDelete(t *testing.T) {
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		service := &MockAppService{}
 
-		expectedInput := app.DeleteAppInput{OrganizationSlug: "organization-slug-in-manifest", Name: "app-name-in-manifest"}
+		expectedInput := app.DeleteAppInput{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest"}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
 
 		err := Delete(context.TODO(), service, appDir, "", "")
 		assert.NoError(t, err)
 	})
 
-	t.Run("given slug and app name arguments then it deletes expected app", func(t *testing.T) {
+	t.Run("given slug and app slug arguments then it deletes expected app", func(t *testing.T) {
 		appDir := t.TempDir()
 		service := &MockAppService{}
 
-		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, Name: appName}
+		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
 
-		err := Delete(context.TODO(), service, appDir, slug, appName)
+		err := Delete(context.TODO(), service, appDir, slug, appSlug)
 		assert.NoError(t, err)
 	})
 
@@ -44,10 +44,10 @@ func TestDelete(t *testing.T) {
 		appDir := t.TempDir()
 		service := &MockAppService{}
 
-		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, Name: appName}
+		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(testError)
 
-		err := Delete(context.TODO(), service, appDir, slug, appName)
+		err := Delete(context.TODO(), service, appDir, slug, appSlug)
 
 		assert.ErrorIs(t, err, testError)
 	})

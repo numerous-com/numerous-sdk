@@ -16,7 +16,7 @@ func TestAppDeployLogs(t *testing.T) {
 	c := test.CreateTestSubscriptionClient(t, clientCh)
 	s := New(nil, c, nil)
 
-	ch, err := s.AppDeployLogs(appident.AppIdentifier{OrganizationSlug: "organization-slug", Name: "app-name"})
+	ch, err := s.AppDeployLogs(appident.AppIdentifier{OrganizationSlug: "organization-slug", AppSlug: "app-slug"})
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

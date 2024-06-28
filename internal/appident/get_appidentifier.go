@@ -10,12 +10,12 @@ import (
 
 type AppIdentifier struct {
 	OrganizationSlug string
-	Name             string
+	AppSlug          string
 }
 
 // Uses the given slug and appName, or loads from manifest, and validates.
-func GetAppIdentifier(appDir string, slug string, appName string) (AppIdentifier, error) {
-	if slug == "" && appName == "" {
+func GetAppIdentifier(appDir string, orgSlug string, appSlug string) (AppIdentifier, error) {
+	if orgSlug == "" && appSlug == "" {
 		manifest, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 		if err != nil {
 			output.PrintErrorAppNotInitialized(appDir)
@@ -23,34 +23,34 @@ func GetAppIdentifier(appDir string, slug string, appName string) (AppIdentifier
 			return AppIdentifier{}, err
 		}
 
-		if slug == "" && manifest.Deployment != nil {
-			slug = manifest.Deployment.OrganizationSlug
+		if orgSlug == "" && manifest.Deployment != nil {
+			orgSlug = manifest.Deployment.OrganizationSlug
 		}
 
-		if appName == "" && manifest.Deployment != nil {
-			appName = manifest.Deployment.AppName
+		if appSlug == "" && manifest.Deployment != nil {
+			appSlug = manifest.Deployment.AppSlug
 		}
 	}
 
-	if !validate.IsValidIdentifier(slug) {
-		if slug == "" {
+	if !validate.IsValidIdentifier(orgSlug) {
+		if orgSlug == "" {
 			output.PrintErrorMissingOrganizationSlug()
 		} else {
-			output.PrintErrorInvalidOrganizationSlug(slug)
+			output.PrintErrorInvalidOrganizationSlug(orgSlug)
 		}
 
-		return AppIdentifier{}, ErrInvalidSlug
+		return AppIdentifier{}, ErrInvalidOrganizationSlug
 	}
 
-	if !validate.IsValidIdentifier(appName) {
-		if appName == "" {
-			output.PrintErrorMissingAppName()
+	if !validate.IsValidIdentifier(appSlug) {
+		if appSlug == "" {
+			output.PrintErrorMissingAppSlug()
 		} else {
-			output.PrintErrorInvalidAppName(appName)
+			output.PrintErrorInvalidAppSlug(appSlug)
 		}
 
-		return AppIdentifier{}, ErrInvalidAppName
+		return AppIdentifier{}, ErrInvalidAppSlug
 	}
 
-	return AppIdentifier{OrganizationSlug: slug, Name: appName}, nil
+	return AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}, nil
 }

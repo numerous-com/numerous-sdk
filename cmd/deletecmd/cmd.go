@@ -20,7 +20,7 @@ var DeleteCmd = &cobra.Command{
 	GroupID: group.AppCommandsGroupID,
 	Long: `Deletes the specified app from the organization.
 
-If <name> and <organization> flags are set, they define the app to delete. If
+If <app> and <organization> flags are set, they define the app to delete. If
 they are not the default deployment section in the manifest is used if it is
 defined.
 
@@ -30,7 +30,7 @@ app manifest for the default deployment information.
 If no [app directory] is specified, the current working directory is used.`,
 	Example: `To delete an app use the following form:
 
-    numerous delete --organization "organization-slug-a2ecf59b" --name "my-app"
+    numerous delete --organization "organization-slug-a2ecf59b" --app "my-app"
 
 Otherwise, assuming an app has been initialized in the directory
 "my_project/my_app" and has a default deployment defined in its manifest:
@@ -41,8 +41,8 @@ Otherwise, assuming an app has been initialized in the directory
 }
 
 var (
-	slug    string
-	appName string
+	orgSlug string
+	appSlug string
 	appDir  string = "."
 )
 
@@ -54,11 +54,11 @@ func run(cmd *cobra.Command, args []string) error {
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 
-	return Delete(cmd.Context(), service, appDir, slug, appName)
+	return Delete(cmd.Context(), service, appDir, orgSlug, appSlug)
 }
 
 func init() {
 	flags := DeleteCmd.Flags()
-	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
-	flags.StringVarP(&appName, "name", "n", "", "The name of the app to read logs from.")
+	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
+	flags.StringVarP(&appSlug, "app", "a", "", "The app slug identifier of the app to read logs from.")
 }

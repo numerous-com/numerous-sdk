@@ -32,7 +32,7 @@ app manifest for the default deployment information.
 If no [app directory] is specified, the current working directory is used.`,
 	Example: `To read the logs from a specific app deployment, use the following form:
 
-    numerous logs --organization "organization-slug-a2ecf59b" --name "my-app"
+    numerous logs --organization "organization-slug-a2ecf59b" --app "my-app"
 
 Otherwise, assuming an app has been initialized in the directory
 "my_project/my_app" and has a default deployment defined in its manifest:
@@ -43,8 +43,8 @@ Otherwise, assuming an app has been initialized in the directory
 }
 
 var (
-	slug       string
-	appName    string
+	orgSlug    string
+	appSlug    string
 	timestamps bool
 	appDir     string = "."
 )
@@ -67,7 +67,7 @@ func run(cmd *cobra.Command, args []string) {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 
-	if err := Logs(cmd.Context(), service, appDir, slug, appName, printer); err != nil {
+	if err := Logs(cmd.Context(), service, appDir, orgSlug, appSlug, printer); err != nil {
 		os.Exit(1)
 	} else {
 		os.Exit(0)
@@ -76,7 +76,7 @@ func run(cmd *cobra.Command, args []string) {
 
 func init() {
 	flags := LogsCmd.Flags()
-	flags.StringVarP(&slug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
-	flags.StringVarP(&appName, "name", "n", "", "The name of the app to read logs from.")
+	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
+	flags.StringVarP(&appSlug, "app", "a", "", "The app slug identifier of the app to read logs from.")
 	flags.BoolVarP(&timestamps, "timestamps", "t", false, "Print a timestamp for each log entry.")
 }

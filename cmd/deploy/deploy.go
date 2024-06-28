@@ -33,14 +33,14 @@ type AppService interface {
 
 var (
 	ErrInvalidSlug    = errors.New("invalid organization slug")
-	ErrInvalidAppName = errors.New("invalid app name")
+	ErrInvalidAppSlug = errors.New("invalid app slug")
 )
 
 type DeployInput struct {
 	AppDir     string
 	ProjectDir string
-	Slug       string
-	AppName    string
+	OrgSlug    string
+	AppSlug    string
 	Version    string
 	Message    string
 	Verbose    bool
@@ -81,7 +81,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 
 	secrets := loadSecretsFromEnv(input.AppDir)
 
-	slug := getSlug(m, input.Slug)
+	slug := getOrgSlug(m, input.OrgSlug)
 	if !validate.IsValidIdentifier(slug) {
 		task.Error()
 
@@ -94,17 +94,17 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 		return nil, nil, ErrInvalidSlug
 	}
 
-	appName := getAppName(m, input.AppName)
-	if !validate.IsValidIdentifier(appName) {
+	appSlug := getAppSlug(m, input.AppSlug)
+	if !validate.IsValidIdentifier(appSlug) {
 		task.Error()
 
-		if appName == "" {
-			output.PrintErrorMissingAppName()
+		if appSlug == "" {
+			output.PrintErrorMissingAppSlug()
 		} else {
-			output.PrintErrorInvalidAppName(appName)
+			output.PrintErrorInvalidAppSlug(appSlug)
 		}
 
-		return nil, nil, ErrInvalidAppName
+		return nil, nil, ErrInvalidAppSlug
 	}
 	task.Done()
 
@@ -140,11 +140,11 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 }
 
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
-	slug := getSlug(manifest, input.Slug)
-	appName := getAppName(manifest, input.AppName)
+	slug := getOrgSlug(manifest, input.OrgSlug)
+	appSlug := getAppSlug(manifest, input.AppSlug)
 
-	task := output.StartTask("Registering new version for " + slug + "/" + appName)
-	appID, err := readOrCreateApp(ctx, apps, appName, slug, manifest)
+	task := output.StartTask("Registering new version for " + slug + "/" + appSlug)
+	appID, err := readOrCreateApp(ctx, apps, appSlug, slug, manifest)
 	if err != nil {
 		task.Error()
 		return app.CreateAppVersionOutput{}, err
@@ -163,10 +163,10 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	return appVersionOutput, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, appName, slug string, manifest *manifest.Manifest) (string, error) {
+func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug string, manifest *manifest.Manifest) (string, error) {
 	appReadInput := app.ReadAppInput{
-		OrganizationSlug: slug,
-		Name:             appName,
+		OrganizationSlug: orgSlug,
+		AppSlug:          appSlug,
 	}
 	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
 	switch {
@@ -180,8 +180,8 @@ func readOrCreateApp(ctx context.Context, apps AppService, appName, slug string,
 	}
 
 	appCreateInput := app.CreateAppInput{
-		OrganizationSlug: slug,
-		Name:             appName,
+		OrganizationSlug: orgSlug,
+		AppSlug:          appSlug,
 		DisplayName:      manifest.Name,
 		Description:      manifest.Description,
 	}
@@ -269,19 +269,19 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	return nil
 }
 
-func getAppName(m *manifest.Manifest, argAppName string) string {
-	if argAppName != "" {
-		return argAppName
+func getAppSlug(m *manifest.Manifest, argAppSlug string) string {
+	if argAppSlug != "" {
+		return argAppSlug
 	}
 
-	if m.Deployment != nil && m.Deployment.AppName != "" {
-		return m.Deployment.AppName
+	if m.Deployment != nil && m.Deployment.AppSlug != "" {
+		return m.Deployment.AppSlug
 	}
 
-	return sanitizeManifestAppName(m.Name)
+	return manifestAppNameToAppSlug(m.Name)
 }
 
-func getSlug(m *manifest.Manifest, argSlug string) string {
+func getOrgSlug(m *manifest.Manifest, argSlug string) string {
 	if argSlug != "" {
 		return argSlug
 	}
@@ -301,7 +301,7 @@ var (
 
 // removes all characters except a-z, A-Z, 0-9, dashes and replaces all spaces
 // with dashes
-func sanitizeManifestAppName(name string) string {
+func manifestAppNameToAppSlug(name string) string {
 	sanitized := strings.ToLower(name)
 	sanitized = appNameSanitizeRegexp.ReplaceAllString(sanitized, "")
 	sanitized = appNameWhitespaceRegexp.ReplaceAllString(sanitized, "-")

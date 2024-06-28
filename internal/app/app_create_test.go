@@ -31,7 +31,7 @@ func TestCreate(t *testing.T) {
 
 		input := CreateAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 			DisplayName:      "App Name",
 			Description:      "App description",
 		}
@@ -62,7 +62,7 @@ func TestCreate(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 		input := CreateAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 			DisplayName:      "App Name",
 			Description:      "App description",
 		}
@@ -92,7 +92,7 @@ func TestCreate(t *testing.T) {
 
 		input := CreateAppInput{
 			OrganizationSlug: "organization-slug",
-			Name:             "app-name",
+			AppSlug:          "app-slug",
 			DisplayName:      "App Name",
 			Description:      "App description",
 		}
