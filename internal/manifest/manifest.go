@@ -42,7 +42,7 @@ type DeprecatedManifest struct {
 
 type Deployment struct {
 	OrganizationSlug string `toml:"organization" json:"organization"`
-	AppSlug          string `toml:"name" json:"name"`
+	AppSlug          string `toml:"app" json:"app"`
 }
 
 func LoadManifest(filePath string) (*Manifest, error) {

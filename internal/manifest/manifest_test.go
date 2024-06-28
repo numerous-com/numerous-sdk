@@ -22,9 +22,9 @@ exclude = ["*venv", "venv*"]
 
 [deploy]
   organization = "organization-slug"
-  name = "app-slug"
+  app = "app-slug"
 `
-const streamlitJSON string = `{"name":"Tool Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"deploy":{"organization":"organization-slug","name":"app-slug"}}`
+const streamlitJSON string = `{"name":"Tool Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"deploy":{"organization":"organization-slug","app":"app-slug"}}`
 
 const deprecatedTOML string = `name = "Tool Name"
 description = "A description"
