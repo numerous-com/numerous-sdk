@@ -44,7 +44,8 @@ var (
 			"             °°°°°   \n" +
 			"                °°     \n" +
 			"",
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if !commandRequiresAuthentication(cmd.CommandPath()) {
 				return nil
@@ -67,12 +68,14 @@ var (
 
 func commandRequiresAuthentication(invokedCommandName string) bool {
 	commandsWithAuthRequired := []string{
-		"numerous list",
-		"numerous push",
-		"numerous log",
+		"numerous legacy list",
+		"numerous legacy push",
+		"numerous legacy log",
 		"numerous organization create",
 		"numerous organization list",
-		"numerous app deploy",
+		"numerous deploy",
+		"numerous delete",
+		"numerous logs",
 	}
 
 	for _, cmd := range commandsWithAuthRequired {
