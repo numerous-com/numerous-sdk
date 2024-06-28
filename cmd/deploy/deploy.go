@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"numerous.com/cli/cmd/initialize"
@@ -70,7 +71,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 
 func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
-	manifest, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
+	m, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
 	if err != nil {
 		task.Error()
 		output.PrintErrorAppNotInitialized(input.AppDir)
@@ -80,11 +81,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 
 	secrets := loadSecretsFromEnv(input.AppDir)
 
-	slug := input.Slug
-	if slug == "" && manifest.Deployment != nil {
-		slug = manifest.Deployment.OrganizationSlug
-	}
-
+	slug := getSlug(m, input.Slug)
 	if !validate.IsValidIdentifier(slug) {
 		task.Error()
 
@@ -97,11 +94,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 		return nil, nil, ErrInvalidSlug
 	}
 
-	appName := input.AppName
-	if appName == "" && manifest.Deployment != nil {
-		appName = manifest.Deployment.AppName
-	}
-
+	appName := getAppName(m, input.AppName)
 	if !validate.IsValidIdentifier(appName) {
 		task.Error()
 
@@ -115,7 +108,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	}
 	task.Done()
 
-	return manifest, secrets, nil
+	return m, secrets, nil
 }
 
 func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File, error) {
@@ -147,8 +140,11 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 }
 
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
-	task := output.StartTask("Registering new version")
-	appID, err := readOrCreateApp(ctx, apps, input, manifest)
+	slug := getSlug(manifest, input.Slug)
+	appName := getAppName(manifest, input.AppName)
+
+	task := output.StartTask("Registering new version for " + slug + "/" + appName)
+	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest)
 	if err != nil {
 		task.Error()
 		return app.CreateAppVersionOutput{}, err
@@ -167,19 +163,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	return appVersionOutput, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (string, error) {
-	slug := input.Slug
-	appName := input.AppName
-	if manifest.Deployment != nil {
-		if slug == "" {
-			slug = manifest.Deployment.OrganizationSlug
-		}
-
-		if appName == "" {
-			appName = manifest.Deployment.AppName
-		}
-	}
-
+func readOrCreateApp(ctx context.Context, apps AppService, appName, slug string, manifest *manifest.Manifest) (string, error) {
 	appReadInput := app.ReadAppInput{
 		OrganizationSlug: slug,
 		Name:             appName,
@@ -283,6 +267,46 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	}
 
 	return nil
+}
+
+func getAppName(m *manifest.Manifest, argAppName string) string {
+	if argAppName != "" {
+		return argAppName
+	}
+
+	if m.Deployment != nil && m.Deployment.AppName != "" {
+		return m.Deployment.AppName
+	}
+
+	return sanitizeManifestAppName(m.Name)
+}
+
+func getSlug(m *manifest.Manifest, argSlug string) string {
+	if argSlug != "" {
+		return argSlug
+	}
+
+	if m.Deployment != nil && m.Deployment.OrganizationSlug != "" {
+		return m.Deployment.OrganizationSlug
+	}
+
+	// TODO: introduce error here
+	return ""
+}
+
+var (
+	appNameWhitespaceRegexp *regexp.Regexp = regexp.MustCompile(`\s+`)
+	appNameSanitizeRegexp   *regexp.Regexp = regexp.MustCompile(`[^0-9a-z-\s]`)
+)
+
+// removes all characters except a-z, A-Z, 0-9, dashes and replaces all spaces
+// with dashes
+func sanitizeManifestAppName(name string) string {
+	sanitized := strings.ToLower(name)
+	sanitized = appNameSanitizeRegexp.ReplaceAllString(sanitized, "")
+	sanitized = appNameWhitespaceRegexp.ReplaceAllString(sanitized, "-")
+
+	return sanitized
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {

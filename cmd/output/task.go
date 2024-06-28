@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-const taskLineLength = 40
+const taskLineLength = 48
 
 type Task struct {
 	msg       string

@@ -114,20 +114,25 @@ func TestDeploy(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
-		input := DeployInput{AppDir: appDir, Slug: slug, AppName: "Some Invalid App Name"}
+		input := DeployInput{AppDir: appDir, Slug: "organization-slug", AppName: "Some Invalid App Name"}
 		err := Deploy(context.TODO(), nil, input)
 
 		assert.ErrorIs(t, err, ErrInvalidAppName)
 	})
 
-	t.Run("given no app name argument and no manifest deployment then it returns error", func(t *testing.T) {
+	t.Run("given no app name argument and no manifest deployment then it converts manifest app display name", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
+		apps := mockAppNotExists()
 
-		input := DeployInput{AppDir: appDir, Slug: slug}
-		err := Deploy(context.TODO(), nil, input)
+		input := DeployInput{AppDir: appDir, Slug: "organization-slug"}
+		err := Deploy(context.TODO(), apps, input)
 
-		assert.ErrorIs(t, err, ErrInvalidAppName)
+		expectedAppName := "streamlit-app-without-deploy"
+		if assert.NoError(t, err) {
+			apps.AssertCalled(t, "ReadApp", mock.Anything, app.ReadAppInput{OrganizationSlug: "organization-slug", Name: expectedAppName})
+			apps.AssertCalled(t, "Create", mock.Anything, app.CreateAppInput{OrganizationSlug: "organization-slug", Name: expectedAppName, DisplayName: "Streamlit App Without Deploy"})
+		}
 	})
 
 	t.Run("given no slug or app name arguments and manifest with deployment then it uses manifest deployment", func(t *testing.T) {
@@ -190,4 +195,22 @@ func TestDeploy(t *testing.T) {
 			apps.AssertCalled(t, "CreateVersion", mock.Anything, expectedInput)
 		}
 	})
+}
+
+func TestSanitizeManifestAppName(t *testing.T) {
+	for _, tc := range []struct {
+		ManifestAppName string
+		ExpectedAppName string
+	}{
+		{ManifestAppName: "LOWERCASE", ExpectedAppName: "lowercase"},
+		{ManifestAppName: "Replace Spaces With Dashes", ExpectedAppName: "replace-spaces-with-dashes"},
+		{ManifestAppName: "Collapse  Spaces  In  App  Name", ExpectedAppName: "collapse-spaces-in-app-name"},
+		{ManifestAppName: "Strip Special Characters Like !\"#¤'_,* From App Name", ExpectedAppName: "strip-special-characters-like-from-app-name"},
+	} {
+		testName := tc.ManifestAppName + " sanitizes to " + tc.ExpectedAppName
+		t.Run(testName, func(t *testing.T) {
+			actual := sanitizeManifestAppName(tc.ManifestAppName)
+			assert.Equal(t, tc.ExpectedAppName, actual)
+		})
+	}
 }
