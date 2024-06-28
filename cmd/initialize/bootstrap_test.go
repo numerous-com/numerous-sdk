@@ -277,7 +277,7 @@ func TestBootstrapFiles(t *testing.T) {
 		}
 	})
 
-	t.Run("given app id then it writes .app_id.txt", func(t *testing.T) {
+	t.Run("given no app id then it does not write .app_id.txt", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := manifest.Manifest{
 			RequirementsFile: "requirements.txt",
