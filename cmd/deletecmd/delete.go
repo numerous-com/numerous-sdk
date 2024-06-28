@@ -13,7 +13,7 @@ type AppService interface {
 }
 
 func Delete(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string) error {
-	ai, err := appident.GetAppIdentifier(appDir, orgSlug, appSlug)
+	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func Delete(ctx context.Context, apps AppService, appDir, orgSlug, appSlug strin
 		return err
 	}
 
-	output.PrintlnOK("Deleted app %s/%s", orgSlug, appSlug)
+	output.PrintlnOK("Deleted app %s/%s", ai.OrganizationSlug, ai.AppSlug)
 
 	return nil
 }

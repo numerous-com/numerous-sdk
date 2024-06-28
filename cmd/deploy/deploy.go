@@ -8,13 +8,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"numerous.com/cli/cmd/initialize"
 	"numerous.com/cli/cmd/output"
-	"numerous.com/cli/cmd/validate"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dotenv"
 	"numerous.com/cli/internal/gql"
@@ -31,11 +30,6 @@ type AppService interface {
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
 }
-
-var (
-	ErrInvalidSlug    = errors.New("invalid organization slug")
-	ErrInvalidAppSlug = errors.New("invalid app slug")
-)
 
 type DeployInput struct {
 	AppDir     string
@@ -88,31 +82,12 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 
 	secrets := loadSecretsFromEnv(input.AppDir)
 
-	slug := getOrgSlug(m, input.OrgSlug)
-	if !validate.IsValidIdentifier(slug) {
-		task.Error()
-
-		if slug == "" {
-			output.PrintErrorMissingOrganizationSlug()
-		} else {
-			output.PrintErrorInvalidOrganizationSlug(slug)
-		}
-
-		return nil, nil, ErrInvalidSlug
+	// for validation
+	_, err = appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	appSlug := getAppSlug(m, input.AppSlug)
-	if !validate.IsValidIdentifier(appSlug) {
-		task.Error()
-
-		if appSlug == "" {
-			output.PrintErrorMissingAppSlug()
-		} else {
-			output.PrintErrorInvalidAppSlug(appSlug)
-		}
-
-		return nil, nil, ErrInvalidAppSlug
-	}
 	task.Done()
 
 	return m, secrets, nil
@@ -147,11 +122,13 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 }
 
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
-	slug := getOrgSlug(manifest, input.OrgSlug)
-	appSlug := getAppSlug(manifest, input.AppSlug)
+	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
+	if err != nil {
+		return app.CreateAppVersionOutput{}, "", "", err
+	}
 
-	task := output.StartTask("Registering new version for " + slug + "/" + appSlug)
-	appID, err := readOrCreateApp(ctx, apps, appSlug, slug, manifest)
+	task := output.StartTask("Registering new version for " + ai.OrganizationSlug + "/" + ai.AppSlug)
+	appID, err := readOrCreateApp(ctx, apps, ai.AppSlug, ai.OrganizationSlug, manifest)
 	if err != nil {
 		task.Error()
 		return app.CreateAppVersionOutput{}, "", "", err
@@ -167,7 +144,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	}
 	task.Done()
 
-	return appVersionOutput, orgSlug, appSlug, nil
+	return appVersionOutput, ai.OrganizationSlug, ai.AppSlug, nil
 }
 
 func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug string, manifest *manifest.Manifest) (string, error) {
@@ -195,6 +172,7 @@ func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug stri
 	appCreateOutput, err := apps.Create(ctx, appCreateInput)
 	if err != nil {
 		output.PrintErrorDetails("Error creating app remotely", err)
+		return "", err
 	}
 
 	return appCreateOutput.AppID, nil
@@ -275,46 +253,6 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	task.Done()
 
 	return nil
-}
-
-func getAppSlug(m *manifest.Manifest, argAppSlug string) string {
-	if argAppSlug != "" {
-		return argAppSlug
-	}
-
-	if m.Deployment != nil && m.Deployment.AppSlug != "" {
-		return m.Deployment.AppSlug
-	}
-
-	return manifestAppNameToAppSlug(m.Name)
-}
-
-func getOrgSlug(m *manifest.Manifest, argSlug string) string {
-	if argSlug != "" {
-		return argSlug
-	}
-
-	if m.Deployment != nil && m.Deployment.OrganizationSlug != "" {
-		return m.Deployment.OrganizationSlug
-	}
-
-	// TODO: introduce error here
-	return ""
-}
-
-var (
-	appNameWhitespaceRegexp *regexp.Regexp = regexp.MustCompile(`\s+`)
-	appNameSanitizeRegexp   *regexp.Regexp = regexp.MustCompile(`[^0-9a-z-\s]`)
-)
-
-// removes all characters except a-z, A-Z, 0-9, dashes and replaces all spaces
-// with dashes
-func manifestAppNameToAppSlug(name string) string {
-	sanitized := strings.ToLower(name)
-	sanitized = appNameSanitizeRegexp.ReplaceAllString(sanitized, "")
-	sanitized = appNameWhitespaceRegexp.ReplaceAllString(sanitized, "-")
-
-	return sanitized
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {

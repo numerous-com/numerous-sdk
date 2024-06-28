@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -83,7 +84,7 @@ func TestDeploy(t *testing.T) {
 		input := DeployInput{AppDir: appDir, OrgSlug: "Some Invalid Organization Slug", AppSlug: appSlug}
 		err := Deploy(context.TODO(), nil, input)
 
-		assert.ErrorIs(t, err, ErrInvalidSlug)
+		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
 
 	t.Run("given no slug argument and no manifest deployment then it returns error", func(t *testing.T) {
@@ -93,7 +94,7 @@ func TestDeploy(t *testing.T) {
 		input := DeployInput{AppDir: appDir, AppSlug: appSlug}
 		err := Deploy(context.TODO(), nil, input)
 
-		assert.ErrorIs(t, err, ErrInvalidSlug)
+		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
 
 	t.Run("given slug and app slug arguments and no manifest deployment then it uses arguments", func(t *testing.T) {
@@ -117,7 +118,7 @@ func TestDeploy(t *testing.T) {
 		input := DeployInput{AppDir: appDir, OrgSlug: "organization-slug", AppSlug: "Some Invalid App Name"}
 		err := Deploy(context.TODO(), nil, input)
 
-		assert.ErrorIs(t, err, ErrInvalidAppSlug)
+		assert.ErrorIs(t, err, appident.ErrInvalidAppSlug)
 	})
 
 	t.Run("given no app slug argument and no manifest deployment then it converts manifest app display name", func(t *testing.T) {
@@ -195,22 +196,4 @@ func TestDeploy(t *testing.T) {
 			apps.AssertCalled(t, "CreateVersion", mock.Anything, expectedInput)
 		}
 	})
-}
-
-func TestManifestAppNameToAppSlug(t *testing.T) {
-	for _, tc := range []struct {
-		ManifestAppName string
-		ExpectedAppSlug string
-	}{
-		{ManifestAppName: "LOWERCASE", ExpectedAppSlug: "lowercase"},
-		{ManifestAppName: "Replace Spaces With Dashes", ExpectedAppSlug: "replace-spaces-with-dashes"},
-		{ManifestAppName: "Collapse  Spaces  In  App  Name", ExpectedAppSlug: "collapse-spaces-in-app-name"},
-		{ManifestAppName: "Strip Special Characters Like !\"#¤'_,* From App Name", ExpectedAppSlug: "strip-special-characters-like-from-app-name"},
-	} {
-		testName := tc.ManifestAppName + " sanitizes to " + tc.ExpectedAppSlug
-		t.Run(testName, func(t *testing.T) {
-			actual := manifestAppNameToAppSlug(tc.ManifestAppName)
-			assert.Equal(t, tc.ExpectedAppSlug, actual)
-		})
-	}
 }
