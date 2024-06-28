@@ -144,7 +144,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	appName := getAppName(manifest, input.AppName)
 
 	task := output.StartTask("Registering new version for " + slug + "/" + appName)
-	appID, err := readOrCreateApp(ctx, apps, slug, appName, manifest)
+	appID, err := readOrCreateApp(ctx, apps, appName, slug, manifest)
 	if err != nil {
 		task.Error()
 		return app.CreateAppVersionOutput{}, err
