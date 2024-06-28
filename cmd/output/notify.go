@@ -4,7 +4,7 @@ import "fmt"
 
 var notifyCmdMovedBody = AnsiFaint + "A new set of commands related to apps in organizations have been promoted as \n" +
 	"the default commands, and previous commands have been moved to the \"legacy\" namespace." + AnsiReset + "\n\n" +
-	"See http://www.numerous.com/docs/cli#legacy-commands for more information."
+	"See https://www.numerous.com/docs/cli#legacy-commands for more information."
 
 func Notify(header, body string, args ...any) {
 	fmt.Printf(AnsiCyanBold+header+AnsiReset+"\n"+body+"\n", args...)
