@@ -1,14 +1,12 @@
 package initialize
 
 import (
-	"fmt"
-	"log/slog"
+	"errors"
 	"os"
 	"strings"
 
 	"numerous.com/cli/cmd/initialize/wizard"
 	"numerous.com/cli/cmd/output"
-	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/manifest"
 	"numerous.com/cli/internal/python"
 )
@@ -16,9 +14,6 @@ import (
 func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 	appDir, err := os.Getwd()
 	if err != nil {
-		slog.Info("An error occurred when trying to get the current user path during init process.", slog.String("error", err.Error()))
-		fmt.Println(err)
-
 		return "", nil, ErrGetWorkDir
 	}
 
@@ -26,7 +21,7 @@ func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 		appDir = PathArgumentHandler(args[0], appDir)
 	}
 
-	if exist, _ := dir.AppIDExists(appDir); exist {
+	if exist, _ := manifest.ManifestExists(appDir); exist {
 		output.PrintError(
 			"An app is already initialized in \"%s\"",
 			"💡 You can initialize an app in another folder by specifying a\n"+
@@ -39,9 +34,17 @@ func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 	}
 
 	lib, err := manifest.GetLibraryByKey(libraryKey)
-	if libraryKey != "" && err != nil {
+	if errors.Is(err, manifest.ErrUnsupportedLibrary) {
+		output.PrintError(
+			"Unsupported library",
+			"The specified library %s is not supported. Supported libraries are %s.",
+			output.Highlight(libraryKey),
+			manifest.SupportedLibraryValuesList(),
+		)
+
+		return "", nil, err
+	} else if err != nil {
 		output.PrintErrorDetails("Unsupported library", err)
-		os.Exit(1)
 	}
 
 	pythonVersion := python.PythonVersion()

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/manifest"
 	"numerous.com/cli/internal/test"
 
@@ -252,5 +253,44 @@ func TestBootstrapFiles(t *testing.T) {
 		assert.NoError(t, manifestErr)
 		expectedExclude := []string{"*venv", "venv*", ".git", ".env"}
 		assert.Equal(t, expectedExclude, loaded.Exclude)
+	})
+
+	t.Run("given app id then it writes .app_id.txt", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		m := manifest.Manifest{
+			RequirementsFile: "requirements.txt",
+			AppFile:          "app.py",
+			CoverImage:       "conver_img.png",
+			Exclude:          []string{"*venv", "venv*", ".git", ".env"},
+		}
+		appID := "some app id"
+
+		bootErr := BootstrapFiles(&m, appID, tmpDir)
+
+		appIDFilePath := filepath.Join(tmpDir, dir.AppIDFileName)
+		if assert.NoError(t, bootErr) {
+			assert.FileExists(t, appIDFilePath)
+			data, err := os.ReadFile(appIDFilePath)
+			if assert.NoError(t, err) {
+				assert.Equal(t, appID, string(data))
+			}
+		}
+	})
+
+	t.Run("given app id then it writes .app_id.txt", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		m := manifest.Manifest{
+			RequirementsFile: "requirements.txt",
+			AppFile:          "app.py",
+			CoverImage:       "conver_img.png",
+			Exclude:          []string{"*venv", "venv*", ".git", ".env"},
+		}
+
+		bootErr := BootstrapFiles(&m, "", tmpDir)
+
+		appIDFilePath := filepath.Join(tmpDir, dir.AppIDFileName)
+		if assert.NoError(t, bootErr) {
+			assert.NoFileExists(t, appIDFilePath)
+		}
 	})
 }

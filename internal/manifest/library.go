@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -10,6 +11,8 @@ var (
 	marimoPort    uint = 8000
 	numerousPort  uint = 7001
 )
+
+var ErrUnsupportedLibrary = errors.New("unsupported library")
 
 var (
 	LibraryStreamlit  = Library{Name: "Streamlit", Key: "streamlit", Port: streamlitPort, Requirements: []string{"streamlit"}}
@@ -78,7 +81,7 @@ func GetLibraryByKey(key string) (Library, error) {
 		}
 	}
 
-	return Library{}, unsupportedLibraryError(key)
+	return Library{}, ErrUnsupportedLibrary
 }
 
 func GetLibraryByName(name string) (Library, error) {
@@ -88,10 +91,10 @@ func GetLibraryByName(name string) (Library, error) {
 		}
 	}
 
-	return Library{}, fmt.Errorf("no library named '%s'", name)
+	return Library{}, ErrUnsupportedLibrary
 }
 
-func unsupportedLibraryError(l string) error {
+func SupportedLibraryValuesList() string {
 	supportedList := SupportedLibraries[0].Key
 	lastIndex := len(SupportedLibraries[1:]) - 1
 	for index, lib := range SupportedLibraries[1:] {
@@ -102,5 +105,5 @@ func unsupportedLibraryError(l string) error {
 		}
 	}
 
-	return fmt.Errorf("\"%s\" is not a valid app library. \nThe valid options are: %s", l, supportedList)
+	return supportedList
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
 
@@ -16,7 +17,7 @@ var LoginCmd = &cobra.Command{
 	Use:     "login",
 	Short:   "Login in to Numerous",
 	Args:    cobra.NoArgs,
-	GroupID: "additional-cmds",
+	GroupID: group.AdditionalCommandsGroupID,
 	Run: func(cmd *cobra.Command, args []string) {
 		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
 		if user == nil {

@@ -35,9 +35,7 @@ func TestGetLibraryByKey(t *testing.T) {
 
 	t.Run("unsupported library error", func(t *testing.T) {
 		_, err := GetLibraryByKey("unsupported")
-		if assert.Error(t, err) {
-			assert.Equal(t, "\"unsupported\" is not a valid app library. \nThe valid options are: streamlit, plotly, marimo, and numerous", err.Error())
-		}
+		assert.ErrorIs(t, err, ErrUnsupportedLibrary)
 	})
 }
 
@@ -63,9 +61,7 @@ func TestGetLibraryByName(t *testing.T) {
 
 	t.Run("unsupported library error", func(t *testing.T) {
 		_, err := GetLibraryByName("unsupported")
-		if assert.Error(t, err) {
-			assert.Equal(t, "no library named 'unsupported'", err.Error())
-		}
+		assert.ErrorIs(t, err, ErrUnsupportedLibrary)
 	})
 }
 

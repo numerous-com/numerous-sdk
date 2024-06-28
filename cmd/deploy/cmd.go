@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
 
@@ -14,7 +15,7 @@ import (
 var DeployCmd = &cobra.Command{
 	Use:     "deploy [app directory]",
 	Run:     run,
-	GroupID: "app-cmds",
+	GroupID: group.AppCommandsGroupID,
 	Short:   "Deploy an app to an organization",
 	Long: `Deploys an application to an organization on the Numerous platform.
 
@@ -33,7 +34,7 @@ If an app has been initialized in the current working directory, and it should
 be pushed to the organization "organization-slug-a2ecf59b", and the app name
 "my-app", the following command can be used:
 
-	numerous app deploy --organization "organization-slug-a2ecf59b" --name "my-app"
+	numerous deploy --organization "organization-slug-a2ecf59b" --name "my-app"
 	`,
 	Args: args.OptionalAppDir(&appDir),
 }

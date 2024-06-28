@@ -3,6 +3,7 @@ package legacy
 import (
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/group"
 	deleteapp "numerous.com/cli/cmd/legacy/delete"
 	"numerous.com/cli/cmd/legacy/initialize"
 	"numerous.com/cli/cmd/legacy/list"
@@ -16,7 +17,7 @@ var LegacyRootCmd = &cobra.Command{
 	Use:     "legacy",
 	Short:   "Commands for managing legacy apps on Numerous",
 	Args:    args.SubCommandRequired,
-	GroupID: "additional-cmds",
+	GroupID: group.AdditionalCommandsGroupID,
 }
 
 func init() {

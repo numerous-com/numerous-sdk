@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/dir"
@@ -17,7 +18,7 @@ var LogsCmd = &cobra.Command{
 	Use:     "logs [app directory]",
 	Run:     run,
 	Short:   "Display running application logs",
-	GroupID: "app-cmds",
+	GroupID: group.AppCommandsGroupID,
 	Long: `Read the logs of an application deployed to an organization on the
 Numerous platform.
 
@@ -31,12 +32,12 @@ app manifest for the default deployment information.
 If no [app directory] is specified, the current working directory is used.`,
 	Example: `To read the logs from a specific app deployment, use the following form:
 
-    numerous app logs --organization "organization-slug-a2ecf59b" --name "my-app"
+    numerous logs --organization "organization-slug-a2ecf59b" --name "my-app"
 
 Otherwise, assuming an app has been initialized in the directory
 "my_project/my_app" and has a default deployment defined in its manifest:
 
-    numerous app logs my_project/my_app
+    numerous logs my_project/my_app
 `,
 	Args: args.OptionalAppDir(&appDir),
 }
@@ -49,6 +50,9 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
+	// TODO: this is just here for users who expect the "old" log command in
+	// this location, which will primarily be for apps initialized with an App
+	// ID file
 	if exists, _ := dir.AppIDExists(appDir); exists {
 		output.NotifyCmdMoved("numerous log", "numerous legacy log")
 		println()

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
 
@@ -13,11 +14,11 @@ import (
 var InitCmd = &cobra.Command{
 	Use:     "init [flags]",
 	Aliases: []string{"initialize"},
-	GroupID: "app-cmds",
+	GroupID: group.AppCommandsGroupID,
 	Short:   "Initialize a Numerous project",
 	Long:    `Helps the user bootstrap a python project as a numerous project.`,
 	Args:    cobra.MaximumNArgs(1),
-	Run:     run,
+	RunE:    run,
 }
 
 var (
@@ -34,18 +35,21 @@ var (
 	ErrAppAlreadyInitialized = errors.New("app already initialized")
 )
 
-func run(cmd *cobra.Command, args []string) {
+func run(cmd *cobra.Command, args []string) error {
 	appDir, m, err := PrepareInit(args)
 	if err != nil {
-		return
+		output.PrintErrorDetails("An error occurred preparing app initialization", err)
+		return err
 	}
 
 	if err := BootstrapFiles(m, "", appDir); err != nil {
 		output.PrintErrorDetails("Error bootstrapping files.", err)
-		return
+		return err
 	}
 
 	printSuccess()
+
+	return nil
 }
 
 func printSuccess() {
