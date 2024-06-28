@@ -18,6 +18,7 @@ import (
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dotenv"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/links"
 	"numerous.com/cli/internal/manifest"
 )
 
@@ -52,7 +53,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 		return err
 	}
 
-	appVersionOutput, err := registerAppVersion(ctx, apps, input, manifest)
+	appVersionOutput, orgSlug, appSlug, err := registerAppVersion(ctx, apps, input, manifest)
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,13 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 		return err
 	}
 
-	return deployApp(ctx, appVersionOutput, secrets, apps, input)
+	if err := deployApp(ctx, appVersionOutput, secrets, apps, input); err != nil {
+		return err
+	}
+
+	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
+
+	return nil
 }
 
 func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
@@ -139,7 +146,7 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 	return archive, nil
 }
 
-func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, error) {
+func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
 	slug := getOrgSlug(manifest, input.OrgSlug)
 	appSlug := getAppSlug(manifest, input.AppSlug)
 
@@ -147,7 +154,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	appID, err := readOrCreateApp(ctx, apps, appSlug, slug, manifest)
 	if err != nil {
 		task.Error()
-		return app.CreateAppVersionOutput{}, err
+		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
 	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.Version, Message: input.Message}
@@ -156,11 +163,11 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 		task.Error()
 		output.PrintErrorDetails("Error creating app version remotely", err)
 
-		return app.CreateAppVersionOutput{}, err
+		return app.CreateAppVersionOutput{}, "", "", err
 	}
 	task.Done()
 
-	return appVersionOutput, nil
+	return appVersionOutput, orgSlug, appSlug, nil
 }
 
 func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug string, manifest *manifest.Manifest) (string, error) {
@@ -262,9 +269,10 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error occurred during deploy", err)
-	} else {
-		task.Done()
+
+		return err
 	}
+	task.Done()
 
 	return nil
 }
