@@ -9,28 +9,28 @@ import (
 )
 
 func TestGetAppIdentifier(t *testing.T) {
-	const slug = "organization-slug"
+	const orgSlug = "organization-slug"
 	const appSlug = "app-slug"
-	expected := AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}
+	expected := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
 
 	t.Run("given valid slug and app slug then they are returned", func(t *testing.T) {
-		actual, err := GetAppIdentifier("", nil, slug, appSlug)
+		actual, err := GetAppIdentifier("", nil, orgSlug, appSlug)
 
 		assert.Equal(t, expected, actual)
 		assert.NoError(t, err)
 	})
 
 	t.Run("given invalid organization slug then invalid organization slug error is returned", func(t *testing.T) {
-		appident, err := GetAppIdentifier("", nil, "Some Invalid Organization Slug", appSlug)
+		actual, err := GetAppIdentifier("", nil, "Some Invalid Organization Slug", appSlug)
 
-		assert.Empty(t, appident)
+		assert.Equal(t, AppIdentifier{OrganizationSlug: "Some Invalid Organization Slug", AppSlug: appSlug}, actual)
 		assert.ErrorIs(t, err, ErrInvalidOrganizationSlug)
 	})
 
 	t.Run("given invalid app slug then invalid app slug error is returned", func(t *testing.T) {
-		actual, err := GetAppIdentifier("", nil, slug, "Some Invalid App Slug")
+		actual, err := GetAppIdentifier("", nil, orgSlug, "Some Invalid App Slug")
 
-		assert.Equal(t, AppIdentifier{}, actual)
+		assert.Equal(t, AppIdentifier{OrganizationSlug: orgSlug, AppSlug: "Some Invalid App Slug"}, actual)
 		assert.ErrorIs(t, err, ErrInvalidAppSlug)
 	})
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -69,7 +68,7 @@ func TestCreate(t *testing.T) {
 		output, err := s.Create(context.TODO(), input)
 
 		expected := CreateAppOutput{}
-		assert.ErrorIs(t, err, gql.ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccesDenied)
 		assert.Equal(t, expected, output)
 	})
 

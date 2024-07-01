@@ -2,6 +2,7 @@ package deletecmd
 
 import (
 	"net/http"
+	"os"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
@@ -15,10 +16,15 @@ import (
 
 var DeleteCmd = &cobra.Command{
 	Use:     "delete [app directory]",
-	RunE:    run,
+	Run:     run,
 	Short:   "Delete an app from an organization",
 	GroupID: group.AppCommandsGroupID,
-	Long: `Deletes the specified app from the organization.
+	Long:    long,
+	Example: example,
+	Args:    args.OptionalAppDir(&appDir),
+}
+
+const long = `Deletes the specified app from the organization.
 
 If <app> and <organization> flags are set, they define the app to delete. If
 they are not the default deployment section in the manifest is used if it is
@@ -27,18 +33,17 @@ defined.
 If [app directory] is specified, that directory will be used to read the
 app manifest for the default deployment information.
 
-If no [app directory] is specified, the current working directory is used.`,
-	Example: `To delete an app use the following form:
+If no [app directory] is specified, the current working directory is used.`
 
-    numerous delete --organization "organization-slug-a2ecf59b" --app "my-app"
+const example = `To delete an app use the following form:
+
+numerous delete --organization "organization-slug-a2ecf59b" --app "my-app"
 
 Otherwise, assuming an app has been initialized in the directory
 "my_project/my_app" and has a default deployment defined in its manifest:
 
-    numerous delete my_project/my_app
-`,
-	Args: args.OptionalAppDir(&appDir),
-}
+numerous delete my_project/my_app
+`
 
 var (
 	orgSlug string
@@ -46,7 +51,7 @@ var (
 	appDir  string = "."
 )
 
-func run(cmd *cobra.Command, args []string) error {
+func run(cmd *cobra.Command, args []string) {
 	if exists, _ := dir.AppIDExists(appDir); exists {
 		output.NotifyCmdChanged("numerous delete", "numerous legacy delete")
 		println()
@@ -54,7 +59,11 @@ func run(cmd *cobra.Command, args []string) error {
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 
-	return Delete(cmd.Context(), service, appDir, orgSlug, appSlug)
+	if err := Delete(cmd.Context(), service, appDir, orgSlug, appSlug); err != nil {
+		os.Exit(1)
+	} else {
+		os.Exit(0)
+	}
 }
 
 func init() {

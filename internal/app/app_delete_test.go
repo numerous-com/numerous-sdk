@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +34,33 @@ func TestAppDelete(t *testing.T) {
 		}
 		err := s.Delete(context.TODO(), input)
 
-		assert.ErrorIs(t, err, gql.ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccesDenied)
+	})
+
+	t.Run("given app not found then it returns app not found error", func(t *testing.T) {
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+
+		respBody := `
+			{
+				"errors": [{
+					"message": "app not found",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["app"]
+				}]
+			}
+		`
+		resp := test.JSONResponse(respBody)
+		doer.On("Do", mock.Anything).Return(resp, nil)
+
+		input := DeleteAppInput{
+			OrganizationSlug: "organization-slug",
+			AppSlug:          "app-slug",
+		}
+		err := s.Delete(context.TODO(), input)
+
+		assert.ErrorIs(t, err, ErrAppNotFound)
 	})
 
 	t.Run("given graphql error then it returns given graphql error", func(t *testing.T) {

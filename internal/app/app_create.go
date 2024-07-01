@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-
-	"numerous.com/cli/internal/gql"
 )
 
 type CreateAppInput struct {
@@ -42,7 +40,7 @@ func (s *Service) Create(ctx context.Context, input CreateAppInput) (CreateAppOu
 	}
 	err := s.client.Exec(ctx, appCreateText, &resp, variables)
 	if err != nil {
-		return CreateAppOutput{}, gql.CheckAccessDenied(err)
+		return CreateAppOutput{}, ConvertErrors(err)
 	}
 
 	return CreateAppOutput{

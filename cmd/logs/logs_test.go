@@ -39,7 +39,7 @@ func TestLogs(t *testing.T) {
 
 		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
 
-		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
+		assert.ErrorIs(t, err, appident.ErrMissingOrganizationSlug)
 	})
 
 	t.Run("given no slug and app slug arguments and app dir without numerous.toml then it returns error", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestLogs(t *testing.T) {
 
 		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
 
-		assert.ErrorContains(t, err, "no such file or directory")
+		assert.ErrorIs(t, err, appident.ErrAppNotInitialized)
 	})
 
 	t.Run("given slug and app slug arguments but not app dir then it calls service as expected", func(t *testing.T) {

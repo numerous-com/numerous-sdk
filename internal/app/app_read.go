@@ -2,10 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
-	"strings"
-
-	"numerous.com/cli/internal/gql"
 )
 
 type ReadAppInput struct {
@@ -31,8 +27,6 @@ type appResponse struct {
 	}
 }
 
-var ErrAppNotFound = errors.New("app not found")
-
 func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutput, error) {
 	var resp appResponse
 
@@ -42,10 +36,5 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 		return ReadAppOutput{AppID: resp.App.ID}, nil
 	}
 
-	errMsg := err.Error()
-	if strings.Contains(errMsg, "app not found") {
-		return ReadAppOutput{}, ErrAppNotFound
-	}
-
-	return ReadAppOutput{}, gql.CheckAccessDenied(err)
+	return ReadAppOutput{}, ConvertErrors(err)
 }
