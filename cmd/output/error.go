@@ -116,3 +116,18 @@ func PrintReadAppIDErrors(err error, appDir string) {
 		PrintErrorDetails("An error occurred reading the app ID", err)
 	}
 }
+
+func PrintGetAppIdentiferError(err error, appDir string, ai appident.AppIdentifier) {
+	switch {
+	case errors.Is(err, appident.ErrAppNotInitialized):
+		PrintErrorAppNotInitialized(appDir)
+	case errors.Is(err, appident.ErrInvalidAppSlug):
+		PrintErrorInvalidAppSlug(ai.AppSlug)
+	case errors.Is(err, appident.ErrInvalidOrganizationSlug):
+		PrintErrorInvalidOrganizationSlug(ai.OrganizationSlug)
+	case errors.Is(err, appident.ErrMissingAppSlug):
+		PrintErrorMissingAppSlug()
+	case errors.Is(err, appident.ErrMissingOrganizationSlug):
+		PrintErrorMissingOrganizationSlug()
+	}
+}

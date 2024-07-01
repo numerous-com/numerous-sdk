@@ -29,12 +29,14 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 		appSlug = GetAppSlug(m, appSlug)
 	}
 
+	ai := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
+
 	if orgSlug == "" {
 		return AppIdentifier{}, ErrMissingOrganizationSlug
 	}
 
 	if !validate.IsValidIdentifier(orgSlug) {
-		return AppIdentifier{}, ErrInvalidOrganizationSlug
+		return ai, ErrInvalidOrganizationSlug
 	}
 
 	if appSlug == "" {
@@ -42,7 +44,7 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 	}
 
 	if !validate.IsValidIdentifier(appSlug) {
-		return AppIdentifier{}, ErrInvalidAppSlug
+		return ai, ErrInvalidAppSlug
 	}
 
 	return AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}, nil

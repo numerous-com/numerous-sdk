@@ -82,8 +82,9 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	secrets := loadSecretsFromEnv(input.AppDir)
 
 	// for validation
-	_, err = appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
+	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
 	if err != nil {
+		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
 		return nil, nil, err
 	}
 
@@ -123,6 +124,7 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
 	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
 	if err != nil {
+		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
@@ -158,17 +160,14 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 	case errors.Is(err, app.ErrAccesDenied):
 		output.PrintErrorAccessDenied(ai)
 		return "", err
-	case errors.Is(err, app.ErrAppNotFound):
-		output.PrintErrorAppNotFound(ai)
-		return "", err
 	case !errors.Is(err, app.ErrAppNotFound):
 		output.PrintErrorDetails("Error reading remote app", err)
 		return "", err
 	}
 
 	appCreateInput := app.CreateAppInput{
-		OrganizationSlug: orgSlug,
-		AppSlug:          appSlug,
+		OrganizationSlug: ai.OrganizationSlug,
+		AppSlug:          ai.AppSlug,
 		DisplayName:      manifest.Name,
 		Description:      manifest.Description,
 	}
