@@ -25,8 +25,10 @@ var UnpublishCmd = &cobra.Command{
 }
 
 func unpublish(client *gqlclient.Client) error {
-	appID, err := dir.ReadAppIDAndPrintErrors(".")
+	appDir := "."
+	appID, err := dir.ReadAppID(appDir)
 	if err != nil {
+		output.PrintReadAppIDErrors(err, appDir)
 		return err
 	}
 

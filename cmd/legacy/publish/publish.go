@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/gql/app"
@@ -24,8 +25,10 @@ var PublishCmd = &cobra.Command{
 }
 
 func publish(client *gqlclient.Client) error {
-	appID, err := dir.ReadAppIDAndPrintErrors(".")
+	appDir := "."
+	appID, err := dir.ReadAppID(appDir)
 	if err != nil {
+		output.PrintReadAppIDErrors(err, appDir)
 		return err
 	}
 

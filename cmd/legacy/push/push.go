@@ -1,6 +1,7 @@
 package push
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -41,14 +42,23 @@ A URL is generated which provides access to the tool, anyone with the URL can ac
 	Run: push,
 }
 
+var numerousAppEngineMsg string = `You can solve this by assigning your app definition to this name, for example:
+			
+@app
+class MyApp:
+	my_field: str
+
+appdef = MyApp`
+
 func push(cmd *cobra.Command, args []string) {
 	appDir, projectDir, appPath, ok := parseArguments(args)
 	if !ok {
 		os.Exit(1)
 	}
 
-	toolID, err := dir.ReadAppIDAndPrintErrors(appDir)
+	toolID, err := dir.ReadAppID(appDir)
 	if err != nil {
+		output.PrintReadAppIDErrors(err, appDir)
 		os.Exit(1)
 	}
 
@@ -58,10 +68,12 @@ func push(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if validated, err := m.ValidateApp(); err != nil {
-		output.PrintErrorDetails("An error occurred validating the app", err)
-		os.Exit(1)
-	} else if !validated {
+	if err := m.ValidateApp(); err != nil {
+		if errors.Is(err, manifest.ErrValidateNumerousApp) {
+			output.PrintError("Your app file must have an app definition called 'appdef'", numerousAppEngineMsg)
+		} else {
+			output.PrintErrorDetails("An error occurred validating the app", err)
+		}
 		os.Exit(1)
 	}
 

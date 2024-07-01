@@ -201,31 +201,31 @@ func TestManifestValidateApp(t *testing.T) {
 		name           string
 		library        string
 		appfileContent string
-		expected       bool
+		expected       error
 	}{
 		{
 			name:           "numerous app with appdef definition succeeds",
 			library:        "numerous",
 			appfileContent: numerousAppContentAppdefDefinition,
-			expected:       true,
+			expected:       nil,
 		},
 		{
 			name:           "numerous app with appdef assignment succeeds",
 			library:        "numerous",
 			appfileContent: numerousAppContentAppdefAssignment,
-			expected:       true,
+			expected:       nil,
 		},
 		{
 			name:           "numerous app without appdef fails",
 			library:        "numerous",
 			appfileContent: numerousAppContentWithoutAppdef,
-			expected:       false,
+			expected:       ErrValidateNumerousApp,
 		},
 		{
 			name:           "non-numerous app without appdef succeeds",
 			library:        "streamlit",
 			appfileContent: `the_content = "does not matter here"`,
-			expected:       true,
+			expected:       nil,
 		},
 	}
 
@@ -236,10 +236,9 @@ func TestManifestValidateApp(t *testing.T) {
 			require.NoError(t, err)
 
 			m := Manifest{Library: l, AppFile: appfile}
-			validated, err := m.ValidateApp()
+			err = m.ValidateApp()
 
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, validated)
+			assert.ErrorIs(t, err, tc.expected)
 		})
 	}
 }

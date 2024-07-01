@@ -16,7 +16,6 @@ import (
 	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dotenv"
-	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/links"
 	"numerous.com/cli/internal/manifest"
 )
@@ -128,7 +127,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	}
 
 	task := output.StartTask("Registering new version for " + ai.OrganizationSlug + "/" + ai.AppSlug)
-	appID, err := readOrCreateApp(ctx, apps, ai.AppSlug, ai.OrganizationSlug, manifest)
+	appID, err := readOrCreateApp(ctx, apps, ai, manifest)
 	if err != nil {
 		task.Error()
 		return app.CreateAppVersionOutput{}, "", "", err
@@ -147,17 +146,21 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	return appVersionOutput, ai.OrganizationSlug, ai.AppSlug, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, appSlug, orgSlug string, manifest *manifest.Manifest) (string, error) {
+func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdentifier, manifest *manifest.Manifest) (string, error) {
 	appReadInput := app.ReadAppInput{
-		OrganizationSlug: orgSlug,
-		AppSlug:          appSlug,
+		OrganizationSlug: ai.OrganizationSlug,
+		AppSlug:          ai.AppSlug,
 	}
 	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
 	switch {
 	case err == nil:
 		return appReadOutput.AppID, nil
-	case errors.Is(err, gql.ErrAccesDenied):
-		output.PrintError("Access denied.", "Hint: You may have specified an organization name instead of an organization slug.")
+	case errors.Is(err, app.ErrAccesDenied):
+		output.PrintErrorAccessDenied(ai)
+		return "", err
+	case errors.Is(err, app.ErrAppNotFound):
+		output.PrintErrorAppNotFound(ai)
+		return "", err
 	case !errors.Is(err, app.ErrAppNotFound):
 		output.PrintErrorDetails("Error reading remote app", err)
 		return "", err

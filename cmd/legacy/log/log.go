@@ -35,8 +35,9 @@ func log(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	appID, err := dir.ReadAppIDAndPrintErrors(appDir)
+	appID, err := dir.ReadAppID(appDir)
 	if err != nil {
+		output.PrintReadAppIDErrors(err, appID)
 		return
 	}
 

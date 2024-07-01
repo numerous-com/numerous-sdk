@@ -18,9 +18,8 @@ func Delete(ctx context.Context, apps AppService, appDir, orgSlug, appSlug strin
 		return err
 	}
 
-	err = apps.Delete(ctx, app.DeleteAppInput(ai))
-	if err != nil {
-		output.PrintErrorDetails("Error occurred deleting app.", err)
+	if err := apps.Delete(ctx, app.DeleteAppInput(ai)); err != nil {
+		output.PrintAppError(err, ai)
 		return err
 	}
 
