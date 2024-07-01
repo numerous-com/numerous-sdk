@@ -84,7 +84,7 @@ func PrintErrorInvalidAppSlug(appSlug string) {
 func PrintErrorAppNotFound(ai appident.AppIdentifier) {
 	PrintError(
 		"App not found",
-		"The app you are trying to delete \"%s/%s\" cannot be found. Did you specify the correct organization and app slug?",
+		"The app \"%s/%s\" cannot be found. Did you specify the correct organization and app slug?",
 		ai.OrganizationSlug, ai.AppSlug,
 	)
 }
@@ -105,7 +105,7 @@ func PrintAppError(err error, ai appident.AppIdentifier) {
 	case errors.Is(err, app.ErrAppNotFound):
 		PrintErrorAppNotFound(ai)
 	default:
-		PrintErrorDetails("Error occurred deleting app.", err)
+		PrintErrorDetails("Error occurred for app \"%s/%s\"", err, ai.OrganizationSlug, ai.OrganizationSlug)
 	}
 }
 
@@ -130,4 +130,12 @@ func PrintGetAppIdentiferError(err error, appDir string, ai appident.AppIdentifi
 	case errors.Is(err, appident.ErrMissingOrganizationSlug):
 		PrintErrorMissingOrganizationSlug()
 	}
+}
+
+func PrintManifestTOMLError(err error) {
+	if !strings.HasPrefix(err.Error(), "toml:") {
+		return
+	}
+
+	fmt.Println("There is a an error in your \"numerous.toml\" manifest.\n" + err.Error())
 }

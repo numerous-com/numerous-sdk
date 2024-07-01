@@ -75,6 +75,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	if err != nil {
 		task.Error()
 		output.PrintErrorAppNotInitialized(input.AppDir)
+		output.PrintManifestTOMLError(err)
 
 		return nil, nil, err
 	}

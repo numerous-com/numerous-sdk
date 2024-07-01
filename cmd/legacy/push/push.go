@@ -65,6 +65,7 @@ func push(cmd *cobra.Command, args []string) {
 	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
 		output.PrintErrorAppNotInitialized(appDir)
+		output.PrintManifestTOMLError(err)
 		os.Exit(1)
 	}
 
