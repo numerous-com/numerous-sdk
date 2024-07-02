@@ -73,7 +73,7 @@ func run(cmd *cobra.Command, args []string) {
 func init() {
 	flags := DeployCmd.Flags()
 	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to deploy to. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appSlug, "app", "n", "", "A app slug identifier of the app to deploy to.")
+	flags.StringVarP(&appSlug, "app", "a", "", "A app slug identifier of the app to deploy to.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
 	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 }
