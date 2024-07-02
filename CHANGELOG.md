@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.10.2 (2024-07-02)
+
+### Fix
+
+* fix(cli): rename `deploy` app slug flag ([`ce0a24f`](https://github.com/numerous-com/numerous-sdk/commit/ce0a24f5a80fdcb9381655fee2391f56763c4d2e))
+
+
+
+
 ## v0.10.1 (2024-07-02)
 
 ### Fix
