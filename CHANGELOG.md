@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.10.1 (2024-07-02)
+
+### Fix
+
+* fix(cli): improve error messages (#19) ([`4bfeff3`](https://github.com/numerous-com/numerous-sdk/commit/4bfeff356e4b349f8b778991aeee521eaa01fcfe))
+
+  > 
+  > * Do not print `delete` errors twice
+  > * Print specific error messages for common cases
+  > * Refactor error printing and move printing to `cmd` package
+
+
+
+
 ## v0.10.0 (2024-06-28)
 
 ### Feature
