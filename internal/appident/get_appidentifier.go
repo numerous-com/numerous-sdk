@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/validate"
 	"numerous.com/cli/internal/manifest"
 )
@@ -21,9 +20,7 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 		if m == nil {
 			loaded, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 			if err != nil {
-				output.PrintErrorAppNotInitialized(appDir)
-
-				return AppIdentifier{}, err
+				return AppIdentifier{}, ErrAppNotInitialized
 			}
 			m = loaded
 		}
@@ -32,24 +29,22 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 		appSlug = GetAppSlug(m, appSlug)
 	}
 
-	if !validate.IsValidIdentifier(orgSlug) {
-		if orgSlug == "" {
-			output.PrintErrorMissingOrganizationSlug()
-		} else {
-			output.PrintErrorInvalidOrganizationSlug(orgSlug)
-		}
+	ai := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
 
-		return AppIdentifier{}, ErrInvalidOrganizationSlug
+	if orgSlug == "" {
+		return AppIdentifier{}, ErrMissingOrganizationSlug
+	}
+
+	if !validate.IsValidIdentifier(orgSlug) {
+		return ai, ErrInvalidOrganizationSlug
+	}
+
+	if appSlug == "" {
+		return AppIdentifier{}, ErrMissingAppSlug
 	}
 
 	if !validate.IsValidIdentifier(appSlug) {
-		if appSlug == "" {
-			output.PrintErrorMissingAppSlug()
-		} else {
-			output.PrintErrorInvalidAppSlug(appSlug)
-		}
-
-		return AppIdentifier{}, ErrInvalidAppSlug
+		return ai, ErrInvalidAppSlug
 	}
 
 	return AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}, nil

@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-
-	"numerous.com/cli/internal/gql"
 )
 
 const deleteMutation string = `
@@ -31,7 +29,7 @@ func (s *Service) Delete(ctx context.Context, input DeleteAppInput) error {
 
 	err := s.client.Exec(ctx, deleteMutation, &resp, vars)
 	if err != nil {
-		return gql.CheckAccessDenied(err)
+		return ConvertErrors(err)
 	}
 
 	return nil

@@ -94,7 +94,7 @@ func TestDeploy(t *testing.T) {
 		input := DeployInput{AppDir: appDir, AppSlug: appSlug}
 		err := Deploy(context.TODO(), nil, input)
 
-		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
+		assert.ErrorIs(t, err, appident.ErrMissingOrganizationSlug)
 	})
 
 	t.Run("given slug and app slug arguments and no manifest deployment then it uses arguments", func(t *testing.T) {
