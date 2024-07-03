@@ -68,7 +68,7 @@ The numerous CLI enables app development.
 
 ### Building and running
 
-To build simply run `make build` without arguments, and the executable is stored
+To build simply run `make cli-build`, and the executable is stored
 as `build/numerous`
 
 ### Development
