@@ -25,7 +25,7 @@ func PrintError(header, body string, args ...any) {
 // Prints an error message with the given header, and a body that contains
 // the error details. Variadic arguments will be used for string formatting.
 func PrintErrorDetails(header string, err error, args ...any) {
-	PrintError(header, "Details: "+err.Error())
+	PrintError(header, "Details: "+err.Error(), args...)
 }
 
 // Prints the given error with a standardized error message.
@@ -105,7 +105,7 @@ func PrintAppError(err error, ai appident.AppIdentifier) {
 	case errors.Is(err, app.ErrAppNotFound):
 		PrintErrorAppNotFound(ai)
 	default:
-		PrintErrorDetails("Error occurred for app \"%s/%s\"", err, ai.OrganizationSlug, ai.OrganizationSlug)
+		PrintErrorDetails("Error occurred for app \"%s/%s\"", err, ai.OrganizationSlug, ai.AppSlug)
 	}
 }
 
