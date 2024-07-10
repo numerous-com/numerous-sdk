@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.10.3 (2024-07-10)
+
+### Fix
+
+* fix: app error message ([`a8c169e`](https://github.com/numerous-com/numerous-sdk/commit/a8c169e077bbaf32672e5ed30308891337531174))
+
+
+
+### Unknown
+
+* Update README.md (#18) ([`82fc974`](https://github.com/numerous-com/numerous-sdk/commit/82fc974f0b66ab27c5287c96abefb28372ba33a4))
+
+
+
+
 ## v0.10.2 (2024-07-02)
 
 ### Fix
