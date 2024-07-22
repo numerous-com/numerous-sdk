@@ -25,3 +25,16 @@ func NotifyCmdChanged(cmd string, newCmd string) {
 		cmd, newCmd,
 	)
 }
+
+var (
+	feedbackHeader = AnsiCyanBold + "Thank you for using Numerous!" + AnsiReset
+	feedbackURL    = AnsiBlue + "https://www.numerous.com/app/feedback" + AnsiReset
+	feedbackBody   = `Numerous is under active development, and your feedback is very welcome. If you
+experience issues, or have improvement suggestions, please visit:`
+)
+
+func NotifyFeedback() {
+	fmt.Println(feedbackHeader)
+	fmt.Println(feedbackBody)
+	fmt.Println("    " + feedbackURL)
+}

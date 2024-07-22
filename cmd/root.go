@@ -16,7 +16,6 @@ import (
 	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
-	"numerous.com/cli/cmd/report"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/logging"
 
@@ -45,6 +44,9 @@ var (
 			"                °°     \n" +
 			"",
 		SilenceUsage: true,
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			output.NotifyFeedback()
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if !commandRequiresAuthentication(cmd.CommandPath()) {
 				return nil
@@ -109,7 +111,6 @@ func init() {
 		login.LoginCmd,
 		logout.LogoutCmd,
 		dev.DevCmd,
-		report.ReportCmd,
 		organization.OrganizationRootCmd,
 		legacy.LegacyRootCmd,
 		deletecmd.DeleteCmd,
