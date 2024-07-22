@@ -6,7 +6,7 @@ TARGET_ARCHS := amd64 arm64
 GO_ENV = CGO_ENABLED=0
 GO_BUILD = $(GO_ENV) go build
 CLI_BUILD_DIR=build
-CLI_SOURCE_FILES=$(shell find . -name *.go -type f)
+CLI_SOURCE_FILES=$(shell find . -name '*.go' -type f)
 CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
