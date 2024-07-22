@@ -2,7 +2,6 @@ package publish
 
 import (
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
@@ -16,11 +15,13 @@ import (
 var PublishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publishes an app to the public app gallery",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := publish(gql.GetClient())
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
+
+		return nil
 	},
 }
 
@@ -43,8 +44,7 @@ func publish(client *gqlclient.Client) error {
 	}
 
 	if t, err := app.Publish(appID, client); err != nil {
-		fmt.Println("An error occurred when publishing the app")
-		fmt.Println("Error: ", err)
+		output.PrintErrorDetails("An error occurred when publishing the app", err)
 
 		return err
 	} else {

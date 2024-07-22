@@ -43,9 +43,10 @@ var (
 			"             °°°°°   \n" +
 			"                °°     \n" +
 			"",
-		SilenceUsage: true,
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			output.NotifyFeedback()
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if !commandRequiresAuthentication(cmd.CommandPath()) {
@@ -96,6 +97,7 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnFinalize(output.NotifyFeedback)
 	rootCmd.PersistentFlags().VarP(&logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
 
 	rootCmd.AddGroup(&cobra.Group{

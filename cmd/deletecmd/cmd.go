@@ -2,7 +2,6 @@ package deletecmd
 
 import (
 	"net/http"
-	"os"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
@@ -16,7 +15,7 @@ import (
 
 var DeleteCmd = &cobra.Command{
 	Use:     "delete [app directory]",
-	Run:     run,
+	RunE:    run,
 	Short:   "Delete an app from an organization",
 	GroupID: group.AppCommandsGroupID,
 	Long:    long,
@@ -51,7 +50,7 @@ var (
 	appDir  string = "."
 )
 
-func run(cmd *cobra.Command, args []string) {
+func run(cmd *cobra.Command, args []string) error {
 	if exists, _ := dir.AppIDExists(appDir); exists {
 		output.NotifyCmdChanged("numerous delete", "numerous legacy delete")
 		println()
@@ -59,11 +58,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 
-	if err := Delete(cmd.Context(), service, appDir, orgSlug, appSlug); err != nil {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+	return Delete(cmd.Context(), service, appDir, orgSlug, appSlug)
 }
 
 func init() {

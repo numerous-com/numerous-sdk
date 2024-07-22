@@ -3,7 +3,6 @@ package create
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/organization/create/wizard"
 	"numerous.com/cli/cmd/output"
@@ -20,11 +19,13 @@ var OrganizationCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates an organization (login required)",
 	Long:  "The organization feature is a structured space to keep the apps that you work on with team members. Organizations help to arrange your apps, manage who has access to them, and simplify the workflow with your team.",
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := organizationCreate(auth.NumerousTenantAuthenticator, gql.GetClient()); err != nil {
-			fmt.Println("Error: ", err)
-			os.Exit(1)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := organizationCreate(auth.NumerousTenantAuthenticator, gql.GetClient())
+		if err != nil {
+			output.PrintErrorDetails("Error creating organization", err)
 		}
+
+		return err
 	},
 }
 
@@ -49,7 +50,6 @@ wizard:
 		case errors.Is(err, organization.ErrOrganizationNameInvalidCharacter):
 			fmt.Println("The input name contains invalid characters. Please choose another name or press ctrl + c to quit.")
 		case err != nil:
-			fmt.Println(err)
 			return err
 		default:
 			newOrganization = _organization
@@ -57,7 +57,7 @@ wizard:
 		}
 	}
 
-	fmt.Println("\nThe organization has been created!")
+	output.PrintlnOK("The organization has been created:")
 	fmt.Println(newOrganization.String())
 
 	return nil

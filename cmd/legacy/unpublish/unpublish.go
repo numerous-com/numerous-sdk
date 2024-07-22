@@ -2,7 +2,6 @@ package unpublish
 
 import (
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
@@ -16,11 +15,13 @@ import (
 var UnpublishCmd = &cobra.Command{
 	Use:   "unpublish",
 	Short: "Removes a published app from the public app gallery",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := unpublish(gql.GetClient())
 		if err != nil {
-			os.Exit(1)
+			output.PrintErrorDetails("Error unpublishing app", err)
 		}
+
+		return err
 	},
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
@@ -18,24 +17,20 @@ var LoginCmd = &cobra.Command{
 	Short:   "Login in to Numerous",
 	Args:    cobra.NoArgs,
 	GroupID: group.AdditionalCommandsGroupID,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
 		if user == nil {
-			Login(auth.NumerousTenantAuthenticator, cmd.Context())
-		} else {
 			output.PrintlnOK("Great, you are already logged in!")
+			return nil
 		}
+
+		_, err := Login(auth.NumerousTenantAuthenticator, cmd.Context())
+
+		return err
 	},
 }
 
-func Login(a auth.Authenticator, ctx context.Context) *auth.User {
-	state, err := a.GetDeviceCode(ctx, http.DefaultClient)
-	if err != nil {
-		output.PrintErrorDetails("Error getting device code", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf(`You are logging into Numerous.
+const loggingInMessage = `You are logging into Numerous.
 
 When you press Enter, a browser window will automatically open.
 
@@ -45,11 +40,20 @@ complete authentication and click 'Confirm'.
 Verification code: %s
 
 Press Enter to continue...
-`, state.UserCode)
+`
+
+func Login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
+	state, err := a.GetDeviceCode(ctx, http.DefaultClient)
+	if err != nil {
+		output.PrintErrorDetails("Error getting device code", err)
+		return nil, err
+	}
+
+	fmt.Printf(loggingInMessage, state.UserCode)
 
 	if _, err = fmt.Scanln(); err != nil {
 		output.PrintErrorDetails("Error getting keystroke", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	if err := a.OpenURL(state.VerificationURI); err != nil {
@@ -62,12 +66,12 @@ Press Enter to continue...
 	result, err := a.WaitUntilUserLogsIn(ctx, http.DefaultClient, state)
 	if err != nil {
 		output.PrintErrorDetails("Error waiting for login", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	if err := a.StoreAccessToken(result.AccessToken); err != nil {
 		output.PrintErrorDetails("Login failed. Could not store credentials in keyring.", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	if err := a.StoreRefreshToken(result.RefreshToken); err != nil {
@@ -80,7 +84,7 @@ Press Enter to continue...
 
 	output.PrintlnOK("You are now logged in to Numerous!")
 
-	return a.GetLoggedInUserFromKeyring()
+	return a.GetLoggedInUserFromKeyring(), nil
 }
 
 func RefreshAccessToken(user *auth.User, client *http.Client, a auth.Authenticator) error {

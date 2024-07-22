@@ -39,7 +39,7 @@ var PushCmd = &cobra.Command{
 	Long: `Zip-compresses the tool project and pushes it to the numerous server, which
 builds a docker image and runs it as a container.
 A URL is generated which provides access to the tool, anyone with the URL can access the tool.`,
-	Run: push,
+	RunE: run,
 }
 
 var numerousAppEngineMsg string = `You can solve this by assigning your app definition to this name, for example:
@@ -50,23 +50,25 @@ class MyApp:
 
 appdef = MyApp`
 
-func push(cmd *cobra.Command, args []string) {
-	appDir, projectDir, appPath, ok := parseArguments(args)
-	if !ok {
-		os.Exit(1)
+func run(cmd *cobra.Command, args []string) error {
+	appDir, projectDir, appPath, err := parseArguments(args)
+	if err != nil {
+		return err
 	}
 
 	toolID, err := dir.ReadAppID(appDir)
 	if err != nil {
 		output.PrintReadAppIDErrors(err, appDir)
-		os.Exit(1)
+
+		return err
 	}
 
 	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
 		output.PrintErrorAppNotInitialized(appDir)
 		output.PrintManifestTOMLError(err)
-		os.Exit(1)
+
+		return err
 	}
 
 	if err := m.ValidateApp(); err != nil {
@@ -75,7 +77,8 @@ func push(cmd *cobra.Command, args []string) {
 		} else {
 			output.PrintErrorDetails("An error occurred validating the app", err)
 		}
-		os.Exit(1)
+
+		return err
 	}
 
 	_, err = app.Query(string(toolID), gql.GetClient())
@@ -94,13 +97,13 @@ func push(cmd *cobra.Command, args []string) {
 				output.Highlight(toolID)+output.AnsiRed,
 			)
 
-			return
+			return err
 		}
 	}
 
 	if err := os.Chdir(projectDir); err != nil {
 		output.PrintError("Could not access %q", "", projectDir)
-		os.Exit(1)
+		return err
 	}
 
 	// Remove if zip already exist
@@ -108,81 +111,83 @@ func push(cmd *cobra.Command, args []string) {
 		os.Remove(zipFileName)
 	}
 
-	if ok := prepareApp(m); !ok {
-		os.Exit(1)
+	if err := prepareApp(m); err != nil {
+		return err
 	}
 
-	buildID, ok := uploadApp(appDir, toolID)
-	if !ok {
-		os.Exit(1)
+	buildID, err := uploadApp(appDir, toolID)
+	if err != nil {
+		return err
 	}
 
-	if ok := buildApp(buildID, appPath); !ok {
-		os.Exit(1)
+	if err := buildApp(buildID, appPath); err != nil {
+		return err
 	}
 
-	if ok := deployApp(toolID); !ok {
-		os.Exit(1)
+	if err := deployApp(toolID); err != nil {
+		return err
 	}
 
-	if ok := printURL(toolID); !ok {
-		os.Exit(1)
+	if err := printURL(toolID); err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func printURL(toolID string) (ok bool) {
+func printURL(toolID string) error {
 	pushedTool, err := app.Query(string(toolID), gql.GetClient())
 	if err != nil {
 		output.PrintErrorDetails("Error reading the app.", err)
-		return false
+		return err
 	}
 
 	fmt.Printf("\nShareable url: %s\n", pushedTool.SharedURL)
 
-	return true
+	return nil
 }
 
-func deployApp(toolID string) (ok bool) {
+func deployApp(toolID string) error {
 	task := output.StartTask("Deploying app")
 
 	err := stopJobs(string(toolID))
 	if err != nil {
 		output.PrintErrorDetails("Error stopping previous jobs.", err)
-		return false
+		return err
 	}
 
 	w := output.NewTaskLineWriter(task, "Deploy")
 	err = getDeployEventLogs(w, string(toolID))
 	if err != nil {
 		output.PrintErrorDetails("Error listening for deploy logs.", err)
-		return false
+		return err
 	}
 
 	task.Done()
 
-	return true
+	return nil
 }
 
-func buildApp(buildID string, appPath string) (ok bool) {
+func buildApp(buildID string, appPath string) error {
 	task := output.StartTask("Building app")
 
 	w := output.NewTaskLineWriter(task, "Build")
 	err := getBuildEventLogs(w, buildID, appPath, verbose)
 	if err != nil {
 		output.PrintErrorDetails("Error listening for build logs.", err)
-		return false
+		return err
 	}
 	task.Done()
 
-	return true
+	return nil
 }
 
-func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
+func uploadApp(appDir string, toolID string) (buildID string, err error) {
 	defer os.Remove(zipFileName)
 	task := output.StartTask("Uploading app")
 
 	secrets := loadSecretsFromEnv(appDir)
-	buildID, err := pushBuild(zipFileName, string(toolID), secrets)
+	buildID, err = pushBuild(zipFileName, string(toolID), secrets)
 	if err != nil {
 		fmt.Println("Sorry! An error occurred uploading your app")
 
@@ -196,30 +201,35 @@ func uploadApp(appDir string, toolID string) (buildID string, ok bool) {
 			output.PrintErrorDetails("Error occurred uploading app.", err)
 		}
 
-		return "", false
+		return "", err
 	}
 
 	task.Done()
 
-	return buildID, true
+	return buildID, nil
 }
 
-func prepareApp(m *manifest.Manifest) (ok bool) {
+func prepareApp(m *manifest.Manifest) error {
 	task := output.StartTask("Preparing upload.")
 
 	if err := archive.ZipCreate(".", zipFileName, m.Exclude); err != nil {
 		output.PrintErrorDetails("Error preparing app.", err)
 		os.Remove(zipFileName)
 
-		return false
+		return err
 	}
 
 	task.Done()
 
-	return true
+	return nil
 }
 
-func parseArguments(args []string) (string, string, string, bool) {
+var (
+	ErrValidateAppAndProjectDirectories = errors.New("error validating app and project directories")
+	ErrAppPathNotSubPathOfProjectPath   = errors.New("app path is not a subpath of the project path")
+)
+
+func parseArguments(args []string) (string, string, string, error) {
 	appDir := "."
 	projectDir := "."
 	appPath := ""
@@ -235,16 +245,17 @@ func parseArguments(args []string) (string, string, string, bool) {
 		result, rt, err := CheckAndReturnSubpath(projectDir, appDir)
 		if err != nil {
 			output.PrintErrorDetails("Error occurred validating app and project arguments.", err)
+			return "", "", "", ErrValidateAppAndProjectDirectories
 		}
 
 		if !result {
 			output.PrintError("Application path %s is not a subpath of project path %s", "", appDir, projectDir)
-			return "", "", "", false
+			return "", "", "", ErrAppPathNotSubPathOfProjectPath
 		}
 		appPath = rt
 	}
 
-	return appDir, projectDir, appPath, true
+	return appDir, projectDir, appPath, nil
 }
 
 func pushBuild(zipFilePath string, appID string, secrets map[string]string) (string, error) {

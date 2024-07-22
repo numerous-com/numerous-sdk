@@ -2,7 +2,6 @@ package logs
 
 import (
 	"net/http"
-	"os"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
@@ -16,7 +15,7 @@ import (
 
 var LogsCmd = &cobra.Command{
 	Use:     "logs [app directory]",
-	Run:     run,
+	RunE:    run,
 	Short:   "Display running application logs",
 	GroupID: group.AppCommandsGroupID,
 	Long: `Read the logs of an application deployed to an organization on the
@@ -49,7 +48,7 @@ var (
 	appDir     string = "."
 )
 
-func run(cmd *cobra.Command, args []string) {
+func run(cmd *cobra.Command, args []string) error {
 	// TODO: this is just here for users who expect the "old" log command in
 	// this location, which will primarily be for apps initialized with an App
 	// ID file
@@ -67,11 +66,7 @@ func run(cmd *cobra.Command, args []string) {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 
-	if err := Logs(cmd.Context(), service, appDir, orgSlug, appSlug, printer); err != nil {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+	return Logs(cmd.Context(), service, appDir, orgSlug, appSlug, printer)
 }
 
 func init() {
