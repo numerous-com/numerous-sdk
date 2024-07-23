@@ -19,6 +19,11 @@ from .all_elements import (
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel, Upload
 from .client import Client
+from .collection_create import (
+    CollectionCreate,
+    CollectionCreateCollectionCreateCollection,
+    CollectionCreateCollectionCreateCollectionNotFound,
+)
 from .enums import (
     AppDeploymentStatus,
     AppSubscriptionStatus,
@@ -36,6 +41,7 @@ from .exceptions import (
 )
 from .fragments import (
     ButtonValue,
+    CollectionKey,
     GraphContext,
     GraphContextAffectedBy,
     GraphContextAffects,
@@ -60,6 +66,7 @@ from .input_types import (
     NewOrganization,
     NewTool,
     OrganizationInvitationInput,
+    OrganizationMemberEditRoleInput,
     SubscriptionOfferInput,
 )
 from .update_element import UpdateElement, UpdateElementElementUpdate
@@ -114,6 +121,10 @@ __all__ = [
     "BuildPushInput",
     "ButtonValue",
     "Client",
+    "CollectionCreate",
+    "CollectionCreateCollectionCreateCollection",
+    "CollectionCreateCollectionCreateCollectionNotFound",
+    "CollectionKey",
     "ElementInput",
     "ElementSelectInput",
     "GraphContext",
@@ -131,6 +142,7 @@ __all__ = [
     "NewTool",
     "NumberFieldValue",
     "OrganizationInvitationInput",
+    "OrganizationMemberEditRoleInput",
     "Role",
     "SliderValue",
     "SubscriptionOfferInput",

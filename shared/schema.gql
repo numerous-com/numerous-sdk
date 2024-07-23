@@ -3,6 +3,10 @@ scalar Upload
 
 directive @client on QUERY | FIELD
 directive @trackOperation(eventName: String!) on FIELD_DEFINITION
+directive @trackAppOperation(eventName: String!) on FIELD_DEFINITION
+directive @trackAppUseOperation on FIELD_DEFINITION
+directive @trackToolOperation(eventName: String!) on FIELD_DEFINITION
+directive @trackToolUseOperation on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
 directive @canManageApp on FIELD_DEFINITION
 
@@ -45,6 +49,10 @@ type User {
   email: String!
 }
 
+type UserNotFound {
+  id: ID!
+}
+
 type Query {
   me: User! @hasRole(role: AUTHENTICATED)
 }
@@ -65,6 +73,7 @@ type Organization {
   members: [OrganizationMembership!]! @hasRole(role: USER)
   pendingInvitations: [OrganizationInvitation!]! @hasRole(role: ADMIN)
   createdAt: Time!
+  paymentAccount: PaymentAccount
 }
 
 type OrganizationInvitation {
@@ -74,7 +83,6 @@ type OrganizationInvitation {
   invitedAt: Time!
   role: Role!
 }
-
 
 type InvalidEmail {
   email: String!
@@ -89,6 +97,11 @@ input NewOrganization {
   slug: String
 }
 
+input OrganizationMemberEditRoleInput {
+  userId: ID!
+  role: Role!
+}
+
 type OrganizationNotFound {
   id: ID!
   slug: String!
@@ -98,13 +111,6 @@ type OrganizationRenameFailure {
   result: String!
 }
 
-union OrganizationRenameResult =
-    Organization
-  | OrganizationNotFound
-  | OrganizationRenameFailure
-
-union OrganizationQueryResult = Organization | OrganizationNotFound
-
 type OrganizationSlugOccupied {
   slug: String!
 }
@@ -113,7 +119,20 @@ type OrganizationSlugInvalid {
   slug: String!
 }
 
-union OrganizationCreateResult = Organization | OrganizationSlugOccupied | OrganizationSlugInvalid
+union OrganizationRenameResult =
+    Organization
+  | OrganizationNotFound
+  | OrganizationRenameFailure
+
+union OrganizationQueryResult = Organization | OrganizationNotFound
+union OrganizationCreateResult =
+    Organization
+  | OrganizationSlugOccupied
+  | OrganizationSlugInvalid
+union OrganizationMemberEditRoleResult =
+    Organization
+  | OrganizationNotFound
+  | UserNotFound
 
 extend type Query {
   organization(organizationSlug: String!): OrganizationQueryResult!
@@ -125,10 +144,15 @@ extend type Query {
 type Mutation {
   organizationCreate(input: NewOrganization!): OrganizationCreateResult!
     @hasRole(role: AUTHENTICATED)
+    @trackOperation(eventName: "Organization Create")
   organizationRename(
     organizationId: ID!
     name: String!
   ): OrganizationRenameResult! @hasRole(role: ADMIN)
+  organizationMemberEditRole(
+    organizationId: ID!
+    input: OrganizationMemberEditRoleInput!
+  ): OrganizationMemberEditRoleResult! @hasRole(role: ADMIN)
 }
 ###############################################################################
 ### End of organization management
@@ -140,7 +164,7 @@ type Mutation {
 
 input Auth0WhiteLabelInvitationInput {
   email: String!
-    organizationID: ID!
+  organizationID: ID!
 }
 
 type Auth0WhiteLabelInvitation {
@@ -151,8 +175,7 @@ type Auth0WhiteLabelInvitation {
 extend type Mutation {
   Auth0WhiteLabelInvitationCreate(
     input: Auth0WhiteLabelInvitationInput
-  ): Auth0WhiteLabelInvitation! 
-
+  ): Auth0WhiteLabelInvitation!
 }
 ###############################################################################
 ### End of Auth0Organization management
@@ -166,10 +189,6 @@ input OrganizationInvitationInput {
   role: Role!
   email: String!
 }
-
-
-
-
 
 type OrganizationInvitationNotFound {
   id: ID!
@@ -206,10 +225,14 @@ extend type Mutation {
   organizationInvitationCreate(
     organizationId: ID!
     input: OrganizationInvitationInput
-  ): OrganizationInvitationCreateResult! @hasRole(role: ADMIN)
+  ): OrganizationInvitationCreateResult!
+    @hasRole(role: ADMIN)
+    @trackOperation(eventName: "Organization invitation create")
   organizationInvitationAccept(
     invitationId: ID!
-  ): OrganizationInvitationAcceptResult @canAccessInvitation
+  ): OrganizationInvitationAcceptResult
+    @canAccessInvitation
+    @trackOperation(eventName: "Organization invitation accept")
   organizationInvitationDelete(
     invitationId: ID!
   ): OrganizationInvitationDeleteResult @hasRole(role: ADMIN)
@@ -218,8 +241,6 @@ extend type Mutation {
 ###############################################################################
 ### End of organization invitation management
 ###############################################################################
-
-
 
 ###############################################################################
 ### Tool management
@@ -237,11 +258,13 @@ type Tool {
 }
 
 type PublicTool {
+  id: ID!
   developer: User!
   name: String!
   description: String
   pictureUrl: String
   publicUrl: String!
+  createdAt: Time!
 }
 
 extend type Query {
@@ -266,11 +289,12 @@ type ToolDeleteFailure {
 union ToolDeleteResult = ToolDeleteSuccess | ToolDeleteFailure
 
 extend type Mutation {
-  toolCreate(input: NewTool!): Tool! @trackOperation(eventName: "App Create")
-  toolPublish(id: ID!): Tool! @trackOperation(eventName: "App Publish")
-  toolUnpublish(id: ID!): Tool! @trackOperation(eventName: "App Unpublish")
+  toolCreate(input: NewTool!): Tool!
+    @trackToolOperation(eventName: "App Create")
+  toolPublish(id: ID!): Tool! @trackToolOperation(eventName: "App Publish")
+  toolUnpublish(id: ID!): Tool! @trackToolOperation(eventName: "App Unpublish")
   toolDelete(id: ID!): ToolDeleteResult!
-    @trackOperation(eventName: "App Delete")
+    @trackToolOperation(eventName: "App Delete")
 }
 
 ###############################################################################
@@ -350,11 +374,14 @@ type AppDeploymentStatusEvent {
   status: AppDeploymentStatus
 }
 
-union AppDeployEvent = AppBuildMessageEvent | AppDeploymentStatusEvent | AppBuildErrorEvent
+union AppDeployEvent =
+    AppBuildMessageEvent
+  | AppDeploymentStatusEvent
+  | AppBuildErrorEvent
 
 input AppDeployLogsInput {
-    organizationSlug: String!
-    appSlug: String!
+  organizationSlug: String!
+  appSlug: String!
 }
 
 type AppDeployLogEntry {
@@ -363,13 +390,13 @@ type AppDeployLogEntry {
 }
 
 type AppDeleted {
-    appSlug: String!
-    organizationSlug: String
+  appSlug: String!
+  organizationSlug: String
 }
 
 input AppDeleteInput {
-    appSlug: String!
-    organizationSlug: String!
+  appSlug: String!
+  organizationSlug: String!
 }
 
 extend type Query {
@@ -379,10 +406,16 @@ extend type Query {
 extend type Mutation {
   appCreate(organizationSlug: String!, appData: AppCreateInfo!): App!
     @hasRole(role: USER)
-  appVersionCreate(appID: ID!, input: AppVersionInput): AppVersion! @canManageApp
-  appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL! @canManageApp
+    @trackAppOperation(eventName: "App Create")
+  appVersionCreate(appID: ID!, input: AppVersionInput): AppVersion!
+    @canManageApp
+    @trackAppOperation(eventName: "App Version Create")
+  appVersionUploadURL(appVersionID: ID!): AppVersionUploadURL!
+    @canManageApp
+    @trackAppOperation(eventName: "App Version Upload URL")
   appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
     @canManageApp
+    @trackAppOperation(eventName: "App Deploy")
   appDelete(input: AppDeleteInput!): AppDeleted! @canManageApp
 }
 
@@ -400,6 +433,7 @@ extend type Subscription {
 ###############################################################################
 
 directive @canAccessSubscriptionOffer on FIELD_DEFINITION
+directive @canAccessSubscription on FIELD_DEFINITION
 directive @canManageSubscription on FIELD_DEFINITION
 
 enum SubscriptionOfferStatus {
@@ -461,7 +495,10 @@ union SubscriptionOfferAcceptResult =
   | SubscriptionOfferNotFound
   | SubscriptionOfferInvalidStatus
 
-union AppSubscriptionCancelResult = AppSubscription | AppSubscriptionNotFound | AppSubscriptionInvalidStatus
+union AppSubscriptionCancelResult =
+    AppSubscription
+  | AppSubscriptionNotFound
+  | AppSubscriptionInvalidStatus
 
 extend type Organization {
   outboundSubscriptionOffers: [SubscriptionOffer!]! @hasRole(role: ADMIN)
@@ -473,6 +510,7 @@ extend type App {
 }
 
 extend type Query {
+  subscription(subscriptionId: ID!): AppSubscription! @canAccessSubscription
   subscriptionOffer(subscriptionOfferId: ID!): SubscriptionOfferResult!
     @canAccessSubscriptionOffer
 }
@@ -538,13 +576,12 @@ enum ToolHashType {
 }
 
 extend type Query {
-  job(toolHash: ID!, hashType: ToolHashType!): Job!
+  job(toolHash: ID!, hashType: ToolHashType!): Job
   jobsByTool(id: ID!): [Job!]!
 }
 
 extend type Mutation {
-  jobStart(toolHash: ID!, hashType: ToolHashType!): Job!
-    @trackOperation(eventName: "App Use/Requested from Proxy")
+  jobStart(toolHash: ID!, hashType: ToolHashType!): Job! @trackToolUseOperation
   jobStop(id: ID!): StopJobPayload!
   jobHeartbeat(id: ID!): JobHeartbeatResult!
 }
@@ -780,5 +817,99 @@ extend type Subscription {
 }
 
 ###############################################################################
-### End of CLI Push command
+### End of CLI Logs command
+###############################################################################
+
+###############################################################################
+## Paginiation
+###############################################################################
+
+type PageInfo {
+  startCursor: ID
+  endCursor: ID
+  hasNextPage: Boolean!
+}
+
+###############################################################################
+## End of Pagination
+###############################################################################
+
+###############################################################################
+## Collections
+###############################################################################
+
+directive @canAccessCollection on FIELD_DEFINITION
+
+type Collection {
+  id: ID!
+  key: ID!
+
+  collections(after: ID, first: Int): CollectionConnection!
+}
+
+type CollectionEdge {
+  node: Collection!
+  cursor: ID!
+}
+
+type CollectionConnection {
+  edges: [CollectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CollectionNotFound {
+  id: ID!
+}
+
+union CollectionCreateResult = Collection | CollectionNotFound
+
+extend type Mutation {
+  # idempotent
+  collectionCreate(
+    organizationID: ID!
+    key: ID!
+    parentID: ID
+  ): CollectionCreateResult! @canAccessCollection
+}
+
+###############################################################################
+## End of Collections
+###############################################################################
+
+###############################################################################
+### Payment
+###############################################################################
+
+type PaymentAccount {
+  id: ID!
+}
+
+type PaymentAccountOnboardURL {
+  url: String!
+}
+
+type PaymentAccountNotFound {
+  organizationSlug: String!
+}
+
+type PaymentAccountExists {
+  organizationSlug: String!
+  paymentAccount: PaymentAccount!
+}
+
+union PaymentAccountCreateResult = PaymentAccount | PaymentAccountExists
+union PaymentAccountOnboardURLResult =
+    PaymentAccountOnboardURL
+  | PaymentAccountNotFound
+
+extend type Mutation {
+  paymentAccountCreate(organizationSlug: String!): PaymentAccountCreateResult!
+    @hasRole(role: ADMIN)
+  paymentAccountOnboardURL(
+    organizationSlug: String!
+  ): PaymentAccountOnboardURLResult! @hasRole(role: ADMIN)
+}
+
+###############################################################################
+### End of Payment
 ###############################################################################
