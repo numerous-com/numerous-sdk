@@ -91,3 +91,28 @@ subscription Updates($sessionId: ID!, $clientId: ID!) {
     }
   }
 }
+
+
+fragment CollectionKey on Collection {
+      id
+      key
+}
+
+
+mutation CollectionCreate(
+  $organizationID: ID!
+  $key: ID!
+   $parentID: ID
+) {
+  collectionCreate(
+    organizationID: $organizationID
+    key: $key
+    parentID: $parentID
+  ) {
+    __typename
+     ... on Collection {
+     ... CollectionKey
+  
+      }
+     }
+  }
