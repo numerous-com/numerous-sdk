@@ -12,6 +12,11 @@ class ButtonValue(BaseModel):
     button_value: str = Field(alias="buttonValue")
 
 
+class CollectionKey(BaseModel):
+    id: str
+    key: str
+
+
 class GraphContext(BaseModel):
     parent: Optional["GraphContextParent"]
     affected_by: List[Optional["GraphContextAffectedBy"]] = Field(alias="affectedBy")
@@ -74,6 +79,7 @@ class TextFieldValue(BaseModel):
 
 
 ButtonValue.model_rebuild()
+CollectionKey.model_rebuild()
 GraphContext.model_rebuild()
 HTMLValue.model_rebuild()
 NumberFieldValue.model_rebuild()

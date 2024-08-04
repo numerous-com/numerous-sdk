@@ -9,8 +9,8 @@ import httpx
 from pydantic import BaseModel
 from pydantic_core import to_jsonable_python
 
-from .base_model import UNSET, Upload
-from .exceptions import (
+from numerous.generated.graphql.base_model import UNSET, Upload
+from numerous.generated.graphql.exceptions import (
     GraphQLClientGraphQLMultiError,
     GraphQLClientHttpError,
     GraphQLClientInvalidMessageFormat,
@@ -288,9 +288,8 @@ class AsyncBaseClient:
         headers: Dict[str, str] = {"Content-Type": "application/json"}
         headers.update(kwargs.get("headers", {}))
 
-        merged_kwargs: Dict[str, Any] = kwargs.copy()
-        merged_kwargs["headers"] = headers
-
+        merged_kwargs: Dict[str, Any] = kwargs["kwargs"].copy()
+        merged_kwargs["headers"] = merged_kwargs["headers"] | headers
         return await self.http_client.post(
             url=self.url,
             content=json.dumps(
