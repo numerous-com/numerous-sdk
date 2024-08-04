@@ -69,11 +69,11 @@ type Organization {
   id: ID!
   name: String!
   slug: String!
+  createdAt: Time!
   apps: [App!]!
   members: [OrganizationMembership!]! @hasRole(role: USER)
   pendingInvitations: [OrganizationInvitation!]! @hasRole(role: ADMIN)
-  createdAt: Time!
-  paymentAccount: PaymentAccount
+  paymentAccount: PaymentAccount @hasRole(role: ADMIN)
 }
 
 type OrganizationInvitation {
@@ -845,6 +845,8 @@ type Collection {
   key: ID!
 
   collections(after: ID, first: Int): CollectionConnection!
+
+  document(key: ID!): CollectionDocument
 }
 
 type CollectionEdge {
@@ -877,6 +879,53 @@ extend type Mutation {
 ###############################################################################
 
 ###############################################################################
+## Documents
+###############################################################################
+
+directive @canAccessCollectionDocument on FIELD_DEFINITION
+
+scalar Base64JSON
+
+type CollectionDocument {
+  id: ID!
+  key: ID!
+  data: Base64JSON!
+}
+
+type CollectionDocumentNotFound {
+  id: ID!
+}
+
+type CollectionDocumentEdge {
+  node: CollectionDocument!
+  cursor: ID!
+}
+
+type CollectionDocumentConnection {
+  edges: [CollectionDocumentEdge!]!
+  pageInfo: PageInfo!
+}
+
+union CollectionDocumentSetResult = CollectionDocument | CollectionNotFound
+union CollectionDocumentDeleteResult =
+    CollectionDocument
+  | CollectionDocumentNotFound
+
+extend type Mutation {
+  collectionDocumentSet(
+    collectionID: ID!
+    key: ID!
+    data: Base64JSON!
+  ): CollectionDocumentSetResult! @canAccessCollection
+  collectionDocumentDelete(id: ID!): CollectionDocumentDeleteResult!
+    @canAccessCollectionDocument
+}
+
+###############################################################################
+## End of Documents
+###############################################################################
+
+###############################################################################
 ### Payment
 ###############################################################################
 
@@ -884,7 +933,7 @@ type PaymentAccount {
   id: ID!
 }
 
-type PaymentAccountOnboardURL {
+type PaymentAccountURL {
   url: String!
 }
 
@@ -898,16 +947,17 @@ type PaymentAccountExists {
 }
 
 union PaymentAccountCreateResult = PaymentAccount | PaymentAccountExists
-union PaymentAccountOnboardURLResult =
-    PaymentAccountOnboardURL
-  | PaymentAccountNotFound
+union PaymentAccountURLResult = PaymentAccountURL | PaymentAccountNotFound
 
 extend type Mutation {
   paymentAccountCreate(organizationSlug: String!): PaymentAccountCreateResult!
     @hasRole(role: ADMIN)
-  paymentAccountOnboardURL(
+  paymentAccountOnboardURLCreate(
     organizationSlug: String!
-  ): PaymentAccountOnboardURLResult! @hasRole(role: ADMIN)
+  ): PaymentAccountURLResult! @hasRole(role: ADMIN)
+  paymentAccountUpdateURLCreate(
+    organizationSlug: String!
+  ): PaymentAccountURLResult! @hasRole(role: ADMIN)
 }
 
 ###############################################################################
