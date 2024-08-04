@@ -9,13 +9,15 @@ app = marimo.App()
 @app.cell
 def __():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
 def __():
     from numerous.experimental.marimo import Field
     from numerous.experimental.model import BaseModel
+
     return BaseModel, Field
 
 
@@ -31,7 +33,8 @@ def __(BaseModel, Field):
 
     class SubModel(BaseModel):
         c = Field("c")
-    return SubModel,
+
+    return (SubModel,)
 
 
 @app.cell
@@ -44,14 +47,15 @@ def __(BaseModel, Field, SubModel):
         a = Field(1, ge=0, le=5)
         b = Field("bla bla", min_length=0, max_length=100)
         sub_model = SubModel()
-    return MyModel,
+
+    return (MyModel,)
 
 
 @app.cell
 def __(MyModel):
     """Instanciate your model as with normal pydantic."""
     my_model = MyModel()
-    return my_model,
+    return (my_model,)
 
 
 @app.cell
@@ -61,7 +65,7 @@ def __(my_model):
     For marimo to detect this state you need to assign it to a global variable.
     """
     state_a = my_model.a
-    return state_a,
+    return (state_a,)
 
 
 @app.cell
@@ -70,7 +74,7 @@ def __(my_model, state_a):
     state_a
     a_slider = my_model.a.slider()
     a_slider
-    return a_slider,
+    return (a_slider,)
 
 
 @app.cell
@@ -79,7 +83,7 @@ def __(my_model, state_a):
     state_a
     a_number = my_model.a.number()
     a_number
-    return a_number,
+    return (a_number,)
 
 
 @app.cell
