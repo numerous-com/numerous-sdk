@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.11.0 (2024-08-06)
+
+### Feature
+
+* feat(cli): feedback message before commands, remove `report` command (#20) ([`4b8e612`](https://github.com/numerous-com/numerous-sdk/commit/4b8e612d33764f08db7404cebd122743ddc7e29e))
+
+  > 
+  > * Ask users for feedback before every command with a 10% probability
+  > * Removes the now redundant `report` command in favor of simply printing the message
+  >   when running other commands.
+
+
+
+
 ## v0.10.3 (2024-07-10)
 
 ### Fix
