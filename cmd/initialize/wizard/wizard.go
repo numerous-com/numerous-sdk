@@ -1,12 +1,14 @@
 package wizard
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"numerous.com/cli/internal/manifest"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
 type InitWizardOptions struct {
@@ -35,7 +37,9 @@ func RunInitAppWizard(projectFolderPath string, m *manifest.Manifest) (bool, err
 	}
 
 	answers := answersFromManifest(m)
-	if err := survey.Ask(questions, &answers); err != nil {
+	if err := survey.Ask(questions, &answers); errors.Is(err, terminal.InterruptErr) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 

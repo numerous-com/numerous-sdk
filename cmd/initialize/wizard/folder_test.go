@@ -3,14 +3,13 @@ package wizard
 import (
 	"io"
 	"os"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type MockFileReader struct {
+type stubFileReader struct {
 	index   int
 	returns []struct {
 		b   []byte
@@ -18,7 +17,7 @@ type MockFileReader struct {
 	}
 }
 
-func (f *MockFileReader) Read(p []byte) (n int, err error) {
+func (f *stubFileReader) Read(p []byte) (n int, err error) {
 	if f.index > len(f.returns) {
 		return 0, io.EOF
 	} else {
@@ -30,16 +29,16 @@ func (f *MockFileReader) Read(p []byte) (n int, err error) {
 	}
 }
 
-func (f *MockFileReader) Fd() uintptr {
+func (f *stubFileReader) Fd() uintptr {
 	return 0
 }
 
-func (f *MockFileReader) Reset() {
+func (f *stubFileReader) Reset() {
 	f.index = 0
 }
 
 func TestUseOrCreateAppFolder(t *testing.T) {
-	yesReader := MockFileReader{
+	yesReader := stubFileReader{
 		returns: []struct {
 			b   []byte
 			err error
@@ -53,29 +52,27 @@ func TestUseOrCreateAppFolder(t *testing.T) {
 
 	t.Run("Creates a folder structure when it doesn't exist", func(t *testing.T) {
 		yesReader.Reset()
-		filePathTest := t.TempDir() + "/test/folder"
+		path := t.TempDir() + "/test/folder"
 
-		shouldContinue, err := UseOrCreateAppFolder(filePathTest, &yesReader)
+		shouldContinue, err := UseOrCreateAppFolder(path, &yesReader)
 
 		assert.True(t, shouldContinue)
-		require.NoError(t, err)
-		_, err = os.Stat(filePathTest)
-		require.NoError(t, err)
+		assert.NoError(t, err)
+		assert.DirExists(t, path)
 	})
 
 	t.Run("Identify the current user folder structure", func(t *testing.T) {
 		yesReader.Reset()
-		filePathTest := t.TempDir()
+		path := t.TempDir()
 
-		shouldContinue, err := UseOrCreateAppFolder(filePathTest, &yesReader)
+		shouldContinue, err := UseOrCreateAppFolder(path, &yesReader)
 
 		assert.True(t, shouldContinue)
-		require.NoError(t, err)
-		_, err = os.Stat(filePathTest)
-		require.NoError(t, err)
+		assert.NoError(t, err)
+		assert.DirExists(t, path)
 	})
 
-	noReader := MockFileReader{
+	noReader := stubFileReader{
 		returns: []struct {
 			b   []byte
 			err error
@@ -87,17 +84,15 @@ func TestUseOrCreateAppFolder(t *testing.T) {
 		},
 	}
 
-	t.Run("User cancels folder creation", func(t *testing.T) {
+	t.Run("User rejects folder creation", func(t *testing.T) {
 		noReader.Reset()
 		nonExistingFolder := t.TempDir() + "/test/folder"
 
 		shouldContinue, err := UseOrCreateAppFolder(nonExistingFolder, &noReader)
 
 		assert.False(t, shouldContinue)
-		require.NoError(t, err)
-		_, err = os.Stat(nonExistingFolder)
-		os.IsNotExist(err)
-		assert.Equal(t, syscall.ENOENT, err.(*os.PathError).Err)
+		assert.NoError(t, err)
+		assert.NoDirExists(t, nonExistingFolder)
 	})
 
 	t.Run("User rejects existing folder", func(t *testing.T) {
@@ -109,6 +104,41 @@ func TestUseOrCreateAppFolder(t *testing.T) {
 		shouldContinue, err := UseOrCreateAppFolder(existingPath, &noReader)
 
 		assert.False(t, shouldContinue)
+		assert.NoError(t, err)
+	})
+
+	interruptReader := stubFileReader{
+		returns: []struct {
+			b   []byte
+			err error
+		}{
+			{b: []byte("\x1b[10;10R"), err: nil},
+			{b: []byte("\x1b[10;10R"), err: nil},
+			{b: []byte("\x03\n"), err: nil}, // interrupt signal, e.g. ctrl+c
+			{b: []byte(""), err: io.EOF},
+		},
+	}
+
+	t.Run("User interrupts folder creation", func(t *testing.T) {
+		interruptReader.Reset()
+		nonExistingFolder := t.TempDir() + "/test/folder"
+
+		shouldContinue, err := UseOrCreateAppFolder(nonExistingFolder, &interruptReader)
+
+		assert.False(t, shouldContinue)
+		assert.NoError(t, err)
+		assert.NoDirExists(t, nonExistingFolder)
+	})
+
+	t.Run("User interrupts existing folder choice", func(t *testing.T) {
+		interruptReader.Reset()
+		existingPath := t.TempDir()
+		_, err := os.Stat(existingPath)
 		require.NoError(t, err)
+
+		shouldContinue, err := UseOrCreateAppFolder(existingPath, &interruptReader)
+
+		assert.False(t, shouldContinue)
+		assert.NoError(t, err)
 	})
 }
