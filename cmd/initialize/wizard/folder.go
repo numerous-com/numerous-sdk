@@ -52,7 +52,9 @@ func confirmFolderSurvey(folderPath string, in terminal.FileReader) (bool, error
 	msg := fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", folderPath)
 	prompt := &survey.Confirm{Message: msg, Default: true}
 	err := survey.AskOne(prompt, &confirm, func(options *survey.AskOptions) error { options.Stdio.In = in; return nil })
-	if err != nil {
+	if errors.Is(err, terminal.InterruptErr) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 

@@ -38,7 +38,6 @@ var (
 func run(cmd *cobra.Command, args []string) error {
 	appDir, m, err := PrepareInit(args)
 	if err != nil {
-		output.PrintErrorDetails("An error occurred preparing app initialization", err)
 		return err
 	}
 
