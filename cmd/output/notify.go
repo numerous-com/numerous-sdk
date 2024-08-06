@@ -1,6 +1,9 @@
 package output
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 var notifyCmdMovedBody = AnsiFaint + "A new set of commands related to apps in organizations have been promoted as \n" +
 	"the default commands, and previous commands have been moved to the \"legacy\" namespace." + AnsiReset + "\n\n" +
@@ -27,15 +30,19 @@ func NotifyCmdChanged(cmd string, newCmd string) {
 }
 
 var (
-	feedbackHeader = AnsiCyanBold + "Thank you for using Numerous!" + AnsiReset
+	feedbackHeader = "Thank you for using Numerous!"
 	feedbackURL    = AnsiBlue + "https://www.numerous.com/app/feedback" + AnsiReset
 	feedbackBody   = `Numerous is still in development and as such, we are very open to hearing your
 feedback. If you experience issues or have improvement suggestions, please
 visit:`
 )
 
-func NotifyFeedback() {
+func NotifyFeedbackMaybe() {
+	probability := 0.1
+	if rand.Float64() >= probability {
+		return
+	}
+
+	Notify(feedbackHeader, feedbackBody+" "+feedbackURL)
 	fmt.Println()
-	fmt.Println(feedbackHeader)
-	fmt.Println(feedbackBody + " " + feedbackURL)
 }
