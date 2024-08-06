@@ -38,3 +38,8 @@ class ToolHashType(str, Enum):
     public = "public"
     shared = "shared"
     private = "private"
+
+
+class PaymentAccountStatus(str, Enum):
+    RESTRICTED = "RESTRICTED"
+    VERIFIED = "VERIFIED"
