@@ -2,7 +2,6 @@ package list
 
 import (
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
@@ -16,11 +15,10 @@ import (
 var OrganizationListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all your organizations (login required)",
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := list(auth.NumerousTenantAuthenticator, gql.GetClient()); err != nil {
-			fmt.Println("Error: ", err)
-			os.Exit(1)
-		}
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := list(auth.NumerousTenantAuthenticator, gql.GetClient())
+
+		return err
 	},
 }
 
@@ -33,7 +31,10 @@ func list(a auth.Authenticator, g *gqlclient.Client) error {
 
 	userResp, err := user.QueryUser(g)
 	if err != nil {
-		fmt.Println(err)
+		if err != nil {
+			output.PrintErrorDetails("Error occurred querying user organization memberships", err)
+		}
+
 		return err
 	}
 

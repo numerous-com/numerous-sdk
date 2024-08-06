@@ -10,6 +10,7 @@ func CheckAndReturnSubpath(basePath, subPath string) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
+
 	absSubPath, err := filepath.Abs(subPath)
 	if err != nil {
 		return false, "", err

@@ -2,7 +2,6 @@ package logout
 
 import (
 	"net/http"
-	"os"
 
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
@@ -15,12 +14,11 @@ var LogoutCmd = &cobra.Command{
 	Use:     "logout",
 	Short:   "Logout of the Numerous CLI",
 	GroupID: group.AdditionalCommandsGroupID,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := logout(auth.NumerousTenantAuthenticator); err != nil {
-			output.PrintUnknownError(err)
-			os.Exit(1)
-		}
-	},
+	RunE:    run,
+}
+
+func run(cmd *cobra.Command, args []string) error {
+	return logout(auth.NumerousTenantAuthenticator)
 }
 
 func logout(a auth.Authenticator) error {
@@ -35,6 +33,7 @@ func logout(a auth.Authenticator) error {
 		output.PrintUnknownError(err)
 		return err
 	}
+
 	output.PrintlnOK("You are now logged out.")
 
 	return nil

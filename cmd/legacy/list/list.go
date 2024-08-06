@@ -2,7 +2,6 @@ package list
 
 import (
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
@@ -16,11 +15,13 @@ import (
 var ListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all your apps (login required)",
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := list(auth.NumerousTenantAuthenticator, gql.GetClient()); err != nil {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := list(auth.NumerousTenantAuthenticator, gql.GetClient())
+		if err != nil {
 			output.PrintUnknownError(err)
-			os.Exit(1)
 		}
+
+		return err
 	},
 }
 

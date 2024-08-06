@@ -3,7 +3,6 @@ package deleteapp
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
@@ -19,11 +18,8 @@ var DeleteCmd = &cobra.Command{
 	Short: "Deletes the app and removes its associated resources",
 	Long: `Removes the app from the server and deletes any associated resources, such as docker images or containers.
 This action cannot be undone.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := deleteApp(gql.GetClient(), args)
-		if err != nil {
-			os.Exit(1)
-		}
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return deleteApp(gql.GetClient(), args)
 	},
 }
 

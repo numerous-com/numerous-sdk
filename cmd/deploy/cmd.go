@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"net/http"
-	"os"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
@@ -14,7 +13,7 @@ import (
 
 var DeployCmd = &cobra.Command{
 	Use:     "deploy [app directory]",
-	Run:     run,
+	RunE:    run,
 	GroupID: group.AppCommandsGroupID,
 	Short:   "Deploy an app to an organization",
 	Long: `Deploys an application to an organization on the Numerous platform.
@@ -49,7 +48,7 @@ var (
 	version    string
 )
 
-func run(cmd *cobra.Command, args []string) {
+func run(cmd *cobra.Command, args []string) error {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 	input := DeployInput{
@@ -61,13 +60,8 @@ func run(cmd *cobra.Command, args []string) {
 		Version:    version,
 		Verbose:    verbose,
 	}
-	err := Deploy(cmd.Context(), service, input)
 
-	if err != nil {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+	return Deploy(cmd.Context(), service, input)
 }
 
 func init() {
