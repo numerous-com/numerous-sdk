@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.11.1 (2024-08-06)
+
+### Fix
+
+* fix(cli): `init` command error printing improvements (#23) ([`c4c2adc`](https://github.com/numerous-com/numerous-sdk/commit/c4c2adc41de9afb214642295225133279eb83643))
+
+  > 
+  > * Do not print initialization preparation errors twice for the non-legacy command.
+  > * Do not print interrupts as errors.
+  > * Improve test readability
+
+
+
+
 ## v0.11.0 (2024-08-06)
 
 ### Feature
