@@ -31,6 +31,6 @@ func TestOptionalAppDir(t *testing.T) {
 
 		err := OptionalAppDir(&appDir)(&cobra.Command{}, []string{"arg1", "arg2", "arg3"})
 
-		assert.EqualError(t, err, "accepts only an optional [app directory] as a positional argument, you provided 3 arguments")
+		assert.ErrorIs(t, err, ErrOptionalAppDirArgCount)
 	})
 }

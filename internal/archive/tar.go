@@ -71,3 +71,52 @@ func TarCreate(srcDir string, destPath string, exclude []string) error {
 
 	return err
 }
+
+const mkdirPerms = 0o755
+
+// TarExtract extracts the tar file in the reader into a directory at dest.
+func TarExtract(content io.Reader, dest string) error {
+	tr := tar.NewReader(content)
+	for {
+		header, err := tr.Next()
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return err
+		case header == nil:
+			continue
+		}
+
+		target := filepath.Join(dest, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, mkdirPerms); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			err := extractRegularFile(tr, header, target)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func extractRegularFile(tr *tar.Reader, header *tar.Header, target string) error {
+	if err := os.MkdirAll(filepath.Dir(target), mkdirPerms); err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(f, tr); err != nil {
+		return err
+	}
+
+	return f.Close()
+}

@@ -317,6 +317,7 @@ type AppDeploymentVersion {
   id: ID!
   status: AppDeploymentStatus!
   proxyURL: String
+  appVersion: AppVersion!
 }
 
 type AppDeployment {
@@ -851,6 +852,7 @@ type Collection {
   id: ID!
   key: ID!
 
+  files(after: ID, first: Int, tag: TagInput): CollectionFileConnection!
   documents(after: ID, first: Int, tag: TagInput): CollectionDocumentConnection!
   collections(after: ID, first: Int): CollectionConnection!
 
