@@ -19,7 +19,7 @@ var LoginCmd = &cobra.Command{
 	GroupID: group.AdditionalCommandsGroupID,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
-		if user == nil {
+		if user != nil {
 			output.PrintlnOK("Great, you are already logged in!")
 			return nil
 		}
