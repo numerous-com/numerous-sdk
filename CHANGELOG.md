@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.11.2 (2024-08-07)
+
+### Fix
+
+* fix(cli): properly check if cli is logged in ([`2ece1f5`](https://github.com/numerous-com/numerous-sdk/commit/2ece1f5d8881d28b053ddeed5d51fa67b5c10113))
+
+  > 
+  > Fixes a condition that was reversed, causing the login command to only
+  > allow logging in when the CLI is already logged in.
+
+
+
+
 ## v0.11.1 (2024-08-06)
 
 ### Fix
