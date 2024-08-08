@@ -15,6 +15,8 @@ import (
 	"numerous.com/cli/internal/archive"
 )
 
+var ErrDownloadFailed = errors.New("download failed")
+
 type Input struct {
 	AppDir  string
 	AppSlug string
@@ -70,6 +72,8 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 	if err := downloadArchive(client, input.AppDir, urlOutput.DownloadURL); err != nil {
 		t.Error()
 		output.PrintErrorDetails("Error downloading app source", err)
+
+		return err
 	}
 	t.Done()
 
@@ -84,7 +88,7 @@ func downloadArchive(client *http.Client, appDir string, url string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil // TODO: handle this?
+		return ErrDownloadFailed
 	}
 
 	return archive.TarExtract(resp.Body, appDir)

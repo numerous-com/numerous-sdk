@@ -145,6 +145,21 @@ func TestDownload(t *testing.T) {
 		assert.True(t, confirmCalled)
 		apps.AssertExpectations(t)
 	})
+
+	t.Run("it returns error if download http request is not ok", func(t *testing.T) {
+		appDir := t.TempDir()
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+		}))
+		downloadURL := server.URL + "/some-file"
+		apps := &mockAppService{}
+		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
+		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
+
+		err := Download(context.TODO(), server.Client(), apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, confirmAlways)
+
+		assert.ErrorIs(t, err, ErrDownloadFailed)
+	})
 }
 
 func newTestHTTPClientWithDownload(t *testing.T, testdataFilePath string) (client *http.Client, url string) {
