@@ -128,7 +128,7 @@ func TestDownload(t *testing.T) {
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 		filePath := appDir + "/app.py"
-		originalData := []byte("some content that will be overwritten")
+		originalData := []byte("some content that will not be overwritten")
 		test.WriteFile(t, filePath, originalData)
 		confirmCalled := false
 
