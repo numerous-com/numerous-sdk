@@ -102,21 +102,21 @@ func TestDownload(t *testing.T) {
 		apps := &mockAppService{}
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
-		filePath := appDir + "/app.py"
-		originalData := []byte("some content that will be overwritten")
-		test.WriteFile(t, filePath, originalData)
 		confirmCalled := false
 
 		err := Download(context.TODO(), client, apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, getConfirmer(true, &confirmCalled))
 
 		assert.NoError(t, err)
-		overwrittenData, err := os.ReadFile(filePath)
-		if assert.NoError(t, err) {
-			assert.NotEqual(t, originalData, overwrittenData)
+		assertFileContentEqual(t, "../../testdata/streamlit_app/app.py", appDir+"/app.py")
+		if assert.FileExists(t, appDir+"/numerous.toml") {
+			assertFileContentEqual(t, appDir+"/numerous.toml", "../../testdata/streamlit_app/numerous.toml")
 		}
-		assert.FileExists(t, appDir+"/numerous.toml")
-		assert.FileExists(t, appDir+"/app_cover.jpg")
-		assert.FileExists(t, appDir+"/requirements.txt")
+		if assert.FileExists(t, appDir+"/app_cover.jpg") {
+			assertFileContentEqual(t, appDir+"/app_cover.jpg", "../../testdata/streamlit_app/app_cover.jpg")
+		}
+		if assert.FileExists(t, appDir+"/requirements.txt") {
+			assertFileContentEqual(t, appDir+"/requirements.txt", "../../testdata/streamlit_app/requirements.txt")
+		}
 		assert.True(t, confirmCalled)
 		apps.AssertExpectations(t)
 	})
@@ -184,4 +184,16 @@ func newTestHTTPClientWithDownload(t *testing.T, testdataFilePath string) (clien
 	}))
 
 	return s.Client(), s.URL + "/" + testdataFilePath
+}
+
+func assertFileContentEqual(t *testing.T, expectedContentPath string, actualContentPath string) {
+	t.Helper()
+
+	expected, err := os.ReadFile(expectedContentPath)
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(actualContentPath)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, actual)
 }
