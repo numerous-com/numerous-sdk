@@ -158,7 +158,7 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 	switch {
 	case err == nil:
 		return appReadOutput.AppID, nil
-	case errors.Is(err, app.ErrAccesDenied):
+	case errors.Is(err, app.ErrAccessDenied):
 		output.PrintErrorAccessDenied(ai)
 		return "", err
 	case !errors.Is(err, app.ErrAppNotFound):

@@ -100,7 +100,7 @@ Is the organization slug %q and the app slug %q correct?`,
 
 func PrintAppError(err error, ai appident.AppIdentifier) {
 	switch {
-	case errors.Is(err, app.ErrAccesDenied):
+	case errors.Is(err, app.ErrAccessDenied):
 		PrintErrorAccessDenied(ai)
 	case errors.Is(err, app.ErrAppNotFound):
 		PrintErrorAppNotFound(ai)

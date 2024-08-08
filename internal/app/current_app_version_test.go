@@ -127,7 +127,7 @@ func TestCurrentAppVersioon(t *testing.T) {
 		}
 		output, err := s.CurrentAppVersion(context.TODO(), input)
 
-		assert.ErrorIs(t, err, ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, CurrentAppVersionOutput{}, output)
 	})
 

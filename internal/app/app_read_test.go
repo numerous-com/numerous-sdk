@@ -94,7 +94,7 @@ func TestAppRead(t *testing.T) {
 		}
 		output, err := s.ReadApp(context.TODO(), input)
 
-		assert.ErrorIs(t, err, ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, ReadAppOutput{}, output)
 	})
 
