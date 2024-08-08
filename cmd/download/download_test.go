@@ -17,17 +17,6 @@ import (
 	"numerous.com/cli/internal/test"
 )
 
-func confirmAlways(appDir string) bool {
-	return true
-}
-
-func getConfirmer(result bool, called *bool) func(string) bool {
-	return func(appDir string) bool {
-		*called = true
-		return result
-	}
-}
-
 func TestDownload(t *testing.T) {
 	appSlug := "app-slug"
 	orgSlug := "org-slug"
@@ -184,6 +173,17 @@ func newTestHTTPClientWithDownload(t *testing.T, testdataFilePath string) (clien
 	}))
 
 	return s.Client(), s.URL + "/" + testdataFilePath
+}
+
+func confirmAlways(appDir string) bool {
+	return true
+}
+
+func getConfirmer(result bool, called *bool) func(string) bool {
+	return func(appDir string) bool {
+		*called = true
+		return result
+	}
 }
 
 func assertFileContentEqual(t *testing.T, expectedContentPath string, actualContentPath string) {
