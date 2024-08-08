@@ -190,10 +190,14 @@ func assertFileContentEqual(t *testing.T, expectedContentPath string, actualCont
 	t.Helper()
 
 	expected, err := os.ReadFile(expectedContentPath)
-	require.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return
+	}
 
 	actual, err := os.ReadFile(actualContentPath)
-	require.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return
+	}
 
 	assert.Equal(t, expected, actual)
 }
