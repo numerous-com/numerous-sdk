@@ -41,7 +41,7 @@ func TestDownload(t *testing.T) {
 		apps.AssertExpectations(t)
 	})
 
-	t.Run("it does not confirm overwriting when app dir does not exist", func(t *testing.T) {
+	t.Run("does not confirm overwriting when app dir does not exist", func(t *testing.T) {
 		appDir := t.TempDir() + "/some-app-dir"
 		client, downloadURL := newTestHTTPClientWithDownload(t, "streamlit_app.tar")
 		apps := &mockAppService{}
@@ -85,7 +85,7 @@ func TestDownload(t *testing.T) {
 		apps.AssertExpectations(t)
 	})
 
-	t.Run("it overwrites files if confirm returns true", func(t *testing.T) {
+	t.Run("overwrites files if confirm returns true", func(t *testing.T) {
 		appDir := t.TempDir()
 		client, downloadURL := newTestHTTPClientWithDownload(t, "streamlit_app.tar")
 		apps := &mockAppService{}
@@ -110,7 +110,7 @@ func TestDownload(t *testing.T) {
 		apps.AssertExpectations(t)
 	})
 
-	t.Run("it does not extract or overwrite files if confirm returns false", func(t *testing.T) {
+	t.Run("does not extract or overwrite files if confirm returns false", func(t *testing.T) {
 		appDir := t.TempDir()
 		client, downloadURL := newTestHTTPClientWithDownload(t, "streamlit_app.tar")
 		apps := &mockAppService{}
@@ -135,7 +135,7 @@ func TestDownload(t *testing.T) {
 		apps.AssertExpectations(t)
 	})
 
-	t.Run("it returns error if download http request is not ok", func(t *testing.T) {
+	t.Run("returns error if download http request is not ok", func(t *testing.T) {
 		appDir := t.TempDir()
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
