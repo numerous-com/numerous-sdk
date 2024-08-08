@@ -77,6 +77,7 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous organization list",
 		"numerous deploy",
 		"numerous delete",
+		"numerous download",
 		"numerous logs",
 	}
 
