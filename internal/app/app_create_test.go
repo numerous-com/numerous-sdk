@@ -68,7 +68,7 @@ func TestCreate(t *testing.T) {
 		output, err := s.Create(context.TODO(), input)
 
 		expected := CreateAppOutput{}
-		assert.ErrorIs(t, err, ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, expected, output)
 	})
 

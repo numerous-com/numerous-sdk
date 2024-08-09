@@ -63,7 +63,7 @@ func TestDeployApp(t *testing.T) {
 		output, err := s.DeployApp(context.TODO(), input)
 
 		expected := DeployAppOutput{}
-		assert.ErrorIs(t, err, ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, expected, output)
 	})
 

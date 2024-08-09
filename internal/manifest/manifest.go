@@ -49,6 +49,9 @@ func LoadManifest(filePath string) (*Manifest, error) {
 	var m Manifest
 
 	if _, err := toml.DecodeFile(filePath, &m); err != nil {
+		// TODO: consider which error to return when loading of deprecated
+		// manifest fails right now the original error is discarded, which may
+		// be confusing.
 		return loadDeprecatedManifest(filePath)
 	}
 

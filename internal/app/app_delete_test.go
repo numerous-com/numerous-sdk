@@ -34,7 +34,7 @@ func TestAppDelete(t *testing.T) {
 		}
 		err := s.Delete(context.TODO(), input)
 
-		assert.ErrorIs(t, err, ErrAccesDenied)
+		assert.ErrorIs(t, err, ErrAccessDenied)
 	})
 
 	t.Run("given app not found then it returns app not found error", func(t *testing.T) {

@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	ErrAppNotFound = errors.New("app not found")
-	ErrAccesDenied = errors.New("access denied")
+	ErrAppNotFound  = errors.New("app not found")
+	ErrAccessDenied = errors.New("access denied")
 )
 
 func ConvertErrors(err error) error {
 	if strings.Contains(err.Error(), "access denied") {
-		return ErrAccesDenied
+		return ErrAccessDenied
 	}
 
 	if strings.Contains(err.Error(), "app not found") {

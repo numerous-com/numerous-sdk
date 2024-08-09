@@ -14,6 +14,11 @@ class NewOrganization(BaseModel):
     slug: Optional[str] = None
 
 
+class OrganizationMemberEditRoleInput(BaseModel):
+    user_id: str = Field(alias="userId")
+    role: Role
+
+
 class Auth0WhiteLabelInvitationInput(BaseModel):
     email: str
     organization_id: str = Field(alias="organizationID")
@@ -85,3 +90,8 @@ class AppSecret(BaseModel):
 
 class BuildPushInput(BaseModel):
     secrets: Optional[List["AppSecret"]] = None
+
+
+class TagInput(BaseModel):
+    key: str
+    value: str

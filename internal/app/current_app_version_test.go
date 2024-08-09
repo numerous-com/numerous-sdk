@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestAppRead(t *testing.T) {
-	t.Run("given app response it returns expected output", func(t *testing.T) {
+func TestCurrentAppVersioon(t *testing.T) {
+	t.Run("given app with default deployment response, then it returns expected output", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 		s := New(c, nil, nil)
@@ -20,7 +20,13 @@ func TestAppRead(t *testing.T) {
 			{
 				"data": {
 					"app": {
-						"id": "some-app-id"
+						"defaultDeployment": {
+							"current": {
+								"appVersion": {
+									"id": "some-app-version-id"
+								}
+							}
+						}
 					}
 				}
 			}
@@ -28,20 +34,47 @@ func TestAppRead(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := ReadAppInput{
+		input := CurrentAppVersionInput{
 			OrganizationSlug: "organization-slug",
 			AppSlug:          "app-slug",
 		}
-		output, err := s.ReadApp(context.TODO(), input)
+		output, err := s.CurrentAppVersion(context.TODO(), input)
 
-		expected := ReadAppOutput{
-			AppID: "some-app-id",
+		expected := CurrentAppVersionOutput{
+			AppVersionID: "some-app-version-id",
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expected, output)
 	})
 
-	t.Run("given app not found error then it returns not found error", func(t *testing.T) {
+	t.Run("given app with no default deployment, then it returns app not deployed error", func(t *testing.T) {
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+
+		respBody := `
+			{
+				"data": {
+					"app": {
+						"defaultDeployment": null
+					}
+				}
+			}
+		`
+		resp := test.JSONResponse(respBody)
+		doer.On("Do", mock.Anything).Return(resp, nil)
+
+		input := CurrentAppVersionInput{
+			OrganizationSlug: "organization-slug",
+			AppSlug:          "app-slug",
+		}
+		output, err := s.CurrentAppVersion(context.TODO(), input)
+
+		assert.ErrorIs(t, err, ErrNotDeployed)
+		assert.Empty(t, output)
+	})
+
+	t.Run("given app not found error, then it returns not found error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
 		s := New(c, nil, nil)
@@ -61,14 +94,14 @@ func TestAppRead(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := ReadAppInput{
+		input := CurrentAppVersionInput{
 			OrganizationSlug: "organization-slug",
 			AppSlug:          "app-slug",
 		}
-		output, err := s.ReadApp(context.TODO(), input)
+		output, err := s.CurrentAppVersion(context.TODO(), input)
 
 		assert.ErrorIs(t, err, ErrAppNotFound)
-		assert.Equal(t, ReadAppOutput{}, output)
+		assert.Empty(t, output)
 	})
 
 	t.Run("given access denied error then it returns access denied error", func(t *testing.T) {
@@ -88,14 +121,14 @@ func TestAppRead(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := ReadAppInput{
+		input := CurrentAppVersionInput{
 			OrganizationSlug: "organization-slug",
 			AppSlug:          "app-slug",
 		}
-		output, err := s.ReadApp(context.TODO(), input)
+		output, err := s.CurrentAppVersion(context.TODO(), input)
 
 		assert.ErrorIs(t, err, ErrAccessDenied)
-		assert.Equal(t, ReadAppOutput{}, output)
+		assert.Equal(t, CurrentAppVersionOutput{}, output)
 	})
 
 	t.Run("given graphql error then it returns expected error", func(t *testing.T) {
@@ -115,14 +148,13 @@ func TestAppRead(t *testing.T) {
 		resp := test.JSONResponse(respBody)
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
-		input := ReadAppInput{
+		input := CurrentAppVersionInput{
 			OrganizationSlug: "organization-slug",
 			AppSlug:          "app-slug",
 		}
-		output, err := s.ReadApp(context.TODO(), input)
+		output, err := s.CurrentAppVersion(context.TODO(), input)
 
-		expected := ReadAppOutput{}
 		assert.ErrorContains(t, err, "expected error message")
-		assert.Equal(t, expected, output)
+		assert.Empty(t, output)
 	})
 }

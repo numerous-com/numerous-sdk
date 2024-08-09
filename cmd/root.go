@@ -9,6 +9,7 @@ import (
 	"numerous.com/cli/cmd/deletecmd"
 	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/dev"
+	"numerous.com/cli/cmd/download"
 	"numerous.com/cli/cmd/initialize"
 	"numerous.com/cli/cmd/legacy"
 	"numerous.com/cli/cmd/login"
@@ -76,6 +77,7 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous organization list",
 		"numerous deploy",
 		"numerous delete",
+		"numerous download",
 		"numerous logs",
 	}
 
@@ -107,7 +109,8 @@ func init() {
 		ID:    "additional-cmds",
 	})
 
-	rootCmd.AddCommand(initialize.InitCmd,
+	rootCmd.AddCommand(
+		initialize.InitCmd,
 		login.LoginCmd,
 		logout.LogoutCmd,
 		dev.DevCmd,
@@ -116,6 +119,7 @@ func init() {
 		deletecmd.DeleteCmd,
 		deploy.DeployCmd,
 		logs.LogsCmd,
+		download.Cmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),
