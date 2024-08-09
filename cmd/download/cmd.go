@@ -13,8 +13,7 @@ import (
 var long string = `Download app sources of the specified app.
 
 Downloads the sources of an app into the specified [app directory]. If
-[app directory] is not specified the the app slug will be used as the folder
-name.
+[app directory] is not specified the app slug will be used as the folder name.
 
 If an app already exists in [app directory], and a default deployment is
 configured in numerous.toml, then that will be used to identify the app to

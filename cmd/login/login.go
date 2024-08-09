@@ -14,7 +14,7 @@ import (
 
 var LoginCmd = &cobra.Command{
 	Use:     "login",
-	Short:   "Login in to Numerous",
+	Short:   "Login to Numerous",
 	Args:    cobra.NoArgs,
 	GroupID: group.AdditionalCommandsGroupID,
 	RunE: func(cmd *cobra.Command, args []string) error {
