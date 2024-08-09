@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.12.0 (2024-08-09)
+
+### Feature
+
+* feat(cli): `download` command for downloading app sources (#24) ([`584ce22`](https://github.com/numerous-com/numerous-sdk/commit/584ce22c90bfc56e8c9f62eeacfd033216b368d4))
+
+
+
+
 ## v0.11.2 (2024-08-07)
 
 ### Fix
