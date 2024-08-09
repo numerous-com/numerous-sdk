@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.12.1 (2024-08-09)
+
+### Fix
+
+* fix(cli): typos in `login` and `download` command descriptions ([`7752c16`](https://github.com/numerous-com/numerous-sdk/commit/7752c1643d78e4e281d8d8de5410a53000f6f375))
+
+
+
+
 ## v0.12.0 (2024-08-09)
 
 ### Feature
