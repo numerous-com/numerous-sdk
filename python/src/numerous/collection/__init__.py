@@ -1,5 +1,5 @@
 """The Python SDK for numerous collections."""
 
-__all__ = ["open_client", "collection"]
+__all__ = ["collection"]
 
 from .collection import collection

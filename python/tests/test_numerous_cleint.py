@@ -1,11 +1,10 @@
 import os
-from unittest.mock import Mock
 
 from numerous.numerous_client import NumerousClient, _open_client
 
 
-os.environ['NUMEROUS_API_URL'] = 'url_value'
-os.environ['NUMEROUS_API_ACCESS_TOKEN'] = 'token'
+os.environ["NUMEROUS_API_URL"] = "url_value"
+os.environ["NUMEROUS_API_ACCESS_TOKEN"] = "token"
 
 
 def test_open_client()->None:
