@@ -28,7 +28,7 @@ class NumerousClient:
             parent_collection_key,
             kwargs=self.kwargs,
         )
-        return response.collection_create
+        return CollectionKey(id = response.collection_create,key = response.collection_create.key)
 
     def _get_collection_key(self, collection_key: str) -> CollectionKey:
         return asyncio.run(self._create_collection(collection_key))
