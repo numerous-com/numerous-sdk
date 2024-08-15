@@ -1,10 +1,13 @@
-import os
+from typing import Generator
 
+import pytest
 from numerous.numerous_client import NumerousClient, _open_client
 
 
-os.environ["NUMEROUS_API_URL"] = "url_value"
-os.environ["NUMEROUS_API_ACCESS_TOKEN"] = "token"
+@pytest.fixture(autouse=True)
+def _set_env_vars(monkeypatch:Generator)->None:
+    monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
+    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
 
 
 def test_open_client()->None:
