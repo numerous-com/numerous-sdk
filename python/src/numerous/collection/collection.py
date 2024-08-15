@@ -1,7 +1,7 @@
 """Get or create a collection by name."""
 
 from numerous.collection.numerous_collection import NumerousCollection
-from numerous.numerous_client import NumerousClient, open_client
+from numerous.numerous_client import NumerousClient, _open_client
 
 
 def collection(

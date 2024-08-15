@@ -1,15 +1,15 @@
-import unittest
+import os
 from unittest.mock import Mock
 
 from numerous.numerous_client import NumerousClient, _open_client
 
 
-class TestNumerousClient(unittest.TestCase):
+os.environ['NUMEROUS_API_URL'] = 'url_value'
+os.environ['NUMEROUS_API_ACCESS_TOKEN'] = 'token'
 
-    def test_open_client(self, mock_client:Mock)->None:
-        """Testing clinet."""
-        mock_client_instance = mock_client.return_value
-        client = _open_client("org_id")
 
-        assert isinstance(client, NumerousClient)
-        assert client.client == mock_client_instance
+def test_open_client()->None:
+    """Testing client."""
+    client = _open_client()
+
+    assert isinstance(client, NumerousClient)

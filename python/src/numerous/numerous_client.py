@@ -8,7 +8,7 @@ from numerous.generated.graphql.client import Client
 from numerous.generated.graphql.fragments import CollectionKey
 
 API_URL_NOT_SET="NUMEROUS_API_URL environment variable is not set"
-MESSAGE_NOT_SET = "Api token environment variable is not set"
+MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 class NumerousClient:
     def __init__(self, client: Client)->None:
         self.client = client
