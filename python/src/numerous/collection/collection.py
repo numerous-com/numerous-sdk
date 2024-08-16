@@ -5,7 +5,7 @@ from numerous.numerous_client import NumerousClient, _open_client
 
 
 def collection(
-    collection_name: str, numerous_open_client: NumerousClient = None
+    collection_name: str, numerous_open_client: NumerousClient
 ) -> NumerousCollection:
     """Get or create a collection by name."""
     if numerous_open_client is None:

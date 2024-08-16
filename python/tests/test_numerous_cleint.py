@@ -1,11 +1,10 @@
-from typing import Generator
 
 import pytest
 from numerous.numerous_client import NumerousClient, _open_client
 
 
 @pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch:Generator)->None:
+def _set_env_vars(monkeypatch:pytest.MonkeyPatch)->None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
 
