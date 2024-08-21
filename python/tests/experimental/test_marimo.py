@@ -6,6 +6,7 @@ import pytest
 from numerous.experimental.marimo import Field
 from numerous.experimental.model import BaseModel
 
+
 number_value = 5
 number_min = 0
 number_max = 10

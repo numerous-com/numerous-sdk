@@ -62,6 +62,10 @@ ignore = [
     "COM812",
 ]
 
+[tool.ruff.lint.isort]
+# Use a single line after each import block.
+lines-after-imports = 2
+
 [tool.ruff.lint.extend-per-file-ignores]
 "python/tests/**" = ["INP001", "S101", "D100", "D103"]
 

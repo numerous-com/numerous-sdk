@@ -43,6 +43,7 @@ from numerous.generated.graphql.updates import (
 )
 from numerous.session import Session, SessionElementMissingError
 
+
 DEFAULT_SESSION_ID = "test_session_id"
 DEFAULT_CLIENT_ID = "test_client_id"
 

@@ -14,6 +14,7 @@ from numerous.generated.graphql import Client
 from numerous.session import Session
 from numerous.utils import AppT
 
+
 log = logging.getLogger(__name__)
 
 

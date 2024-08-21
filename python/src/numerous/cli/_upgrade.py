@@ -11,6 +11,7 @@ from packaging import version
 
 from ._color import blue, green
 
+
 RESPONSE_STATUS_OK = 200
 SECONDS_IN_5_MIN = 300
 

@@ -46,6 +46,7 @@ from .generated.graphql.updates import (
     UpdatesToolSessionEventToolSessionElementUpdated,
 )
 
+
 alphabet = string.ascii_lowercase + string.digits
 ToolSessionEvent = Union[
     UpdatesToolSessionEventToolSessionElementAdded,

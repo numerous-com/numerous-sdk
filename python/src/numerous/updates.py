@@ -15,6 +15,7 @@ from numerous.generated.graphql.updates import (
     UpdatesToolSessionEventToolSessionElementUpdatedElementTextField,
 )
 
+
 log = logging.getLogger(__name__)
 
 
