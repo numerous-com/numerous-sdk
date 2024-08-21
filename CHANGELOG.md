@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.13.0 (2024-08-21)
+
+### Feature
+
+* feat(cli): add option to initialize a Panel app (#25) ([`fab32cc`](https://github.com/numerous-com/numerous-sdk/commit/fab32cc9a04d11a2b3925ae66de34c55efb0770e))
+
+
+
+
 ## v0.12.2 (2024-08-21)
 
 ### Fix
