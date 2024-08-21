@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.12.2 (2024-08-21)
+
+### Fix
+
+* fix(python-sdk): consistent isort linter config ([`3578ef0`](https://github.com/numerous-com/numerous-sdk/commit/3578ef00d444e58d7369890631ed71eba5e97022))
+
+
+
+
 ## v0.12.1 (2024-08-09)
 
 ### Fix
