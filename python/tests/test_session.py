@@ -2,7 +2,6 @@ from typing import AsyncIterator
 from unittest.mock import Mock
 
 import pytest
-
 from numerous import action, app, container, html, slider
 from numerous.generated.graphql import Client
 from numerous.generated.graphql.all_elements import (

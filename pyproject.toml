@@ -19,7 +19,7 @@ dev = [
     "pre-commit",
     "pytest==8.0.2",
     "pytest-asyncio==0.23.5",
-    "ruff==0.6.1",
+    "ruff==0.5.7",
     "mypy==1.8.0",
     "coverage==7.4.0",
     "twine==5.0.0",
@@ -63,8 +63,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-# Use a single line after each import block.
 lines-after-imports = 2
+
+[tool.ruff.lint.flake8-pytest-style]
+# defaults changes in 0.6.0 which gives some issues
+fixture-parentheses = false
+mark-parentheses = false
 
 [tool.ruff.lint.extend-per-file-ignores]
 "python/tests/**" = ["INP001", "S101", "D100", "D103"]
