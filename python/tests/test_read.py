@@ -4,12 +4,13 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+
 from numerous.appdev.commands import (
     read_app,
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_app_file(tmp_path: Path) -> Path:
     appfile = tmp_path / "app.py"
     # fmt: off

@@ -2,6 +2,7 @@ from typing import AsyncIterator
 from unittest.mock import Mock
 
 import pytest
+
 from numerous import action, app, container, html, slider
 from numerous.generated.graphql import Client
 from numerous.generated.graphql.all_elements import (
@@ -165,7 +166,7 @@ async def updates_mock_with_action_trigger(
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_initialize_requests_element_information() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -185,7 +186,7 @@ async def test_initialize_requests_element_information() -> None:
     gql.all_elements.assert_called_once_with(DEFAULT_SESSION_ID)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_initialize_fails_when_session_is_missing_parameter() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -211,7 +212,7 @@ async def test_initialize_fails_when_session_is_missing_parameter() -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_initialize_fails_when_session_is_missing_action() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -239,7 +240,7 @@ async def test_initialize_fails_when_session_is_missing_action() -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_initialize_fails_when_session_is_missing_container() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -269,7 +270,7 @@ async def test_initialize_fails_when_session_is_missing_container() -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_initialize_fails_when_session_is_missing_element_in_container() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -299,7 +300,7 @@ async def test_initialize_fails_when_session_is_missing_element_in_container() -
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_text_element_update_updates_value_in_instance() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -352,7 +353,7 @@ async def test_text_element_update_updates_value_in_instance() -> None:
     assert value_after_update == "new text value"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_html_element_update_updates_value_in_instance() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -405,7 +406,7 @@ async def test_html_element_update_updates_value_in_instance() -> None:
     assert value_after_update == "<div>updated html!</div>"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_number_element_update_updates_value_in_instance() -> None:
     expected_number_value = 123.0
     gql = Mock(Client)
@@ -459,7 +460,7 @@ async def test_number_element_update_updates_value_in_instance() -> None:
     assert value_after_update == expected_number_value
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_slider_element_update_updates_value_in_instance() -> None:
     expected_slider_value = 123.0
     gql = Mock(Client)
@@ -518,7 +519,7 @@ async def test_slider_element_update_updates_value_in_instance() -> None:
     assert value_after_update == expected_slider_value
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_container_child_element_update_updates_value_in_instance() -> None:
     expected_number_value = 123.0
     gql = Mock(Client)
@@ -579,7 +580,7 @@ async def test_container_child_element_update_updates_value_in_instance() -> Non
     assert value_after_update == expected_number_value
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_element_updated_event_triggers_update_handler() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -630,7 +631,7 @@ async def test_element_updated_event_triggers_update_handler() -> None:
     assert param_updated
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_action_triggered_event_calls_action_method() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -661,7 +662,7 @@ async def test_action_triggered_event_calls_action_method() -> None:
     assert action_called
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_setting_parameter_value_calls_element_update_mutation() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -697,7 +698,7 @@ async def test_setting_parameter_value_calls_element_update_mutation() -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_setting_html_element_value_calls_element_update_mutation() -> None:
     gql = Mock(Client)
     gql.all_elements.return_value = AllElements(
@@ -737,7 +738,7 @@ async def test_setting_html_element_value_calls_element_update_mutation() -> Non
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_setting_slider_element_value_calls_element_update_mutation() -> None:
     expected_slider_update_value = 111.0
 

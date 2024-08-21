@@ -1,4 +1,5 @@
 import pytest
+
 from numerous.experimental.model import BaseModel, Field
 
 # Create a field with an annotation but no default value.
