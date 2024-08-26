@@ -42,7 +42,8 @@ from .exceptions import (
 )
 from .fragments import (
     ButtonValue,
-    CollectionKey,
+    CollectionReference,
+    CollectionNotFound,
     GraphContext,
     GraphContextAffectedBy,
     GraphContextAffects,
@@ -128,7 +129,8 @@ __all__ = [
     "CollectionCreate",
     "CollectionCreateCollectionCreateCollection",
     "CollectionCreateCollectionCreateCollectionNotFound",
-    "CollectionKey",
+    "CollectionReference",
+    "CollectionNotFound",
     "ElementInput",
     "ElementSelectInput",
     "GraphContext",

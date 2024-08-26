@@ -1,6 +1,5 @@
-
 import pytest
-from numerous.numerous_client import NumerousClient, _open_client
+from numerous._client import Client, _open_client
 
 
 @pytest.fixture(autouse=True)
@@ -13,4 +12,4 @@ def test_open_client()->None:
     """Testing client."""
     client = _open_client()
 
-    assert isinstance(client, NumerousClient)
+    assert isinstance(client, Client)

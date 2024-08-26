@@ -197,14 +197,21 @@ class Client(AsyncBaseClient):
               ) {
                 __typename
                 ... on Collection {
-                  ...CollectionKey
+                  ...CollectionReference
+                }
+                ... on CollectionNotFound {
+                  ...CollectionNotFound
                 }
               }
             }
 
-            fragment CollectionKey on Collection {
+            fragment CollectionReference on Collection {
               id
               key
+            }
+
+            fragment CollectionNotFound on CollectionNotFound {
+              id
             }
             """
         )

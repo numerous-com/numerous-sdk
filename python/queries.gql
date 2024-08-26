@@ -93,9 +93,13 @@ subscription Updates($sessionId: ID!, $clientId: ID!) {
 }
 
 
-fragment CollectionKey on Collection {
+fragment CollectionReference on Collection {
       id
       key
+}
+
+fragment CollectionNotFound on CollectionNotFound {
+      id
 }
 
 
@@ -111,8 +115,9 @@ mutation CollectionCreate(
   ) {
     __typename
      ... on Collection {
-     ... CollectionKey
-  
+     ... CollectionReference
       }
-     }
-  }
+     ... on CollectionNotFound {
+     ...CollectionNotFound
+      }
+  }}

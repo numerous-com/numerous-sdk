@@ -6,7 +6,7 @@ from typing import Literal, Union
 from pydantic import Field
 
 from .base_model import BaseModel
-from .fragments import CollectionKey
+from .fragments import CollectionReference, CollectionNotFound
 
 
 class CollectionCreate(BaseModel):
@@ -16,9 +16,9 @@ class CollectionCreate(BaseModel):
     ] = Field(alias="collectionCreate", discriminator="typename__")
 
 
-class CollectionCreateCollectionCreateCollection(CollectionKey):
+class CollectionCreateCollectionCreateCollection(CollectionReference):
     typename__: Literal["Collection"] = Field(alias="__typename")
 
 
-class CollectionCreateCollectionCreateCollectionNotFound(BaseModel):
+class CollectionCreateCollectionCreateCollectionNotFound(CollectionNotFound):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
