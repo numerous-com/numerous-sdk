@@ -17,6 +17,7 @@ import (
 	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/cmd/token"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/logging"
 
@@ -79,6 +80,7 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous delete",
 		"numerous download",
 		"numerous logs",
+		"numerous token create",
 	}
 
 	for _, cmd := range commandsWithAuthRequired {
@@ -120,6 +122,7 @@ func init() {
 		deploy.DeployCmd,
 		logs.LogsCmd,
 		download.Cmd,
+		token.Cmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),
