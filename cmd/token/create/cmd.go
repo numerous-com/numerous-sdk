@@ -2,6 +2,8 @@ package create
 
 import (
 	"github.com/spf13/cobra"
+	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/token"
 )
 
 var (
@@ -13,7 +15,7 @@ var Cmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a user access token.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
+		return Create(cmd.Context(), token.New(gql.NewClient()), CreateInput{Name: name, Description: desc})
 	},
 }
 
