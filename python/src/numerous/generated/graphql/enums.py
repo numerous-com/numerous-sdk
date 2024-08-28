@@ -25,6 +25,7 @@ class AppDeploymentStatus(str, Enum):
 
 class SubscriptionOfferStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
+    WITHDRAWN = "WITHDRAWN"
     REJECTED = "REJECTED"
     PENDING = "PENDING"
 

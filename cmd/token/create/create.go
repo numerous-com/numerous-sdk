@@ -21,8 +21,8 @@ func Create(ctx context.Context, creator TokenCreator, input CreateInput) error 
 	out, err := creator.Create(ctx, token.CreateTokenInput(input))
 
 	if err == nil {
-		output.PrintlnOK("Created user access token %q: %s", out.Name, out.Token)
-		println("Make sure to copy your access token now. You won't be able to see it again!.")
+		output.PrintlnOK("Created personal access token %q: %s", out.Name, out.Token)
+		println("Make sure to copy your access token now. You won't be able to see it again!")
 
 		return nil
 	}
@@ -30,9 +30,9 @@ func Create(ctx context.Context, creator TokenCreator, input CreateInput) error 
 	switch {
 	case errors.Is(err, token.ErrAccessDenied):
 		output.PrintError("Access denied", "Your login may have expired. Try to log out and log back in again.")
-	case errors.Is(err, token.ErrUserAccessTokenAlreadyExists):
+	case errors.Is(err, token.ErrPersonalAccessTokenAlreadyExists):
 		output.PrintError("Error: %s", "", err.Error())
-	case errors.Is(err, token.ErrUserAccessTokenNameInvalid):
+	case errors.Is(err, token.ErrPersonalAccessTokenNameInvalid):
 		output.PrintError("Error: %s", "", err.Error())
 	default:
 		output.PrintUnknownError(err)

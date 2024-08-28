@@ -9,7 +9,7 @@ from .base_model import BaseModel
 from .enums import Role
 
 
-class UserAccessTokenCreateInput(BaseModel):
+class PersonalAccessTokenCreateInput(BaseModel):
     name: str
     description: str
     expires_at: Optional[Any] = Field(alias="expiresAt", default=None)

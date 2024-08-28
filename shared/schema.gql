@@ -57,42 +57,42 @@ type Query {
   me: User! @hasRole(role: AUTHENTICATED)
 }
 
-type UserAccessTokenEntry {
+type PersonalAccessTokenEntry {
   id: ID!
   name: String!
   description: String!
   expiresAt: Time
 }
 
-type UserAccessTokenCreated {
-  entry: UserAccessTokenEntry!
+type PersonalAccessTokenCreated {
+  entry: PersonalAccessTokenEntry!
   token: String!
 }
 
-type UserAccessTokenAlreadyExists {
+type PersonalAccessTokenAlreadyExists {
   name: String!
 }
 
-type UserAccessTokenInvalidName {
+type PersonalAccessTokenInvalidName {
   name: String!
   reason: String!
 }
 
-input UserAccessTokenCreateInput {
+input PersonalAccessTokenCreateInput {
   name: String!
   description: String!
   expiresAt: Time
 }
 
-union UserAccessTokenCreateResult =
-    UserAccessTokenCreated
-  | UserAccessTokenAlreadyExists
-  | UserAccessTokenInvalidName
+union PersonalAccessTokenCreateResult =
+    PersonalAccessTokenCreated
+  | PersonalAccessTokenAlreadyExists
+  | PersonalAccessTokenInvalidName
 
 type Mutation {
-  userAccessTokenCreate(
-    input: UserAccessTokenCreateInput!
-  ): UserAccessTokenCreateResult! @hasRole(role: AUTHENTICATED)
+  personalAccessTokenCreate(
+    input: PersonalAccessTokenCreateInput!
+  ): PersonalAccessTokenCreateResult! @hasRole(role: AUTHENTICATED)
 }
 
 ###############################################################################
@@ -498,6 +498,7 @@ directive @canManageSubscription on FIELD_DEFINITION
 
 enum SubscriptionOfferStatus {
   ACCEPTED
+  WITHDRAWN
   REJECTED
   PENDING
 }
@@ -574,6 +575,11 @@ union SubscriptionOfferAcceptResult =
   | SubscriptionOfferNotFound
   | SubscriptionOfferInvalidStatus
 
+union SubscriptionOfferWithdraw =
+    SubscriptionOffer
+  | SubscriptionOfferNotFound
+  | SubscriptionOfferInvalidStatus
+
 union AppSubscriptionCancelResult =
     AppSubscription
   | AppSubscriptionNotFound
@@ -605,8 +611,9 @@ extend type Mutation {
   ): SubscriptionOfferAcceptResult! @canAccessSubscriptionOffer
   subscriptionOfferReject(subscriptionOfferId: ID!): SubscriptionOfferResult!
     @canAccessSubscriptionOffer
-  subscriptionOfferWithdraw(subscriptionOfferId: ID!): SubscriptionOfferResult!
-    @canAccessSubscriptionOffer
+  subscriptionOfferWithdraw(
+    subscriptionOfferId: ID!
+  ): SubscriptionOfferWithdraw! @canAccessSubscriptionOffer
   subscriptionCancel(subscriptionId: ID!): AppSubscriptionCancelResult!
     @canManageSubscription
 }

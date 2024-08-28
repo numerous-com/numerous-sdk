@@ -63,9 +63,9 @@ from .input_types import (
     OrganizationInvitationInput,
     OrganizationMemberEditRoleInput,
     PaymentConfigurationInput,
+    PersonalAccessTokenCreateInput,
     SubscriptionOfferInput,
     TagInput,
-    UserAccessTokenCreateInput,
 )
 from .update_element import UpdateElement, UpdateElementElementUpdate
 from .updates import (
@@ -139,6 +139,7 @@ __all__ = [
     "OrganizationMemberEditRoleInput",
     "PaymentAccountStatus",
     "PaymentConfigurationInput",
+    "PersonalAccessTokenCreateInput",
     "Role",
     "SliderValue",
     "SubscriptionOfferInput",
@@ -167,5 +168,4 @@ __all__ = [
     "UpdatesToolSessionEventToolSessionElementUpdatedElementTextField",
     "UpdatesToolSessionEventToolSessionElementUpdatedElementTextFieldGraphContext",
     "Upload",
-    "UserAccessTokenCreateInput",
 ]

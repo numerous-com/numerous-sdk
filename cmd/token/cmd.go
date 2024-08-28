@@ -10,7 +10,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:     "token",
-	Short:   "Manage user access tokens for the Numerous API",
+	Short:   "Manage personal access tokens for the Numerous API",
 	Args:    args.SubCommandRequired,
 	GroupID: group.AdditionalCommandsGroupID,
 }

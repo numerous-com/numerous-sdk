@@ -28,8 +28,8 @@ func TestCreate(t *testing.T) {
 	t.Run("passes on error", func(t *testing.T) {
 		for _, expectedError := range []error{
 			token.ErrAccessDenied,
-			token.ErrUserAccessTokenAlreadyExists,
-			token.ErrUserAccessTokenNameInvalid,
+			token.ErrPersonalAccessTokenAlreadyExists,
+			token.ErrPersonalAccessTokenNameInvalid,
 			testErr,
 		} {
 			t.Run(expectedError.Error(), func(t *testing.T) {

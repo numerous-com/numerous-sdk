@@ -16,8 +16,8 @@ type CreateTokenOutput struct {
 	Token       string
 }
 
-type userAccessTokenCreateResponse struct {
-	UserAccessTokenCreate struct {
+type personalAccessTokenCreateResponse struct {
+	PersonalAccessTokenCreate struct {
 		Typename string `graphql:"__typename"`
 		Created  struct {
 			Entry struct {
@@ -25,35 +25,35 @@ type userAccessTokenCreateResponse struct {
 				Description string
 			}
 			Token string
-		} `graphql:"... on UserAccessTokenCreated"`
+		} `graphql:"... on PersonalAccessTokenCreated"`
 		InvalidName struct {
 			Name   string
 			Reason string
-		} `graphql:"... on UserAccessTokenInvalidName"`
-		AlreadyExists struct{ Name string } `graphql:"... on UserAccessTokenAlreadyExists"`
-	} `graphql:"userAccessTokenCreate(input: {name: $name, description: $desc})"`
+		} `graphql:"... on PersonalAccessTokenInvalidName"`
+		AlreadyExists struct{ Name string } `graphql:"... on PersonalAccessTokenAlreadyExists"`
+	} `graphql:"personalAccessTokenCreate(input: {name: $name, description: $desc})"`
 }
 
 func (s *Service) Create(ctx context.Context, input CreateTokenInput) (CreateTokenOutput, error) {
-	var resp userAccessTokenCreateResponse
+	var resp personalAccessTokenCreateResponse
 
 	err := s.client.Mutate(ctx, &resp, map[string]interface{}{"name": input.Name, "desc": input.Description})
 	if err != nil {
 		return CreateTokenOutput{}, ConvertErrors(err)
 	}
 
-	result := resp.UserAccessTokenCreate
+	result := resp.PersonalAccessTokenCreate
 	switch result.Typename {
-	case "UserAccessTokenCreated":
+	case "PersonalAccessTokenCreated":
 		return CreateTokenOutput{
 			Name:        result.Created.Entry.Name,
 			Description: result.Created.Entry.Description,
 			Token:       result.Created.Token,
 		}, nil
-	case "UserAccessTokenInvalidName":
-		return CreateTokenOutput{}, fmt.Errorf("%w: %s", ErrUserAccessTokenNameInvalid, result.InvalidName.Reason)
-	case "UserAccessTokenAlreadyExists":
-		return CreateTokenOutput{}, fmt.Errorf("%w: %s", ErrUserAccessTokenAlreadyExists, result.AlreadyExists.Name)
+	case "PersonalAccessTokenInvalidName":
+		return CreateTokenOutput{}, fmt.Errorf("%w: %s", ErrPersonalAccessTokenNameInvalid, result.InvalidName.Reason)
+	case "PersonalAccessTokenAlreadyExists":
+		return CreateTokenOutput{}, fmt.Errorf("%w: %s", ErrPersonalAccessTokenAlreadyExists, result.AlreadyExists.Name)
 	default:
 		panic("unexpected response from server")
 	}

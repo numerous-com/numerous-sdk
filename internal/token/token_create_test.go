@@ -19,7 +19,7 @@ func TestCreate(t *testing.T) {
 			"errors": [{
 				"message": "access denied",
 				"location": [{"line": 1, "column": 1}],
-				"path": ["userAccessTokenCreate"]
+				"path": ["personalAccessTokenCreate"]
 			}]
 		}`
 		resp := test.JSONResponse(respBody)
@@ -38,8 +38,8 @@ func TestCreate(t *testing.T) {
 		respBody := `
 		{
 			"data": {
-				"userAccessTokenCreate": {
-					"__typename": "UserAccessTokenCreated",
+				"personalAccessTokenCreate": {
+					"__typename": "PersonalAccessTokenCreated",
 					"entry": {
 						"name": "token name",
 						"description": "token description"
@@ -66,8 +66,8 @@ func TestCreate(t *testing.T) {
 		respBody := `
 		{
 			"data": {
-				"userAccessTokenCreate": {
-					"__typename": "UserAccessTokenAlreadyExists",
+				"personalAccessTokenCreate": {
+					"__typename": "PersonalAccessTokenAlreadyExists",
 					"name": "some already existing name"
 				}
 			}
@@ -78,7 +78,7 @@ func TestCreate(t *testing.T) {
 		actual, err := s.Create(context.TODO(), CreateTokenInput{})
 
 		assert.Empty(t, actual)
-		if assert.ErrorIs(t, err, ErrUserAccessTokenAlreadyExists) {
+		if assert.ErrorIs(t, err, ErrPersonalAccessTokenAlreadyExists) {
 			assert.ErrorContains(t, err, "some already existing name")
 		}
 	})
@@ -90,8 +90,8 @@ func TestCreate(t *testing.T) {
 		respBody := `
 		{
 			"data": {
-				"userAccessTokenCreate": {
-					"__typename": "UserAccessTokenInvalidName",
+				"personalAccessTokenCreate": {
+					"__typename": "PersonalAccessTokenInvalidName",
 					"name": "some invalid name",
 					"reason": "some reason"
 				}
@@ -103,7 +103,7 @@ func TestCreate(t *testing.T) {
 		actual, err := s.Create(context.TODO(), CreateTokenInput{})
 
 		assert.Empty(t, actual)
-		if assert.ErrorIs(t, err, ErrUserAccessTokenNameInvalid) {
+		if assert.ErrorIs(t, err, ErrPersonalAccessTokenNameInvalid) {
 			assert.ErrorContains(t, err, "some reason")
 		}
 	})

@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	ErrAccessDenied                 = errors.New("access denied")
-	ErrUserAccessTokenNameInvalid   = errors.New("user access token name invalid")
-	ErrUserAccessTokenAlreadyExists = errors.New("user access token already exists")
+	ErrAccessDenied                     = errors.New("access denied")
+	ErrPersonalAccessTokenNameInvalid   = errors.New("personal access token name invalid")
+	ErrPersonalAccessTokenAlreadyExists = errors.New("personal access token already exists")
 )
 
 func ConvertErrors(err error) error {
