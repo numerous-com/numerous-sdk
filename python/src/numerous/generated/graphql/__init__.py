@@ -62,6 +62,8 @@ from .input_types import (
     NewTool,
     OrganizationInvitationInput,
     OrganizationMemberEditRoleInput,
+    PaymentConfigurationInput,
+    PersonalAccessTokenCreateInput,
     SubscriptionOfferInput,
     TagInput,
 )
@@ -136,6 +138,8 @@ __all__ = [
     "OrganizationInvitationInput",
     "OrganizationMemberEditRoleInput",
     "PaymentAccountStatus",
+    "PaymentConfigurationInput",
+    "PersonalAccessTokenCreateInput",
     "Role",
     "SliderValue",
     "SubscriptionOfferInput",

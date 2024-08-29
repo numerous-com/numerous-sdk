@@ -8,11 +8,10 @@ directive @trackAppUseOperation on FIELD_DEFINITION
 directive @trackToolOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackToolUseOperation on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
-directive @canManageApp on FIELD_DEFINITION
 
 ###############################################################################
 ### Auth
-###############################################################################
+####################################################################F###########
 
 directive @hasRole(role: AuthRole!) on FIELD_DEFINITION
 directive @isMe on FIELD_DEFINITION
@@ -37,6 +36,7 @@ enum Role {
 }
 
 type OrganizationMembership {
+  id: ID!
   organization: Organization!
   role: Role!
   user: User!
@@ -57,6 +57,44 @@ type Query {
   me: User! @hasRole(role: AUTHENTICATED)
 }
 
+type PersonalAccessTokenEntry {
+  id: ID!
+  name: String!
+  description: String!
+  expiresAt: Time
+}
+
+type PersonalAccessTokenCreated {
+  entry: PersonalAccessTokenEntry!
+  token: String!
+}
+
+type PersonalAccessTokenAlreadyExists {
+  name: String!
+}
+
+type PersonalAccessTokenInvalidName {
+  name: String!
+  reason: String!
+}
+
+input PersonalAccessTokenCreateInput {
+  name: String!
+  description: String!
+  expiresAt: Time
+}
+
+union PersonalAccessTokenCreateResult =
+    PersonalAccessTokenCreated
+  | PersonalAccessTokenAlreadyExists
+  | PersonalAccessTokenInvalidName
+
+type Mutation {
+  personalAccessTokenCreate(
+    input: PersonalAccessTokenCreateInput!
+  ): PersonalAccessTokenCreateResult! @hasRole(role: AUTHENTICATED)
+}
+
 ###############################################################################
 ### End of user management
 ###############################################################################
@@ -74,6 +112,7 @@ type Organization {
   members: [OrganizationMembership!]! @hasRole(role: USER)
   pendingInvitations: [OrganizationInvitation!]! @hasRole(role: ADMIN)
   paymentAccount: PaymentAccount @hasRole(role: ADMIN)
+  hasCustomerAccount: Boolean!
 }
 
 type OrganizationInvitation {
@@ -130,7 +169,7 @@ union OrganizationCreateResult =
   | OrganizationSlugOccupied
   | OrganizationSlugInvalid
 union OrganizationMemberEditRoleResult =
-    Organization
+    OrganizationMembership
   | OrganizationNotFound
   | UserNotFound
 
@@ -141,7 +180,7 @@ extend type Query {
     @canAccessInvitation
 }
 
-type Mutation {
+extend type Mutation {
   organizationCreate(input: NewOrganization!): OrganizationCreateResult!
     @hasRole(role: AUTHENTICATED)
     @trackOperation(eventName: "Organization Create")
@@ -305,6 +344,9 @@ extend type Mutation {
 ### App management
 ###############################################################################
 
+directive @canManageApp on FIELD_DEFINITION
+directive @canUseApp on FIELD_DEFINITION
+
 enum AppDeploymentStatus {
   PENDING
   RUNNING
@@ -404,6 +446,11 @@ input AppDeleteInput {
   organizationSlug: String!
 }
 
+type AppDeploymentHeartbeat {
+  status: AppDeploymentStatus!
+  proxyURL: String
+}
+
 extend type Query {
   app(organizationSlug: String!, appSlug: String!): App @hasRole(role: USER)
 }
@@ -425,6 +472,9 @@ extend type Mutation {
     @canManageApp
     @trackAppOperation(eventName: "App Deploy")
   appDelete(input: AppDeleteInput!): AppDeleted! @canManageApp
+  appDeployHeartbeat(deployID: ID!): AppDeploymentHeartbeat!
+    @canUseApp
+    @trackAppUseOperation
 }
 
 extend type Subscription {
@@ -440,12 +490,15 @@ extend type Subscription {
 ### Subscriptions
 ###############################################################################
 
+scalar Decimal
+
 directive @canAccessSubscriptionOffer on FIELD_DEFINITION
 directive @canAccessSubscription on FIELD_DEFINITION
 directive @canManageSubscription on FIELD_DEFINITION
 
 enum SubscriptionOfferStatus {
   ACCEPTED
+  WITHDRAWN
   REJECTED
   PENDING
 }
@@ -463,6 +516,11 @@ type AppSubscription {
   status: AppSubscriptionStatus!
 }
 
+type PaymentConfiguration {
+  monthlyPriceUSD: Decimal!
+  trialDays: Int
+}
+
 type SubscriptionOffer {
   id: ID!
   email: String!
@@ -470,12 +528,19 @@ type SubscriptionOffer {
   offeringOrganization: Organization!
   status: SubscriptionOfferStatus!
   message: String!
+  payment: PaymentConfiguration
+}
+
+input PaymentConfigurationInput {
+  monthlyPriceUSD: Decimal!
+  trialDays: Int # no trial if not set, or not greater than zero
 }
 
 input SubscriptionOfferInput {
   email: String!
   appSlug: String!
   message: String
+  payment: PaymentConfigurationInput # subscription offer is free if no payment config
 }
 
 type SubscriptionOfferNotFound {
@@ -494,12 +559,24 @@ type AppSubscriptionInvalidStatus {
   id: ID!
 }
 
-union SubscriptionOfferCreateResult = SubscriptionOffer | InvalidEmail
+type OrganizationHasNoPaymentAccount {
+  organizationID: ID!
+}
+
+union SubscriptionOfferCreateResult =
+    SubscriptionOffer
+  | InvalidEmail
+  | OrganizationHasNoPaymentAccount
 
 union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
 
 union SubscriptionOfferAcceptResult =
     AppSubscription
+  | SubscriptionOfferNotFound
+  | SubscriptionOfferInvalidStatus
+
+union SubscriptionOfferWithdraw =
+    SubscriptionOffer
   | SubscriptionOfferNotFound
   | SubscriptionOfferInvalidStatus
 
@@ -534,14 +611,33 @@ extend type Mutation {
   ): SubscriptionOfferAcceptResult! @canAccessSubscriptionOffer
   subscriptionOfferReject(subscriptionOfferId: ID!): SubscriptionOfferResult!
     @canAccessSubscriptionOffer
-  subscriptionOfferWithdraw(subscriptionOfferId: ID!): SubscriptionOfferResult!
-    @canAccessSubscriptionOffer
+  subscriptionOfferWithdraw(
+    subscriptionOfferId: ID!
+  ): SubscriptionOfferWithdraw! @canAccessSubscriptionOffer
   subscriptionCancel(subscriptionId: ID!): AppSubscriptionCancelResult!
     @canManageSubscription
 }
 
 ###############################################################################
 ### End of Subscriptions
+###############################################################################
+
+###############################################################################
+### Customer accounts
+###############################################################################
+
+type CustomerAccountPortalURL {
+  url: String!
+}
+
+extend type Mutation {
+  customerAccountCreatePortalURL(
+    organizationId: ID!
+  ): CustomerAccountPortalURL! @hasRole(role: ADMIN)
+}
+
+###############################################################################
+### End of Customer accounts
 ###############################################################################
 
 ###############################################################################

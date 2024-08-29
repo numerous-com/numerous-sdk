@@ -19,27 +19,24 @@ var (
 var _ http.RoundTripper = &AuthenticatingRoundTripper{}
 
 type AuthenticatingRoundTripper struct {
-	proxied http.RoundTripper
-	user    *auth.User
+	proxied     http.RoundTripper
+	accessToken *string
 }
 
 // RoundTrip implements http.RoundTripper.
 func (a *AuthenticatingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if a.user != nil {
-		r.Header.Set("Authorization", "Bearer "+a.user.AccessToken)
+	if a.accessToken != nil {
+		r.Header.Set("Authorization", "Bearer "+*a.accessToken)
 	}
 
 	return a.proxied.RoundTrip(r)
 }
 
 func initClient() {
-	var httpClient *http.Client
-
-	user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
-	httpClient = &http.Client{
+	httpClient := &http.Client{
 		Transport: &AuthenticatingRoundTripper{
-			proxied: http.DefaultTransport,
-			user:    user,
+			proxied:     http.DefaultTransport,
+			accessToken: getAccessToken(),
 		},
 	}
 
@@ -57,7 +54,9 @@ func NewClient() *graphql.Client {
 	accessToken := getAccessToken()
 	if accessToken != nil {
 		client = client.WithRequestModifier(func(r *http.Request) {
-			r.Header.Set("Authorization", "Bearer "+*accessToken)
+			if accessToken != nil {
+				r.Header.Set("Authorization", "Bearer "+*accessToken)
+			}
 		})
 	}
 
@@ -75,5 +74,5 @@ func getAccessToken() *string {
 		return &user.AccessToken
 	}
 
-	return &token
+	return nil
 }
