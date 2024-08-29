@@ -13,7 +13,7 @@ func TestCreate(t *testing.T) {
 	t.Run("given access denied then it returns access denied error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c)
+		s := NewService(c)
 		respBody := `
 		{
 			"errors": [{
@@ -34,7 +34,7 @@ func TestCreate(t *testing.T) {
 	t.Run("returns expected created token", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c)
+		s := NewService(c)
 		respBody := `
 		{
 			"data": {
@@ -62,7 +62,7 @@ func TestCreate(t *testing.T) {
 	t.Run("returns expected already exists error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c)
+		s := NewService(c)
 		respBody := `
 		{
 			"data": {
@@ -86,7 +86,7 @@ func TestCreate(t *testing.T) {
 	t.Run("returns expected name invalid error", func(t *testing.T) {
 		doer := test.MockDoer{}
 		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c)
+		s := NewService(c)
 		respBody := `
 		{
 			"data": {

@@ -6,6 +6,6 @@ type Service struct {
 	client *graphql.Client
 }
 
-func New(client *graphql.Client) *Service {
+func NewService(client *graphql.Client) *Service {
 	return &Service{client: client}
 }
