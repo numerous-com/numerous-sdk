@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.14.1 (2024-08-29)
+
+### Fix
+
+* fix(cli): force a rebuild and release of `numerous token` feature ([`1198ca8`](https://github.com/numerous-com/numerous-sdk/commit/1198ca88b8b6ccf6619cf5e33c01215d1eda64ff))
+
+
+
+
 ## v0.14.0 (2024-08-29)
 
 ### Feature
