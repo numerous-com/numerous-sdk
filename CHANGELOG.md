@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.14.0 (2024-08-29)
+
+### Feature
+
+* feat(cli): command `token create` to create personal access tokens (#27) ([`b0fd9fe`](https://github.com/numerous-com/numerous-sdk/commit/b0fd9feb91062687461e947ef4a3c3f009c443ed))
+
+  > 
+  > Adds a command `numerous token create` which can be used to create a personal
+  > access token. The personal access token can be used to automate the CLI by setting
+  > the environment variable `NUMEROUS_ACCESS_TOKEN`.
+
+
+
+
 ## v0.13.0 (2024-08-21)
 
 ### Feature
