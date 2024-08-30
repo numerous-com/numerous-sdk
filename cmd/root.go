@@ -54,6 +54,10 @@ var (
 				return nil
 			}
 
+			if os.Getenv("NUMEROUS_ACCESS_TOKEN") != "" {
+				return nil
+			}
+
 			user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
 			if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
 				output.PrintErrorLoginForCommand(cmd)
