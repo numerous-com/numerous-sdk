@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.14.2 (2024-08-30)
+
+### Fix
+
+* fix(cli): allow running commands requiring authentication with access token ([`61182cd`](https://github.com/numerous-com/numerous-sdk/commit/61182cdbeb13b717f46d29b5dbf7a770dd49137b))
+
+
+
+
 ## v0.14.1 (2024-08-29)
 
 ### Fix
