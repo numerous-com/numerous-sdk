@@ -8,6 +8,8 @@ import (
 	"numerous.com/cli/internal/token"
 )
 
+var ErrMissingTokenName = errors.New("missing token name argument")
+
 type TokenCreator interface {
 	Create(ctx context.Context, input token.CreateTokenInput) (token.CreateTokenOutput, error)
 }
@@ -18,6 +20,11 @@ type CreateInput struct {
 }
 
 func Create(ctx context.Context, creator TokenCreator, input CreateInput) error {
+	if input.Name == "" {
+		output.PrintError("Missing token name argument.", "")
+		return ErrMissingTokenName
+	}
+
 	out, err := creator.Create(ctx, token.CreateTokenInput(input))
 
 	if err == nil {
