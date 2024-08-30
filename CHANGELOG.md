@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.14.3 (2024-08-30)
+
+### Fix
+
+* fix(cli): `token create` displays an error if token name is not supplied ([`dead63f`](https://github.com/numerous-com/numerous-sdk/commit/dead63f7c5f83c2d41dd5539e7b2337abdaf30a9))
+
+
+
+
 ## v0.14.2 (2024-08-30)
 
 ### Fix
