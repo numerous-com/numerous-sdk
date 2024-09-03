@@ -7,6 +7,7 @@ from typing import Optional, Union
 from numerous.generated.graphql.client import Client as GQLCleint
 from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
 
+
 API_URL_NOT_SET="NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 class Client:

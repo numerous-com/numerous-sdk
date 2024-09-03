@@ -6,6 +6,7 @@ from numerous._client import Client
 from numerous.generated.graphql.client import Client as GQLCleint
 from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
 
+
 ORGANIZATION_ID = "test_org"
 COLLECTION_NAME = "test_collection"
 NESTED_COLLECTION_NAME = "nested_test_collection"
@@ -44,9 +45,11 @@ def test_collection_new_key_with_parent_key()->None:
     result = collection(COLLECTION_NAME, _client)
 
     nested_result = result.collection(NESTED_COLLECTION_NAME)
-
-    assert nested_result.key == NESTED_COLLECTION_REFERENCE.key
-    assert nested_result.id == NESTED_COLLECTION_REFERENCE.id
+    if nested_result is not None:
+        assert nested_result.key == NESTED_COLLECTION_REFERENCE.key
+        assert nested_result.id == NESTED_COLLECTION_REFERENCE.id
+    else:
+        raise ValueError
 
 
 
