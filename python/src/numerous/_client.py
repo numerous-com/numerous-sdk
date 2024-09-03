@@ -4,14 +4,14 @@ import asyncio
 import os
 from typing import Optional, Union
 
-from numerous.generated.graphql.client import Client as GQLCleint
+from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
 
 
 API_URL_NOT_SET="NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 class Client:
-    def __init__(self, client: GQLCleint)->None:
+    def __init__(self, client: GQLClient)->None:
         self.client = client
         self.organization_id = ""
         auth_token = os.getenv("NUMEROUS_API_ACCESS_TOKEN")
@@ -64,5 +64,5 @@ def _open_client() -> Client:
     url = os.getenv("NUMEROUS_API_URL")
     if not url:
         raise ValueError(API_URL_NOT_SET)
-    client = GQLCleint(url=url)
+    client = GQLClient(url=url)
     return Client(client)

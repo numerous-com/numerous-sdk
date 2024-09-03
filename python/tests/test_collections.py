@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from numerous import collection
 from numerous._client import Client
-from numerous.generated.graphql.client import Client as GQLCleint
+from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
 
 
@@ -23,7 +23,7 @@ def _set_env_vars(monkeypatch:pytest.MonkeyPatch)->None:
 
 
 def test_collection_new_key()->None:
-    gql = Mock(GQLCleint)
+    gql = Mock(GQLClient)
     _client = Client(gql)
     gql.collection_create.return_value = Mock(collection_create = COLLECTION_REFERENCE)
     result = collection(COLLECTION_NAME, _client)
@@ -38,7 +38,7 @@ def test_collection_new_key()->None:
 
 
 def test_collection_new_key_with_parent_key()->None:
-    gql = Mock(GQLCleint)
+    gql = Mock(GQLClient)
     _client = Client(gql)
     gql.collection_create.return_value = Mock(collection_create=
                                               NESTED_COLLECTION_REFERENCE)
@@ -54,7 +54,7 @@ def test_collection_new_key_with_parent_key()->None:
 
 
 def test_collection_not_found()->None:
-    gql = Mock(GQLCleint)
+    gql = Mock(GQLClient)
     _client = Client(gql)
     gql.collection_create.return_value = Mock(collection_create=
                                               NESTED_COLLECTION_REFERENCE)
