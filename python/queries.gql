@@ -92,32 +92,27 @@ subscription Updates($sessionId: ID!, $clientId: ID!) {
   }
 }
 
-
 fragment CollectionReference on Collection {
-      id
-      key
+  id
+  key
 }
 
 fragment CollectionNotFound on CollectionNotFound {
-      id
+  id
 }
 
-
-mutation CollectionCreate(
-  $organizationID: ID!
-  $key: ID!
-   $parentID: ID
-) {
+mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   collectionCreate(
     organizationID: $organizationID
     key: $key
     parentID: $parentID
   ) {
     __typename
-     ... on Collection {
-     ... CollectionReference
-      }
-     ... on CollectionNotFound {
-     ...CollectionNotFound
-      }
-  }}
+    ... on Collection {
+      ...CollectionReference
+    }
+    ... on CollectionNotFound {
+      ...CollectionNotFound
+    }
+  }
+}
