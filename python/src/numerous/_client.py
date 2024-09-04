@@ -10,8 +10,10 @@ from numerous.generated.graphql.fragments import CollectionNotFound, CollectionR
 
 API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
+
+
 class Client:
-    def __init__(self, client: GQLClient)->None:
+    def __init__(self, client: GQLClient) -> None:
         self.client = client
         self.organization_id = ""
         auth_token = os.getenv("NUMEROUS_API_ACCESS_TOKEN")
@@ -20,14 +22,14 @@ class Client:
 
         self.kwargs = {"headers": {"Authorization": f"Bearer {auth_token}"}}
 
-    def _create_collection_ref(self,
-                               collection_response:Union[CollectionReference,
-                                                         CollectionNotFound])->Optional[CollectionReference]:
+    def _create_collection_ref(
+        self, collection_response: Union[CollectionReference, CollectionNotFound]
+    ) -> Optional[CollectionReference]:
         if isinstance(collection_response, CollectionReference):
-            return  CollectionReference(id=collection_response.id,
-                                        key=collection_response.key)
+            return CollectionReference(
+                id=collection_response.id, key=collection_response.key
+            )
         return None
-
 
     async def _create_collection(
         self, collection_key: str, parent_collection_key: Optional[str] = None
@@ -40,9 +42,8 @@ class Client:
         )
         return self._create_collection_ref(response.collection_create)
 
-
     def get_collection_reference(
-        self, collection_key: str, parent_collection_id: Optional[str]=None
+        self, collection_key: str, parent_collection_id: Optional[str] = None
     ) -> Optional[CollectionReference]:
         """
         Retrieve a collection by its key and parent key.

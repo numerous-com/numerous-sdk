@@ -8,9 +8,8 @@ from numerous.generated.graphql.fragments import CollectionReference
 
 class NumerousCollection:
     def __init__(
-        self, collection_ref: Optional[CollectionReference],
-          _client: Client
-    )->None:
+        self, collection_ref: Optional[CollectionReference], _client: Client
+    ) -> None:
         if collection_ref is not None:
             self.key = collection_ref.key
             self.id = collection_ref.id

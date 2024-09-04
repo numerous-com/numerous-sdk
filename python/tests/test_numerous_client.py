@@ -3,12 +3,12 @@ from numerous._client import Client, _open_client
 
 
 @pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch:pytest.MonkeyPatch)->None:
+def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
 
 
-def test_open_client_returns_new_client()->None:
+def test_open_client_returns_new_client() -> None:
     """Testing client."""
     client = _open_client()
 
