@@ -8,7 +8,7 @@ from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
 
 
-API_URL_NOT_SET="NUMEROUS_API_URL environment variable is not set"
+API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 class Client:
     def __init__(self, client: GQLClient)->None:
@@ -41,13 +41,8 @@ class Client:
         return self._create_collection_ref(response.collection_create)
 
 
-    def get_collection_reference(self,
-                                  collection_key: str) -> Optional[CollectionReference]:
-        """Retrieve a collection by key or create it if it doesn't exist."""
-        return asyncio.run(self._create_collection(collection_key))
-
-    def get_collection_reference_with_parent(
-        self, collection_ref: str, parent_collection_id: str
+    def get_collection_reference(
+        self, collection_key: str, parent_collection_id: Optional[str]=None
     ) -> Optional[CollectionReference]:
         """
         Retrieve a collection by its key and parent key.
@@ -56,7 +51,7 @@ class Client:
         or creates it if it doesn't exist.
         """
         return asyncio.run(
-            self._create_collection(collection_ref, parent_collection_id)
+            self._create_collection(collection_key, parent_collection_id)
         )
 
 

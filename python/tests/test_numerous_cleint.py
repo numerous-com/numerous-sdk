@@ -8,7 +8,7 @@ def _set_env_vars(monkeypatch:pytest.MonkeyPatch)->None:
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
 
 
-def test_open_client()->None:
+def test_open_client_returns_new_client()->None:
     """Testing client."""
     client = _open_client()
 
