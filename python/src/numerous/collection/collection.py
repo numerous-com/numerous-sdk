@@ -7,10 +7,10 @@ from numerous.collection.numerous_collection import NumerousCollection
 
 
 def collection(
-    collection_key: str, numerous_open_client: Optional[Client] = None
+    collection_key: str, _client: Optional[Client] = None
 ) -> NumerousCollection:
     """Get or create a collection by name."""
-    if numerous_open_client is None:
-        numerous_open_client = _open_client()
-    collection_ref_key = numerous_open_client.get_collection_reference(collection_key)
-    return NumerousCollection(collection_ref_key, numerous_open_client)
+    if _client is None:
+        _client = _open_client()
+    collection_ref_key = _client.get_collection_reference(collection_key)
+    return NumerousCollection(collection_ref_key, _client)
