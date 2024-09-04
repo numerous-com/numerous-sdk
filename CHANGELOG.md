@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.15.0 (2024-09-04)
+
+### Feature
+
+* feat(python-sdk): access and create collections (#22) ([`be13de3`](https://github.com/numerous-com/numerous-sdk/commit/be13de3fbd925cd40780218139b27dfd74c49d53))
+
+  > 
+  > Adds `numerous.collection` function which creates or reads the collection,
+  > and allows recursive collection access.
+
+
+
+
 ## v0.14.3 (2024-08-30)
 
 ### Fix
