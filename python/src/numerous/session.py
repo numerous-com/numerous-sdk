@@ -338,7 +338,7 @@ def _wrap_app_class_setattr(
             continue
         _wrap_container_class_setattr(loop, session_id, client_id, cls, gql)
     new_setattr = get_setattr(loop, gql, cls.__setattr__, session_id, client_id)
-    cls.__setattr__ = new_setattr  # type: ignore[assignment]
+    cls.__setattr__ = new_setattr  # type: ignore[method-assign,assignment]
 
 
 def _get_annotations(cls: type) -> dict[str, Any]:
@@ -358,7 +358,7 @@ def _wrap_container_class_setattr(
             continue
         _wrap_container_class_setattr(loop, session_id, client_id, annotation, gql)
     new_setattr = get_setattr(loop, gql, cls.__setattr__, session_id, client_id)
-    cls.__setattr__ = new_setattr  # type: ignore[method-assign, assignment]
+    cls.__setattr__ = new_setattr  # type: ignore[method-assign,assignment]
 
 
 def _validate_app_session(
