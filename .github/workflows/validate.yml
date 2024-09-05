@@ -16,6 +16,7 @@ jobs:
           cache: "pip"
       - run: pip install .[dev]
       - run: python -m ruff check ./python
+      - run: python -m ruff format --check ./python
       - run: python -m mypy --strict ./python
 
   test-sdk:
