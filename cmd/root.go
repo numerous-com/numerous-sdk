@@ -10,6 +10,7 @@ import (
 	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/dev"
 	"numerous.com/cli/cmd/download"
+	"numerous.com/cli/cmd/errorhandling"
 	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/legacy"
 	"numerous.com/cli/cmd/login"
@@ -45,8 +46,8 @@ var (
 			"             °°°°°   \n" +
 			"                °°     \n" +
 			"",
-		SilenceUsage:  true,
 		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			output.NotifyFeedbackMaybe()
 
@@ -99,6 +100,11 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		if !errors.Is(err, errorhandling.ErrAlreadyPrinted) {
+			output.PrintError("Error: %s", "", err.Error())
+			println()
+			rootCmd.Usage() // nolint: errcheck
+		}
 		os.Exit(1)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
@@ -61,7 +62,7 @@ func run(cmd *cobra.Command, args []string) error {
 		Verbose:    verbose,
 	}
 
-	return Deploy(cmd.Context(), service, input)
+	return errorhandling.ErrorAlreadyPrinted(Deploy(cmd.Context(), service, input))
 }
 
 func init() {

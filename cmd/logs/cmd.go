@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
@@ -65,8 +66,9 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
+	err := Logs(cmd.Context(), service, appDir, orgSlug, appSlug, printer)
 
-	return Logs(cmd.Context(), service, appDir, orgSlug, appSlug, printer)
+	return errorhandling.ErrorAlreadyPrinted(err)
 }
 
 func init() {

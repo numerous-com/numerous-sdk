@@ -51,7 +51,7 @@ func TestLogin(t *testing.T) {
 		RefreshToken: result.RefreshToken,
 		Tenant:       testTenant,
 	})
-	acutalUser, _ := Login(m, context.Background())
+	acutalUser, _ := login(m, context.Background())
 
 	m.AssertExpectations(t)
 	assert.Equal(t, expectedUser, acutalUser)

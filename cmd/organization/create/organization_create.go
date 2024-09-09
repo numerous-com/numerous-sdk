@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/organization/create/wizard"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
@@ -25,7 +26,7 @@ var OrganizationCreateCmd = &cobra.Command{
 			output.PrintErrorDetails("Error creating organization", err)
 		}
 
-		return err
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 

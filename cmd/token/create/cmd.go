@@ -2,6 +2,7 @@ package create
 
 import (
 	"github.com/spf13/cobra"
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/token"
 )
@@ -15,7 +16,8 @@ var Cmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a personal access token.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Create(cmd.Context(), token.NewService(gql.NewClient()), CreateInput{Name: name, Description: desc})
+		err := Create(cmd.Context(), token.NewService(gql.NewClient()), CreateInput{Name: name, Description: desc})
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 
