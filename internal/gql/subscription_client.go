@@ -7,7 +7,7 @@ import (
 )
 
 func NewSubscriptionClient() *graphql.SubscriptionClient {
-	client := graphql.NewSubscriptionClient(wsURL)
+	client := graphql.NewSubscriptionClient(getWSURL())
 
 	accessToken := getAccessToken()
 	if accessToken != nil {
