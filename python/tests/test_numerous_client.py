@@ -1,4 +1,5 @@
 import pytest
+
 from numerous._client import Client, _open_client
 
 

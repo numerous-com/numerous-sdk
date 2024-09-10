@@ -8,8 +8,8 @@ readme = "README.md"
 version = "0.15.0"
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
-    "typing-extensions==4.9.0",
-    "ariadne-codegen[subscriptions]==0.12.0",
+    "typing-extensions==4.12.2",
+    "ariadne-codegen[subscriptions]==0.14.0",
     "plotly>4",
     "packaging==24.0",
 ]
@@ -17,16 +17,16 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pre-commit",
-    "pytest==8.0.2",
-    "pytest-asyncio==0.23.5",
-    "ruff==0.5.7",
-    "mypy==1.8.0",
-    "coverage==7.4.0",
-    "twine==5.0.0",
-    "marimo==0.3.12",
-    "pydantic==2.7",
-    "types-setuptools>=69.5.0",
-    "build==1.2.1",
+    "pytest==8.3.2",
+    "pytest-asyncio==0.24.0",
+    "ruff==0.6.4",
+    "mypy==1.11.2",
+    "coverage==7.6.1",
+    "twine==5.1.1",
+    "marimo==0.8.14",
+    "pydantic==2.9",
+    "types-setuptools>=74.1.0",
+    "build==1.2.2",
 ]
 
 [project.scripts]
@@ -64,6 +64,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+known-first-party = ["numerous"]
 
 [tool.ruff.lint.flake8-pytest-style]
 # defaults changes in 0.6.0 which gives some issues
@@ -80,7 +81,6 @@ target_package_name = "graphql"
 target_package_path = "src/numerous/generated"
 
 [tool.mypy]
-exclude = ["build", "setup.py", ".*venv.*", "examples"]
 ignore_missing_imports = true
 
 [tool.semantic_release]

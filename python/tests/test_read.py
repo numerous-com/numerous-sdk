@@ -4,6 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+
 from numerous.appdev.commands import (
     read_app,
 )
