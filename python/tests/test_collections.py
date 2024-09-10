@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from numerous import collection
 from numerous._client import Client
 from numerous.generated.graphql.client import Client as GQLClient
