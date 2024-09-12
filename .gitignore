@@ -177,6 +177,7 @@ build
 !internal/gql/build
 cli.db
 c.out
+internal/version/version.txt
 
 # Python package dist
 numerous-*

@@ -8,6 +8,7 @@ GO_BUILD = $(GO_ENV) go build
 CLI_BUILD_DIR=build
 CLI_SOURCE_FILES=$(shell find . -name '*.go' -type f)
 CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
+VERSION_TXT=internal/version/version.txt
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
 getsystem = $(word 2,$(subst _, ,$(subst /, ,$@)))
@@ -42,6 +43,7 @@ clean:
 	rm -rf dist
 	rm -f .lint-ruff.txt
 	rm -f .lint-mypy.txt
+	rm -f $(VERSION_TXT)
 
 package: sdk-binaries
 	@echo "-- Building SDK package"
@@ -52,6 +54,9 @@ test: sdk-test cli-test
 lint: sdk-lint cli-lint
 
 dep: sdk-dep cli-dep
+
+$(VERSION_TXT): pyproject.toml
+	grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed 's/^version = "\(.\+\)"/\1/' > $(VERSION_TXT)
 
 sdk-lint:
 	@echo "-- Running SDK linters"
@@ -85,15 +90,15 @@ $(SDK_CLI_BINARY_DIR)/%: $(SDK_CLI_BINARY_DIR) $(CLI_BUILD_DIR)/%
 # CLI for specific OS/architecture
 cli-all: $(CLI_BUILD_TARGETS)
 
-$(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES)
+$(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES) version.txt
 	@echo "-- Building CLI for OS $(getsystem) architecture $(getarch) in $@"
 	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o $@ .
 
-cli-local:
+cli-local: version.txt
 	@echo "-- Building local CLI"
 	$(GO_BUILD) -o $(CLI_BUILD_DIR)/local .
 
-cli-build:
+cli-build: version.txt
 	@echo "-- Building CLI"
 	$(GO_BUILD) -ldflags '$(LDFLAGS)' -o $(CLI_BUILD_DIR)/numerous .
 
