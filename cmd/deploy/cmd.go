@@ -61,8 +61,9 @@ func run(cmd *cobra.Command, args []string) error {
 		Version:    version,
 		Verbose:    verbose,
 	}
+	err := Deploy(cmd.Context(), service, input)
 
-	return errorhandling.ErrorAlreadyPrinted(Deploy(cmd.Context(), service, input))
+	return errorhandling.ErrorAlreadyPrinted(err)
 }
 
 func init() {

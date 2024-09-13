@@ -41,7 +41,8 @@ var PushCmd = &cobra.Command{
 builds a docker image and runs it as a container.
 A URL is generated which provides access to the tool, anyone with the URL can access the tool.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errorhandling.ErrorAlreadyPrinted(push(cmd, args))
+		err := push(args)
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 
@@ -53,7 +54,7 @@ class MyApp:
 
 appdef = MyApp`
 
-func push(cmd *cobra.Command, args []string) error {
+func push(args []string) error {
 	appDir, projectDir, appPath, err := parseArguments(args)
 	if err != nil {
 		return err
