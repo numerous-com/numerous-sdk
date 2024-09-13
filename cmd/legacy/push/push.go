@@ -67,7 +67,7 @@ func push(args []string) error {
 		return err
 	}
 
-	m, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
+	m, err := manifest.Load(filepath.Join(appDir, manifest.ManifestPath))
 	if err != nil {
 		output.PrintErrorAppNotInitialized(appDir)
 		output.PrintManifestTOMLError(err)

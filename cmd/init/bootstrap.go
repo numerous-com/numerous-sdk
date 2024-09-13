@@ -15,7 +15,7 @@ import (
 const EnvFileName string = ".env"
 
 func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error {
-	manifestToml, err := m.ToToml()
+	manifestToml, err := m.ToTOML()
 	if err != nil {
 		output.PrintErrorDetails("Error encoding manifest file", err)
 
@@ -32,16 +32,21 @@ func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error 
 	if toolID != "" {
 		gitignoreLines = append(gitignoreLines, dir.AppIDFileName)
 	}
-	if err = addToGitIgnore(basePath, gitignoreLines); err != nil {
+
+	if err := addToGitIgnore(basePath, gitignoreLines); err != nil {
 		return err
 	}
 
-	appFilePath := filepath.Join(basePath, m.AppFile)
-	if err = createAndWriteIfFileNotExist(appFilePath, m.Library.DefaultAppFile()); err != nil {
+	if m.Python == nil {
+		return manifest.ErrNoPythonAppConfig
+	}
+
+	appFilePath := filepath.Join(basePath, m.Python.AppFile)
+	if err = createAndWriteIfFileNotExist(appFilePath, m.Python.Library.DefaultAppFile()); err != nil {
 		return err
 	}
 
-	requirementsFilePath := filepath.Join(basePath, m.RequirementsFile)
+	requirementsFilePath := filepath.Join(basePath, m.Python.RequirementsFile)
 	if err = createFile(requirementsFilePath); err != nil {
 		return err
 	}
@@ -61,7 +66,7 @@ func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error 
 }
 
 func bootstrapRequirements(m *manifest.Manifest, basePath string) error {
-	requirementsPath := filepath.Join(basePath, m.RequirementsFile)
+	requirementsPath := filepath.Join(basePath, m.Python.RequirementsFile)
 	content, err := os.ReadFile(requirementsPath)
 	if err != nil {
 		return err
@@ -73,7 +78,7 @@ func bootstrapRequirements(m *manifest.Manifest, basePath string) error {
 	}
 	defer file.Close()
 
-	for _, requirement := range m.Library.Requirements {
+	for _, requirement := range m.Python.Library.Requirements {
 		if err := addRequirementToFile(file, content, requirement); err != nil {
 			return err
 		}

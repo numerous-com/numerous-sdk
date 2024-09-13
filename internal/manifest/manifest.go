@@ -6,38 +6,29 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/BurntSushi/toml"
 )
 
-const ManifestFileName string = "numerous.toml"
-
-var ManifestPath string = filepath.Join(".", ManifestFileName)
-
 type Manifest struct {
-	Name             string      `toml:"name" json:"name"`
-	Description      string      `toml:"description" json:"description"`
-	Library          Library     `toml:"library" json:"library"`
-	Python           string      `toml:"python" json:"python"`
-	AppFile          string      `toml:"app_file" json:"app_file"`
-	RequirementsFile string      `toml:"requirements_file" json:"requirements_file"`
-	Port             uint        `toml:"port" json:"port"`
-	CoverImage       string      `toml:"cover_image" json:"cover_image"`
-	Exclude          []string    `toml:"exclude" json:"exclude"`
-	Deployment       *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
+	ManifestApp
+	Python     *ManifestPython `toml:"python,omitempty" json:"python,omitempty"`
+	Deployment *Deployment     `toml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 
-type DeprecatedManifest struct {
-	Name             string   `toml:"name" json:"name"`
-	Description      string   `toml:"description" json:"description"`
-	Library          Library  `toml:"library" json:"library"`
-	Python           string   `toml:"python" json:"python"`
-	AppFile          string   `toml:"app_file" json:"app_file"`
-	RequirementsFile string   `toml:"requirements_file" json:"requirements_file"`
-	Port             string   `toml:"port" json:"port"`
-	CoverImage       string   `toml:"cover_image" json:"cover_image"`
-	Exclude          []string `toml:"exclude" json:"exclude"`
+type ManifestPython struct {
+	Library          Library `toml:"library" json:"library"`
+	Version          string  `toml:"version" json:"version"`
+	AppFile          string  `toml:"app_file" json:"app_file"`
+	RequirementsFile string  `toml:"requirements_file" json:"requirements_file"`
+	Port             uint    `toml:"port" json:"port"`
+}
+
+type ManifestApp struct {
+	Name        string   `toml:"name" json:"name"`
+	Description string   `toml:"description" json:"description"`
+	CoverImage  string   `toml:"cover_image" json:"cover_image"`
+	Exclude     []string `toml:"exclude" json:"exclude"`
 }
 
 type Deployment struct {
@@ -45,62 +36,52 @@ type Deployment struct {
 	AppSlug          string `toml:"app" json:"app"`
 }
 
-func LoadManifest(filePath string) (*Manifest, error) {
+func load(filePath string) (*Manifest, error) {
 	var m Manifest
-
-	if _, err := toml.DecodeFile(filePath, &m); err != nil {
-		// TODO: consider which error to return when loading of deprecated
-		// manifest fails right now the original error is discarded, which may
-		// be confusing.
-		return loadDeprecatedManifest(filePath)
-	}
-
-	return &m, nil
-}
-
-func loadDeprecatedManifest(filePath string) (*Manifest, error) {
-	var m DeprecatedManifest
 
 	_, err := toml.DecodeFile(filePath, &m)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.ToManifest()
+	return &m, nil
 }
 
-func (d *DeprecatedManifest) ToManifest() (*Manifest, error) {
-	port, err := strconv.ParseUint(d.Port, 10, 64)
-	if err != nil {
-		return nil, err
+func Load(filePath string) (*Manifest, error) {
+	m, err := load(filePath)
+	if err == nil {
+		return m, nil
 	}
 
-	m := Manifest{
-		Name:             d.Name,
-		Description:      d.Description,
-		Library:          d.Library,
-		Python:           d.Python,
-		AppFile:          d.AppFile,
-		RequirementsFile: d.RequirementsFile,
-		Port:             uint(port),
-		CoverImage:       d.CoverImage,
-		Exclude:          d.Exclude,
+	v1, v1Err := loadV1(filePath)
+	if v1Err == nil {
+		m := v1.ToManifest()
+		return &m, nil
 	}
 
-	return &m, nil
+	v0, v0Err := loadV0(filePath)
+	if v0Err == nil {
+		return v0.ToManifest()
+	}
+
+	return nil, err
 }
 
 func New(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
 	return &Manifest{
-		Name:             name,
-		Description:      description,
-		Library:          lib,
-		Python:           python,
-		AppFile:          appFile,
-		RequirementsFile: requirementsFile,
-		Port:             lib.Port,
-		CoverImage:       "app_cover.jpg",
-		Exclude:          []string{"*venv", "venv*", ".git", ".env"},
+		ManifestApp: ManifestApp{
+			Name:        name,
+			Description: description,
+			CoverImage:  "app_cover.jpg",
+			Exclude:     []string{"*venv", "venv*", ".git", ".env"},
+		},
+		Python: &ManifestPython{
+			Library:          lib,
+			Version:          python,
+			AppFile:          appFile,
+			RequirementsFile: requirementsFile,
+			Port:             lib.Port,
+		},
 	}
 }
 
@@ -116,7 +97,7 @@ func ManifestExists(appDir string) (bool, error) {
 	return exists, err
 }
 
-func (m *Manifest) ToToml() (string, error) {
+func (m *Manifest) ToTOML() (string, error) {
 	buf := new(bytes.Buffer)
 	err := toml.NewEncoder(buf).Encode(m)
 

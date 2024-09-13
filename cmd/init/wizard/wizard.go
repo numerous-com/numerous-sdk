@@ -61,17 +61,17 @@ func getQuestions(m *manifest.Manifest) []*survey.Question {
 		qs = append(qs, q)
 	}
 
-	if m.Library.Key == "" {
+	if m.Python.Library.Key == "" {
 		q := getLibraryQuestion("LibraryName", "Select which app library you are using:")
 		qs = append(qs, q)
 	}
 
-	if m.AppFile == "" {
+	if m.Python.AppFile == "" {
 		qs = append(qs, getFileQuestion("AppFile",
 			"Provide the path to your app:", "app.py", ".py"))
 	}
 
-	if m.RequirementsFile == "" {
+	if m.Python.RequirementsFile == "" {
 		q := getFileQuestion("RequirementsFile", "Provide the path to your requirements file:", "requirements.txt", ".txt")
 		qs = append(qs, q)
 	}

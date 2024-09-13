@@ -71,7 +71,7 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 
 func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
-	m, err := manifest.LoadManifest(filepath.Join(input.AppDir, manifest.ManifestPath))
+	m, err := manifest.Load(filepath.Join(input.AppDir, manifest.ManifestPath))
 	if err != nil {
 		task.Error()
 		output.PrintErrorAppNotInitialized(input.AppDir)

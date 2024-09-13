@@ -62,13 +62,15 @@ func TestDownload(t *testing.T) {
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 		m := manifest.Manifest{
-			Library: manifest.LibraryStreamlit,
+			Python: &manifest.ManifestPython{
+				Library: manifest.LibraryStreamlit,
+			},
 			Deployment: &manifest.Deployment{
 				OrganizationSlug: orgSlug,
 				AppSlug:          appSlug,
 			},
 		}
-		data, err := m.ToToml()
+		data, err := m.ToTOML()
 		require.NoError(t, err)
 		var modeReadable fs.FileMode = 0o644
 		require.NoError(t, os.WriteFile(appDir+"/numerous.toml", []byte(data), modeReadable))

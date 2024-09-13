@@ -12,12 +12,16 @@ import (
 
 func TestCreate(t *testing.T) {
 	m := &manifest.Manifest{
-		Name:             "name",
-		Library:          manifest.LibraryMarimo,
-		Python:           "3.11",
-		AppFile:          "app.py",
-		RequirementsFile: "requirements.txt",
-		CoverImage:       "cover.png",
+		ManifestApp: manifest.ManifestApp{
+			Name:       "name",
+			CoverImage: "cover.png",
+		},
+		Python: &manifest.ManifestPython{
+			Library:          manifest.LibraryMarimo,
+			Version:          "3.11",
+			AppFile:          "app.py",
+			RequirementsFile: "requirements.txt",
+		},
 	}
 	t.Run("can return app on AppCreate mutation", func(t *testing.T) {
 		expectedApp := App{
