@@ -62,7 +62,7 @@ func TestDownload(t *testing.T) {
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 		m := manifest.Manifest{
-			Python: &manifest.ManifestPython{
+			Python: &manifest.Python{
 				Library: manifest.LibraryStreamlit,
 			},
 			Deployment: &manifest.Deployment{

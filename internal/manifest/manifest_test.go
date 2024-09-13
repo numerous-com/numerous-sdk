@@ -70,13 +70,13 @@ exclude = ["*venv", "venv*"]
 `
 
 var manifestStreamlit Manifest = Manifest{
-	ManifestApp: ManifestApp{
+	App: App{
 		Name:        "Streamlit App Name",
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
 	},
-	Python: &ManifestPython{
+	Python: &Python{
 		Library:          LibraryStreamlit,
 		Version:          "3.11",
 		Port:             80,
@@ -87,19 +87,71 @@ var manifestStreamlit Manifest = Manifest{
 }
 
 var manifestStreamlitNoDeploy Manifest = Manifest{
-	ManifestApp: ManifestApp{
+	App: App{
 		Name:        "Streamlit App Name",
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
 	},
-	Python: &ManifestPython{
+	Python: &Python{
 		Library:          LibraryStreamlit,
 		Version:          "3.11",
 		Port:             80,
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
 	},
+	Deployment: nil,
+}
+
+const tomlDockerNoDeploy string = `name = "Docker App Name"
+description = "A description"
+cover_image = "cover.png"
+exclude = ["*venv", "venv*"]
+
+[docker]
+  dockerfile = "Dockerfile"
+  context = "."
+`
+
+const tomlDocker string = `name = "Docker App Name"
+description = "A description"
+cover_image = "cover.png"
+exclude = ["*venv", "venv*"]
+
+[docker]
+  dockerfile = "Dockerfile"
+  context = "."
+
+[deploy]
+  organization = "organization-slug"
+  app = "app-slug"
+`
+
+const jsonDocker string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"docker":{"dockerfile":"Dockerfile","context":"."},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+
+const jsonDockerNoDeploy string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"docker":{"dockerfile":"Dockerfile","context":"."}}`
+
+var manifestDocker Manifest = Manifest{
+	App: App{
+		Name:        "Docker App Name",
+		Description: "A description",
+		CoverImage:  "cover.png",
+		Exclude:     []string{"*venv", "venv*"},
+	},
+	Python:     nil,
+	Docker:     &Docker{Dockerfile: "Dockerfile", Context: "."},
+	Deployment: &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
+}
+
+var manifestDockerNoDeploy Manifest = Manifest{
+	App: App{
+		Name:        "Docker App Name",
+		Description: "A description",
+		CoverImage:  "cover.png",
+		Exclude:     []string{"*venv", "venv*"},
+	},
+	Python:     nil,
+	Docker:     &Docker{Dockerfile: "Dockerfile", Context: "."},
 	Deployment: nil,
 }
 
@@ -142,7 +194,7 @@ func TestValidateApp(t *testing.T) {
 			l, err := GetLibraryByKey(tc.library)
 			require.NoError(t, err)
 
-			m := Manifest{Python: &ManifestPython{Library: l, AppFile: appfile}}
+			m := Manifest{Python: &Python{Library: l, AppFile: appfile}}
 
 			err = m.ValidateApp()
 
@@ -235,14 +287,24 @@ func TestToTOML(t *testing.T) {
 		expectedTOML string
 	}{
 		{
-			name:         "streamlit app",
+			name:         "streamlit",
 			manifest:     manifestStreamlit,
 			expectedTOML: tomlStreamlit,
 		},
 		{
-			name:         "without default deployment",
+			name:         "streamlit without default deployment",
 			manifest:     manifestStreamlitNoDeploy,
 			expectedTOML: tomlStreamlitNoDeploy,
+		},
+		{
+			name:         "docker",
+			manifest:     manifestDocker,
+			expectedTOML: tomlDocker,
+		},
+		{
+			name:         "docker without default deployment",
+			manifest:     manifestDockerNoDeploy,
+			expectedTOML: tomlDockerNoDeploy,
 		},
 	}
 
@@ -262,14 +324,24 @@ func TestToJSON(t *testing.T) {
 		expectedJSON string
 	}{
 		{
-			name:         "streamlit app",
+			name:         "streamlit",
 			manifest:     manifestStreamlit,
 			expectedJSON: jsonStreamlit,
 		},
 		{
-			name:         "without default deployment",
+			name:         "streamlit without default deployment",
 			manifest:     manifestStreamlitNoDeploy,
 			expectedJSON: jsonStreamlitNoDeploy,
+		},
+		{
+			name:         "docker",
+			manifest:     manifestDocker,
+			expectedJSON: jsonDocker,
+		},
+		{
+			name:         "docker without default deployment",
+			manifest:     manifestDockerNoDeploy,
+			expectedJSON: jsonDockerNoDeploy,
 		},
 	}
 

@@ -25,13 +25,13 @@ func (d *ManifestV0) ToManifest() (*Manifest, error) {
 	}
 
 	m := Manifest{
-		ManifestApp: ManifestApp{
+		App: App{
 			Name:        d.Name,
 			Description: d.Description,
 			CoverImage:  d.CoverImage,
 			Exclude:     d.Exclude,
 		},
-		Python: &ManifestPython{
+		Python: &Python{
 			Library:          d.Library,
 			Version:          d.Python,
 			AppFile:          d.AppFile,

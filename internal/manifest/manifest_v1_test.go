@@ -92,13 +92,13 @@ var v1ManifestMarimo = ManifestV1{
 }
 
 var manifestMarimo = Manifest{
-	ManifestApp: ManifestApp{
+	App: App{
 		Name:        "Marimo App Name",
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
 	},
-	Python: &ManifestPython{
+	Python: &Python{
 		Library:          LibraryMarimo,
 		Version:          "3.11",
 		AppFile:          "app.py",

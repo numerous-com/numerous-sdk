@@ -12,11 +12,11 @@ import (
 
 func TestCreate(t *testing.T) {
 	m := &manifest.Manifest{
-		ManifestApp: manifest.ManifestApp{
+		App: manifest.App{
 			Name:       "name",
 			CoverImage: "cover.png",
 		},
-		Python: &manifest.ManifestPython{
+		Python: &manifest.Python{
 			Library:          manifest.LibraryMarimo,
 			Version:          "3.11",
 			AppFile:          "app.py",

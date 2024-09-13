@@ -35,13 +35,13 @@ func (m *ManifestV1) ToJSON() (string, error) {
 
 func (m *ManifestV1) ToManifest() Manifest {
 	return Manifest{
-		ManifestApp: ManifestApp{
+		App: App{
 			Name:        m.Name,
 			Description: m.Description,
 			CoverImage:  m.CoverImage,
 			Exclude:     m.Exclude,
 		},
-		Python: &ManifestPython{
+		Python: &Python{
 			Library:          m.Library,
 			Version:          m.Python,
 			AppFile:          m.AppFile,

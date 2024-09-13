@@ -11,12 +11,18 @@ import (
 )
 
 type Manifest struct {
-	ManifestApp
-	Python     *ManifestPython `toml:"python,omitempty" json:"python,omitempty"`
-	Deployment *Deployment     `toml:"deploy,omitempty" json:"deploy,omitempty"`
+	App
+	Python     *Python     `toml:"python,omitempty" json:"python,omitempty"`
+	Docker     *Docker     `toml:"docker,omitempty" json:"docker,omitempty"`
+	Deployment *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 
-type ManifestPython struct {
+type Docker struct {
+	Dockerfile string `toml:"dockerfile,omitempty" json:"dockerfile,omitempty"`
+	Context    string `toml:"context,omitempty" json:"context,omitempty"`
+}
+
+type Python struct {
 	Library          Library `toml:"library" json:"library"`
 	Version          string  `toml:"version" json:"version"`
 	AppFile          string  `toml:"app_file" json:"app_file"`
@@ -24,7 +30,7 @@ type ManifestPython struct {
 	Port             uint    `toml:"port" json:"port"`
 }
 
-type ManifestApp struct {
+type App struct {
 	Name        string   `toml:"name" json:"name"`
 	Description string   `toml:"description" json:"description"`
 	CoverImage  string   `toml:"cover_image" json:"cover_image"`
@@ -69,13 +75,13 @@ func Load(filePath string) (*Manifest, error) {
 
 func New(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
 	return &Manifest{
-		ManifestApp: ManifestApp{
+		App: App{
 			Name:        name,
 			Description: description,
 			CoverImage:  "app_cover.jpg",
 			Exclude:     []string{"*venv", "venv*", ".git", ".env"},
 		},
-		Python: &ManifestPython{
+		Python: &Python{
 			Library:          lib,
 			Version:          python,
 			AppFile:          appFile,

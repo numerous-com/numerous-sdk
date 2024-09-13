@@ -45,10 +45,10 @@ func TestBootstrapAllFiles(t *testing.T) {
 	lib, err := manifest.GetLibraryByKey("streamlit")
 	require.NoError(t, err)
 	m := manifest.Manifest{
-		ManifestApp: manifest.ManifestApp{
+		App: manifest.App{
 			CoverImage: "cover_image.png",
 		},
-		Python: &manifest.ManifestPython{
+		Python: &manifest.Python{
 			Library:          lib,
 			AppFile:          "app.py",
 			RequirementsFile: "requirements.txt",
@@ -130,10 +130,10 @@ func TestBootstrapRequirementsFile(t *testing.T) {
 			tempDir := t.TempDir()
 			require.NoError(t, os.Chdir(tempDir))
 			m := manifest.Manifest{
-				ManifestApp: manifest.ManifestApp{
+				App: manifest.App{
 					CoverImage: "cover_image.png",
 				},
-				Python: &manifest.ManifestPython{
+				Python: &manifest.Python{
 					Library:          testCase.library,
 					AppFile:          "app.py",
 					RequirementsFile: "requirements.txt",
@@ -220,10 +220,10 @@ func TestBootstrapFiles(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				require.NoError(t, os.Chdir(t.TempDir()))
 				m := manifest.Manifest{
-					ManifestApp: manifest.ManifestApp{
+					App: manifest.App{
 						CoverImage: "cover_image.png",
 					},
-					Python: &manifest.ManifestPython{
+					Python: &manifest.Python{
 						Library:          testCase.library,
 						AppFile:          "app.py",
 						RequirementsFile: "requirements.txt",
@@ -245,10 +245,10 @@ func TestBootstrapFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
 		m := manifest.Manifest{
-			ManifestApp: manifest.ManifestApp{
+			App: manifest.App{
 				CoverImage: "conver_img.png",
 			},
-			Python: &manifest.ManifestPython{
+			Python: &manifest.Python{
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
@@ -271,11 +271,11 @@ func TestBootstrapFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
 		m := manifest.Manifest{
-			ManifestApp: manifest.ManifestApp{
+			App: manifest.App{
 				CoverImage: "conver_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
-			Python: &manifest.ManifestPython{
+			Python: &manifest.Python{
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 				Library:          manifest.LibraryMarimo,
@@ -294,11 +294,11 @@ func TestBootstrapFiles(t *testing.T) {
 	t.Run("given app id then it writes .app_id.txt", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := manifest.Manifest{
-			ManifestApp: manifest.ManifestApp{
+			App: manifest.App{
 				CoverImage: "conver_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
-			Python: &manifest.ManifestPython{
+			Python: &manifest.Python{
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
@@ -320,11 +320,11 @@ func TestBootstrapFiles(t *testing.T) {
 	t.Run("given no app id then it does not write .app_id.txt", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := manifest.Manifest{
-			ManifestApp: manifest.ManifestApp{
+			App: manifest.App{
 				CoverImage: "conver_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
-			Python: &manifest.ManifestPython{
+			Python: &manifest.Python{
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
