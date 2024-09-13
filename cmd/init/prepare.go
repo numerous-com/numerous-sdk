@@ -50,7 +50,7 @@ func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 	pythonVersion := python.PythonVersion()
 
 	m := manifest.New(lib, name, desc, pythonVersion, appFile, requirementsFile)
-	if continueBootstrap, err := wizard.RunInitAppWizard(appDir, m); err != nil {
+	if continueBootstrap, err := wizard.RunInitAppWizard(&wizard.SurveyAsker{}, appDir, m); err != nil {
 		output.PrintErrorDetails("Error running initialization wizard", err)
 		return "", nil, err
 	} else if !continueBootstrap {

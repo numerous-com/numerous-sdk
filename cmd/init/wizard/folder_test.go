@@ -1,144 +1,86 @@
 package wizard
 
 import (
-	"io"
-	"os"
+	"fmt"
 	"testing"
 
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type stubFileReader struct {
-	index   int
-	returns []struct {
-		b   []byte
-		err error
-	}
-}
-
-func (f *stubFileReader) Read(p []byte) (n int, err error) {
-	if f.index > len(f.returns) {
-		return 0, io.EOF
-	} else {
-		ret := f.returns[f.index]
-		f.index++
-		copy(p, ret.b)
-
-		return len(ret.b), ret.err
-	}
-}
-
-func (f *stubFileReader) Fd() uintptr {
-	return 0
-}
-
-func (f *stubFileReader) Reset() {
-	f.index = 0
-}
-
 func TestUseOrCreateAppFolder(t *testing.T) {
-	yesReader := stubFileReader{
-		returns: []struct {
-			b   []byte
-			err error
-		}{
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("y\n"), err: nil},
-			{b: []byte(""), err: io.EOF},
-		},
-	}
-
 	t.Run("Creates a folder structure when it doesn't exist", func(t *testing.T) {
-		yesReader.Reset()
-		path := t.TempDir() + "/test/folder"
+		nonexistingPath := t.TempDir() + "/test/folder"
+		asker := StubAsker{createFolderQuestion(nonexistingPath): true}
 
-		shouldContinue, err := UseOrCreateAppFolder(path, &yesReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, nonexistingPath)
 
 		assert.True(t, shouldContinue)
 		assert.NoError(t, err)
-		assert.DirExists(t, path)
+		assert.DirExists(t, nonexistingPath)
 	})
 
 	t.Run("Identify the current user folder structure", func(t *testing.T) {
-		yesReader.Reset()
 		path := t.TempDir()
+		asker := StubAsker{useFolderQuestion(path): true}
 
-		shouldContinue, err := UseOrCreateAppFolder(path, &yesReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, path)
 
 		assert.True(t, shouldContinue)
 		assert.NoError(t, err)
 		assert.DirExists(t, path)
 	})
 
-	noReader := stubFileReader{
-		returns: []struct {
-			b   []byte
-			err error
-		}{
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("n\n"), err: nil},
-			{b: []byte(""), err: io.EOF},
-		},
-	}
-
 	t.Run("User rejects folder creation", func(t *testing.T) {
-		noReader.Reset()
-		nonExistingFolder := t.TempDir() + "/test/folder"
+		nonexistingPath := t.TempDir() + "/test/folder"
+		asker := StubAsker{createFolderQuestion(nonexistingPath): false}
 
-		shouldContinue, err := UseOrCreateAppFolder(nonExistingFolder, &noReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, nonexistingPath)
 
 		assert.False(t, shouldContinue)
 		assert.NoError(t, err)
-		assert.NoDirExists(t, nonExistingFolder)
+		assert.NoDirExists(t, nonexistingPath)
 	})
 
-	t.Run("User rejects existing folder", func(t *testing.T) {
-		noReader.Reset()
+	t.Run("User rejects existing folder choice", func(t *testing.T) {
 		existingPath := t.TempDir()
-		_, err := os.Stat(existingPath)
-		require.NoError(t, err)
+		require.DirExists(t, existingPath)
+		asker := StubAsker{useFolderQuestion(existingPath): false}
 
-		shouldContinue, err := UseOrCreateAppFolder(existingPath, &noReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, existingPath)
 
 		assert.False(t, shouldContinue)
 		assert.NoError(t, err)
 	})
-
-	interruptReader := stubFileReader{
-		returns: []struct {
-			b   []byte
-			err error
-		}{
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("\x1b[10;10R"), err: nil},
-			{b: []byte("\x03\n"), err: nil}, // interrupt signal, e.g. ctrl+c
-			{b: []byte(""), err: io.EOF},
-		},
-	}
 
 	t.Run("User interrupts folder creation", func(t *testing.T) {
-		interruptReader.Reset()
-		nonExistingFolder := t.TempDir() + "/test/folder"
+		nonexistingPath := t.TempDir() + "/test/folder"
+		asker := StubAsker{createFolderQuestion(nonexistingPath): terminal.InterruptErr}
 
-		shouldContinue, err := UseOrCreateAppFolder(nonExistingFolder, &interruptReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, nonexistingPath)
 
 		assert.False(t, shouldContinue)
 		assert.NoError(t, err)
-		assert.NoDirExists(t, nonExistingFolder)
+		assert.NoDirExists(t, nonexistingPath)
 	})
 
 	t.Run("User interrupts existing folder choice", func(t *testing.T) {
-		interruptReader.Reset()
 		existingPath := t.TempDir()
-		_, err := os.Stat(existingPath)
-		require.NoError(t, err)
+		require.DirExists(t, existingPath)
+		asker := StubAsker{useFolderQuestion(existingPath): terminal.InterruptErr}
 
-		shouldContinue, err := UseOrCreateAppFolder(existingPath, &interruptReader)
+		shouldContinue, err := UseOrCreateAppFolder(&asker, existingPath)
 
 		assert.False(t, shouldContinue)
 		assert.NoError(t, err)
 	})
+}
+
+func useFolderQuestion(path string) string {
+	return fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", path)
+}
+
+func createFolderQuestion(path string) string {
+	return fmt.Sprintf("Create new folder '%s'? (default: yes)", path)
 }

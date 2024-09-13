@@ -3,7 +3,6 @@ package wizard
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"numerous.com/cli/internal/manifest"
 
@@ -19,7 +18,7 @@ type InitWizardOptions struct {
 	RequirementsFile string
 }
 
-func RunInitAppWizard(projectFolderPath string, m *manifest.Manifest) (bool, error) {
+func RunInitAppWizard(asker Asker, projectFolderPath string, m *manifest.Manifest) (bool, error) {
 	questions := getQuestions(m)
 	if len(questions) == 1 && questions[0].Name == "Description" {
 		return false, nil
@@ -29,7 +28,7 @@ func RunInitAppWizard(projectFolderPath string, m *manifest.Manifest) (bool, err
 	fmt.Println("We're happy you're here!")
 	fmt.Println("Let's get started by entering basic information about your app.")
 
-	continueWizard, err := UseOrCreateAppFolder(projectFolderPath, os.Stdin)
+	continueWizard, err := UseOrCreateAppFolder(asker, projectFolderPath)
 	if err != nil {
 		return false, err
 	} else if !continueWizard {
@@ -37,7 +36,7 @@ func RunInitAppWizard(projectFolderPath string, m *manifest.Manifest) (bool, err
 	}
 
 	answers := answersFromManifest(m)
-	if err := survey.Ask(questions, &answers); errors.Is(err, terminal.InterruptErr) {
+	if err := asker.Ask(questions, &answers); errors.Is(err, terminal.InterruptErr) {
 		return false, nil
 	} else if err != nil {
 		return false, err
@@ -67,8 +66,7 @@ func getQuestions(m *manifest.Manifest) []*survey.Question {
 	}
 
 	if m.Python.AppFile == "" {
-		qs = append(qs, getFileQuestion("AppFile",
-			"Provide the path to your app:", "app.py", ".py"))
+		qs = append(qs, getFileQuestion("AppFile", "Provide the path to your app:", "app.py", ".py"))
 	}
 
 	if m.Python.RequirementsFile == "" {

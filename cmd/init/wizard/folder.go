@@ -10,21 +10,20 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
-// allows dependency injection of the standard input for testing the survey
-func UseOrCreateAppFolder(folderPath string, in terminal.FileReader) (bool, error) {
+func UseOrCreateAppFolder(asker Asker, folderPath string) (bool, error) {
 	absPath, err := absPath(folderPath)
 	if err != nil {
 		return false, err
 	}
 
 	if _, err := os.Stat(absPath); errors.Is(err, os.ErrNotExist) {
-		return createFolderSurvey(absPath, in)
+		return createFolderSurvey(asker, absPath)
 	}
 
-	return confirmFolderSurvey(absPath, in)
+	return confirmFolderSurvey(asker, absPath)
 }
 
-func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error) {
+func createFolderSurvey(asker Asker, folderPath string) (bool, error) {
 	var confirm bool
 
 	prompt := &survey.Confirm{
@@ -32,7 +31,7 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 		Default: true,
 	}
 
-	err := survey.AskOne(prompt, &confirm, func(options *survey.AskOptions) error { options.Stdio.In = in; return nil })
+	err := asker.AskOne(prompt, &confirm)
 	if errors.Is(err, terminal.InterruptErr) {
 		return false, nil
 	} else if err != nil {
@@ -48,12 +47,12 @@ func createFolderSurvey(folderPath string, in terminal.FileReader) (bool, error)
 	return confirm, nil
 }
 
-func confirmFolderSurvey(folderPath string, in terminal.FileReader) (bool, error) {
+func confirmFolderSurvey(asker Asker, folderPath string) (bool, error) {
 	var confirm bool
 
 	msg := fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", folderPath)
 	prompt := &survey.Confirm{Message: msg, Default: true}
-	err := survey.AskOne(prompt, &confirm, func(options *survey.AskOptions) error { options.Stdio.In = in; return nil })
+	err := asker.AskOne(prompt, &confirm)
 	if errors.Is(err, terminal.InterruptErr) {
 		return false, nil
 	} else if err != nil {
