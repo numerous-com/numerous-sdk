@@ -1,4 +1,4 @@
-package initialize
+package init
 
 import (
 	"os"

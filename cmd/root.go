@@ -10,7 +10,7 @@ import (
 	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/dev"
 	"numerous.com/cli/cmd/download"
-	"numerous.com/cli/cmd/initialize"
+	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/legacy"
 	"numerous.com/cli/cmd/login"
 	"numerous.com/cli/cmd/logout"
@@ -116,7 +116,7 @@ func init() {
 	})
 
 	rootCmd.AddCommand(
-		initialize.InitCmd,
+		cmdinit.InitCmd,
 		login.LoginCmd,
 		logout.LogoutCmd,
 		dev.DevCmd,

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"numerous.com/cli/cmd/initialize"
+	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dir"
@@ -275,7 +275,7 @@ func pushBuild(zipFilePath string, appID string, secrets map[string]string) (str
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(filepath.Join(appDir, initialize.EnvFileName))
+	env, _ := dotenv.Load(filepath.Join(appDir, cmdinit.EnvFileName))
 	return env
 }
 

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"numerous.com/cli/cmd/initialize"
+	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -259,6 +259,6 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(path.Join(appDir, initialize.EnvFileName))
+	env, _ := dotenv.Load(path.Join(appDir, cmdinit.EnvFileName))
 	return env
 }
