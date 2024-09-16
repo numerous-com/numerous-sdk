@@ -30,6 +30,9 @@ func (a *SurveyAsker) Ask(qs []*survey.Question, response interface{}, opts ...s
 
 var _ Asker = &StubAsker{}
 
+// Used for stubbing out the Asker interface. Use as a map from survey.Confirm
+// messages or survey.Question names to values. Errors in the map are returned
+// as errors from the input process.
 type StubAsker map[string]interface{}
 
 // AskOne implements Asker.

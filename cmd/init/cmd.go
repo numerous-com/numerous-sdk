@@ -7,6 +7,7 @@ import (
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/wizard"
 
 	"github.com/spf13/cobra"
 )
@@ -31,13 +32,14 @@ var (
 
 var (
 	ErrGetWorkDir            = errors.New("error getting working directory")
-	ErrStopBootstrap         = errors.New("stop bootstrap")
 	ErrAppAlreadyInitialized = errors.New("app already initialized")
 )
 
 func run(cmd *cobra.Command, args []string) error {
 	appDir, m, err := PrepareInit(args)
-	if err != nil {
+	if errors.Is(err, wizard.ErrStopInit) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 

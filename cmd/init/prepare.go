@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"numerous.com/cli/cmd/init/wizard"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
 	"numerous.com/cli/internal/python"
+	"numerous.com/cli/internal/wizard"
 )
 
 func PrepareInit(args []string) (string, *manifest.Manifest, error) {
@@ -50,11 +50,9 @@ func PrepareInit(args []string) (string, *manifest.Manifest, error) {
 	pythonVersion := python.PythonVersion()
 
 	m := manifest.New(lib, name, desc, pythonVersion, appFile, requirementsFile)
-	if continueBootstrap, err := wizard.RunInitAppWizard(&wizard.SurveyAsker{}, appDir, m); err != nil {
+	if err := wizard.Run(&wizard.SurveyAsker{}, appDir, m); err != nil {
 		output.PrintErrorDetails("Error running initialization wizard", err)
 		return "", nil, err
-	} else if !continueBootstrap {
-		return "", nil, ErrStopBootstrap
 	}
 
 	return appDir, m, nil

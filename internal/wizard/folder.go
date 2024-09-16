@@ -10,6 +10,11 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
+var (
+	ErrMustBeDirectory = errors.New("file must be a directory")
+	ErrNotString       = errors.New("not a string")
+)
+
 func UseOrCreateAppFolder(asker Asker, folderPath string) (bool, error) {
 	absPath, err := absPath(folderPath)
 	if err != nil {
@@ -73,4 +78,46 @@ func absPath(p string) (string, error) {
 	}
 
 	return filepath.Join(wd, p), nil
+}
+
+func getFolderQuestion(name, prompt, defaultPath string) *survey.Question {
+	return &survey.Question{
+		Name: name,
+		Prompt: &survey.Input{
+			Message: prompt,
+			Default: defaultPath,
+			Suggest: suggestFolder,
+		},
+		Validate: func(ans interface{}) error {
+			folder, ok := ans.(string)
+			if !ok {
+				return ErrNotString
+			}
+
+			f, err := os.Stat(folder)
+			if err != nil {
+				return err
+			}
+
+			if !f.IsDir() {
+				return ErrMustBeDirectory
+			}
+
+			return nil
+		},
+		Transform: cleanPath,
+	}
+}
+
+func suggestFolder(toComplete string) []string {
+	matches, _ := filepath.Glob(toComplete + "*")
+	var paths []string
+	for _, match := range matches {
+		f, _ := os.Stat(match)
+		if f.IsDir() {
+			paths = append(paths, match+string(os.PathSeparator))
+		}
+	}
+
+	return paths
 }
