@@ -32,7 +32,7 @@ func createFolderSurvey(asker Asker, folderPath string) (bool, error) {
 	var confirm bool
 
 	prompt := &survey.Confirm{
-		Message: fmt.Sprintf("Create new folder '%s'? (default: yes)", folderPath),
+		Message: CreateFolderQuestion(folderPath),
 		Default: true,
 	}
 
@@ -55,7 +55,7 @@ func createFolderSurvey(asker Asker, folderPath string) (bool, error) {
 func confirmFolderSurvey(asker Asker, folderPath string) (bool, error) {
 	var confirm bool
 
-	msg := fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", folderPath)
+	msg := UseFolderQuestion(folderPath)
 	prompt := &survey.Confirm{Message: msg, Default: true}
 	err := asker.AskOne(prompt, &confirm)
 	if errors.Is(err, terminal.InterruptErr) {
@@ -120,4 +120,12 @@ func suggestFolder(toComplete string) []string {
 	}
 
 	return paths
+}
+
+func UseFolderQuestion(path string) string {
+	return fmt.Sprintf("Use the existing folder %s for your app? (default: yes)", path)
+}
+
+func CreateFolderQuestion(path string) string {
+	return fmt.Sprintf("Create new folder '%s'? (default: yes)", path)
 }

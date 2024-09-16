@@ -73,7 +73,7 @@ func Load(filePath string) (*Manifest, error) {
 	return nil, err
 }
 
-func New(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
+func NewWithPython(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
 	return &Manifest{
 		App: App{
 			Name:        name,

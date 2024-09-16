@@ -22,7 +22,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "streamlit wizard answers",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
 					"LibraryName":           "Streamlit",
@@ -37,7 +37,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "marimo from input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "Not Used App Name",
 					"Description":           "Not Used App description",
 					"LibraryName":           "Not Used Library",
@@ -56,7 +56,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "app name given as input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Description":           "App description",
 					"LibraryName":           "Streamlit",
 					"AppFile":               "app.py",
@@ -71,7 +71,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "app description given as input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"LibraryName":           "Streamlit",
 					"AppFile":               "app.py",
@@ -86,7 +86,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "app python library given as input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
 					"AppFile":               "app.py",
@@ -101,7 +101,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "app python requirements file given as input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"LibraryName":           "Streamlit",
 					"Description":           "App description",
@@ -116,7 +116,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "app python app file given as input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"LibraryName":           "Streamlit",
 					"Description":           "App description",
@@ -131,7 +131,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "docker app from questions",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
 					"LibraryName":           "Dockerfile",
@@ -146,7 +146,7 @@ func TestRunInitAppWizard(t *testing.T) {
 			{
 				name: "docker app from input",
 				stubAsker: StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
 					"LibraryName":           "Dockerfile",
@@ -185,11 +185,11 @@ func TestRunInitAppWizard(t *testing.T) {
 			{questionToInterrupt: "RequirementsFile", libraryName: "Streamlit"},
 			{questionToInterrupt: "Dockerfile", libraryName: "Dockerfile"},
 			{questionToInterrupt: "Context", libraryName: "Dockerfile"},
-			{questionToInterrupt: useFolderQuestion(path)},
+			{questionToInterrupt: UseFolderQuestion(path)},
 		} {
 			t.Run(tc.questionToInterrupt, func(t *testing.T) {
 				stubAsker := StubAsker{
-					useFolderQuestion(path): true,
+					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
 					"LibraryName":           tc.libraryName,

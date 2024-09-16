@@ -3,6 +3,7 @@ package init
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
@@ -23,11 +24,11 @@ var InitCmd = &cobra.Command{
 }
 
 var (
-	name             string
-	desc             string
-	libraryKey       string
-	appFile          string
-	requirementsFile string
+	argName             string
+	argDesc             string
+	argLibraryKey       string
+	argAppFile          string
+	argRequirementsFile string
 )
 
 var (
@@ -36,19 +37,27 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) error {
-	appDir, m, err := PrepareInit(args)
+	appDir, err := os.Getwd()
+	if err != nil {
+		return ErrGetWorkDir
+	}
+
+	if len(args) != 0 {
+		appDir = PathArgumentHandler(args[0], appDir)
+	}
+
+	params := InitializeParams{
+		AppDir:           appDir,
+		Name:             argName,
+		Desc:             argDesc,
+		LibraryKey:       argLibraryKey,
+		AppFile:          argAppFile,
+		RequirementsFile: argRequirementsFile,
+	}
+	_, err = Initialize(&wizard.SurveyAsker{}, params)
 	if errors.Is(err, wizard.ErrStopInit) {
 		return nil
 	} else if err != nil {
-		return err
-	}
-
-	err = m.BootstrapFiles("", appDir)
-	switch {
-	case err == manifest.ErrEncodingManifest:
-		output.PrintErrorDetails("Error encoding manifest file", err)
-	case err != nil:
-		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return err
 	}
 
@@ -76,9 +85,9 @@ Next steps:
 }
 
 func init() {
-	InitCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the app")
-	InitCmd.Flags().StringVarP(&desc, "description", "d", "", "Description of your app")
-	InitCmd.Flags().StringVarP(&libraryKey, "app-library", "t", "", "Library the app is made with")
-	InitCmd.Flags().StringVarP(&appFile, "app-file", "f", "", "Path to that main file of the project")
-	InitCmd.Flags().StringVarP(&requirementsFile, "requirements-file", "r", "", "Requirements file of the project")
+	InitCmd.Flags().StringVarP(&argName, "name", "n", "", "Name of the app")
+	InitCmd.Flags().StringVarP(&argDesc, "description", "d", "", "Description of your app")
+	InitCmd.Flags().StringVarP(&argLibraryKey, "app-library", "t", "", "Library the app is made with")
+	InitCmd.Flags().StringVarP(&argAppFile, "app-file", "f", "", "Path to that main file of the project")
+	InitCmd.Flags().StringVarP(&argRequirementsFile, "requirements-file", "r", "", "Requirements file of the project")
 }
