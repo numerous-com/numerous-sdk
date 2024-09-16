@@ -27,9 +27,10 @@ func TestBootstrapFiles(t *testing.T) {
 		toolID := "tool-id"
 		m := Manifest{
 			App: App{
-				CoverImage: "conver_img.png",
+				CoverImage: "cover_img.png",
 			},
 			Python: &Python{
+				Library:          LibraryMarimo,
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
@@ -53,7 +54,7 @@ func TestBootstrapFiles(t *testing.T) {
 		toolID := "tool-id"
 		m := Manifest{
 			App: App{
-				CoverImage: "conver_img.png",
+				CoverImage: "cover_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
 			Python: &Python{
@@ -76,10 +77,11 @@ func TestBootstrapFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := Manifest{
 			App: App{
-				CoverImage: "conver_img.png",
+				CoverImage: "cover_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
 			Python: &Python{
+				Library:          LibraryMarimo,
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
@@ -102,10 +104,11 @@ func TestBootstrapFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := Manifest{
 			App: App{
-				CoverImage: "conver_img.png",
+				CoverImage: "cover_img.png",
 				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
 			},
 			Python: &Python{
+				Library:          LibraryMarimo,
 				RequirementsFile: "requirements.txt",
 				AppFile:          "app.py",
 			},
@@ -150,8 +153,7 @@ pn.template.MaterialTemplate(
 
 func TestBootstrapFilesPythonApp(t *testing.T) {
 	t.Run("all files exist", func(t *testing.T) {
-		tempDir := t.TempDir()
-		require.NoError(t, os.Chdir(tempDir))
+		appDir := t.TempDir()
 		lib, err := GetLibraryByKey("streamlit")
 		require.NoError(t, err)
 		m := Manifest{
@@ -165,14 +167,14 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 			},
 		}
 		expectedFiles := []string{
-			".gitignore",
-			ManifestFileName,
-			m.Python.AppFile,
-			m.Python.RequirementsFile,
-			m.CoverImage,
+			filepath.Join(appDir, ".gitignore"),
+			filepath.Join(appDir, ManifestFileName),
+			filepath.Join(appDir, m.Python.AppFile),
+			filepath.Join(appDir, m.Python.RequirementsFile),
+			filepath.Join(appDir, m.CoverImage),
 		}
 
-		err = m.BootstrapFiles("some-id", tempDir)
+		err = m.BootstrapFiles("some-id", appDir)
 
 		if assert.NoError(t, err) {
 			assertAllFilesExist(t, expectedFiles)
@@ -235,8 +237,7 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				tempDir := t.TempDir()
-				require.NoError(t, os.Chdir(tempDir))
+				appDir := t.TempDir()
 				m := Manifest{
 					App: App{
 						CoverImage: "cover_image.png",
@@ -247,17 +248,15 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 						RequirementsFile: "requirements.txt",
 					},
 				}
+				requiremenstPath := filepath.Join(appDir, m.Python.RequirementsFile)
 				if tc.initialRequirements != "" {
-					err := os.WriteFile(m.Python.RequirementsFile, []byte(tc.initialRequirements), 0o644)
-					require.NoError(t, err)
+					test.WriteFile(t, requiremenstPath, []byte(tc.initialRequirements))
 				}
 
-				err := m.BootstrapFiles("some-id", tempDir)
+				err := m.BootstrapFiles("some-id", appDir)
 
-				require.NoError(t, err)
-				actualRequirements, err := os.ReadFile(m.Python.RequirementsFile)
-				require.NoError(t, err)
-				assert.Equal(t, tc.expectedRequirements, string(actualRequirements))
+				assert.NoError(t, err)
+				test.AssertFileContent(t, requiremenstPath, []byte(tc.expectedRequirements))
 			})
 		}
 	})
@@ -295,7 +294,7 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				require.NoError(t, os.Chdir(t.TempDir()))
+				appDir := t.TempDir()
 				m := Manifest{
 					App: App{
 						CoverImage: "cover_image.png",
@@ -306,16 +305,85 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 						RequirementsFile: "requirements.txt",
 					},
 				}
-				tempDir, err := os.Getwd()
-				require.NoError(t, err)
 
-				err = m.BootstrapFiles("tool id", tempDir)
+				err := m.BootstrapFiles("tool id", appDir)
 
-				require.NoError(t, err)
-				appContent, err := os.ReadFile("app.py")
-				require.NoError(t, err)
-				assert.Equal(t, tc.expectedAppFile, string(appContent))
+				assert.NoError(t, err)
+				test.AssertFileContent(t, filepath.Join(appDir, "app.py"), []byte(tc.expectedAppFile))
 			})
 		}
+	})
+}
+
+func TestBootstrapDockerApp(t *testing.T) {
+	t.Run("given no pre-existing dockerfile it bootstraps example docker app", func(t *testing.T) {
+		appDir := t.TempDir()
+		m := Manifest{
+			App: App{
+				CoverImage: "cover_image.png",
+			},
+			Docker: &Docker{
+				Dockerfile: "Dockerfile",
+				Context:    ".",
+			},
+		}
+
+		err := m.BootstrapFiles("", appDir)
+
+		assert.NoError(t, err)
+		test.AssertFileContent(t, filepath.Join(appDir, "Dockerfile"), []byte(dockerExampleDockerfile))
+		test.AssertFileContent(t, filepath.Join(appDir, "app.py"), []byte(dockerExampleAppPy))
+		test.AssertFileContent(t, filepath.Join(appDir, "requirements.txt"), []byte(dockerExampleRequirementsTxt))
+	})
+
+	t.Run("given pre-existing dockerfile it does not bootstrap docker example files", func(t *testing.T) {
+		dockerfileContent := []byte("FROM hello-world")
+		appDir := t.TempDir()
+		m := Manifest{
+			App: App{
+				CoverImage: "cover_image.png",
+			},
+			Docker: &Docker{
+				Dockerfile: "Dockerfile",
+				Context:    ".",
+			},
+		}
+		dockerfilePath := filepath.Join(appDir, "Dockerfile")
+		test.WriteFile(t, dockerfilePath, dockerfileContent)
+
+		err := m.BootstrapFiles("", appDir)
+
+		assert.NoError(t, err)
+		test.AssertFileContent(t, dockerfilePath, dockerfileContent)
+		assert.NoFileExists(t, filepath.Join(appDir, "app.py"))
+		assert.NoFileExists(t, filepath.Join(appDir, "requirements.txt"))
+	})
+
+	t.Run("given pre-existing extra files it does not overwrite them", func(t *testing.T) {
+		appDir := t.TempDir()
+
+		appFilePath := filepath.Join(appDir, "app.py")
+		appContent := []byte("print(\"hello, world!\")")
+		test.WriteFile(t, appFilePath, appContent)
+
+		requirementsFilePath := filepath.Join(appDir, "requirements.txt")
+		requirementsContent := []byte("fastapi\nnumpy\n")
+		test.WriteFile(t, requirementsFilePath, requirementsContent)
+
+		m := Manifest{
+			App: App{
+				CoverImage: "cover_image.png",
+			},
+			Docker: &Docker{
+				Dockerfile: "Dockerfile",
+				Context:    ".",
+			},
+		}
+
+		err := m.BootstrapFiles("", appDir)
+
+		assert.NoError(t, err)
+		test.AssertFileContent(t, appFilePath, appContent)
+		test.AssertFileContent(t, requirementsFilePath, requirementsContent)
 	})
 }
