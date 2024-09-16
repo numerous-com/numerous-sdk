@@ -31,7 +31,7 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 	if len(args) == 1 {
 		appID = args[0]
 	} else if readAppID, err := dir.ReadAppID(appDir); err != nil {
-		output.PrintReadAppIDErrors(err, appDir)
+		dir.PrintReadAppIDErrors(err, appDir)
 		return err
 	} else {
 		appID = readAppID

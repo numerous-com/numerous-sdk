@@ -26,7 +26,7 @@ func unpublish(client *gqlclient.Client) error {
 	appDir := "."
 	appID, err := dir.ReadAppID(appDir)
 	if err != nil {
-		output.PrintReadAppIDErrors(err, appDir)
+		dir.PrintReadAppIDErrors(err, appDir)
 		return err
 	}
 

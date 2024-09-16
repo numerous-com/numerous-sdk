@@ -41,7 +41,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err := cmdinit.BootstrapFiles(m, a.ID, appDir); err != nil {
+	if err := m.BootstrapFiles(a.ID, appDir); err != nil {
 		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return
 	}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"numerous.com/cli/cmd/output"
 )
 
 const (
@@ -52,4 +54,12 @@ func ReadAppID(basePath string) (string, error) {
 	}
 
 	return string(appID), nil
+}
+
+func PrintReadAppIDErrors(err error, appDir string) {
+	if err == ErrAppIDNotFound {
+		output.PrintErrorAppNotInitialized(appDir)
+	} else if err != nil {
+		output.PrintErrorDetails("An error occurred reading the app ID", err)
+	}
 }

@@ -1,25 +1,24 @@
-package init
+package manifest
 
 import (
 	"bytes"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"numerous.com/cli/assets"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
-	"numerous.com/cli/internal/manifest"
 )
 
 const EnvFileName string = ".env"
 
-func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error {
+var ErrEncodingManifest = errors.New("error encoding manifest")
+
+func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
 	manifestToml, err := m.ToTOML()
 	if err != nil {
-		output.PrintErrorDetails("Error encoding manifest file", err)
-
-		return err
+		return ErrEncodingManifest
 	}
 
 	if toolID != "" {
@@ -38,7 +37,7 @@ func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error 
 	}
 
 	if m.Python == nil {
-		return manifest.ErrNoPythonAppConfig
+		return ErrNoPythonAppConfig
 	}
 
 	appFilePath := filepath.Join(basePath, m.Python.AppFile)
@@ -58,14 +57,14 @@ func BootstrapFiles(m *manifest.Manifest, toolID string, basePath string) error 
 		return err
 	}
 
-	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, manifest.ManifestPath), manifestToml); err != nil {
+	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, ManifestPath), manifestToml); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func bootstrapRequirements(m *manifest.Manifest, basePath string) error {
+func bootstrapRequirements(m *Manifest, basePath string) error {
 	requirementsPath := filepath.Join(basePath, m.Python.RequirementsFile)
 	content, err := os.ReadFile(requirementsPath)
 	if err != nil {

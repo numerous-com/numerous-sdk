@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"numerous.com/cli/cmd/errorhandling"
-	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dir"
@@ -62,7 +61,7 @@ func push(args []string) error {
 
 	toolID, err := dir.ReadAppID(appDir)
 	if err != nil {
-		output.PrintReadAppIDErrors(err, appDir)
+		dir.PrintReadAppIDErrors(err, appDir)
 
 		return err
 	}
@@ -279,7 +278,7 @@ func pushBuild(zipFilePath string, appID string, secrets map[string]string) (str
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(filepath.Join(appDir, cmdinit.EnvFileName))
+	env, _ := dotenv.Load(filepath.Join(appDir, manifest.EnvFileName))
 	return env
 }
 

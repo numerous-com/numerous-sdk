@@ -43,7 +43,11 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := BootstrapFiles(m, "", appDir); err != nil {
+	err = m.BootstrapFiles("", appDir)
+	switch {
+	case err == manifest.ErrEncodingManifest:
+		output.PrintErrorDetails("Error encoding manifest file", err)
+	case err != nil:
 		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return err
 	}

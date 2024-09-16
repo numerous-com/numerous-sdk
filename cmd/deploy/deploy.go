@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -86,7 +85,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
 	if err != nil {
 		task.Error()
-		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
 
 		return nil, nil, err
 	}
@@ -127,7 +126,7 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
 	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
 	if err != nil {
-		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
@@ -161,7 +160,7 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 	case err == nil:
 		return appReadOutput.AppID, nil
 	case errors.Is(err, app.ErrAccessDenied):
-		output.PrintErrorAccessDenied(ai)
+		app.PrintErrorAccessDenied(ai)
 		return "", err
 	case !errors.Is(err, app.ErrAppNotFound):
 		output.PrintErrorDetails("Error reading remote app", err)
@@ -261,6 +260,6 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(path.Join(appDir, cmdinit.EnvFileName))
+	env, _ := dotenv.Load(path.Join(appDir, manifest.EnvFileName))
 	return env
 }
