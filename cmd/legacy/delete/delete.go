@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
@@ -19,7 +20,8 @@ var DeleteCmd = &cobra.Command{
 	Long: `Removes the app from the server and deletes any associated resources, such as docker images or containers.
 This action cannot be undone.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return deleteApp(gql.GetClient(), args)
+		err := deleteApp(gql.GetClient(), args)
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
@@ -24,9 +25,9 @@ var LoginCmd = &cobra.Command{
 			return nil
 		}
 
-		_, err := Login(auth.NumerousTenantAuthenticator, cmd.Context())
+		_, err := login(auth.NumerousTenantAuthenticator, cmd.Context())
 
-		return err
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 
@@ -42,7 +43,7 @@ Verification code: %s
 Press Enter to continue...
 `
 
-func Login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
+func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 	state, err := a.GetDeviceCode(ctx, http.DefaultClient)
 	if err != nil {
 		output.PrintErrorDetails("Error getting device code", err)

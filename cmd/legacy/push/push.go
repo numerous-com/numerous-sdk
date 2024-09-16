@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"numerous.com/cli/cmd/errorhandling"
 	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/archive"
@@ -39,7 +40,10 @@ var PushCmd = &cobra.Command{
 	Long: `Zip-compresses the tool project and pushes it to the numerous server, which
 builds a docker image and runs it as a container.
 A URL is generated which provides access to the tool, anyone with the URL can access the tool.`,
-	RunE: run,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := push(args)
+		return errorhandling.ErrorAlreadyPrinted(err)
+	},
 }
 
 var numerousAppEngineMsg string = `You can solve this by assigning your app definition to this name, for example:
@@ -50,7 +54,7 @@ class MyApp:
 
 appdef = MyApp`
 
-func run(cmd *cobra.Command, args []string) error {
+func push(args []string) error {
 	appDir, projectDir, appPath, err := parseArguments(args)
 	if err != nil {
 		return err

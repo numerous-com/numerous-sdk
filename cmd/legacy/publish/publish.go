@@ -3,6 +3,7 @@ package publish
 import (
 	"fmt"
 
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
@@ -17,11 +18,7 @@ var PublishCmd = &cobra.Command{
 	Short: "Publishes an app to the public app gallery",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := publish(gql.GetClient())
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 

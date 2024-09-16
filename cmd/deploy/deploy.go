@@ -85,7 +85,9 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	// for validation
 	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
 	if err != nil {
+		task.Error()
 		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
+
 		return nil, nil, err
 	}
 
