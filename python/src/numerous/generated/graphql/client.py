@@ -7,7 +7,12 @@ from .all_elements import AllElements
 from .async_base_client import AsyncBaseClient
 from .base_model import UNSET, UnsetType
 from .collection_create import CollectionCreate
-from .input_types import ElementInput
+from .collection_document import CollectionDocument
+from .collection_document_delete import CollectionDocumentDelete
+from .collection_document_set import CollectionDocumentSet
+from .collection_document_tag_add import CollectionDocumentTagAdd
+from .collection_document_tag_delete import CollectionDocumentTagDelete
+from .input_types import ElementInput, TagInput
 from .update_element import UpdateElement
 from .updates import Updates
 
@@ -205,13 +210,13 @@ class Client(AsyncBaseClient):
               }
             }
 
+            fragment CollectionNotFound on CollectionNotFound {
+              id
+            }
+
             fragment CollectionReference on Collection {
               id
               key
-            }
-
-            fragment CollectionNotFound on CollectionNotFound {
-              id
             }
             """
         )
@@ -228,3 +233,191 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionCreate.model_validate(data)
+
+    async def collection_document(
+        self, organization_id: str, key: str, doc_key: str, **kwargs: Any
+    ) -> CollectionDocument:
+        query = gql(
+            """
+            mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
+              collectionCreate(organizationID: $organizationID, key: $key) {
+                __typename
+                ... on Collection {
+                  document(key: $docKey) {
+                    __typename
+                    ... on CollectionDocument {
+                      ...CollectionDocumentReference
+                    }
+                  }
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationID": organization_id,
+            "key": key,
+            "docKey": doc_key,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="CollectionDocument",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocument.model_validate(data)
+
+    async def collection_document_set(
+        self, collection_id: str, key: str, data: Any, **kwargs: Any
+    ) -> CollectionDocumentSet:
+        query = gql(
+            """
+            mutation collectionDocumentSet($collectionID: ID!, $key: ID!, $data: Base64JSON!) {
+              collectionDocumentSet(collectionID: $collectionID, key: $key, data: $data) {
+                __typename
+                ... on CollectionDocument {
+                  ...CollectionDocumentReference
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "collectionID": collection_id,
+            "key": key,
+            "data": data,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="collectionDocumentSet",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocumentSet.model_validate(data)
+
+    async def collection_document_delete(
+        self, id: str, **kwargs: Any
+    ) -> CollectionDocumentDelete:
+        query = gql(
+            """
+            mutation collectionDocumentDelete($id: ID!) {
+              collectionDocumentDelete(id: $id) {
+                __typename
+                ... on CollectionDocument {
+                  ...CollectionDocumentReference
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionDocumentDelete",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocumentDelete.model_validate(data)
+
+    async def collection_document_tag_add(
+        self, id: str, tag: TagInput, **kwargs: Any
+    ) -> CollectionDocumentTagAdd:
+        query = gql(
+            """
+            mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
+              collectionDocumentTagAdd(id: $id, tag: $tag) {
+                __typename
+                ... on CollectionDocument {
+                  ...CollectionDocumentReference
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id, "tag": tag}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionDocumentTagAdd",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocumentTagAdd.model_validate(data)
+
+    async def collection_document_tag_delete(
+        self, id: str, tag_key: str, **kwargs: Any
+    ) -> CollectionDocumentTagDelete:
+        query = gql(
+            """
+            mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
+              collectionDocumentTagDelete(id: $id, key: $tag_key) {
+                __typename
+                ... on CollectionDocument {
+                  ...CollectionDocumentReference
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id, "tag_key": tag_key}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionDocumentTagDelete",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocumentTagDelete.model_validate(data)

@@ -33,6 +33,8 @@ class SubscriptionOfferStatus(str, Enum):
 class AppSubscriptionStatus(str, Enum):
     ACTIVE = "ACTIVE"
     WITHDRAWN = "WITHDRAWN"
+    EXPIRED = "EXPIRED"
+    CANCELED = "CANCELED"
 
 
 class ToolHashType(str, Enum):
@@ -44,3 +46,4 @@ class ToolHashType(str, Enum):
 class PaymentAccountStatus(str, Enum):
     RESTRICTED = "RESTRICTED"
     VERIFIED = "VERIFIED"
+    UNKNOWN = "UNKNOWN"

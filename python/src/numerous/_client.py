@@ -5,7 +5,32 @@ import os
 from typing import Optional, Union
 
 from numerous.generated.graphql.client import Client as GQLClient
-from numerous.generated.graphql.fragments import CollectionNotFound, CollectionReference
+from numerous.generated.graphql.collection_document import (
+    CollectionDocumentCollectionCreateCollectionDocument,
+    CollectionDocumentCollectionCreateCollectionNotFound,
+)
+from numerous.generated.graphql.collection_document_delete import (
+    CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
+    CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
+)
+from numerous.generated.graphql.collection_document_set import (
+    CollectionDocumentSetCollectionDocumentSetCollectionDocument,
+    CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
+)
+from numerous.generated.graphql.collection_document_tag_add import (
+    CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
+    CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound,
+)
+from numerous.generated.graphql.collection_document_tag_delete import (
+    CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
+    CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
+)
+from numerous.generated.graphql.fragments import (
+    CollectionDocumentReference,
+    CollectionNotFound,
+    CollectionReference,
+)
+from numerous.generated.graphql.input_types import TagInput
 
 
 API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
@@ -54,6 +79,117 @@ class Client:
         return asyncio.run(
             self._create_collection(collection_key, parent_collection_id)
         )
+
+    def _create_collection_document_ref(
+        self,
+        collection_response: Optional[
+            Union[
+                CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
+                CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
+                CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
+                CollectionDocumentSetCollectionDocumentSetCollectionDocument,
+                CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound,
+                CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
+                CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
+                CollectionDocumentCollectionCreateCollectionDocument,
+                CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
+            ]
+        ],
+    ) -> Optional[CollectionDocumentReference]:
+        if isinstance(
+            collection_response,
+            (
+                CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
+                CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
+                CollectionDocumentSetCollectionDocumentSetCollectionDocument,
+                CollectionDocumentCollectionCreateCollectionDocument,
+                CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
+            ),
+        ):
+            return CollectionDocumentReference(
+                id=collection_response.id,
+                key=collection_response.key,
+                data=collection_response.data,
+                tags=collection_response.tags,
+            )
+        return None
+
+    async def _get_collection_document(
+        self, collection_key: str, document_key: str
+    ) -> Optional[CollectionDocumentReference]:
+        response = await self.client.collection_document(
+            self.organization_id, collection_key, document_key
+        )
+        if isinstance(
+            response.collection_create,
+            CollectionDocumentCollectionCreateCollectionNotFound,
+        ):
+            return None
+        return self._create_collection_document_ref(response.collection_create.document)
+
+    def get_collection_document(
+        self, collection_key: str, document_key: str
+    ) -> Optional[CollectionDocumentReference]:
+
+        return asyncio.run(self._get_collection_document(collection_key, document_key))
+
+    async def _set_collection_document(
+        self, collection_id: str, document_key: str, document_data: str
+    ) -> Optional[CollectionDocumentReference]:
+        response = await self.client.collection_document_set(
+            collection_id, document_key, document_data
+        )
+        return self._create_collection_document_ref(response.collection_document_set)
+
+    def set_collection_document(
+        self, collection_id: str, document_key: str, document_data: str
+    ) -> Optional[CollectionDocumentReference]:
+
+        return asyncio.run(
+            self._set_collection_document(collection_id, document_key, document_data)
+        )
+
+    async def _delete_collection_document(
+        self, document_id: str
+    ) -> Optional[CollectionDocumentReference]:
+        response = await self.client.collection_document_delete(document_id)
+        return self._create_collection_document_ref(response.collection_document_delete)
+
+    def delete_collection_document(
+        self, document_id: str
+    ) -> Optional[CollectionDocumentReference]:
+
+        return asyncio.run(self._delete_collection_document(document_id))
+
+    async def _add_collection_document_tag(
+        self, document_id: str, tag: TagInput
+    ) -> Optional[CollectionDocumentReference]:
+        response = await self.client.collection_document_tag_add(document_id, tag)
+        return self._create_collection_document_ref(
+            response.collection_document_tag_add
+        )
+
+    def add_collection_document_tag(
+        self, document_id: str, tag: TagInput
+    ) -> Optional[CollectionDocumentReference]:
+
+        return asyncio.run(self._add_collection_document_tag(document_id, tag))
+
+    async def _delete_collection_document_tag(
+        self, document_id: str, tag_key: str
+    ) -> Optional[CollectionDocumentReference]:
+        response = await self.client.collection_document_tag_delete(
+            document_id, tag_key
+        )
+        return self._create_collection_document_ref(
+            response.collection_document_tag_delete
+        )
+
+    def delete_collection_document_tag(
+        self, document_id: str, tag_key: str
+    ) -> Optional[CollectionDocumentReference]:
+
+        return asyncio.run(self._delete_collection_document_tag(document_id, tag_key))
 
 
 def _open_client() -> Client:
