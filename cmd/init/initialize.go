@@ -2,8 +2,6 @@ package init
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
@@ -23,7 +21,6 @@ type InitializeParams struct {
 }
 
 func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest, error) {
-	fmt.Printf("params=%v\n", params)
 	if exist, _ := manifest.ManifestExists(params.AppDir); exist {
 		output.PrintError(
 			"An app is already initialized in \"%s\"",
@@ -80,26 +77,11 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 	switch {
 	case err == manifest.ErrEncodingManifest:
 		output.PrintErrorDetails("Error encoding manifest file", err)
+		return nil, err
 	case err != nil:
 		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return nil, err
 	}
 
 	return m, nil
-}
-
-func PathArgumentHandler(providedPath string, currentPath string) string {
-	appPath := providedPath
-	if providedPath != "." {
-		pathBegin := string([]rune(providedPath)[0:2])
-		if pathBegin == "./" || pathBegin == ".\\" {
-			appPath = strings.Replace(appPath, ".", currentPath, 1)
-		} else {
-			appPath = providedPath
-		}
-	} else {
-		appPath = currentPath
-	}
-
-	return appPath
 }

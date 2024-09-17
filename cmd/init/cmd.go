@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
@@ -98,4 +99,20 @@ func init() {
 
 	InitCmd.Flags().StringVar(&argDockerfile, "dockerfile", "", "Path to the Dockerfile for the app")
 	InitCmd.Flags().StringVar(&argDockerContext, "docker-context", "", "Path used as the context for building the app Dockerfile")
+}
+
+func PathArgumentHandler(providedPath string, currentPath string) string {
+	appPath := providedPath
+	if providedPath != "." {
+		pathBegin := string([]rune(providedPath)[0:2])
+		if pathBegin == "./" || pathBegin == ".\\" {
+			appPath = strings.Replace(appPath, ".", currentPath, 1)
+		} else {
+			appPath = providedPath
+		}
+	} else {
+		appPath = currentPath
+	}
+
+	return appPath
 }
