@@ -9,40 +9,41 @@ import (
 	"numerous.com/cli/internal/manifest"
 )
 
-type pythonAnswers struct {
+type PythonAnswers struct {
 	Library          manifest.Library
 	AppFile          string
 	RequirementsFile string
 }
 
-func (p pythonAnswers) ToManifest() (*manifest.Python, error) {
+func (p PythonAnswers) ToManifest() *manifest.Python {
+	if p.Library.Key == "" {
+		return nil
+	}
+
 	return &manifest.Python{
 		Library:          p.Library,
 		AppFile:          strings.Trim(p.AppFile, " 	"),
 		RequirementsFile: strings.Trim(p.RequirementsFile, " 	"),
 		Port:             p.Library.Port,
-	}, nil
+	}
 }
 
-func pythonWizard(asker Asker, libraryName string, p *manifest.Python) (pythonAnswers, error) {
+func pythonWizard(asker Asker, libraryName string, ps PythonAnswers) (PythonAnswers, error) {
 	lib, err := manifest.GetLibraryByName(libraryName)
 	if err != nil {
-		return pythonAnswers{}, err
+		return PythonAnswers{}, err
 	}
-	ps := pythonAnswers{Library: lib}
+
+	ps.Library = lib
 	qs := []*survey.Question{}
 
-	if p == nil || p.AppFile == "" {
+	if ps.AppFile == "" {
 		qs = append(qs, getFileQuestion("AppFile", "Provide the path to your app:", "app.py", ".py"))
-	} else {
-		ps.AppFile = p.AppFile
 	}
 
-	if p == nil || p.RequirementsFile == "" {
+	if ps.RequirementsFile == "" {
 		q := getFileQuestion("RequirementsFile", "Provide the path to your requirements file:", "requirements.txt", ".txt")
 		qs = append(qs, q)
-	} else {
-		ps.RequirementsFile = p.RequirementsFile
 	}
 
 	if err := asker.Ask(qs, &ps); errors.Is(err, terminal.InterruptErr) {

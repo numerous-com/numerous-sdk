@@ -2,6 +2,7 @@ package init
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"numerous.com/cli/cmd/output"
@@ -17,9 +18,12 @@ type InitializeParams struct {
 	LibraryKey       string
 	AppFile          string
 	RequirementsFile string
+	Dockerfile       string
+	DockerContext    string
 }
 
 func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest, error) {
+	fmt.Printf("params=%v\n", params)
 	if exist, _ := manifest.ManifestExists(params.AppDir); exist {
 		output.PrintError(
 			"An app is already initialized in \"%s\"",
@@ -33,7 +37,7 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 	}
 
 	lib, err := manifest.GetLibraryByKey(params.LibraryKey)
-	if params.LibraryKey != "" && errors.Is(err, manifest.ErrUnsupportedLibrary) {
+	if params.LibraryKey != "" && params.LibraryKey != manifest.DockerfileLibraryKey && errors.Is(err, manifest.ErrUnsupportedLibrary) {
 		output.PrintError(
 			"Unsupported library",
 			"The specified library %s is not supported. Supported libraries are %s.",
@@ -44,12 +48,32 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 		return nil, err
 	}
 
-	pythonVersion := python.PythonVersion()
-
-	m := manifest.NewWithPython(lib, params.Name, params.Desc, pythonVersion, params.AppFile, params.RequirementsFile)
-	if err := wizard.Run(asker, params.AppDir, m); err != nil {
+	runWizardParams := wizard.RunWizardParams{
+		ProjectFolderPath: params.AppDir,
+		App: wizard.AppAnswers{
+			Name:        params.Name,
+			Description: params.Desc,
+			LibraryKey:  params.LibraryKey,
+			LibraryName: lib.Name,
+		},
+		Python: wizard.PythonAnswers{
+			RequirementsFile: params.RequirementsFile,
+			AppFile:          params.AppFile,
+			Library:          lib,
+		},
+		Docker: wizard.DockerAnswers{
+			Dockerfile: params.Dockerfile,
+			Context:    params.DockerContext,
+		},
+	}
+	m, err := wizard.Run(asker, runWizardParams)
+	if err != nil {
 		output.PrintErrorDetails("Error running initialization wizard", err)
 		return nil, err
+	}
+
+	if m.Python != nil && m.Python.Library.Key != "" {
+		m.Python.Version = python.PythonVersion()
 	}
 
 	err = m.BootstrapFiles("", params.AppDir)

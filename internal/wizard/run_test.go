@@ -9,13 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunInitAppWizard(t *testing.T) {
+func TestRun(t *testing.T) {
+	expectedExclude := []string{"*venv", "venv*", ".git", ".env"}
+	expectedCover := "app_cover.jpg"
+
 	t.Run("it updates the manifest with expected values", func(t *testing.T) {
 		path := t.TempDir()
 
 		for _, tc := range []struct {
 			name      string
-			input     manifest.Manifest
+			params    RunWizardParams
 			expected  manifest.Manifest
 			stubAsker StubAsker
 		}{
@@ -30,7 +33,7 @@ func TestRunInitAppWizard(t *testing.T) {
 					"RequirementsFile":      "requirements.txt",
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
 				},
 			},
@@ -44,12 +47,12 @@ func TestRunInitAppWizard(t *testing.T) {
 					"AppFile":               "Not Used App File.py",
 					"RequirementsFile":      "Not Used Requirements.txt",
 				},
-				input: manifest.Manifest{
-					App:    manifest.App{Name: "App Name From Input", Description: "App description from input"},
-					Python: &manifest.Python{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt", Port: manifest.LibraryMarimo.Port},
+				params: RunWizardParams{
+					App:    AppAnswers{Name: "App Name From Input", Description: "App description from input"},
+					Python: PythonAnswers{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt"},
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name From Input", Description: "App description from input"},
+					App:    manifest.App{Name: "App Name From Input", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt", Port: manifest.LibraryMarimo.Port},
 				},
 			},
@@ -62,9 +65,9 @@ func TestRunInitAppWizard(t *testing.T) {
 					"AppFile":               "app.py",
 					"RequirementsFile":      "requirements.txt",
 				},
-				input: manifest.Manifest{App: manifest.App{Name: "App Name from Input"}},
+				params: RunWizardParams{App: AppAnswers{Name: "App Name from Input"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name from Input", Description: "App description"},
+					App:    manifest.App{Name: "App Name from Input", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
 				},
 			},
@@ -77,9 +80,9 @@ func TestRunInitAppWizard(t *testing.T) {
 					"AppFile":               "app.py",
 					"RequirementsFile":      "requirements.txt",
 				},
-				input: manifest.Manifest{App: manifest.App{Description: "App description from input"}},
+				params: RunWizardParams{App: AppAnswers{Description: "App description from input"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description from input"},
+					App:    manifest.App{Name: "App Name", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
 				},
 			},
@@ -92,9 +95,9 @@ func TestRunInitAppWizard(t *testing.T) {
 					"AppFile":               "app.py",
 					"RequirementsFile":      "requirements.txt",
 				},
-				input: manifest.Manifest{Python: &manifest.Python{Library: manifest.LibraryPlotlyDash}},
+				params: RunWizardParams{App: AppAnswers{LibraryName: manifest.LibraryPlotlyDash.Name, LibraryKey: manifest.LibraryPlotlyDash.Key}, Python: PythonAnswers{Library: manifest.LibraryPlotlyDash}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryPlotlyDash, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryPlotlyDash.Port},
 				},
 			},
@@ -107,9 +110,9 @@ func TestRunInitAppWizard(t *testing.T) {
 					"Description":           "App description",
 					"AppFile":               "app.py",
 				},
-				input: manifest.Manifest{Python: &manifest.Python{RequirementsFile: "requirements from input.txt"}},
+				params: RunWizardParams{Python: PythonAnswers{RequirementsFile: "requirements from input.txt"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements from input.txt", Port: manifest.LibraryStreamlit.Port},
 				},
 			},
@@ -122,9 +125,9 @@ func TestRunInitAppWizard(t *testing.T) {
 					"Description":           "App description",
 					"RequirementsFile":      "requirements.txt",
 				},
-				input: manifest.Manifest{Python: &manifest.Python{AppFile: "app from input.py"}},
+				params: RunWizardParams{Python: PythonAnswers{AppFile: "app from input.py"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app from input.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
 				},
 			},
@@ -139,7 +142,7 @@ func TestRunInitAppWizard(t *testing.T) {
 					"Context":               "Docker context from question",
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Docker: &manifest.Docker{Dockerfile: "Dockerfile from question", Context: "Docker context from question"},
 				},
 			},
@@ -149,25 +152,24 @@ func TestRunInitAppWizard(t *testing.T) {
 					UseFolderQuestion(path): true,
 					"Name":                  "App Name",
 					"Description":           "App description",
-					"LibraryName":           "Dockerfile",
-					"Dockerfile":            "Not used Dockerfile from question",
-					"Context":               "Not used Docker context from question",
 				},
-				input: manifest.Manifest{
-					Docker: &manifest.Docker{Dockerfile: "Dockerfile from input", Context: "Docker context from input"},
+				params: RunWizardParams{
+					App:    AppAnswers{LibraryKey: manifest.DockerfileLibraryKey},
+					Docker: DockerAnswers{Dockerfile: "Dockerfile from input", Context: "Docker context from input"},
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description"},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
 					Docker: &manifest.Docker{Dockerfile: "Dockerfile from input", Context: "Docker context from input"},
 				},
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				actual := tc.input
-				err := Run(&tc.stubAsker, path, &actual)
+				tc.params.ProjectFolderPath = path
+				m, _ := Run(&tc.stubAsker, tc.params)
 
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, actual)
+				if assert.NotNil(t, m) {
+					assert.Equal(t, tc.expected, *m)
+				}
 			})
 		}
 	})
@@ -201,8 +203,7 @@ func TestRunInitAppWizard(t *testing.T) {
 				// override answer of question to interrupt with interrupt error
 				stubAsker[tc.questionToInterrupt] = terminal.InterruptErr
 
-				actual := manifest.Manifest{Python: &manifest.Python{}}
-				err := Run(&stubAsker, path, &actual)
+				_, err := Run(&stubAsker, RunWizardParams{ProjectFolderPath: path})
 
 				assert.ErrorIs(t, err, ErrStopInit)
 			})

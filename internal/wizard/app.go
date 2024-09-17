@@ -8,40 +8,33 @@ import (
 	"numerous.com/cli/internal/manifest"
 )
 
-type appAnswers struct {
+type AppAnswers struct {
 	Name        string
 	Description string
+	LibraryKey  string
 	LibraryName string
 }
 
-func (s appAnswers) UpdateManifest(m *manifest.Manifest) {
-	m.Name = s.Name
-	m.Description = s.Description
+func (s AppAnswers) ToManifestApp() manifest.App {
+	return manifest.NewApp(s.Name, s.Description)
 }
 
-func appWizard(asker Asker, m *manifest.Manifest) (appAnswers, error) {
-	as := appAnswers{}
+func appWizard(asker Asker, as AppAnswers) (AppAnswers, error) {
 	qs := []*survey.Question{}
 
-	if m.Name == "" {
+	if as.Name == "" {
 		q := textQuestion("Name", "Name your app:", true)
 		qs = append(qs, q)
-	} else {
-		as.Name = m.Name
 	}
 
-	if m.Description == "" {
+	if as.Description == "" {
 		q := textQuestion("Description", "Provide a short description for your app:", false)
 		qs = append(qs, q)
-	} else {
-		as.Description = m.Description
 	}
 
-	if m.Python == nil || m.Python.Library.Key == "" {
+	if as.LibraryKey == "" {
 		q := libraryQuestion("LibraryName", "Select which app library you are using:")
 		qs = append(qs, q)
-	} else {
-		as.LibraryName = m.Python.Library.Name
 	}
 
 	if err := asker.Ask(qs, &as); errors.Is(err, terminal.InterruptErr) {

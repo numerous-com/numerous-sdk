@@ -73,21 +73,12 @@ func Load(filePath string) (*Manifest, error) {
 	return nil, err
 }
 
-func NewWithPython(lib Library, name string, description string, python string, appFile string, requirementsFile string) *Manifest {
-	return &Manifest{
-		App: App{
-			Name:        name,
-			Description: description,
-			CoverImage:  "app_cover.jpg",
-			Exclude:     []string{"*venv", "venv*", ".git", ".env"},
-		},
-		Python: &Python{
-			Library:          lib,
-			Version:          python,
-			AppFile:          appFile,
-			RequirementsFile: requirementsFile,
-			Port:             lib.Port,
-		},
+func NewApp(name, desc string) App {
+	return App{
+		Name:        name,
+		Description: desc,
+		CoverImage:  "app_cover.jpg",
+		Exclude:     []string{"*venv", "venv*", ".git", ".env"},
 	}
 }
 

@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 )
 
+const DockerfileLibraryKey = "dockerfile"
+
 var ErrNoBootstrapDockerfileExists = errors.New("cannot bootstrap with pre-existing dockerfile")
 
 const dockerExampleDockerfile = `FROM python:3.11-slim
@@ -38,7 +40,6 @@ const dockerExampleRequirementsTxt = `streamlit
 
 func (d Docker) bootstrapFiles(basePath string) error {
 	dockerfilePath := filepath.Join(basePath, d.Dockerfile)
-	println("Bootstrapping dockerfile in " + dockerfilePath)
 	appPath := filepath.Join(basePath, "app.py")
 	requirementsPath := filepath.Join(basePath, "requirements.txt")
 

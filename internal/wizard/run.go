@@ -9,68 +9,69 @@ import (
 
 var ErrStopInit = errors.New("stop app init")
 
-func questionsNeeded(m *manifest.Manifest) bool {
-	if m.Name == "" {
+func questionsNeeded(params RunWizardParams) bool {
+	if params.App.Name == "" {
 		return true
 	}
 
-	if m.Docker == nil && m.Python != nil {
-		if m.Python.AppFile == "" {
-			return true
-		}
-
-		if m.Python.Library.Key == "" {
-			return true
-		}
+	if params.Python.Library.Key != "" && params.Python.Library.Key != manifest.DockerfileLibraryKey && params.Python.AppFile != "" && params.Python.RequirementsFile != "" {
+		return false
 	}
 
-	if m.Docker == nil {
-		return true
+	if params.App.LibraryKey == manifest.DockerfileLibraryKey && params.Docker.Dockerfile != "" && params.Docker.Context != "" {
+		return false
 	}
 
-	return false
+	return true
 }
 
-func Run(asker Asker, projectFolderPath string, m *manifest.Manifest) error {
-	if !questionsNeeded(m) {
-		return ErrStopInit
+type RunWizardParams struct {
+	ProjectFolderPath string
+	App               AppAnswers
+	Python            PythonAnswers
+	Docker            DockerAnswers
+}
+
+func Run(asker Asker, params RunWizardParams) (*manifest.Manifest, error) {
+	if !questionsNeeded(params) {
+		return &manifest.Manifest{
+			App:    params.App.ToManifestApp(),
+			Python: params.Python.ToManifest(),
+			Docker: params.Docker.ToManifest(),
+		}, nil
 	}
 
 	fmt.Println("Hi there, welcome to Numerous.")
 	fmt.Println("We're happy you're here!")
 	fmt.Println("Let's get started by entering basic information about your app.")
 
-	continueWizard, err := UseOrCreateAppFolder(asker, projectFolderPath)
+	continueWizard, err := UseOrCreateAppFolder(asker, params.ProjectFolderPath)
 	if err != nil {
-		return err
+		return nil, err
 	} else if !continueWizard {
-		return ErrStopInit
+		return nil, ErrStopInit
 	}
 
-	appAnswers, err := appWizard(asker, m)
+	appAnswers, err := appWizard(asker, params.App)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	appAnswers.UpdateManifest(m)
 
-	if appAnswers.LibraryName == dockerfileLibraryName {
-		dockerAnswers, err := dockerWizard(asker, m.Docker)
+	m := manifest.Manifest{App: appAnswers.ToManifestApp()}
+
+	if appAnswers.LibraryName == dockerfileLibraryName || appAnswers.LibraryKey == manifest.DockerfileLibraryKey {
+		dockerAnswers, err := dockerWizard(asker, params.Docker)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		m.Docker = dockerAnswers.ToManifest()
 	} else {
-		pythonAnswers, err := pythonWizard(asker, appAnswers.LibraryName, m.Python)
+		pythonAnswers, err := pythonWizard(asker, appAnswers.LibraryName, params.Python)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		pythonManifest, err := pythonAnswers.ToManifest()
-		if err != nil {
-			return err
-		}
-		m.Python = pythonManifest
+		m.Python = pythonAnswers.ToManifest()
 	}
 
-	return nil
+	return &m, nil
 }
