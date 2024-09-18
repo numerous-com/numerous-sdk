@@ -25,6 +25,10 @@ from numerous.generated.graphql.collection_document_tag_delete import (
     CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
     CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
 )
+from numerous.generated.graphql.collection_documents import (
+    CollectionDocumentsCollectionCreateCollection,
+    CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
+)
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
     CollectionNotFound,
@@ -35,6 +39,7 @@ from numerous.generated.graphql.input_types import TagInput
 
 API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
+COLLECTED_DOCUMENTS_NUMBER = 100
 
 
 class Client:
@@ -93,6 +98,7 @@ class Client:
                 CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
                 CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
                 CollectionDocumentCollectionCreateCollectionDocument,
+                CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
                 CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
             ]
         ],
@@ -104,6 +110,7 @@ class Client:
                 CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
                 CollectionDocumentSetCollectionDocumentSetCollectionDocument,
                 CollectionDocumentCollectionCreateCollectionDocument,
+                CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
                 CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
             ),
         ):
@@ -191,6 +198,42 @@ class Client:
     ) -> Optional[CollectionDocumentReference]:
 
         return asyncio.run(self._delete_collection_document_tag(document_id, tag_key))
+
+    async def _get_collection_documents(
+        self,
+        collection_key: str,
+        end_cursor: str,
+        tag_input: Optional[TagInput],
+    ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
+        response = await self.client.collection_documents(
+            self.organization_id,
+            collection_key,
+            tag_input,
+            after=end_cursor,
+            first=COLLECTED_DOCUMENTS_NUMBER,
+        )
+
+        collection = response.collection_create
+        if not isinstance(collection, CollectionDocumentsCollectionCreateCollection):
+            return [], False, ""
+
+        documents = collection.documents
+        edges = documents.edges
+        page_info = documents.page_info
+
+        result = [self._create_collection_document_ref(edge.node) for edge in edges]
+
+        end_cursor = page_info.end_cursor or ""
+        has_next_page = page_info.has_next_page
+
+        return result, has_next_page, end_cursor
+
+    def get_collection_documents(
+        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
+    ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
+        return asyncio.run(
+            self._get_collection_documents(collection_key, end_cursor, tag_input)
+        )
 
 
 def _open_client() -> Client:

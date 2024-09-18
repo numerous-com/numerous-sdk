@@ -1,10 +1,11 @@
 """Class for working with numerous collections."""
 
-from typing import Dict, Optional
+from typing import Iterator, Optional
 
 from numerous._client import Client
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.fragments import CollectionReference
+from numerous.generated.graphql.input_types import TagInput
 
 
 class NumerousCollection:
@@ -15,7 +16,6 @@ class NumerousCollection:
             self.key = collection_ref.key
             self.id = collection_ref.id
         self._client = _client
-        self.documents: Dict[str, NumerousDocument] = {}
 
     def collection(self, collection_name: str) -> Optional["NumerousCollection"]:
         """Get or create a collection by name."""
@@ -47,5 +47,45 @@ class NumerousCollection:
         else:
             numerous_document = NumerousDocument(self._client, key, (self.id, self.key))
 
-        self.documents.update({numerous_document.key: numerous_document})
         return numerous_document
+
+    def documents(
+        self, tag_key: Optional[str] = None, tag_value: Optional[str] = None
+    ) -> Iterator[NumerousDocument]:
+        """
+        Retrieve documents from the collection, filtered by a tag key and value.
+
+        Parameters
+        ----------
+        tag_key : Optional[str]
+            The key of the tag used to filter documents (optional).
+        tag_value : Optional[str]
+            The value of the tag used to filter documents (optional).
+
+        Yields
+        ------
+        NumerousDocument
+            Yields NumerousDocument objects from the collection.
+
+        """
+        while True:
+            end_cursor = ""
+            tag_input = None
+            if tag_key is not None and tag_value is not None:
+                tag_input = TagInput(key=tag_key, value=tag_value)
+            numerous_doc_refs, has_next_page, end_cursor = (
+                self._client.get_collection_documents(self.key, end_cursor, tag_input)
+            )
+            if numerous_doc_refs is None:
+                break
+            for numerous_doc_ref in numerous_doc_refs:
+                if numerous_doc_ref is None:
+                    return
+                yield NumerousDocument(
+                    self._client,
+                    numerous_doc_ref.key,
+                    (self.id, self.key),
+                    numerous_doc_ref,
+                )
+            if not has_next_page:
+                break

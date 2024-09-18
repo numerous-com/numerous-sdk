@@ -97,7 +97,6 @@ fragment CollectionReference on Collection {
   key
 }
 
-
 fragment CollectionDocumentReference on CollectionDocument {
   id
   key
@@ -107,7 +106,6 @@ fragment CollectionDocumentReference on CollectionDocument {
     value
   }
 }
-
 
 fragment CollectionNotFound on CollectionNotFound {
   id
@@ -128,7 +126,6 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
     }
   }
 }
-
 
 mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
   collectionCreate(organizationID: $organizationID, key: $key) {
@@ -178,9 +175,38 @@ mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
 mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
   collectionDocumentTagDelete(id: $id, key: $tag_key) {
     __typename
-   ... on CollectionDocument {
+    ... on CollectionDocument {
       ...CollectionDocumentReference
     }
+  }
+}
+
+mutation collectionDocuments(
+  $organizationID: ID!
+  $key: ID!
+  $tag: TagInput
+  $after: ID
+  $first: Int
+) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      id
+      key
+      documents(after: $after, first: $first, tag: $tag) {
+        edges {
+          node {
+            __typename
+            ... on CollectionDocument {
+              ...CollectionDocumentReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
     }
   }
-
+}

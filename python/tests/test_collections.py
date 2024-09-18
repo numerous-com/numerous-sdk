@@ -3,7 +3,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from numerous import collection
-from numerous._client import Client
+from numerous._client import COLLECTED_DOCUMENTS_NUMBER, Client
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_create import CollectionCreate
@@ -18,6 +18,7 @@ from numerous.generated.graphql.collection_document_tag_add import (
 from numerous.generated.graphql.collection_document_tag_delete import (
     CollectionDocumentTagDelete,
 )
+from numerous.generated.graphql.collection_documents import CollectionDocuments
 from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import dict_to_base64
 
@@ -92,6 +93,44 @@ def _collection_document_delete_found(_id: str) -> CollectionDocumentDelete:
                 "key": "t21",
                 "data": BASE64_DOCUMENT_DATA,
                 "tags": [],
+            }
+        }
+    )
+
+
+def _collection_documents_reference(key: str) -> CollectionDocuments:
+    return CollectionDocuments.model_validate(
+        {
+            "collectionCreate": {
+                "__typename": "Collection",
+                "id": "0d2f82fa-1546-49a4-a034-3392eefc3e4e",
+                "key": "t1",
+                "documents": {
+                    "edges": [
+                        {
+                            "node": {
+                                "__typename": "CollectionDocument",
+                                "id": "10634601-67b5-4015-840c-155d9faf9591",
+                                "key": key,
+                                "data": "ewogICJoZWxsbyI6ICJ3b3JsZCIKfQ==",
+                                "tags": [{"key": "key", "value": "test"}],
+                            }
+                        },
+                        {
+                            "node": {
+                                "__typename": "CollectionDocument",
+                                "id": "915b75c5-9e95-4fa7-aaa2-2214c8d251ce",
+                                "key": key + "1",
+                                "data": "ewogICJoZWxsbyI6ICJ3b3JsZCIKfQ==",
+                                "tags": [],
+                            }
+                        },
+                    ],
+                    "pageInfo": {
+                        "hasNextPage": "false",
+                        "endCursor": "915b75c5-9e95-4fa7-aaa2-2214c8d251ce",
+                    },
+                },
             }
         }
     )
@@ -338,3 +377,55 @@ def test_collection_document_tag_delete() -> None:
 
     assert document.tags == {}
     gql.collection_document_tag_delete.assert_called_once_with(DOCUMENT_ID, "key")
+
+
+def test_collection_documents_return_more_than_one() -> None:
+    gql = Mock(GQLClient)
+    _client = Client(gql)
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
+    )
+    gql.collection_documents.return_value = _collection_documents_reference(
+        COLLECTION_DOCUMNET_KEY
+    )
+    test_collection = collection(COLLECTION_NAME, _client)
+
+    result = []
+    expected_number_of_documents = 2
+    for document in test_collection.documents():
+        assert document.exists
+        result.append(document)
+
+    assert len(result) == expected_number_of_documents
+    gql.collection_documents.assert_called_once_with(
+        ORGANIZATION_ID,
+        COLLECTION_REFERENCE_KEY,
+        None,
+        after="",
+        first=COLLECTED_DOCUMENTS_NUMBER,
+    )
+
+
+def test_collection_documents_query_tag_specific_document() -> None:
+    gql = Mock(GQLClient)
+    _client = Client(gql)
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
+    )
+    gql.collection_documents.return_value = _collection_documents_reference(
+        COLLECTION_DOCUMNET_KEY
+    )
+    test_collection = collection(COLLECTION_NAME, _client)
+
+    tag_key = "key"
+    tag_value = "value"
+    for document in test_collection.documents(tag_key=tag_key, tag_value=tag_value):
+        assert document.exists
+
+    gql.collection_documents.assert_called_once_with(
+        ORGANIZATION_ID,
+        COLLECTION_REFERENCE_KEY,
+        TagInput(key=tag_key, value=tag_value),
+        after="",
+        first=COLLECTED_DOCUMENTS_NUMBER,
+    )

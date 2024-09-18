@@ -24,7 +24,6 @@ from .collection_create import (
     CollectionCreateCollectionCreateCollection,
     CollectionCreateCollectionCreateCollectionNotFound,
 )
-
 from .collection_document import (
     CollectionDocument,
     CollectionDocumentCollectionCreateCollection,
@@ -51,7 +50,15 @@ from .collection_document_tag_delete import (
     CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
     CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
 )
-
+from .collection_documents import (
+    CollectionDocuments,
+    CollectionDocumentsCollectionCreateCollection,
+    CollectionDocumentsCollectionCreateCollectionDocuments,
+    CollectionDocumentsCollectionCreateCollectionDocumentsEdges,
+    CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
+    CollectionDocumentsCollectionCreateCollectionDocumentsPageInfo,
+    CollectionDocumentsCollectionCreateCollectionNotFound,
+)
 from .enums import (
     AppDeploymentStatus,
     AppSubscriptionStatus,
@@ -179,6 +186,13 @@ __all__ = [
     "CollectionDocumentTagDelete",
     "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument",
     "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound",
+    "CollectionDocuments",
+    "CollectionDocumentsCollectionCreateCollection",
+    "CollectionDocumentsCollectionCreateCollectionDocuments",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsEdges",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsPageInfo",
+    "CollectionDocumentsCollectionCreateCollectionNotFound",
     "CollectionNotFound",
     "CollectionReference",
     "ElementInput",

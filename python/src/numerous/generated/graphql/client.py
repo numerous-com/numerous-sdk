@@ -12,6 +12,7 @@ from .collection_document_delete import CollectionDocumentDelete
 from .collection_document_set import CollectionDocumentSet
 from .collection_document_tag_add import CollectionDocumentTagAdd
 from .collection_document_tag_delete import CollectionDocumentTagDelete
+from .collection_documents import CollectionDocuments
 from .input_types import ElementInput, TagInput
 from .update_element import UpdateElement
 from .updates import Updates
@@ -217,7 +218,6 @@ class Client(AsyncBaseClient):
             fragment CollectionReference on Collection {
               id
               key
-
             }
             """
         )
@@ -422,3 +422,65 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionDocumentTagDelete.model_validate(data)
+
+    async def collection_documents(
+        self,
+        organization_id: str,
+        key: str,
+        tag: Union[Optional[TagInput], UnsetType] = UNSET,
+        after: Union[Optional[str], UnsetType] = UNSET,
+        first: Union[Optional[int], UnsetType] = UNSET,
+        **kwargs: Any
+    ) -> CollectionDocuments:
+        query = gql(
+            """
+            mutation collectionDocuments($organizationID: ID!, $key: ID!, $tag: TagInput, $after: ID, $first: Int) {
+              collectionCreate(organizationID: $organizationID, key: $key) {
+                __typename
+                ... on Collection {
+                  id
+                  key
+                  documents(after: $after, first: $first, tag: $tag) {
+                    edges {
+                      node {
+                        __typename
+                        ... on CollectionDocument {
+                          ...CollectionDocumentReference
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                  }
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+              data
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationID": organization_id,
+            "key": key,
+            "tag": tag,
+            "after": after,
+            "first": first,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="collectionDocuments",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocuments.model_validate(data)
