@@ -37,7 +37,6 @@ class NumerousCollection:
         """
         numerous_doc_ref = self._client.get_collection_document(self.key, key)
         if numerous_doc_ref is not None:
-
             numerous_document = NumerousDocument(
                 self._client,
                 numerous_doc_ref.key,

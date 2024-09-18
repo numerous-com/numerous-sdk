@@ -101,7 +101,6 @@ class NumerousDocument:
 
         """
         if self.document_id is not None:
-
             deleted_document = self._client.delete_collection_document(self.document_id)
 
             if deleted_document is not None and deleted_document.id == self.document_id:

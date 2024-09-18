@@ -138,7 +138,6 @@ class Client:
     def get_collection_document(
         self, collection_key: str, document_key: str
     ) -> Optional[CollectionDocumentReference]:
-
         return asyncio.run(self._get_collection_document(collection_key, document_key))
 
     async def _set_collection_document(
@@ -152,7 +151,6 @@ class Client:
     def set_collection_document(
         self, collection_id: str, document_key: str, document_data: str
     ) -> Optional[CollectionDocumentReference]:
-
         return asyncio.run(
             self._set_collection_document(collection_id, document_key, document_data)
         )
@@ -166,7 +164,6 @@ class Client:
     def delete_collection_document(
         self, document_id: str
     ) -> Optional[CollectionDocumentReference]:
-
         return asyncio.run(self._delete_collection_document(document_id))
 
     async def _add_collection_document_tag(
@@ -180,7 +177,6 @@ class Client:
     def add_collection_document_tag(
         self, document_id: str, tag: TagInput
     ) -> Optional[CollectionDocumentReference]:
-
         return asyncio.run(self._add_collection_document_tag(document_id, tag))
 
     async def _delete_collection_document_tag(
@@ -196,7 +192,6 @@ class Client:
     def delete_collection_document_tag(
         self, document_id: str, tag_key: str
     ) -> Optional[CollectionDocumentReference]:
-
         return asyncio.run(self._delete_collection_document_tag(document_id, tag_key))
 
     async def _get_collection_documents(
