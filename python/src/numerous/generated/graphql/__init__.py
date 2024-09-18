@@ -70,12 +70,10 @@ from .exceptions import (
 )
 from .fragments import (
     ButtonValue,
-
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
     CollectionNotFound,
     CollectionReference,
-
     GraphContext,
     GraphContextAffectedBy,
     GraphContextAffects,
@@ -163,7 +161,6 @@ __all__ = [
     "CollectionCreate",
     "CollectionCreateCollectionCreateCollection",
     "CollectionCreateCollectionCreateCollectionNotFound",
-
     "CollectionDocument",
     "CollectionDocumentCollectionCreateCollection",
     "CollectionDocumentCollectionCreateCollectionDocument",
@@ -184,7 +181,6 @@ __all__ = [
     "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound",
     "CollectionNotFound",
     "CollectionReference",
-
     "ElementInput",
     "ElementSelectInput",
     "GraphContext",

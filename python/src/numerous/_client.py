@@ -33,7 +33,6 @@ from numerous.generated.graphql.fragments import (
 from numerous.generated.graphql.input_types import TagInput
 
 
-
 API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
 MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 
@@ -81,7 +80,6 @@ class Client:
         return asyncio.run(
             self._create_collection(collection_key, parent_collection_id)
         )
-
 
     def _create_collection_document_ref(
         self,

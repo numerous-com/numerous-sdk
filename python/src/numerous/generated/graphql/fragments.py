@@ -12,7 +12,6 @@ class ButtonValue(BaseModel):
     button_value: str = Field(alias="buttonValue")
 
 
-
 class CollectionDocumentReference(BaseModel):
     id: str
     key: str
@@ -25,10 +24,8 @@ class CollectionDocumentReferenceTags(BaseModel):
     value: str
 
 
-
 class CollectionNotFound(BaseModel):
     id: str
-
 
 
 class CollectionReference(BaseModel):
