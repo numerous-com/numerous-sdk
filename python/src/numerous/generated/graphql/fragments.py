@@ -12,6 +12,7 @@ class ButtonValue(BaseModel):
     button_value: str = Field(alias="buttonValue")
 
 
+
 class CollectionDocumentReference(BaseModel):
     id: str
     key: str
@@ -24,8 +25,10 @@ class CollectionDocumentReferenceTags(BaseModel):
     value: str
 
 
+
 class CollectionNotFound(BaseModel):
     id: str
+
 
 
 class CollectionReference(BaseModel):
@@ -98,6 +101,7 @@ ButtonValue.model_rebuild()
 CollectionDocumentReference.model_rebuild()
 CollectionNotFound.model_rebuild()
 CollectionReference.model_rebuild()
+
 GraphContext.model_rebuild()
 HTMLValue.model_rebuild()
 NumberFieldValue.model_rebuild()

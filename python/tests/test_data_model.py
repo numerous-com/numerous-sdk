@@ -2,6 +2,7 @@ from typing import Generator
 from unittest.mock import Mock, patch
 
 import pytest
+
 from numerous import app, container, field, html, slider
 from numerous.data_model import (
     AppDataModel,

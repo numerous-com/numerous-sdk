@@ -21,6 +21,7 @@ from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import dict_to_base64
 
 
+
 ORGANIZATION_ID = "test_org"
 COLLECTION_NAME = "test_collection"
 NESTED_COLLECTION_ID = "nested_test_collection"
@@ -34,10 +35,12 @@ BASE64_DOCUMENT_DATA = dict_to_base64(DOCUMENT_DATA)
 DOCUMENT_ID = "915b75c5-9e95-4fa7-aaa2-2214c8d251ce"
 
 
+
 def _collection_create_collection_reference(key: str, ref_id: str) -> CollectionCreate:
     return CollectionCreate.model_validate(
         {"collectionCreate": {"typename__": "Collection", "key": key, "id": ref_id}}
     )
+
 
 
 def _collection_document_set_reference(key: str) -> CollectionDocumentSet:
@@ -132,6 +135,7 @@ def test_collection_returns_new_collection() -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
+
     parent_key = None
     kwargs = {"headers": {"Authorization": "Bearer token"}}
 
@@ -139,7 +143,9 @@ def test_collection_returns_new_collection() -> None:
 
     gql.collection_create.assert_called_once()
     gql.collection_create.assert_called_once_with(
+
         ORGANIZATION_ID, COLLECTION_NAME, parent_key, kwargs=kwargs
+
     )
     assert result.key == COLLECTION_REFERENCE_KEY
     assert result.id == COLLECTION_REFERENCE_ID
@@ -175,7 +181,6 @@ def test_nested_collection_not_found_returns_none() -> None:
     nested_result = result.collection(NESTED_COLLECTION_ID)
 
     assert nested_result is None
-
 
 def test_collection_document_returns_new_document() -> None:
     gql = Mock(GQLClient)

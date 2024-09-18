@@ -3,6 +3,7 @@ package list
 import (
 	"fmt"
 
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/gql"
@@ -17,8 +18,7 @@ var OrganizationListCmd = &cobra.Command{
 	Short: "List all your organizations (login required)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := list(auth.NumerousTenantAuthenticator, gql.GetClient())
-
-		return err
+		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 

@@ -1,11 +1,11 @@
-package initialize
+package init
 
 import (
 	"errors"
 	"os"
 	"strings"
 
-	"numerous.com/cli/cmd/initialize/wizard"
+	"numerous.com/cli/cmd/init/wizard"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
 	"numerous.com/cli/internal/python"

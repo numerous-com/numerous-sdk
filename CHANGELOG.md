@@ -1,6 +1,35 @@
 # CHANGELOG
 
 
+## v0.15.1 (2024-09-16)
+
+### Fix
+
+* fix(cli): streamline error output (#28) ([`6094e00`](https://github.com/numerous-com/numerous-sdk/commit/6094e004ca29e1f02a19203a4d0a1d95fa7e15a6))
+
+  > 
+  > Improve consistency in how errors are presented to users.
+  >  
+  > Do not re-print errors in the command wrapper that have already been printed internally, but keep the errors to signal that the exit code should be `1`.
+  > 
+  > Only show usage for command argument errors, not errors happening internally in the command functions.
+
+
+
+
+## v0.15.0 (2024-09-04)
+
+### Feature
+
+* feat(python-sdk): access and create collections (#22) ([`be13de3`](https://github.com/numerous-com/numerous-sdk/commit/be13de3fbd925cd40780218139b27dfd74c49d53))
+
+  > 
+  > Adds `numerous.collection` function which creates or reads the collection,
+  > and allows recursive collection access.
+
+
+
+
 ## v0.14.3 (2024-08-30)
 
 ### Fix

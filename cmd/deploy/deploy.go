@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"numerous.com/cli/cmd/initialize"
+	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -85,7 +85,9 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	// for validation
 	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
 	if err != nil {
+		task.Error()
 		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
+
 		return nil, nil, err
 	}
 
@@ -259,6 +261,6 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 }
 
 func loadSecretsFromEnv(appDir string) map[string]string {
-	env, _ := dotenv.Load(path.Join(appDir, initialize.EnvFileName))
+	env, _ := dotenv.Load(path.Join(appDir, cmdinit.EnvFileName))
 	return env
 }

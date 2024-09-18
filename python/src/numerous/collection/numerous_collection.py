@@ -1,9 +1,11 @@
 """Class for working with numerous collections."""
 
+
 from typing import Dict, Optional
 
 from numerous._client import Client
 from numerous.collection.numerous_document import NumerousDocument
+
 from numerous.generated.graphql.fragments import CollectionReference
 
 
@@ -16,6 +18,7 @@ class NumerousCollection:
             self.id = collection_ref.id
         self._client = _client
         self.documents: Dict[str, NumerousDocument] = {}
+
 
     def collection(self, collection_name: str) -> Optional["NumerousCollection"]:
         """Get or create a collection by name."""
@@ -49,3 +52,4 @@ class NumerousCollection:
 
         self.documents.update({numerous_document.key: numerous_document})
         return numerous_document
+

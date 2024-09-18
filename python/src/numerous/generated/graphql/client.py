@@ -217,6 +217,7 @@ class Client(AsyncBaseClient):
             fragment CollectionReference on Collection {
               id
               key
+
             }
             """
         )

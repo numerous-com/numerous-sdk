@@ -97,6 +97,7 @@ fragment CollectionReference on Collection {
   key
 }
 
+
 fragment CollectionDocumentReference on CollectionDocument {
   id
   key
@@ -106,6 +107,7 @@ fragment CollectionDocumentReference on CollectionDocument {
     value
   }
 }
+
 
 fragment CollectionNotFound on CollectionNotFound {
   id
@@ -126,6 +128,7 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
     }
   }
 }
+
 
 mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
   collectionCreate(organizationID: $organizationID, key: $key) {
@@ -180,3 +183,4 @@ mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
     }
     }
   }
+

@@ -2,6 +2,7 @@ import html
 import json
 
 import pytest
+
 from numerous.experimental.marimo import Field
 from numerous.experimental.model import BaseModel
 
@@ -68,10 +69,12 @@ def test_label_none_uses_field_name() -> None:
     model = DataModel()
 
     marimo_slider = model.field_name.slider(label=None)
-    expected_data_label_value = marimo_escape_html(
-        '<span class="markdown"><span class="paragraph">field_name</span></span>',
+    expected_data_label_text = json.dumps(
+        '<span class="markdown prose dark:prose-invert">'
+        '<span class="paragraph">field_name</span></span>'
     )
-    assert expected_data_label_value in marimo_slider.text
+    slider_html = html.unescape(marimo_slider.text)
+    assert expected_data_label_text in slider_html
 
 
 def marimo_escape_html(value: str) -> str:

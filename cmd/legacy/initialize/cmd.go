@@ -3,7 +3,7 @@ package initialize
 import (
 	"fmt"
 
-	"numerous.com/cli/cmd/initialize"
+	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
@@ -30,7 +30,7 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	appDir, m, err := initialize.PrepareInit(args)
+	appDir, m, err := cmdinit.PrepareInit(args)
 	if err != nil {
 		return
 	}
@@ -41,7 +41,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err := initialize.BootstrapFiles(m, a.ID, appDir); err != nil {
+	if err := cmdinit.BootstrapFiles(m, a.ID, appDir); err != nil {
 		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return
 	}

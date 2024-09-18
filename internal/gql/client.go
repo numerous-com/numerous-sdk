@@ -40,7 +40,7 @@ func initClient() {
 		},
 	}
 
-	client = gqlclient.New(httpURL, httpClient)
+	client = gqlclient.New(getHTTPURL(), httpClient)
 }
 
 func GetClient() *gqlclient.Client {
@@ -49,7 +49,7 @@ func GetClient() *gqlclient.Client {
 }
 
 func NewClient() *graphql.Client {
-	client := graphql.NewClient(httpURL, http.DefaultClient)
+	client := graphql.NewClient(getHTTPURL(), http.DefaultClient)
 
 	accessToken := getAccessToken()
 	if accessToken != nil {
