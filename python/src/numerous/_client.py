@@ -40,7 +40,7 @@ MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 class Client:
     def __init__(self, client: GQLClient) -> None:
         self.client = client
-        self.organization_id = ""
+        self.organization_id = os.getenv("ORGANIZATION_ID", "default_organization")
         auth_token = os.getenv("NUMEROUS_API_ACCESS_TOKEN")
         if not auth_token:
             raise ValueError(MESSAGE_NOT_SET)

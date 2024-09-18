@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from numerous._client import Client
 from numerous.generated.graphql.fragments import CollectionDocumentReference
 from numerous.generated.graphql.input_types import TagInput
-from numerous.utils import base64_to_dict, dict_to_base64
+from numerous.jsonbase64 import base64_to_dict, dict_to_base64
 
 
 class NumerousDocument:
@@ -15,10 +15,11 @@ class NumerousDocument:
     Attributes
     ----------
         key (str): The key of the document.
-        collection_id (str): The id of collection document belongs to.
+        collection_info tuple[str, str]: The id
+        and key of collection document belongs to.
         data (Optional[Dict[str, Any]]): The data of the document.
         id (Optional[str]): The unique identifier of the document.
-        cleint (Client): The client to connect.
+        client (Client): The client to connect.
         tags (Dict[str, str]): The tags associated with the document.
 
     """
@@ -27,19 +28,20 @@ class NumerousDocument:
         self,
         client: Client,
         key: str,
-        collection_id: str,
+        collection_info: tuple[str, str],
         numerous_doc_ref: Optional[CollectionDocumentReference] = None,
     ) -> None:
         self.key: str = key
-        self.collection_id: str = collection_id
+        self.collection_id: str = collection_info[0]
+        self.collection_key: str = collection_info[1]
         self._client: Client = client
         self.document_id: Optional[str] = None
 
         if numerous_doc_ref is not None:
             dict_of_tags = {tag.key: tag.value for tag in numerous_doc_ref.tags}
-            self.data: Optional[Dict[str, Any]] = base64_to_dict(numerous_doc_ref.data)
+            self.data: Optional[dict[str, Any]] = base64_to_dict(numerous_doc_ref.data)
             self.document_id = numerous_doc_ref.id
-            self.tags: Dict[str, str] = dict_of_tags if dict_of_tags is not None else {}
+            self.tags: dict[str, str] = dict_of_tags if dict_of_tags is not None else {}
 
     @property
     def exists(self) -> bool:
@@ -166,7 +168,7 @@ class NumerousDocument:
         """Fetch the data from the server."""
         if self.document_id is not None:
             document = self._client.get_collection_document(
-                self.document_id, document_key
+                self.collection_key, document_key
             )
         else:
             msg = "Cannot fetch data from a non-existent document."

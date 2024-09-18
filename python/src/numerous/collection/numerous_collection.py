@@ -39,10 +39,13 @@ class NumerousCollection:
         if numerous_doc_ref is not None:
 
             numerous_document = NumerousDocument(
-                self._client, numerous_doc_ref.key, self.id, numerous_doc_ref
+                self._client,
+                numerous_doc_ref.key,
+                (self.id, self.key),
+                numerous_doc_ref,
             )
         else:
-            numerous_document = NumerousDocument(self._client, key, self.id)
+            numerous_document = NumerousDocument(self._client, key, (self.id, self.key))
 
         self.documents.update({numerous_document.key: numerous_document})
         return numerous_document
