@@ -1,6 +1,6 @@
 """Class for working with numerous documents."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from numerous._client import Client
 from numerous.generated.graphql.fragments import CollectionDocumentReference
@@ -17,10 +17,10 @@ class NumerousDocument:
         key (str): The key of the document.
         collection_info tuple[str, str]: The id
         and key of collection document belongs to.
-        data (Optional[Dict[str, Any]]): The data of the document.
+        data (Optional[dict[str, Any]]): The data of the document.
         id (Optional[str]): The unique identifier of the document.
         client (Client): The client to connect.
-        tags (Dict[str, str]): The tags associated with the document.
+        tags (dict[str, str]): The tags associated with the document.
 
     """
 
@@ -48,13 +48,13 @@ class NumerousDocument:
         """Check if the document exists."""
         return self.document_id is not None
 
-    def set(self, data: Dict[str, Any]) -> None:
+    def set(self, data: dict[str, Any]) -> None:
         """
         Set the data for the document.
 
         Args:
         ----
-            data (Dict[str, Any]): The data to set for the document.
+            data (dict[str, Any]): The data to set for the document.
 
         Raises:
         ------
@@ -72,13 +72,13 @@ class NumerousDocument:
             raise ValueError(msg)
         self.data = data
 
-    def get(self) -> Dict[str, Any] | None:
+    def get(self) -> Optional[dict[str, Any]]:
         """
         Get the data of the document.
 
         Returns
         -------
-            Dict[str, Any]: The data of the document.
+            dict[str, Any]: The data of the document.
 
         Raises
         ------

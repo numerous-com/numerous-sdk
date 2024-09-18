@@ -2,7 +2,7 @@
 
 import base64
 import json
-from typing import Dict, cast
+from typing import cast
 
 
 DECODED_JSON_NOT_DICT = "Decoded JSON is not a dictionary"
@@ -15,9 +15,9 @@ def dict_to_base64(input_dict: dict[str, str]) -> str:
     return base64_bytes.decode("utf-8")
 
 
-def base64_to_dict(base64_str: str) -> Dict[str, str]:
+def base64_to_dict(base64_str: str) -> dict[str, str]:
     json_str = base64.b64decode(base64_str).decode("utf-8")
     result = json.loads(json_str)
     if not isinstance(result, dict):
         raise TypeError(DECODED_JSON_NOT_DICT)
-    return cast(Dict[str, str], result)
+    return cast(dict[str, str], result)
