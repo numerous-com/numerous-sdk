@@ -35,8 +35,7 @@ st.markdown(
 )
 `
 
-const dockerExampleRequirementsTxt = `streamlit
-`
+const dockerExampleRequirementsTxt = "streamlit\n"
 
 func (d Docker) bootstrapFiles(basePath string) error {
 	dockerfilePath := filepath.Join(basePath, d.Dockerfile)
