@@ -164,7 +164,7 @@ func TestRun(t *testing.T) {
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				tc.params.ProjectFolderPath = path
+				tc.params.AppDir = path
 				m, _ := Run(&tc.stubAsker, tc.params)
 
 				if assert.NotNil(t, m) {
@@ -203,7 +203,7 @@ func TestRun(t *testing.T) {
 				// override answer of question to interrupt with interrupt error
 				stubAsker[tc.questionToInterrupt] = terminal.InterruptErr
 
-				_, err := Run(&stubAsker, RunWizardParams{ProjectFolderPath: path})
+				_, err := Run(&stubAsker, RunWizardParams{AppDir: path})
 
 				assert.ErrorIs(t, err, ErrStopInit)
 			})

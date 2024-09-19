@@ -26,10 +26,10 @@ func questionsNeeded(params RunWizardParams) bool {
 }
 
 type RunWizardParams struct {
-	ProjectFolderPath string
-	App               AppAnswers
-	Python            PythonAnswers
-	Docker            DockerAnswers
+	AppDir string
+	App    AppAnswers
+	Python PythonAnswers
+	Docker DockerAnswers
 }
 
 func Run(asker Asker, params RunWizardParams) (*manifest.Manifest, error) {
@@ -45,7 +45,7 @@ func Run(asker Asker, params RunWizardParams) (*manifest.Manifest, error) {
 	fmt.Println("We're happy you're here!")
 	fmt.Println("Let's get started by entering basic information about your app.")
 
-	continueWizard, err := UseOrCreateAppFolder(asker, params.ProjectFolderPath)
+	continueWizard, err := UseOrCreateAppFolder(asker, params.AppDir)
 	if err != nil {
 		return nil, err
 	} else if !continueWizard {

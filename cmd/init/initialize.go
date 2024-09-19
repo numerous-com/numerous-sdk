@@ -46,7 +46,7 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 	}
 
 	runWizardParams := wizard.RunWizardParams{
-		ProjectFolderPath: params.AppDir,
+		AppDir: params.AppDir,
 		App: wizard.AppAnswers{
 			Name:        params.Name,
 			Description: params.Desc,
