@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.15.2 (2024-09-19)
+
+### Fix
+
+* fix(cli): properly print errors for `delete` and `download` commands ([`7c9a0d0`](https://github.com/numerous-com/numerous-sdk/commit/7c9a0d08db7a0897bcb4e0720206e5f6d2f2e52e))
+
+
+
+
 ## v0.15.1 (2024-09-16)
 
 ### Fix
