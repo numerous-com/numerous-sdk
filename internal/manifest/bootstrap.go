@@ -38,7 +38,7 @@ func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
 	}
 
 	switch {
-	case m.Python != nil && m.Python.Library.Key != "":
+	case m.Python != nil:
 		if err := m.Python.bootstrapFiles(basePath); err != nil {
 			return err
 		}
