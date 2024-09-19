@@ -34,6 +34,7 @@ COLLECTION_DOCUMNET_KEY = "test_document"
 DOCUMENT_DATA = {"test": "test"}
 BASE64_DOCUMENT_DATA = dict_to_base64(DOCUMENT_DATA)
 DOCUMENT_ID = "915b75c5-9e95-4fa7-aaa2-2214c8d251ce"
+KWARGS = {"headers": {"Authorization": "Bearer token"}}
 
 
 def _collection_create_collection_reference(key: str, ref_id: str) -> CollectionCreate:
@@ -174,13 +175,12 @@ def test_collection_returns_new_collection() -> None:
     )
 
     parent_key = None
-    kwargs = {"headers": {"Authorization": "Bearer token"}}
 
     result = collection(COLLECTION_NAME, _client)
 
     gql.collection_create.assert_called_once()
     gql.collection_create.assert_called_once_with(
-        ORGANIZATION_ID, COLLECTION_NAME, parent_key, kwargs=kwargs
+        ORGANIZATION_ID, COLLECTION_NAME, parent_key, **KWARGS
     )
     assert result.key == COLLECTION_REFERENCE_KEY
     assert result.id == COLLECTION_REFERENCE_ID
@@ -190,7 +190,8 @@ def test_collection_returns_new_nested_collection() -> None:
     gql = Mock(GQLClient)
     _client = Client(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
-        NESTED_COLLECTION_REFERENCE_KEY, NESTED_COLLECTION_REFERENCE_ID
+        NESTED_COLLECTION_REFERENCE_KEY,
+        NESTED_COLLECTION_REFERENCE_ID,
     )
     result = collection(COLLECTION_NAME, _client)
 
@@ -229,7 +230,7 @@ def test_collection_document_returns_new_document() -> None:
     document = test_collection.document(COLLECTION_DOCUMNET_KEY)
 
     gql.collection_document.assert_called_once_with(
-        ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY
+        ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY, **KWARGS
     )
     assert isinstance(document, NumerousDocument)
     assert document.exists is False
@@ -249,7 +250,7 @@ def test_collection_document_returns_existing_document() -> None:
     document = test_collection.document(COLLECTION_DOCUMNET_KEY)
 
     gql.collection_document.assert_called_once_with(
-        ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY
+        ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY, **KWARGS
     )
     assert isinstance(document, NumerousDocument)
     assert document.exists
@@ -272,7 +273,7 @@ def test_collection_document_set_data_uploads_document() -> None:
     document.set({"test": "test"})
 
     gql.collection_document_set.assert_called_once_with(
-        COLLECTION_REFERENCE_ID, COLLECTION_DOCUMNET_KEY, BASE64_DOCUMENT_DATA
+        COLLECTION_REFERENCE_ID, COLLECTION_DOCUMNET_KEY, BASE64_DOCUMENT_DATA, **KWARGS
     )
     assert document.exists
 
@@ -294,8 +295,18 @@ def test_collection_document_get_returns_dict() -> None:
     assert isinstance(document, NumerousDocument)
     gql.collection_document.assert_has_calls(
         [
-            call(ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY),
-            call(ORGANIZATION_ID, COLLECTION_REFERENCE_KEY, COLLECTION_DOCUMNET_KEY),
+            call(
+                ORGANIZATION_ID,
+                COLLECTION_REFERENCE_KEY,
+                COLLECTION_DOCUMNET_KEY,
+                **KWARGS
+            ),
+            call(
+                ORGANIZATION_ID,
+                COLLECTION_REFERENCE_KEY,
+                COLLECTION_DOCUMNET_KEY,
+                **KWARGS
+            ),
         ]
     )
     assert document.exists
@@ -322,7 +333,7 @@ def test_collection_document_delete_marks_document_exists_false() -> None:
 
     document.delete()
 
-    gql.collection_document_delete.assert_called_once_with(DOCUMENT_ID)
+    gql.collection_document_delete.assert_called_once_with(DOCUMENT_ID, **KWARGS)
     assert document.exists is False
 
 
@@ -346,7 +357,7 @@ def test_collection_document_tag_add() -> None:
     document.tag("key", "test")
 
     gql.collection_document_tag_add.assert_called_once_with(
-        DOCUMENT_ID, TagInput(key="key", value="test")
+        DOCUMENT_ID, TagInput(key="key", value="test"), **KWARGS
     )
     assert document.tags == {"key": "test"}
 
@@ -376,7 +387,9 @@ def test_collection_document_tag_delete() -> None:
     document.tag_delete("key")
 
     assert document.tags == {}
-    gql.collection_document_tag_delete.assert_called_once_with(DOCUMENT_ID, "key")
+    gql.collection_document_tag_delete.assert_called_once_with(
+        DOCUMENT_ID, "key", **KWARGS
+    )
 
 
 def test_collection_documents_return_more_than_one() -> None:
@@ -403,6 +416,7 @@ def test_collection_documents_return_more_than_one() -> None:
         None,
         after="",
         first=COLLECTED_DOCUMENTS_NUMBER,
+        **KWARGS
     )
 
 
@@ -428,4 +442,5 @@ def test_collection_documents_query_tag_specific_document() -> None:
         TagInput(key=tag_key, value=tag_value),
         after="",
         first=COLLECTED_DOCUMENTS_NUMBER,
+        **KWARGS
     )

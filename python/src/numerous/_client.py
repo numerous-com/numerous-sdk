@@ -69,7 +69,7 @@ class Client:
             self.organization_id,
             collection_key,
             parent_collection_key,
-            kwargs=self.kwargs,
+            **self.kwargs,
         )
         return self._create_collection_ref(response.collection_create)
 
@@ -126,7 +126,10 @@ class Client:
         self, collection_key: str, document_key: str
     ) -> Optional[CollectionDocumentReference]:
         response = await self.client.collection_document(
-            self.organization_id, collection_key, document_key
+            self.organization_id,
+            collection_key,
+            document_key,
+            **self.kwargs,
         )
         if isinstance(
             response.collection_create,
@@ -144,7 +147,10 @@ class Client:
         self, collection_id: str, document_key: str, document_data: str
     ) -> Optional[CollectionDocumentReference]:
         response = await self.client.collection_document_set(
-            collection_id, document_key, document_data
+            collection_id,
+            document_key,
+            document_data,
+            **self.kwargs,
         )
         return self._create_collection_document_ref(response.collection_document_set)
 
@@ -158,7 +164,9 @@ class Client:
     async def _delete_collection_document(
         self, document_id: str
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_delete(document_id)
+        response = await self.client.collection_document_delete(
+            document_id, **self.kwargs
+        )
         return self._create_collection_document_ref(response.collection_document_delete)
 
     def delete_collection_document(
@@ -169,7 +177,9 @@ class Client:
     async def _add_collection_document_tag(
         self, document_id: str, tag: TagInput
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_tag_add(document_id, tag)
+        response = await self.client.collection_document_tag_add(
+            document_id, tag, **self.kwargs
+        )
         return self._create_collection_document_ref(
             response.collection_document_tag_add
         )
@@ -183,7 +193,7 @@ class Client:
         self, document_id: str, tag_key: str
     ) -> Optional[CollectionDocumentReference]:
         response = await self.client.collection_document_tag_delete(
-            document_id, tag_key
+            document_id, tag_key, **self.kwargs
         )
         return self._create_collection_document_ref(
             response.collection_document_tag_delete
@@ -206,6 +216,7 @@ class Client:
             tag_input,
             after=end_cursor,
             first=COLLECTED_DOCUMENTS_NUMBER,
+            **self.kwargs,
         )
 
         collection = response.collection_create
