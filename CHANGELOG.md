@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.15.3 (2024-09-19)
+
+### Fix
+
+* fix(cli): `download` command handles access denied error ([`0418a7e`](https://github.com/numerous-com/numerous-sdk/commit/0418a7ea93a2fb2a714fdb7989beca7550c0e360))
+
+
+
+
 ## v0.15.2 (2024-09-19)
 
 ### Fix
