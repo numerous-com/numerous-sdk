@@ -24,7 +24,6 @@ func (p PythonAnswers) ToManifest() *manifest.Python {
 		Library:          p.Library,
 		AppFile:          strings.Trim(p.AppFile, " 	"),
 		RequirementsFile: strings.Trim(p.RequirementsFile, " 	"),
-		Port:             p.Library.Port,
 	}
 }
 

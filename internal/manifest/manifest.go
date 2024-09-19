@@ -29,7 +29,6 @@ type Python struct {
 	Version          string  `toml:"version" json:"version"`
 	AppFile          string  `toml:"app_file" json:"app_file"`
 	RequirementsFile string  `toml:"requirements_file" json:"requirements_file"`
-	Port             uint    `toml:"port" json:"port"`
 }
 
 type App struct {
@@ -37,6 +36,7 @@ type App struct {
 	Description string   `toml:"description" json:"description"`
 	CoverImage  string   `toml:"cover_image" json:"cover_image"`
 	Exclude     []string `toml:"exclude" json:"exclude"`
+	Port        uint     `toml:"port" json:"port"`
 }
 
 type Deployment struct {
@@ -75,12 +75,13 @@ func Load(filePath string) (*Manifest, error) {
 	return nil, err
 }
 
-func NewApp(name, desc string) App {
+func NewApp(name, desc string, port uint) App {
 	return App{
 		Name:        name,
 		Description: desc,
 		CoverImage:  "app_cover.jpg",
 		Exclude:     []string{"*venv", "venv*", ".git", ".env"},
+		Port:        port,
 	}
 }
 

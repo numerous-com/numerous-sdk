@@ -40,13 +40,13 @@ func (m *ManifestV1) ToManifest() Manifest {
 			Description: m.Description,
 			CoverImage:  m.CoverImage,
 			Exclude:     m.Exclude,
+			Port:        m.Port,
 		},
 		Python: &Python{
 			Library:          m.Library,
 			Version:          m.Python,
 			AppFile:          m.AppFile,
 			RequirementsFile: m.RequirementsFile,
-			Port:             m.Port,
 		},
 		Deployment: m.Deployment,
 	}

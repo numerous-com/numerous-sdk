@@ -18,7 +18,7 @@ func questionsNeeded(params RunWizardParams) bool {
 		return false
 	}
 
-	if params.App.LibraryKey == manifest.DockerfileLibraryKey && params.Docker.Dockerfile != "" && params.Docker.Context != "" {
+	if params.App.LibraryKey == manifest.DockerfileLibraryKey && params.Docker.Dockerfile != "" && params.Docker.Context != "" && params.Docker.Port != 0 {
 		return false
 	}
 
@@ -33,11 +33,21 @@ type RunWizardParams struct {
 }
 
 func Run(asker Asker, params RunWizardParams) (*manifest.Manifest, error) {
+	python := params.Python.ToManifest()
+	docker := params.Docker.ToManifest()
+
 	if !questionsNeeded(params) {
+		var port uint
+		if python != nil {
+			port = python.Library.Port
+		} else if params.Docker.Port != 0 {
+			port = uint(params.Docker.Port)
+		}
+
 		return &manifest.Manifest{
-			App:    params.App.ToManifestApp(),
-			Python: params.Python.ToManifest(),
-			Docker: params.Docker.ToManifest(),
+			App:    params.App.ToManifestApp(port),
+			Python: python,
+			Docker: docker,
 		}, nil
 	}
 
@@ -57,21 +67,26 @@ func Run(asker Asker, params RunWizardParams) (*manifest.Manifest, error) {
 		return nil, err
 	}
 
-	m := manifest.Manifest{App: appAnswers.ToManifestApp()}
+	m := manifest.Manifest{}
 
+	var port uint
 	if appAnswers.LibraryName == dockerfileLibraryName || appAnswers.LibraryKey == manifest.DockerfileLibraryKey {
 		dockerAnswers, err := dockerWizard(asker, params.Docker)
 		if err != nil {
 			return nil, err
 		}
 		m.Docker = dockerAnswers.ToManifest()
+		port = uint(dockerAnswers.Port)
 	} else {
 		pythonAnswers, err := pythonWizard(asker, appAnswers.LibraryName, params.Python)
 		if err != nil {
 			return nil, err
 		}
 		m.Python = pythonAnswers.ToManifest()
+		port = m.Python.Library.Port
 	}
+
+	m.App = appAnswers.ToManifestApp(port)
 
 	return &m, nil
 }

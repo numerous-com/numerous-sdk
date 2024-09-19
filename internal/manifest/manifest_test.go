@@ -39,34 +39,34 @@ const tomlStreamlit string = `name = "Streamlit App Name"
 description = "A description"
 cover_image = "cover.png"
 exclude = ["*venv", "venv*"]
+port = 80
 
 [python]
   library = "streamlit"
   version = "3.11"
   app_file = "app.py"
   requirements_file = "requirements.txt"
-  port = 80
 
 [deploy]
   organization = "organization-slug"
   app = "app-slug"
 `
 
-const jsonStreamlit string = `{"name":"Streamlit App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"python":{"library":"streamlit","version":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+const jsonStreamlit string = `{"name":"Streamlit App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"port":80,"python":{"library":"streamlit","version":"3.11","app_file":"app.py","requirements_file":"requirements.txt"},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
 
-const jsonStreamlitNoDeploy string = `{"name":"Streamlit App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"python":{"library":"streamlit","version":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80}}`
+const jsonStreamlitNoDeploy string = `{"name":"Streamlit App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"port":80,"python":{"library":"streamlit","version":"3.11","app_file":"app.py","requirements_file":"requirements.txt"}}`
 
 const tomlStreamlitNoDeploy string = `name = "Streamlit App Name"
 description = "A description"
 cover_image = "cover.png"
 exclude = ["*venv", "venv*"]
+port = 80
 
 [python]
   library = "streamlit"
   version = "3.11"
   app_file = "app.py"
   requirements_file = "requirements.txt"
-  port = 80
 `
 
 var manifestStreamlit Manifest = Manifest{
@@ -75,11 +75,11 @@ var manifestStreamlit Manifest = Manifest{
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
 	},
 	Python: &Python{
 		Library:          LibraryStreamlit,
 		Version:          "3.11",
-		Port:             80,
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
 	},
@@ -92,11 +92,11 @@ var manifestStreamlitNoDeploy Manifest = Manifest{
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
 	},
 	Python: &Python{
 		Library:          LibraryStreamlit,
 		Version:          "3.11",
-		Port:             80,
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
 	},
@@ -107,6 +107,7 @@ const tomlDockerNoDeploy string = `name = "Docker App Name"
 description = "A description"
 cover_image = "cover.png"
 exclude = ["*venv", "venv*"]
+port = 1234
 
 [docker]
   dockerfile = "Dockerfile"
@@ -117,6 +118,7 @@ const tomlDocker string = `name = "Docker App Name"
 description = "A description"
 cover_image = "cover.png"
 exclude = ["*venv", "venv*"]
+port = 1234
 
 [docker]
   dockerfile = "Dockerfile"
@@ -127,9 +129,9 @@ exclude = ["*venv", "venv*"]
   app = "app-slug"
 `
 
-const jsonDocker string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"docker":{"dockerfile":"Dockerfile","context":"."},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+const jsonDocker string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"port":1234,"docker":{"dockerfile":"Dockerfile","context":"."},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
 
-const jsonDockerNoDeploy string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"docker":{"dockerfile":"Dockerfile","context":"."}}`
+const jsonDockerNoDeploy string = `{"name":"Docker App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"port":1234,"docker":{"dockerfile":"Dockerfile","context":"."}}`
 
 var manifestDocker Manifest = Manifest{
 	App: App{
@@ -137,6 +139,7 @@ var manifestDocker Manifest = Manifest{
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
+		Port:        1234,
 	},
 	Python:     nil,
 	Docker:     &Docker{Dockerfile: "Dockerfile", Context: "."},
@@ -149,6 +152,7 @@ var manifestDockerNoDeploy Manifest = Manifest{
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
+		Port:        1234,
 	},
 	Python:     nil,
 	Docker:     &Docker{Dockerfile: "Dockerfile", Context: "."},

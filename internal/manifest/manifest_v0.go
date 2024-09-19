@@ -30,13 +30,13 @@ func (d *ManifestV0) ToManifest() (*Manifest, error) {
 			Description: d.Description,
 			CoverImage:  d.CoverImage,
 			Exclude:     d.Exclude,
+			Port:        uint(port),
 		},
 		Python: &Python{
 			Library:          d.Library,
 			Version:          d.Python,
 			AppFile:          d.AppFile,
 			RequirementsFile: d.RequirementsFile,
-			Port:             uint(port),
 		},
 		Deployment: nil,
 	}

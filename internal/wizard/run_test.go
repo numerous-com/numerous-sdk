@@ -33,8 +33,8 @@ func TestRun(t *testing.T) {
 					"RequirementsFile":      "requirements.txt",
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryStreamlit.Port},
+					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt"},
 				},
 			},
 			{
@@ -52,8 +52,8 @@ func TestRun(t *testing.T) {
 					Python: PythonAnswers{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt"},
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name From Input", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt", Port: manifest.LibraryMarimo.Port},
+					App:    manifest.App{Name: "App Name From Input", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryMarimo.Port},
+					Python: &manifest.Python{Library: manifest.LibraryMarimo, AppFile: "app file from input.py", RequirementsFile: "requirements from input.txt"},
 				},
 			},
 			{
@@ -67,8 +67,8 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{App: AppAnswers{Name: "App Name from Input"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name from Input", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
+					App:    manifest.App{Name: "App Name from Input", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryStreamlit.Port},
+					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt"},
 				},
 			},
 			{
@@ -82,8 +82,8 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{App: AppAnswers{Description: "App description from input"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
+					App:    manifest.App{Name: "App Name", Description: "App description from input", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryStreamlit.Port},
+					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements.txt"},
 				},
 			},
 			{
@@ -97,8 +97,8 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{App: AppAnswers{LibraryName: manifest.LibraryPlotlyDash.Name, LibraryKey: manifest.LibraryPlotlyDash.Key}, Python: PythonAnswers{Library: manifest.LibraryPlotlyDash}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryPlotlyDash, AppFile: "app.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryPlotlyDash.Port},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryPlotlyDash.Port},
+					Python: &manifest.Python{Library: manifest.LibraryPlotlyDash, AppFile: "app.py", RequirementsFile: "requirements.txt"},
 				},
 			},
 			{
@@ -112,8 +112,8 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{Python: PythonAnswers{RequirementsFile: "requirements from input.txt"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements from input.txt", Port: manifest.LibraryStreamlit.Port},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryStreamlit.Port},
+					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app.py", RequirementsFile: "requirements from input.txt"},
 				},
 			},
 			{
@@ -127,8 +127,8 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{Python: PythonAnswers{AppFile: "app from input.py"}},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
-					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app from input.py", RequirementsFile: "requirements.txt", Port: manifest.LibraryStreamlit.Port},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: manifest.LibraryStreamlit.Port},
+					Python: &manifest.Python{Library: manifest.LibraryStreamlit, AppFile: "app from input.py", RequirementsFile: "requirements.txt"},
 				},
 			},
 			{
@@ -140,9 +140,10 @@ func TestRun(t *testing.T) {
 					"LibraryName":           "Dockerfile",
 					"Dockerfile":            "Dockerfile from question",
 					"Context":               "Docker context from question",
+					"Port":                  "1234",
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: 1234},
 					Docker: &manifest.Docker{Dockerfile: "Dockerfile from question", Context: "Docker context from question"},
 				},
 			},
@@ -155,10 +156,10 @@ func TestRun(t *testing.T) {
 				},
 				params: RunWizardParams{
 					App:    AppAnswers{LibraryKey: manifest.DockerfileLibraryKey},
-					Docker: DockerAnswers{Dockerfile: "Dockerfile from input", Context: "Docker context from input"},
+					Docker: DockerAnswers{Dockerfile: "Dockerfile from input", Context: "Docker context from input", Port: 1234},
 				},
 				expected: manifest.Manifest{
-					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude},
+					App:    manifest.App{Name: "App Name", Description: "App description", CoverImage: expectedCover, Exclude: expectedExclude, Port: 1234},
 					Docker: &manifest.Docker{Dockerfile: "Dockerfile from input", Context: "Docker context from input"},
 				},
 			},

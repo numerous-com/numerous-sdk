@@ -97,13 +97,13 @@ var manifestMarimo = Manifest{
 		Description: "A description",
 		CoverImage:  "cover.png",
 		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
 	},
 	Python: &Python{
 		Library:          LibraryMarimo,
 		Version:          "3.11",
 		AppFile:          "app.py",
 		RequirementsFile: "requirements.txt",
-		Port:             80,
 	},
 	Deployment: &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
 }

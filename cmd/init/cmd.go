@@ -32,6 +32,7 @@ var (
 	argRequirementsFile string
 	argDockerfile       string
 	argDockerContext    string
+	argDockerPort       uint
 )
 
 var (
@@ -58,6 +59,7 @@ func run(cmd *cobra.Command, args []string) error {
 		RequirementsFile: argRequirementsFile,
 		Dockerfile:       argDockerfile,
 		DockerContext:    argDockerContext,
+		DockerPort:       int(argDockerPort),
 	}
 	_, err = Initialize(&wizard.SurveyAsker{}, params)
 	if errors.Is(err, wizard.ErrStopInit) {
@@ -99,6 +101,7 @@ func init() {
 
 	InitCmd.Flags().StringVar(&argDockerfile, "dockerfile", "", "Path to the Dockerfile for the app")
 	InitCmd.Flags().StringVar(&argDockerContext, "docker-context", "", "Path used as the context for building the app Dockerfile")
+	InitCmd.Flags().UintVar(&argDockerPort, "docker-port", 0, "The port exposed in the Dockerfile")
 }
 
 func PathArgumentHandler(providedPath string, currentPath string) string {

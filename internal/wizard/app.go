@@ -13,10 +13,11 @@ type AppAnswers struct {
 	Description string
 	LibraryKey  string
 	LibraryName string
+	Port        uint
 }
 
-func (s AppAnswers) ToManifestApp() manifest.App {
-	return manifest.NewApp(s.Name, s.Description)
+func (s AppAnswers) ToManifestApp(port uint) manifest.App {
+	return manifest.NewApp(s.Name, s.Description, port)
 }
 
 func appWizard(asker Asker, as AppAnswers) (AppAnswers, error) {

@@ -18,6 +18,7 @@ type InitializeParams struct {
 	RequirementsFile string
 	Dockerfile       string
 	DockerContext    string
+	DockerPort       int
 }
 
 func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest, error) {
@@ -61,6 +62,7 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 		Docker: wizard.DockerAnswers{
 			Dockerfile: params.Dockerfile,
 			Context:    params.DockerContext,
+			Port:       params.DockerPort,
 		},
 	}
 	m, err := wizard.Run(asker, runWizardParams)
