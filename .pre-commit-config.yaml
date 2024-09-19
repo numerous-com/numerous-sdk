@@ -41,3 +41,12 @@ repos:
     rev: v1.0.3
     hooks:
       - id: gofumpt
+  - repo: local
+    hooks:
+      - id: go-test
+        stages: [pre-push]
+        name: go test
+        entry: bash -c 'if command -v gotestsum; then gotestsum; else go test ./...; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
