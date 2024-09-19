@@ -32,7 +32,7 @@ func (s *Service) AppVersionDownloadURL(ctx context.Context, input AppVersionDow
 	}
 	err := s.client.Exec(ctx, appVersionDownloadURLText, &resp, variables)
 	if err != nil {
-		return AppVersionDownloadURLOutput{}, err
+		return AppVersionDownloadURLOutput{}, convertErrors(err)
 	}
 
 	return AppVersionDownloadURLOutput{DownloadURL: resp.AppVersionDownloadURL.URL}, nil

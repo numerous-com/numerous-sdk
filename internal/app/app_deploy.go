@@ -36,7 +36,7 @@ func (s *Service) DeployApp(ctx context.Context, input DeployAppInput) (DeployAp
 
 	err := s.client.Exec(ctx, appDeployText, &resp, variables)
 	if err != nil {
-		return DeployAppOutput{}, ConvertErrors(err)
+		return DeployAppOutput{}, convertErrors(err)
 	}
 
 	return DeployAppOutput{DeploymentVersionID: resp.AppDeploy.ID}, nil

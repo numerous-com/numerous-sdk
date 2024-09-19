@@ -48,7 +48,7 @@ func (s *Service) CurrentAppVersion(ctx context.Context, input CurrentAppVersion
 	variables := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
 	err := s.client.Exec(ctx, queryCurrentAppVersionText, &resp, variables)
 	if err != nil {
-		return CurrentAppVersionOutput{}, ConvertErrors(err)
+		return CurrentAppVersionOutput{}, convertErrors(err)
 	}
 
 	if resp.App.DefaultDeployment == nil {

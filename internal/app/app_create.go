@@ -40,7 +40,7 @@ func (s *Service) Create(ctx context.Context, input CreateAppInput) (CreateAppOu
 	}
 	err := s.client.Exec(ctx, appCreateText, &resp, variables)
 	if err != nil {
-		return CreateAppOutput{}, ConvertErrors(err)
+		return CreateAppOutput{}, convertErrors(err)
 	}
 
 	return CreateAppOutput{

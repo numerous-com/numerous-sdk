@@ -36,5 +36,5 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 		return ReadAppOutput{AppID: resp.App.ID}, nil
 	}
 
-	return ReadAppOutput{}, ConvertErrors(err)
+	return ReadAppOutput{}, convertErrors(err)
 }

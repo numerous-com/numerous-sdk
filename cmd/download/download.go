@@ -57,7 +57,12 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 	urlOutput, err := service.AppVersionDownloadURL(ctx, urlInput)
 	if err != nil {
 		t.Error()
-		output.PrintErrorDetails("Error getting app download URL", err)
+
+		if errors.Is(err, app.ErrAccessDenied) {
+			output.PrintErrorAccessDenied(ai)
+		} else {
+			output.PrintErrorDetails("Error getting app download URL", err)
+		}
 
 		return err
 	}

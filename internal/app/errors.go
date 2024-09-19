@@ -10,7 +10,7 @@ var (
 	ErrAccessDenied = errors.New("access denied")
 )
 
-func ConvertErrors(err error) error {
+func convertErrors(err error) error {
 	if strings.Contains(err.Error(), "access denied") {
 		return ErrAccessDenied
 	}

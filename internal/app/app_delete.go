@@ -29,7 +29,7 @@ func (s *Service) Delete(ctx context.Context, input DeleteAppInput) error {
 
 	err := s.client.Exec(ctx, deleteMutation, &resp, vars)
 	if err != nil {
-		return ConvertErrors(err)
+		return convertErrors(err)
 	}
 
 	return nil
