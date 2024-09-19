@@ -10,6 +10,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const ManifestFileName string = "numerous.toml"
+
 type Manifest struct {
 	App
 	Python     *Python     `toml:"python,omitempty" json:"python,omitempty"`

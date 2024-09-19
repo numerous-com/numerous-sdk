@@ -61,7 +61,7 @@ func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
 		return err
 	}
 
-	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, ManifestPath), manifestToml); err != nil {
+	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, ManifestFileName), manifestToml); err != nil {
 		return err
 	}
 
