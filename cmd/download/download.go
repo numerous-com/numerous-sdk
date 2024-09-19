@@ -59,7 +59,7 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 		t.Error()
 
 		if errors.Is(err, app.ErrAccessDenied) {
-			output.PrintErrorAccessDenied(ai)
+			app.PrintErrorAccessDenied(ai)
 		} else {
 			output.PrintErrorDetails("Error getting app download URL", err)
 		}
