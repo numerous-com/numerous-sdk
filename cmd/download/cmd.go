@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/args"
+	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
@@ -46,7 +47,9 @@ func run(cmd *cobra.Command, args []string) error {
 		OrgSlug: orgSlug,
 	}
 
-	return Download(cmd.Context(), http.DefaultClient, service, input, surveyConfirmOverwrite)
+	err := Download(cmd.Context(), http.DefaultClient, service, input, surveyConfirmOverwrite)
+
+	return errorhandling.ErrorAlreadyPrinted(err)
 }
 
 func init() {
