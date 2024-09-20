@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.16.0 (2024-09-20)
+
+### Feature
+
+* feat(cli): initialize apps based on docker builds (#31) ([`b72af15`](https://github.com/numerous-com/numerous-sdk/commit/b72af150d0a606e6d1562ba138d883b141e78673))
+
+  > 
+  > * Enables creating apps based on Dockerfiles.
+  >   - Adds new option in wizard.
+  >   - Adds new command line flags.
+  > * Introduces new `numerous.toml` format.
+  > * Backwards compatible with apps initialized previously.
+
+
+
+
 ## v0.15.3 (2024-09-19)
 
 ### Fix
