@@ -24,3 +24,6 @@ class UpdateElementElementUpdate(BaseModel):
         "SliderElement",
         "TextField",
     ] = Field(alias="__typename")
+
+
+UpdateElement.model_rebuild()

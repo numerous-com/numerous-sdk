@@ -6,6 +6,7 @@ from typing import Any, AsyncIterator, Dict, Optional, Union
 from .all_elements import AllElements
 from .async_base_client import AsyncBaseClient
 from .base_model import UNSET, UnsetType
+from .collection_collections import CollectionCollections
 from .collection_create import CollectionCreate
 from .collection_document import CollectionDocument
 from .collection_document_delete import CollectionDocumentDelete
@@ -235,6 +236,60 @@ class Client(AsyncBaseClient):
         data = self.get_data(response)
         return CollectionCreate.model_validate(data)
 
+    async def collection_collections(
+        self,
+        organization_id: str,
+        key: str,
+        after: Union[Optional[str], UnsetType] = UNSET,
+        first: Union[Optional[int], UnsetType] = UNSET,
+        **kwargs: Any
+    ) -> CollectionCollections:
+        query = gql(
+            """
+            mutation CollectionCollections($organizationID: ID!, $key: ID!, $after: ID, $first: Int) {
+              collectionCreate(organizationID: $organizationID, key: $key) {
+                __typename
+                ... on Collection {
+                  id
+                  key
+                  collections(after: $after, first: $first) {
+                    edges {
+                      node {
+                        ... on Collection {
+                          ...CollectionReference
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                  }
+                }
+              }
+            }
+
+            fragment CollectionReference on Collection {
+              id
+              key
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationID": organization_id,
+            "key": key,
+            "after": after,
+            "first": first,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="CollectionCollections",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionCollections.model_validate(data)
+
     async def collection_document(
         self, organization_id: str, key: str, doc_key: str, **kwargs: Any
     ) -> CollectionDocument:
@@ -315,8 +370,8 @@ class Client(AsyncBaseClient):
             variables=variables,
             **kwargs
         )
-        data = self.get_data(response)
-        return CollectionDocumentSet.model_validate(data)
+        _data = self.get_data(response)
+        return CollectionDocumentSet.model_validate(_data)
 
     async def collection_document_delete(
         self, id: str, **kwargs: Any

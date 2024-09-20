@@ -7,7 +7,7 @@ import string
 import threading
 import typing
 from concurrent.futures import Future
-from typing import Any, Callable, Generic, Optional, Type, Union
+from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union
 
 from plotly import graph_objects as go
 
@@ -84,6 +84,9 @@ class SessionElementMissingError(Exception):
         super().__init__(f"Tool session missing required element '{elem.name}'")
 
 
+T = TypeVar("T")
+
+
 class ThreadedEventLoop:
     """Wrapper for an asyncio event loop running in a thread."""
 
@@ -105,7 +108,12 @@ class ThreadedEventLoop:
         if self._thread.is_alive():
             self._loop.stop()
 
-    def schedule(self, coroutine: typing.Awaitable[typing.Any]) -> Future[Any]:
+    def await_coro(self, coroutine: typing.Awaitable[T]) -> T:
+        """Awaiting for coroutine to finish."""
+        f = self.schedule(coroutine)
+        return f.result()
+
+    def schedule(self, coroutine: typing.Awaitable[T]) -> Future[T]:
         """Schedule a coroutine in the event loop."""
         return asyncio.run_coroutine_threadsafe(coroutine, self._loop)
 

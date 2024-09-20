@@ -112,3 +112,8 @@ class BuildPushInput(BaseModel):
 class TagInput(BaseModel):
     key: str
     value: str
+
+
+AppDeployInput.model_rebuild()
+SubscriptionOfferInput.model_rebuild()
+BuildPushInput.model_rebuild()

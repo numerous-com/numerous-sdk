@@ -22,3 +22,6 @@ class CollectionCreateCollectionCreateCollection(CollectionReference):
 
 class CollectionCreateCollectionCreateCollectionNotFound(CollectionNotFound):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+
+
+CollectionCreate.model_rebuild()

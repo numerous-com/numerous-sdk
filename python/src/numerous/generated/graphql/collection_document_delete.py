@@ -26,3 +26,6 @@ class CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound
     BaseModel
 ):
     typename__: Literal["CollectionDocumentNotFound"] = Field(alias="__typename")
+
+
+CollectionDocumentDelete.model_rebuild()

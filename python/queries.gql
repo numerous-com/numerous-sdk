@@ -127,6 +127,34 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   }
 }
 
+mutation CollectionCollections(
+  $organizationID: ID!
+  $key: ID!
+  $after: ID
+  $first: Int
+) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      id
+      key
+      collections(after: $after, first: $first) {
+        edges {
+          node {
+            ... on Collection {
+              ...CollectionReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
+
 mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
   collectionCreate(organizationID: $organizationID, key: $key) {
     __typename

@@ -3,9 +3,10 @@ from unittest.mock import Mock, call
 import pytest
 
 from numerous import collection
-from numerous._client import COLLECTED_DOCUMENTS_NUMBER, Client
+from numerous._client import COLLECTED_OBJECTS_NUMBER, Client
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.client import Client as GQLClient
+from numerous.generated.graphql.collection_collections import CollectionCollections
 from numerous.generated.graphql.collection_create import CollectionCreate
 from numerous.generated.graphql.collection_document import CollectionDocument
 from numerous.generated.graphql.collection_document_delete import (
@@ -94,6 +95,48 @@ def _collection_document_delete_found(_id: str) -> CollectionDocumentDelete:
                 "key": "t21",
                 "data": BASE64_DOCUMENT_DATA,
                 "tags": [],
+            }
+        }
+    )
+
+
+def _collection_collections(_id: str) -> CollectionCollections:
+
+    return CollectionCollections.model_validate(
+        {
+            "collectionCreate": {
+                "__typename": "Collection",
+                "id": "1a9299d1-5c81-44bb-b94f-ba40afc05f3a",
+                "key": "root_collection",
+                "collections": {
+                    "edges": [
+                        {
+                            "node": {
+                                "__typename": "Collection",
+                                "id": "496da1f7-5378-4962-8373-5c30663848cf",
+                                "key": "collection0",
+                            }
+                        },
+                        {
+                            "node": {
+                                "__typename": "Collection",
+                                "id": "6ae8ee18-8ebb-4206-aba1-8d2b44c22682",
+                                "key": "collection1",
+                            }
+                        },
+                        {
+                            "node": {
+                                "__typename": "Collection",
+                                "id": "deb5ee57-e4ba-470c-a913-a6a619e9661d",
+                                "key": "collection2",
+                            }
+                        },
+                    ],
+                    "pageInfo": {
+                        "hasNextPage": "false",
+                        "endCursor": "deb5ee57-e4ba-470c-a913-a6a619e9661d",
+                    },
+                },
             }
         }
     )
@@ -415,7 +458,7 @@ def test_collection_documents_return_more_than_one() -> None:
         COLLECTION_REFERENCE_KEY,
         None,
         after="",
-        first=COLLECTED_DOCUMENTS_NUMBER,
+        first=COLLECTED_OBJECTS_NUMBER,
         **KWARGS
     )
 
@@ -441,6 +484,32 @@ def test_collection_documents_query_tag_specific_document() -> None:
         COLLECTION_REFERENCE_KEY,
         TagInput(key=tag_key, value=tag_value),
         after="",
-        first=COLLECTED_DOCUMENTS_NUMBER,
+        first=COLLECTED_OBJECTS_NUMBER,
+        **KWARGS
+    )
+
+
+def test_collection_collections_return_more_than_one() -> None:
+    gql = Mock(GQLClient)
+    _client = Client(gql)
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
+    )
+    gql.collection_collections.return_value = _collection_collections(
+        COLLECTION_DOCUMNET_KEY
+    )
+    test_collection = collection(COLLECTION_NAME, _client)
+    result = []
+    expected_number_of_collections = 3
+    for collection_element in test_collection.collections():
+        assert collection_element.key
+        result.append(collection_element)
+
+    assert len(result) == expected_number_of_collections
+    gql.collection_collections.assert_called_once_with(
+        ORGANIZATION_ID,
+        COLLECTION_REFERENCE_KEY,
+        after="",
+        first=COLLECTED_OBJECTS_NUMBER,
         **KWARGS
     )

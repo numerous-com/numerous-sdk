@@ -24,3 +24,6 @@ class CollectionDocumentSetCollectionDocumentSetCollectionDocument(
 
 class CollectionDocumentSetCollectionDocumentSetCollectionNotFound(BaseModel):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+
+
+CollectionDocumentSet.model_rebuild()

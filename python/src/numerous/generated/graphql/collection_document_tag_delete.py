@@ -26,3 +26,6 @@ class CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNo
     BaseModel
 ):
     typename__: Literal["CollectionDocumentNotFound"] = Field(alias="__typename")
+
+
+CollectionDocumentTagDelete.model_rebuild()

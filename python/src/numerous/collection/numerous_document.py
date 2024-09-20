@@ -41,12 +41,23 @@ class NumerousDocument:
             dict_of_tags = {tag.key: tag.value for tag in numerous_doc_ref.tags}
             self.data: Optional[dict[str, Any]] = base64_to_dict(numerous_doc_ref.data)
             self.document_id = numerous_doc_ref.id
-            self.tags: dict[str, str] = dict_of_tags if dict_of_tags is not None else {}
+            self._tags: dict[str, str] = (
+                dict_of_tags if dict_of_tags is not None else {}
+            )
 
     @property
     def exists(self) -> bool:
         """Check if the document exists."""
         return self.document_id is not None
+
+    @property
+    def tags(self) -> dict[str, str]:
+        """Get the tags for the document."""
+        if self.document_id is not None:
+            return self._tags
+
+        msg = "Cannot get tags from a non-existent document."
+        raise ValueError(msg)
 
     def set(self, data: dict[str, Any]) -> None:
         """
@@ -106,7 +117,7 @@ class NumerousDocument:
             if deleted_document is not None and deleted_document.id == self.document_id:
                 self.document_id = None
                 self.data = None
-                self.tags = {}
+                self._tags = {}
             else:
                 msg = "Failed to delete the document."
                 raise ValueError(msg)
@@ -161,7 +172,7 @@ class NumerousDocument:
             raise ValueError(msg)
 
         if tagged_document is not None:
-            self.tags = {tag.key: tag.value for tag in tagged_document.tags}
+            self._tags = {tag.key: tag.value for tag in tagged_document.tags}
 
     def _fetch_data(self, document_key: str) -> None:
         """Fetch the data from the server."""

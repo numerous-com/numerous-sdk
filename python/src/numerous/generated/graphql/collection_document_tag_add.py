@@ -26,3 +26,6 @@ class CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound
     BaseModel
 ):
     typename__: Literal["CollectionDocumentNotFound"] = Field(alias="__typename")
+
+
+CollectionDocumentTagAdd.model_rebuild()

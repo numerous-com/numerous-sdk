@@ -47,3 +47,9 @@ class CollectionDocumentsCollectionCreateCollectionDocumentsPageInfo(BaseModel):
 
 class CollectionDocumentsCollectionCreateCollectionNotFound(BaseModel):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+
+
+CollectionDocuments.model_rebuild()
+CollectionDocumentsCollectionCreateCollection.model_rebuild()
+CollectionDocumentsCollectionCreateCollectionDocuments.model_rebuild()
+CollectionDocumentsCollectionCreateCollectionDocumentsEdges.model_rebuild()
