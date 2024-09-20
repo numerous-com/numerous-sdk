@@ -3,6 +3,9 @@ package app
 import (
 	"errors"
 	"strings"
+
+	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/appident"
 )
 
 var (
@@ -20,4 +23,32 @@ func convertErrors(err error) error {
 	}
 
 	return err
+}
+
+func PrintAppError(err error, ai appident.AppIdentifier) {
+	switch {
+	case errors.Is(err, ErrAccessDenied):
+		PrintErrorAccessDenied(ai)
+	case errors.Is(err, ErrAppNotFound):
+		PrintErrorAppNotFound(ai)
+	default:
+		output.PrintErrorDetails("Error occurred for app \"%s/%s\"", err, ai.OrganizationSlug, ai.AppSlug)
+	}
+}
+
+func PrintErrorAppNotFound(ai appident.AppIdentifier) {
+	output.PrintError(
+		"App not found",
+		"The app \"%s/%s\" cannot be found. Did you specify the correct organization and app slug?",
+		ai.OrganizationSlug, ai.AppSlug,
+	)
+}
+
+func PrintErrorAccessDenied(ai appident.AppIdentifier) {
+	output.PrintError(
+		"Access denied.",
+		`Hint: You may have specified an organization name instead of an organization slug.
+Is the organization slug %q and the app slug %q correct?`,
+		ai.OrganizationSlug, ai.AppSlug,
+	)
 }

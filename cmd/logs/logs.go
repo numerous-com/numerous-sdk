@@ -17,13 +17,13 @@ type AppService interface {
 func Logs(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string, printer func(app.AppDeployLogEntry)) error {
 	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
-		output.PrintGetAppIdentiferError(err, appDir, ai)
+		appident.PrintGetAppIdentiferError(err, appDir, ai)
 		return err
 	}
 
 	ch, err := apps.AppDeployLogs(ai)
 	if err != nil {
-		output.PrintAppError(err, ai)
+		app.PrintAppError(err, ai)
 		return err
 	}
 

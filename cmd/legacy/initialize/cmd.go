@@ -2,12 +2,14 @@ package initialize
 
 import (
 	"fmt"
+	"os"
 
 	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/gql/app"
+	"numerous.com/cli/internal/wizard"
 
 	"github.com/spf13/cobra"
 )
@@ -30,7 +32,23 @@ var (
 )
 
 func run(cmd *cobra.Command, args []string) {
-	appDir, m, err := cmdinit.PrepareInit(args)
+	appDir, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
+	if len(args) != 0 {
+		appDir = cmdinit.PathArgumentHandler(args[0], appDir)
+	}
+
+	params := cmdinit.InitializeParams{
+		Name:             name,
+		Desc:             desc,
+		LibraryKey:       libraryKey,
+		AppFile:          appFile,
+		RequirementsFile: requirementsFile,
+	}
+	m, err := cmdinit.Initialize(&wizard.SurveyAsker{}, params)
 	if err != nil {
 		return
 	}
@@ -41,7 +59,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err := cmdinit.BootstrapFiles(m, a.ID, appDir); err != nil {
+	if err := m.BootstrapFiles(a.ID, appDir); err != nil {
 		output.PrintErrorDetails("Error bootstrapping files.", err)
 		return
 	}

@@ -37,7 +37,7 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 		output.PrintErrorMissingAppSlug()
 		return err
 	} else if err != nil {
-		output.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
 		return err
 	}
 
@@ -49,7 +49,7 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 	appVersionInput := app.CurrentAppVersionInput(ai)
 	appVersionOutput, err := service.CurrentAppVersion(ctx, appVersionInput)
 	if err != nil {
-		output.PrintAppError(err, ai)
+		app.PrintAppError(err, ai)
 		return err
 	}
 
@@ -59,7 +59,7 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 		t.Error()
 
 		if errors.Is(err, app.ErrAccessDenied) {
-			output.PrintErrorAccessDenied(ai)
+			app.PrintErrorAccessDenied(ai)
 		} else {
 			output.PrintErrorDetails("Error getting app download URL", err)
 		}

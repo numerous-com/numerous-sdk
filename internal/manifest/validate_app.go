@@ -6,13 +6,20 @@ import (
 	"strings"
 )
 
-var ErrValidateNumerousApp = errors.New("error validating numerous app engine")
+var (
+	ErrValidateNumerousApp = errors.New("error validating numerous app engine")
+	ErrNoPythonAppConfig   = errors.New("no python app configured")
+)
 
 // Validates that the given app file is valid for this library. Returns false,
 // if the app is in a state where it does not make sense to be able to push
 // the app.
 func (m *Manifest) ValidateApp() error {
-	return m.Library.ValidateApp(m.AppFile)
+	if m.Python == nil {
+		return ErrNoPythonAppConfig
+	}
+
+	return m.Python.Library.ValidateApp(m.Python.AppFile)
 }
 
 func (l Library) ValidateApp(appFile string) error {

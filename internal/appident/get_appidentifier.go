@@ -18,7 +18,7 @@ type AppIdentifier struct {
 func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSlug string) (AppIdentifier, error) {
 	if orgSlug == "" || appSlug == "" {
 		if m == nil {
-			loaded, err := manifest.LoadManifest(filepath.Join(appDir, manifest.ManifestPath))
+			loaded, err := manifest.Load(filepath.Join(appDir, manifest.ManifestFileName))
 			if err != nil {
 				return AppIdentifier{}, ErrAppNotInitialized
 			}

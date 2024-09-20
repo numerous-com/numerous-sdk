@@ -1,4 +1,4 @@
-package init
+package manifest
 
 import (
 	"errors"
@@ -11,17 +11,30 @@ import (
 	"numerous.com/cli/internal/dir"
 )
 
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // Creates file if it does not exists
 func createFile(path string) error {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+	if exists, err := fileExists(path); err != nil {
+		return err
+	} else if !exists {
 		// file does not exist, create it
 		file, err := os.Create(path)
 		if err != nil {
 			return err
 		}
 		defer file.Close()
-	} else if err != nil {
-		return err
 	}
 
 	return nil

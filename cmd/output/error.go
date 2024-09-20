@@ -1,14 +1,10 @@
 package output
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"numerous.com/cli/internal/app"
-	"numerous.com/cli/internal/appident"
-	"numerous.com/cli/internal/dir"
 )
 
 // Prints an error message prefixed with an error symbol. Variadic arguments are
@@ -79,57 +75,6 @@ func PrintErrorInvalidOrganizationSlug(slug string) {
 
 func PrintErrorInvalidAppSlug(appSlug string) {
 	PrintError("Invalid app %q.", "Must contain only lower-case alphanumerical characters and dashes.", appSlug)
-}
-
-func PrintErrorAppNotFound(ai appident.AppIdentifier) {
-	PrintError(
-		"App not found",
-		"The app \"%s/%s\" cannot be found. Did you specify the correct organization and app slug?",
-		ai.OrganizationSlug, ai.AppSlug,
-	)
-}
-
-func PrintErrorAccessDenied(ai appident.AppIdentifier) {
-	PrintError(
-		"Access denied.",
-		`Hint: You may have specified an organization name instead of an organization slug.
-Is the organization slug %q and the app slug %q correct?`,
-		ai.OrganizationSlug, ai.AppSlug,
-	)
-}
-
-func PrintAppError(err error, ai appident.AppIdentifier) {
-	switch {
-	case errors.Is(err, app.ErrAccessDenied):
-		PrintErrorAccessDenied(ai)
-	case errors.Is(err, app.ErrAppNotFound):
-		PrintErrorAppNotFound(ai)
-	default:
-		PrintErrorDetails("Error occurred for app \"%s/%s\"", err, ai.OrganizationSlug, ai.AppSlug)
-	}
-}
-
-func PrintReadAppIDErrors(err error, appDir string) {
-	if err == dir.ErrAppIDNotFound {
-		PrintErrorAppNotInitialized(appDir)
-	} else if err != nil {
-		PrintErrorDetails("An error occurred reading the app ID", err)
-	}
-}
-
-func PrintGetAppIdentiferError(err error, appDir string, ai appident.AppIdentifier) {
-	switch {
-	case errors.Is(err, appident.ErrAppNotInitialized):
-		PrintErrorAppNotInitialized(appDir)
-	case errors.Is(err, appident.ErrInvalidAppSlug):
-		PrintErrorInvalidAppSlug(ai.AppSlug)
-	case errors.Is(err, appident.ErrInvalidOrganizationSlug):
-		PrintErrorInvalidOrganizationSlug(ai.OrganizationSlug)
-	case errors.Is(err, appident.ErrMissingAppSlug):
-		PrintErrorMissingAppSlug()
-	case errors.Is(err, appident.ErrMissingOrganizationSlug):
-		PrintErrorMissingOrganizationSlug()
-	}
 }
 
 func PrintManifestTOMLError(err error) {
