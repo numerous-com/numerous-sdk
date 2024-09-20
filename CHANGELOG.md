@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.16.1 (2024-09-20)
+
+### Fix
+
+* fix(cli): dockerfile app example uses provided port number ([`57f910b`](https://github.com/numerous-com/numerous-sdk/commit/57f910b39153b52b7e0f9bc57e183eeb5b5edb8f))
+
+  > 
+  > Fixes a bug where the initialized docker file example used a hardcoded
+  > port number instead of the port number provided in the wizard or by
+  > command line arguments.
+
+
+
+
 ## v0.16.0 (2024-09-20)
 
 ### Feature
