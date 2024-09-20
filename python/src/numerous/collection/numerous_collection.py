@@ -69,7 +69,6 @@ class NumerousCollection:
         """
         end_cursor = ""
         while True:
-
             tag_input = None
             if tag_key is not None and tag_value is not None:
                 tag_input = TagInput(key=tag_key, value=tag_value)

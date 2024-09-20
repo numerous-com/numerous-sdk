@@ -101,7 +101,6 @@ def _collection_document_delete_found(_id: str) -> CollectionDocumentDelete:
 
 
 def _collection_collections(_id: str) -> CollectionCollections:
-
     return CollectionCollections.model_validate(
         {
             "collectionCreate": {
@@ -342,13 +341,13 @@ def test_collection_document_get_returns_dict() -> None:
                 ORGANIZATION_ID,
                 COLLECTION_REFERENCE_KEY,
                 COLLECTION_DOCUMNET_KEY,
-                **KWARGS
+                **KWARGS,
             ),
             call(
                 ORGANIZATION_ID,
                 COLLECTION_REFERENCE_KEY,
                 COLLECTION_DOCUMNET_KEY,
-                **KWARGS
+                **KWARGS,
             ),
         ]
     )
@@ -459,7 +458,7 @@ def test_collection_documents_return_more_than_one() -> None:
         None,
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
-        **KWARGS
+        **KWARGS,
     )
 
 
@@ -485,7 +484,7 @@ def test_collection_documents_query_tag_specific_document() -> None:
         TagInput(key=tag_key, value=tag_value),
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
-        **KWARGS
+        **KWARGS,
     )
 
 
@@ -511,5 +510,5 @@ def test_collection_collections_return_more_than_one() -> None:
         COLLECTION_REFERENCE_KEY,
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
-        **KWARGS
+        **KWARGS,
     )
