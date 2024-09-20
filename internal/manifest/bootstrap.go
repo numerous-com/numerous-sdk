@@ -43,7 +43,7 @@ func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
 			return err
 		}
 	case m.Docker != nil:
-		err := m.Docker.bootstrapFiles(basePath)
+		err := m.Docker.bootstrapFiles(basePath, m.Port)
 		if errors.Is(err, ErrNoBootstrapDockerfileExists) {
 			output.Notify(
 				"Skipping Dockerfile bootstrapping",

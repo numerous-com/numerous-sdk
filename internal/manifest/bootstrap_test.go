@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -318,9 +319,11 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 func TestBootstrapDockerApp(t *testing.T) {
 	t.Run("given no pre-existing dockerfile it bootstraps example docker app", func(t *testing.T) {
 		appDir := t.TempDir()
+		port := uint(1234)
 		m := Manifest{
 			App: App{
 				CoverImage: "cover_image.png",
+				Port:       port,
 			},
 			Docker: &Docker{
 				Dockerfile: "Dockerfile",
@@ -331,7 +334,7 @@ func TestBootstrapDockerApp(t *testing.T) {
 		err := m.BootstrapFiles("", appDir)
 
 		assert.NoError(t, err)
-		test.AssertFileContent(t, filepath.Join(appDir, "Dockerfile"), []byte(dockerExampleDockerfile))
+		test.AssertFileContent(t, filepath.Join(appDir, "Dockerfile"), []byte(fmt.Sprintf(dockerExampleDockerfile, port, port)))
 		test.AssertFileContent(t, filepath.Join(appDir, "app.py"), []byte(dockerExampleAppPy))
 		test.AssertFileContent(t, filepath.Join(appDir, "requirements.txt"), []byte(dockerExampleRequirementsTxt))
 	})

@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 )
 
@@ -10,14 +11,14 @@ const DockerfileLibraryKey = "dockerfile"
 var ErrNoBootstrapDockerfileExists = errors.New("cannot bootstrap with pre-existing dockerfile")
 
 const dockerExampleDockerfile = `FROM python:3.11-slim
-EXPOSE 8501
+EXPOSE %d
 
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
 COPY app.py /app/app.py
 
-CMD ["streamlit", "run", "/app/app.py", "--server.port", "8501"]`
+CMD ["streamlit", "run", "/app/app.py", "--server.port", "%d"]`
 
 const dockerExampleAppPy = `import streamlit as st
 
@@ -37,7 +38,7 @@ st.markdown(
 
 const dockerExampleRequirementsTxt = "streamlit\n"
 
-func (d Docker) bootstrapFiles(basePath string) error {
+func (d Docker) bootstrapFiles(basePath string, port uint) error {
 	dockerfilePath := filepath.Join(basePath, d.Dockerfile)
 	appPath := filepath.Join(basePath, "app.py")
 	requirementsPath := filepath.Join(basePath, "requirements.txt")
@@ -48,7 +49,7 @@ func (d Docker) bootstrapFiles(basePath string) error {
 		return ErrNoBootstrapDockerfileExists
 	}
 
-	if err := createAndWriteIfFileNotExist(dockerfilePath, dockerExampleDockerfile); err != nil {
+	if err := createAndWriteIfFileNotExist(dockerfilePath, fmt.Sprintf(dockerExampleDockerfile, port, port)); err != nil {
 		return err
 	}
 
