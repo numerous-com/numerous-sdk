@@ -19,6 +19,7 @@ import (
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/token"
+	"numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/logging"
 
@@ -133,6 +134,7 @@ func init() {
 		logs.LogsCmd,
 		download.Cmd,
 		token.Cmd,
+		version.Cmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),

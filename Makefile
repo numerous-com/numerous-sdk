@@ -8,6 +8,7 @@ GO_BUILD = $(GO_ENV) go build
 CLI_BUILD_DIR=build
 CLI_SOURCE_FILES=$(shell find . -name '*.go' -type f)
 CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
+VERSION_TXT=internal/version/version.txt
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
 getsystem = $(word 2,$(subst _, ,$(subst /, ,$@)))
@@ -31,10 +32,13 @@ SDK_CLI_BINARY_DIR=python/src/numerous/cli/build
 SDK_CLI_BINARY_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(SDK_CLI_BINARY_DIR)/$(SYS)_$(ARCH)))
 SDK_CHECK_VENV=@if [ -z "${VIRTUAL_ENV}" ]; then echo "-- Error: An activated virtual environment is required"; exit 1; fi
 
+# Version
+create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed 's/^version = "\(.\+\)"/\1/' > $(VERSION_TXT)
+
 # RULES
 .DEFAULT_GOAL := help
 
-.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local
+.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version
 
 clean:
 	rm -rf $(CLI_BUILD_DIR)
@@ -42,6 +46,7 @@ clean:
 	rm -rf dist
 	rm -f .lint-ruff.txt
 	rm -f .lint-mypy.txt
+	rm -f $(VERSION_TXT)
 
 package: sdk-binaries
 	@echo "-- Building SDK package"
@@ -87,23 +92,28 @@ cli-all: $(CLI_BUILD_TARGETS)
 
 $(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES)
 	@echo "-- Building CLI for OS $(getsystem) architecture $(getarch) in $@"
+	$(create_version_txt_cmd)
 	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o $@ .
 
 cli-local:
 	@echo "-- Building local CLI"
+	$(create_version_txt_cmd)
 	$(GO_BUILD) -o $(CLI_BUILD_DIR)/local .
 
 cli-build:
 	@echo "-- Building CLI"
+	$(create_version_txt_cmd)
 	$(GO_BUILD) -ldflags '$(LDFLAGS)' -o $(CLI_BUILD_DIR)/numerous .
 
 cli-lint:
 	@echo "-- Running CLI linters"
+	$(create_version_txt_cmd)
 	golangci-lint run
 	gofumpt -l -w .
 
 cli-test:
 	@echo "-- Running CLI tests"
+	$(create_version_txt_cmd)
 	gotestsum -f testname -- -coverprofile=c.out ./...
 
 cli-dep:
@@ -114,6 +124,9 @@ cli-dep:
 gqlgen:
 	@echo "-- Generating GraphQL code"
 	cd python && ariadne-codegen
+
+version:
+	$(create_version_txt_cmd)
 
 help:
 	@echo "Make targets (help is default):"

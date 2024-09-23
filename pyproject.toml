@@ -36,6 +36,7 @@ numerous = "numerous.cli:main"
 where = ["python/src"]
 
 [tool.ruff]
+src = ["python/src"]
 exclude = [
     "./python/src/numerous/generated/",
     "./setup.py",
@@ -64,7 +65,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
-known-first-party = ["numerous"]
 
 [tool.ruff.lint.flake8-pytest-style]
 # defaults changes in 0.6.0 which gives some issues
