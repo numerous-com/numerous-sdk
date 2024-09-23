@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.17.0 (2024-09-23)
+
+### Feature
+
+* feat(cli): add `version` command to print version number (#30) ([`c840721`](https://github.com/numerous-com/numerous-sdk/commit/c8407218b2f249a4a60032af908c0f146b8d6495))
+
+
+
+
 ## v0.16.1 (2024-09-20)
 
 ### Fix
