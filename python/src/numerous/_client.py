@@ -41,23 +41,46 @@ from numerous.generated.graphql.input_types import TagInput
 from numerous.threaded_event_loop import ThreadedEventLoop
 
 
-API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"
-MESSAGE_NOT_SET = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
 COLLECTED_OBJECTS_NUMBER = 100
 
 
+class APIURLMissingError(Exception):
+    _msg = "NUMEROUS_API_URL environment variable is not set"
+
+    def __init__(self) -> None:
+        super().__init__(self._msg)
+
+
+class APIAccessTokenMissingError(Exception):
+    _msg = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
+
+    def __init__(self) -> None:
+        super().__init__(self._msg)
+
+
+class OrganizationIDMissingError(Exception):
+    _msg = "NUMEROUS_ORGANIZATION_ID environment variable is not set"
+
+    def __init__(self) -> None:
+        super().__init__(self._msg)
+
+
 class Client:
-    def __init__(self, client: GQLClient) -> None:
-        self.client = client
+    def __init__(self, gql: GQLClient) -> None:
+        self._gql = gql
         self._threaded_event_loop = ThreadedEventLoop()
         self._threaded_event_loop.start()
-        self.organization_id = os.getenv("ORGANIZATION_ID", "default_organization")
+
+        organization_id = os.getenv("NUMEROUS_ORGANIZATION_ID")
+        if not organization_id:
+            raise OrganizationIDMissingError
+        self._organization_id = organization_id
 
         auth_token = os.getenv("NUMEROUS_API_ACCESS_TOKEN")
         if not auth_token:
-            raise ValueError(MESSAGE_NOT_SET)
+            raise APIAccessTokenMissingError
 
-        self.kwargs = {"headers": {"Authorization": f"Bearer {auth_token}"}}
+        self._headers = {"Authorization": f"Bearer {auth_token}"}
 
     def _create_collection_ref(
         self,
@@ -82,11 +105,11 @@ class Client:
     async def _create_collection(
         self, collection_key: str, parent_collection_key: Optional[str] = None
     ) -> Optional[CollectionReference]:
-        response = await self.client.collection_create(
-            self.organization_id,
+        response = await self._gql.collection_create(
+            self._organization_id,
             collection_key,
             parent_collection_key,
-            **self.kwargs,
+            headers=self._headers,
         )
         return self._create_collection_ref(response.collection_create)
 
@@ -142,11 +165,11 @@ class Client:
     async def _get_collection_document(
         self, collection_key: str, document_key: str
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document(
-            self.organization_id,
+        response = await self._gql.collection_document(
+            self._organization_id,
             collection_key,
             document_key,
-            **self.kwargs,
+            headers=self._headers,
         )
         if isinstance(
             response.collection_create,
@@ -165,11 +188,11 @@ class Client:
     async def _set_collection_document(
         self, collection_id: str, document_key: str, document_data: str
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_set(
+        response = await self._gql.collection_document_set(
             collection_id,
             document_key,
             document_data,
-            **self.kwargs,
+            headers=self._headers,
         )
         return self._create_collection_document_ref(response.collection_document_set)
 
@@ -183,8 +206,8 @@ class Client:
     async def _delete_collection_document(
         self, document_id: str
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_delete(
-            document_id, **self.kwargs
+        response = await self._gql.collection_document_delete(
+            document_id, headers=self._headers
         )
         return self._create_collection_document_ref(response.collection_document_delete)
 
@@ -198,8 +221,8 @@ class Client:
     async def _add_collection_document_tag(
         self, document_id: str, tag: TagInput
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_tag_add(
-            document_id, tag, **self.kwargs
+        response = await self._gql.collection_document_tag_add(
+            document_id, tag, headers=self._headers
         )
         return self._create_collection_document_ref(
             response.collection_document_tag_add
@@ -215,8 +238,8 @@ class Client:
     async def _delete_collection_document_tag(
         self, document_id: str, tag_key: str
     ) -> Optional[CollectionDocumentReference]:
-        response = await self.client.collection_document_tag_delete(
-            document_id, tag_key, **self.kwargs
+        response = await self._gql.collection_document_tag_delete(
+            document_id, tag_key, headers=self._headers
         )
         return self._create_collection_document_ref(
             response.collection_document_tag_delete
@@ -235,13 +258,13 @@ class Client:
         end_cursor: str,
         tag_input: Optional[TagInput],
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
-        response = await self.client.collection_documents(
-            self.organization_id,
+        response = await self._gql.collection_documents(
+            self._organization_id,
             collection_key,
             tag_input,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
-            **self.kwargs,
+            headers=self._headers,
         )
 
         collection = response.collection_create
@@ -269,12 +292,12 @@ class Client:
     async def _get_collection_collections(
         self, collection_key: str, end_cursor: str
     ) -> tuple[Optional[list[Optional[CollectionReference]]], bool, str]:
-        response = await self.client.collection_collections(
-            self.organization_id,
+        response = await self._gql.collection_collections(
+            self._organization_id,
             collection_key,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
-            **self.kwargs,
+            headers=self._headers,
         )
 
         collection = response.collection_create
@@ -300,9 +323,18 @@ class Client:
         )
 
 
-def _open_client() -> Client:
+_client: Optional[Client] = None
+
+
+def _get_client() -> Client:
+    global _client  # noqa: PLW0603
+
+    if _client is not None:
+        return _client
+
     url = os.getenv("NUMEROUS_API_URL")
     if not url:
-        raise ValueError(API_URL_NOT_SET)
-    client = GQLClient(url=url)
-    return Client(client)
+        raise APIURLMissingError
+
+    _client = Client(GQLClient(url=url))
+    return _client

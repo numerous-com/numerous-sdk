@@ -205,7 +205,7 @@ def _collection_create_collection_not_found(ref_id: str) -> CollectionCreate:
 @pytest.fixture(autouse=True)
 def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
-    monkeypatch.setenv("ORGANIZATION_ID", ORGANIZATION_ID)
+    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", ORGANIZATION_ID)
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
 
 

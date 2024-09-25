@@ -1,16 +1,13 @@
 import pytest
 
-from numerous._client import Client, _open_client
+from numerous._client import Client, _get_client
 
 
-@pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_open_client_returns_new_client(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
+    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", "organization-id")
 
-
-def test_open_client_returns_new_client() -> None:
-    """Testing client."""
-    client = _open_client()
+    client = _get_client()
 
     assert isinstance(client, Client)
