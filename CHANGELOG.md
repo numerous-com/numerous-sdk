@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.19.1 (2024-09-25)
+
+### Fix
+
+* fix(python-sdk): organization environment variable and default client ([`29854ad`](https://github.com/numerous-com/numerous-sdk/commit/29854adf99555e94fc9ef7050e8ffb290ff49138))
+
+  > 
+  > * Use the correct environment variable `NUMEROUS_ORGANIZATION_ID`.
+  > * Define exception types for relevant exceptions in `_client` module.
+  > * Raise exception if organization ID is not configured.
+  > * Default to singleton client.
+
+
+
+
 ## v0.19.0 (2024-09-25)
 
 ### Feature
