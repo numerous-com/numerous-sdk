@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var LoginCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "login",
 	Short:   "Login to the Numerous CLI",
 	Args:    cobra.NoArgs,

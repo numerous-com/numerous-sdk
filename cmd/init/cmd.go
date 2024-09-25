@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var InitCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "init [flags]",
 	Aliases: []string{"initialize"},
 	GroupID: group.AppCommandsGroupID,
@@ -92,16 +92,16 @@ Next steps:
 }
 
 func init() {
-	InitCmd.Flags().StringVarP(&argName, "name", "n", "", "Name of the app")
-	InitCmd.Flags().StringVarP(&argDesc, "description", "d", "", "Description of the app")
-	InitCmd.Flags().StringVarP(&argLibraryKey, "app-library", "t", "", "Library the app is made with")
+	Cmd.Flags().StringVarP(&argName, "name", "n", "", "Name of the app")
+	Cmd.Flags().StringVarP(&argDesc, "description", "d", "", "Description of the app")
+	Cmd.Flags().StringVarP(&argLibraryKey, "app-library", "t", "", "Library the app is made with")
 
-	InitCmd.Flags().StringVarP(&argAppFile, "app-file", "f", "", "Path to the entrypoint module of the python app")
-	InitCmd.Flags().StringVarP(&argRequirementsFile, "requirements-file", "r", "", "Path to the requirements file of the python app")
+	Cmd.Flags().StringVarP(&argAppFile, "app-file", "f", "", "Path to the entrypoint module of the python app")
+	Cmd.Flags().StringVarP(&argRequirementsFile, "requirements-file", "r", "", "Path to the requirements file of the python app")
 
-	InitCmd.Flags().StringVar(&argDockerfile, "dockerfile", "", "Path to the Dockerfile for the app")
-	InitCmd.Flags().StringVar(&argDockerContext, "docker-context", "", "Path used as the context for building the app Dockerfile")
-	InitCmd.Flags().UintVar(&argDockerPort, "docker-port", 0, "The port exposed in the Dockerfile")
+	Cmd.Flags().StringVar(&argDockerfile, "dockerfile", "", "Path to the Dockerfile for the app")
+	Cmd.Flags().StringVar(&argDockerContext, "docker-context", "", "Path used as the context for building the app Dockerfile")
+	Cmd.Flags().UintVar(&argDockerPort, "docker-port", 0, "The port exposed in the Dockerfile")
 }
 
 func PathArgumentHandler(providedPath string, currentPath string) string {

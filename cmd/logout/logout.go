@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var LogoutCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "logout",
 	Short:   "Logout of the Numerous CLI",
 	GroupID: group.AdditionalCommandsGroupID,
