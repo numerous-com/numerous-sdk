@@ -455,6 +455,18 @@ type AppDeploymentHeartbeat {
   proxyURL: String
 }
 
+input AppVersionCreateGitHubInput {
+  owner: String!
+  repo: String!
+}
+
+type GitHubRepositoryNotFound {
+  owner: String!
+  repo: String!
+}
+
+union AppVersionCreateGitHubResult = AppVersion | GitHubRepositoryNotFound
+
 extend type Query {
   app(organizationSlug: String!, appSlug: String!): App @hasRole(role: USER)
 }
@@ -479,6 +491,12 @@ extend type Mutation {
   appDeployHeartbeat(deployID: ID!): AppDeploymentHeartbeat!
     @canUseApp
     @trackAppUseOperation
+  appVersionCreateGitHub(
+    appID: ID!
+    input: AppVersionCreateGitHubInput!
+  ): AppVersionCreateGitHubResult
+    @canManageApp
+    @trackAppOperation(eventName: "App Version Create from GitHub")
 }
 
 extend type Subscription {
@@ -498,7 +516,8 @@ scalar Decimal
 
 directive @canAccessSubscriptionOffer on FIELD_DEFINITION
 directive @canAccessSubscription on FIELD_DEFINITION
-directive @canManageSubscription on FIELD_DEFINITION
+directive @canManageInboundSubscription on FIELD_DEFINITION
+directive @canManageOutboundSubscription on FIELD_DEFINITION
 
 enum SubscriptionOfferStatus {
   ACCEPTED
@@ -510,6 +529,8 @@ enum SubscriptionOfferStatus {
 enum AppSubscriptionStatus {
   ACTIVE
   WITHDRAWN
+  EXPIRED
+  CANCELED
 }
 
 type AppSubscription {
@@ -518,6 +539,9 @@ type AppSubscription {
   inboundOrganization: Organization!
   outboundOrganization: Organization!
   status: AppSubscriptionStatus!
+  createdAt: Time!
+  expiresAt: Time
+  monthlyPriceUSD: Decimal
 }
 
 type PaymentConfiguration {
@@ -555,6 +579,14 @@ type SubscriptionOfferInvalidStatus {
   id: ID!
 }
 
+type SubscriptionOfferCheckoutSession {
+  portalURL: String!
+}
+
+type OrganizationMissingPaymentMethod {
+  organizationID: ID!
+}
+
 type AppSubscriptionNotFound {
   id: ID!
 }
@@ -576,6 +608,8 @@ union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
 
 union SubscriptionOfferAcceptResult =
     AppSubscription
+  | OrganizationMissingPaymentMethod
+  | SubscriptionOfferCheckoutSession
   | SubscriptionOfferNotFound
   | SubscriptionOfferInvalidStatus
 
@@ -618,8 +652,10 @@ extend type Mutation {
   subscriptionOfferWithdraw(
     subscriptionOfferId: ID!
   ): SubscriptionOfferWithdraw! @canAccessSubscriptionOffer
-  subscriptionCancel(subscriptionId: ID!): AppSubscriptionCancelResult!
-    @canManageSubscription
+  subscriptionCancelInbound(subscriptionId: ID!): AppSubscriptionCancelResult!
+    @canManageInboundSubscription
+  subscriptionCancelOutbound(subscriptionId: ID!): AppSubscriptionCancelResult!
+    @canManageOutboundSubscription
 }
 
 ###############################################################################
@@ -1117,6 +1153,7 @@ type Tag {
 enum PaymentAccountStatus {
   RESTRICTED
   VERIFIED
+  UNKNOWN
 }
 
 type PaymentAccount {

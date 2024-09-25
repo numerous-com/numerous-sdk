@@ -147,3 +147,14 @@ class UpdatesToolSessionEventToolSessionActionTriggered(BaseModel):
 class UpdatesToolSessionEventToolSessionActionTriggeredElement(BaseModel):
     id: str
     name: str
+
+
+Updates.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdated.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementElement.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementButton.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementHTMLElement.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementNumberField.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementSliderElement.model_rebuild()
+UpdatesToolSessionEventToolSessionElementUpdatedElementTextField.model_rebuild()
+UpdatesToolSessionEventToolSessionActionTriggered.model_rebuild()

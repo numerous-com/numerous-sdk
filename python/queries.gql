@@ -97,6 +97,16 @@ fragment CollectionReference on Collection {
   key
 }
 
+fragment CollectionDocumentReference on CollectionDocument {
+  id
+  key
+  data
+  tags {
+    key
+    value
+  }
+}
+
 fragment CollectionNotFound on CollectionNotFound {
   id
 }
@@ -113,6 +123,118 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
     }
     ... on CollectionNotFound {
       ...CollectionNotFound
+    }
+  }
+}
+
+mutation CollectionCollections(
+  $organizationID: ID!
+  $key: ID!
+  $after: ID
+  $first: Int
+) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      id
+      key
+      collections(after: $after, first: $first) {
+        edges {
+          node {
+            ... on Collection {
+              ...CollectionReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
+
+mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      document(key: $docKey) {
+        __typename
+        ... on CollectionDocument {
+          ...CollectionDocumentReference
+        }
+      }
+    }
+  }
+}
+
+mutation collectionDocumentSet(
+  $collectionID: ID!
+  $key: ID!
+  $data: Base64JSON!
+) {
+  collectionDocumentSet(collectionID: $collectionID, key: $key, data: $data) {
+    __typename
+    ... on CollectionDocument {
+      ...CollectionDocumentReference
+    }
+  }
+}
+
+mutation collectionDocumentDelete($id: ID!) {
+  collectionDocumentDelete(id: $id) {
+    __typename
+    ... on CollectionDocument {
+      ...CollectionDocumentReference
+    }
+  }
+}
+
+mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
+  collectionDocumentTagAdd(id: $id, tag: $tag) {
+    __typename
+    ... on CollectionDocument {
+      ...CollectionDocumentReference
+    }
+  }
+}
+
+mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
+  collectionDocumentTagDelete(id: $id, key: $tag_key) {
+    __typename
+    ... on CollectionDocument {
+      ...CollectionDocumentReference
+    }
+  }
+}
+
+mutation collectionDocuments(
+  $organizationID: ID!
+  $key: ID!
+  $tag: TagInput
+  $after: ID
+  $first: Int
+) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      id
+      key
+      documents(after: $after, first: $first, tag: $tag) {
+        edges {
+          node {
+            __typename
+            ... on CollectionDocument {
+              ...CollectionDocumentReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
     }
   }
 }

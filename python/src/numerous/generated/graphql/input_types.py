@@ -66,6 +66,11 @@ class AppDeleteInput(BaseModel):
     organization_slug: str = Field(alias="organizationSlug")
 
 
+class AppVersionCreateGitHubInput(BaseModel):
+    owner: str
+    repo: str
+
+
 class PaymentConfigurationInput(BaseModel):
     monthly_price_usd: Any = Field(alias="monthlyPriceUSD")
     trial_days: Optional[int] = Field(alias="trialDays", default=None)
@@ -107,3 +112,8 @@ class BuildPushInput(BaseModel):
 class TagInput(BaseModel):
     key: str
     value: str
+
+
+AppDeployInput.model_rebuild()
+SubscriptionOfferInput.model_rebuild()
+BuildPushInput.model_rebuild()

@@ -19,10 +19,54 @@ from .all_elements import (
 from .async_base_client import AsyncBaseClient
 from .base_model import BaseModel, Upload
 from .client import Client
+from .collection_collections import (
+    CollectionCollections,
+    CollectionCollectionsCollectionCreateCollection,
+    CollectionCollectionsCollectionCreateCollectionCollections,
+    CollectionCollectionsCollectionCreateCollectionCollectionsEdges,
+    CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode,
+    CollectionCollectionsCollectionCreateCollectionCollectionsPageInfo,
+    CollectionCollectionsCollectionCreateCollectionNotFound,
+)
 from .collection_create import (
     CollectionCreate,
     CollectionCreateCollectionCreateCollection,
     CollectionCreateCollectionCreateCollectionNotFound,
+)
+from .collection_document import (
+    CollectionDocument,
+    CollectionDocumentCollectionCreateCollection,
+    CollectionDocumentCollectionCreateCollectionDocument,
+    CollectionDocumentCollectionCreateCollectionNotFound,
+)
+from .collection_document_delete import (
+    CollectionDocumentDelete,
+    CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
+    CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
+)
+from .collection_document_set import (
+    CollectionDocumentSet,
+    CollectionDocumentSetCollectionDocumentSetCollectionDocument,
+    CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
+)
+from .collection_document_tag_add import (
+    CollectionDocumentTagAdd,
+    CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
+    CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound,
+)
+from .collection_document_tag_delete import (
+    CollectionDocumentTagDelete,
+    CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
+    CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
+)
+from .collection_documents import (
+    CollectionDocuments,
+    CollectionDocumentsCollectionCreateCollection,
+    CollectionDocumentsCollectionCreateCollectionDocuments,
+    CollectionDocumentsCollectionCreateCollectionDocumentsEdges,
+    CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
+    CollectionDocumentsCollectionCreateCollectionDocumentsPageInfo,
+    CollectionDocumentsCollectionCreateCollectionNotFound,
 )
 from .enums import (
     AppDeploymentStatus,
@@ -42,8 +86,10 @@ from .exceptions import (
 )
 from .fragments import (
     ButtonValue,
-    CollectionReference,
+    CollectionDocumentReference,
+    CollectionDocumentReferenceTags,
     CollectionNotFound,
+    CollectionReference,
     GraphContext,
     GraphContextAffectedBy,
     GraphContextAffects,
@@ -59,6 +105,7 @@ from .input_types import (
     AppDeployInput,
     AppDeployLogsInput,
     AppSecret,
+    AppVersionCreateGitHubInput,
     AppVersionInput,
     Auth0WhiteLabelInvitationInput,
     BuildPushInput,
@@ -118,6 +165,7 @@ __all__ = [
     "AppDeploymentStatus",
     "AppSecret",
     "AppSubscriptionStatus",
+    "AppVersionCreateGitHubInput",
     "AppVersionInput",
     "AsyncBaseClient",
     "Auth0WhiteLabelInvitationInput",
@@ -126,11 +174,43 @@ __all__ = [
     "BuildPushInput",
     "ButtonValue",
     "Client",
+    "CollectionCollections",
+    "CollectionCollectionsCollectionCreateCollection",
+    "CollectionCollectionsCollectionCreateCollectionCollections",
+    "CollectionCollectionsCollectionCreateCollectionCollectionsEdges",
+    "CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode",
+    "CollectionCollectionsCollectionCreateCollectionCollectionsPageInfo",
+    "CollectionCollectionsCollectionCreateCollectionNotFound",
     "CollectionCreate",
     "CollectionCreateCollectionCreateCollection",
     "CollectionCreateCollectionCreateCollectionNotFound",
-    "CollectionReference",
+    "CollectionDocument",
+    "CollectionDocumentCollectionCreateCollection",
+    "CollectionDocumentCollectionCreateCollectionDocument",
+    "CollectionDocumentCollectionCreateCollectionNotFound",
+    "CollectionDocumentDelete",
+    "CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument",
+    "CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound",
+    "CollectionDocumentReference",
+    "CollectionDocumentReferenceTags",
+    "CollectionDocumentSet",
+    "CollectionDocumentSetCollectionDocumentSetCollectionDocument",
+    "CollectionDocumentSetCollectionDocumentSetCollectionNotFound",
+    "CollectionDocumentTagAdd",
+    "CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument",
+    "CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound",
+    "CollectionDocumentTagDelete",
+    "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument",
+    "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound",
+    "CollectionDocuments",
+    "CollectionDocumentsCollectionCreateCollection",
+    "CollectionDocumentsCollectionCreateCollectionDocuments",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsEdges",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode",
+    "CollectionDocumentsCollectionCreateCollectionDocumentsPageInfo",
+    "CollectionDocumentsCollectionCreateCollectionNotFound",
     "CollectionNotFound",
+    "CollectionReference",
     "ElementInput",
     "ElementSelectInput",
     "GraphContext",
