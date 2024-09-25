@@ -4,6 +4,7 @@ import (
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/token/create"
+	"numerous.com/cli/cmd/token/revoke"
 
 	"github.com/spf13/cobra"
 )
@@ -17,4 +18,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(create.Cmd)
+	Cmd.AddCommand(revoke.Cmd)
 }
