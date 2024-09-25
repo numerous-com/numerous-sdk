@@ -38,7 +38,7 @@ from numerous.generated.graphql.fragments import (
     CollectionReference,
 )
 from numerous.generated.graphql.input_types import TagInput
-from numerous.session import ThreadedEventLoop
+from numerous.threaded_event_loop import ThreadedEventLoop
 
 
 API_URL_NOT_SET = "NUMEROUS_API_URL environment variable is not set"

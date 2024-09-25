@@ -16,7 +16,7 @@ class NumerousDocument:
     ----------
         key (str): The key of the document.
         collection_info tuple[str, str]: The id
-        and key of collection document belongs to.
+            and key of collection document belongs to.
         data (Optional[dict[str, Any]]): The data of the document.
         id (Optional[str]): The unique identifier of the document.
         client (Client): The client to connect.
@@ -36,10 +36,11 @@ class NumerousDocument:
         self.collection_key: str = collection_info[1]
         self._client: Client = client
         self.document_id: Optional[str] = None
+        self.data: Optional[dict[str, Any]] = None
 
         if numerous_doc_ref is not None:
             dict_of_tags = {tag.key: tag.value for tag in numerous_doc_ref.tags}
-            self.data: Optional[dict[str, Any]] = base64_to_dict(numerous_doc_ref.data)
+            self.data = base64_to_dict(numerous_doc_ref.data)
             self.document_id = numerous_doc_ref.id
             self._tags: dict[str, str] = (
                 dict_of_tags if dict_of_tags is not None else {}

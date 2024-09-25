@@ -68,10 +68,11 @@ class NumerousCollection:
 
         """
         end_cursor = ""
-        while True:
-            tag_input = None
-            if tag_key is not None and tag_value is not None:
-                tag_input = TagInput(key=tag_key, value=tag_value)
+        tag_input = None
+        if tag_key is not None and tag_value is not None:
+            tag_input = TagInput(key=tag_key, value=tag_value)
+        has_next_page = True
+        while has_next_page:
             result = self._client.get_collection_documents(
                 self.key, end_cursor, tag_input
             )
@@ -82,15 +83,13 @@ class NumerousCollection:
                 break
             for numerous_doc_ref in numerous_doc_refs:
                 if numerous_doc_ref is None:
-                    return
+                    continue
                 yield NumerousDocument(
                     self._client,
                     numerous_doc_ref.key,
                     (self.id, self.key),
                     numerous_doc_ref,
                 )
-            if not has_next_page:
-                break
 
     def collections(self) -> Iterator["NumerousCollection"]:
         """
@@ -103,7 +102,8 @@ class NumerousCollection:
 
         """
         end_cursor = ""
-        while True:
+        has_next_page = True
+        while has_next_page:
             result = self._client.get_collection_collections(self.key, end_cursor)
             if result is None:
                 break
@@ -114,5 +114,3 @@ class NumerousCollection:
                 if collection_ref_key is None:
                     return
                 yield NumerousCollection(collection_ref_key, self._client)
-            if not has_next_page:
-                break
