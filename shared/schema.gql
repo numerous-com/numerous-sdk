@@ -30,6 +30,8 @@ enum AuthRole {
 ### User management
 ###############################################################################
 
+directive @ownsPersonalAccessToken on FIELD_DEFINITION
+
 enum Role {
   ADMIN
   USER
@@ -93,6 +95,8 @@ type Mutation {
   personalAccessTokenCreate(
     input: PersonalAccessTokenCreateInput!
   ): PersonalAccessTokenCreateResult! @hasRole(role: AUTHENTICATED)
+  personalAccessTokenRevoke(id: ID!): PersonalAccessTokenEntry!
+    @ownsPersonalAccessToken
 }
 
 ###############################################################################
