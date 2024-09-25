@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.18.0 (2024-09-25)
+
+### Feature
+
+* feat(cli): command `token revoke` to revoke personal access tokens (#33) ([`0272afb`](https://github.com/numerous-com/numerous-sdk/commit/0272afb8c39a9c7b23c5c265db515107e956f327))
+
+
+
+
 ## v0.17.0 (2024-09-23)
 
 ### Feature
