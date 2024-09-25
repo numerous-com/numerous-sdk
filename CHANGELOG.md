@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.19.0 (2024-09-25)
+
+### Feature
+
+* feat(python-sdk): nested collections and documents (#32) ([`a6efc63`](https://github.com/numerous-com/numerous-sdk/commit/a6efc63a5fc5615759cd3a058671b471e076590b))
+
+  > 
+  > Documents are indexed by a key in a collection, and contain JSON data:
+  > * Create documents in a collection
+  > * Manage tags for a document
+  > * Iterate over documents in a collection (with filtering by tags possible)
+  > * Read document data
+  > 
+  > Additionally nested collections are introduced.
+
+
+
+
 ## v0.18.0 (2024-09-25)
 
 ### Feature
