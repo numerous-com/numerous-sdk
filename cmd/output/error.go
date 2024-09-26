@@ -84,3 +84,7 @@ func PrintManifestTOMLError(err error) {
 
 	fmt.Println("There is a an error in your \"numerous.toml\" manifest.\n" + err.Error())
 }
+
+func PrintErrorAccessDenied() {
+	PrintError("Access denied", "Your login may have expired. Try to log out and log back in again.")
+}
