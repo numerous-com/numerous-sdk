@@ -16,7 +16,7 @@ func TestRevoke(t *testing.T) {
 	description := "token description"
 	testErr := errors.New("test error")
 
-	t.Run("revokes and returns expected name and description", func(t *testing.T) {
+	t.Run("revokes with no errors on expected response", func(t *testing.T) {
 		revoker := MockTokenRevoker{}
 		revoker.On("Revoke", mock.Anything, id).Return(token.RevokeTokenOutput{Name: name, Description: description}, nil)
 
