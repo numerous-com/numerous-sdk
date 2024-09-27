@@ -22,9 +22,12 @@ func Revoke(ctx context.Context, revoker TokenRevoker, id string) error {
 
 	out, err := revoker.Revoke(ctx, id)
 
-	if err == nil {
+	switch {
+	case err == nil:
 		output.PrintlnOK("Revoked personal access token %q", out.Name)
-	} else {
+	case errors.Is(err, token.ErrAccessDenied):
+		output.PrintErrorAccessDenied()
+	default:
 		output.PrintUnknownError(err)
 	}
 
