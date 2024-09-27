@@ -87,6 +87,8 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous download",
 		"numerous logs",
 		"numerous token create",
+		"numerous token list",
+		"numerous token revoke",
 	}
 
 	for _, cmd := range commandsWithAuthRequired {
