@@ -179,7 +179,7 @@ class NumerousDocument:
         """Fetch the data from the server."""
         if self.document_id is not None:
             document = self._client.get_collection_document(
-                self.collection_key, document_key
+                self.collection_id, document_key
             )
         else:
             msg = "Cannot fetch data from a non-existent document."

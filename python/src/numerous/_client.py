@@ -2,6 +2,7 @@
 
 import os
 from typing import Optional, Union
+from numerous.local_client import LocalClient
 
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import (
@@ -323,10 +324,10 @@ class Client:
         )
 
 
-_client: Optional[Client] = None
+_client: Optional[Union[Client, LocalClient]] = None
 
 
-def _get_client() -> Client:
+def _get_client() -> Union[Client, LocalClient]:
     global _client  # noqa: PLW0603
 
     if _client is not None:
@@ -334,7 +335,8 @@ def _get_client() -> Client:
 
     url = os.getenv("NUMEROUS_API_URL")
     if not url:
-        raise APIURLMissingError
-
-    _client = Client(GQLClient(url=url))
+        _client = LocalClient()
+    else:
+        _client = Client(GQLClient(url=url))
+    
     return _client
