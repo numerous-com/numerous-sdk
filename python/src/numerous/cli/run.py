@@ -40,15 +40,18 @@ def get_executable_name() -> str:
     return f"build/{get_executable_os_name()}_{get_executable_arch_name()}"
 
 
-def main() -> None:
+def main() -> int:
     check_for_updates()
     exe_name = get_executable_name()
     exe_path = Path(__file__).parent / exe_name
     try:
         process = subprocess.Popen(args=[str(exe_path)] + sys.argv[1:])
-        process.wait()
+        exit_code = process.wait()
     except KeyboardInterrupt:
         process.kill()
+        sys.exit(1)
+    else:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
