@@ -52,7 +52,7 @@ func printApp(app app.ListApp) {
 	println("Name:        " + app.Name)
 	println("Slug:        " + app.Slug)
 	println("Created by:  " + app.CreatedBy)
-	println("Created at:  " + app.CreatedAt.Format(time.RFC1123))
+	println("Created at:  " + app.CreatedAt.Format(time.RFC3339))
 	println("Description: " + app.Description)
 	println("Status:      " + app.Status)
 }
