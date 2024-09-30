@@ -3,7 +3,8 @@ from unittest.mock import Mock, call
 import pytest
 
 from numerous import collection
-from numerous._client import COLLECTED_OBJECTS_NUMBER, Client
+from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
+from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import CollectionCollections
@@ -211,7 +212,7 @@ def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_collection_returns_new_collection() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -230,7 +231,7 @@ def test_collection_returns_new_collection() -> None:
 
 def test_collection_returns_new_nested_collection() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         NESTED_COLLECTION_REFERENCE_KEY,
         NESTED_COLLECTION_REFERENCE_ID,
@@ -244,26 +245,27 @@ def test_collection_returns_new_nested_collection() -> None:
     assert nested_result.id == NESTED_COLLECTION_REFERENCE_ID
 
 
-def test_nested_collection_not_found_returns_none() -> None:
+def test_nested_collection_not_found_raises_parent_not_found_error() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
-        NESTED_COLLECTION_REFERENCE_KEY, NESTED_COLLECTION_REFERENCE_ID
+        COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
 
     result = collection(COLLECTION_NAME, _client)
     gql.collection_create.return_value = _collection_create_collection_not_found(
-        NESTED_COLLECTION_ID
+        COLLECTION_REFERENCE_ID
     )
 
-    nested_result = result.collection(NESTED_COLLECTION_ID)
+    with pytest.raises(ParentCollectionNotFoundError) as exc_info:
+        result.collection(NESTED_COLLECTION_REFERENCE_KEY)
 
-    assert nested_result is None
+    assert exc_info.value.collection_id == COLLECTION_REFERENCE_ID
 
 
 def test_collection_document_returns_new_document() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -283,7 +285,7 @@ def test_collection_document_returns_new_document() -> None:
 
 def test_collection_document_returns_existing_document() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -306,7 +308,7 @@ def test_collection_document_returns_existing_document() -> None:
 
 def test_collection_document_set_data_uploads_document() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -331,7 +333,7 @@ def test_collection_document_set_data_uploads_document() -> None:
 
 def test_collection_document_get_returns_dict() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -366,7 +368,7 @@ def test_collection_document_get_returns_dict() -> None:
 
 def test_collection_document_delete_marks_document_exists_false() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -391,7 +393,7 @@ def test_collection_document_delete_marks_document_exists_false() -> None:
 
 def test_collection_document_tag_add() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -416,7 +418,7 @@ def test_collection_document_tag_add() -> None:
 
 def test_collection_document_tag_delete() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -446,7 +448,7 @@ def test_collection_document_tag_delete() -> None:
 
 def test_collection_documents_return_more_than_one() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -474,7 +476,7 @@ def test_collection_documents_return_more_than_one() -> None:
 
 def test_collection_documents_query_tag_specific_document() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -500,7 +502,7 @@ def test_collection_documents_query_tag_specific_document() -> None:
 
 def test_collection_collections_return_more_than_one() -> None:
     gql = Mock(GQLClient)
-    _client = Client(gql)
+    _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )

@@ -2,7 +2,7 @@
 
 from typing import Any, Optional
 
-from numerous._client import Client
+from numerous.collection._client import Client
 from numerous.generated.graphql.fragments import CollectionDocumentReference
 from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import base64_to_dict, dict_to_base64
@@ -179,7 +179,7 @@ class NumerousDocument:
         """Fetch the data from the server."""
         if self.document_id is not None:
             document = self._client.get_collection_document(
-                self.collection_id, document_key
+                self.collection_key, document_key
             )
         else:
             msg = "Cannot fetch data from a non-existent document."
