@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.20.0 (2024-09-30)
+
+### Feature
+
+* feat(cli): command `token list` to list personal access tokens (#35) ([`305e989`](https://github.com/numerous-com/numerous-sdk/commit/305e9899e038a91253638d601db59a7ce79de337))
+
+
+
+
 ## v0.19.2 (2024-09-30)
 
 ### Fix
