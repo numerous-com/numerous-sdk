@@ -36,7 +36,7 @@ func Create(ctx context.Context, creator TokenCreator, input CreateInput) error 
 
 	switch {
 	case errors.Is(err, token.ErrAccessDenied):
-		output.PrintError("Access denied", "Your login may have expired. Try to log out and log back in again.")
+		output.PrintErrorAccessDenied()
 	case errors.Is(err, token.ErrPersonalAccessTokenAlreadyExists):
 		output.PrintError("Error: %s", "", err.Error())
 	case errors.Is(err, token.ErrPersonalAccessTokenNameInvalid):

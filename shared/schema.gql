@@ -49,6 +49,7 @@ type User {
   fullName: String!
   memberships: [OrganizationMembership!]! @isMe
   email: String!
+  personalAccessTokens: [PersonalAccessTokenEntry!]! @isMe
 }
 
 type UserNotFound {
