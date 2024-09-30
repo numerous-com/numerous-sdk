@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.19.2 (2024-09-30)
+
+### Fix
+
+* fix(python-sdk, cli): properly return error exit codes ([`dd61ff7`](https://github.com/numerous-com/numerous-sdk/commit/dd61ff76fdd7bc55cc8871d53e48eb378708a7f1))
+
+
+
+
 ## v0.19.1 (2024-09-25)
 
 ### Fix
