@@ -1,10 +1,10 @@
 package manifest
 
 import (
-	"bytes"
-	"io/fs"
 	"os"
 	"path/filepath"
+
+	"numerous.com/cli/internal/requirements"
 )
 
 func (p Python) bootstrapFiles(basePath string) error {
@@ -27,39 +27,25 @@ func (p Python) bootstrapFiles(basePath string) error {
 
 func (p Python) bootstrapRequirements(basePath string) error {
 	requirementsPath := filepath.Join(basePath, p.RequirementsFile)
-	content, err := os.ReadFile(requirementsPath)
+	rfile, err := os.Open(requirementsPath)
 	if err != nil {
 		return err
 	}
-	var filePermission fs.FileMode = 0o600
-	file, err := os.OpenFile(requirementsPath, os.O_APPEND|os.O_WRONLY, filePermission)
+
+	req, err := requirements.Read(rfile)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	for _, requirement := range p.Library.Requirements {
-		if err := addRequirementToFile(file, content, requirement); err != nil {
-			return err
-		}
+		req.Add(requirement)
 	}
 
-	return nil
-}
-
-func addRequirementToFile(f *os.File, content []byte, requirement string) error {
-	if bytes.Contains(content, []byte(requirement)) {
-		return nil
-	}
-
-	// If it comes after content without newline, add newline
-	if len(content) != 0 && !bytes.HasSuffix(content, []byte("\n")) {
-		requirement = "\n" + requirement
-	}
-
-	if _, err := f.WriteString(requirement + "\n"); err != nil {
+	wfile, err := os.Create(requirementsPath)
+	if err != nil {
 		return err
 	}
+	defer wfile.Close()
 
-	return nil
+	return req.Write(wfile)
 }
