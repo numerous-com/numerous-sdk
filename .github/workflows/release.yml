@@ -77,8 +77,8 @@ jobs:
         uses: dawidd6/action-download-artifact@v3
         with:
           run_id: ${{ github.event.workflow_run.id }}
-          name: package
-          path: dist
+          name: dist
+          path: ./dist
       - run: pip install python-semantic-release==9.6.0 twine==5.0.0
       - run: |
           semantic-release version --commit --tag --push

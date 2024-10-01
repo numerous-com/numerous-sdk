@@ -40,7 +40,7 @@ jobs:
   build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    name: Build package
+    name: Build distributions
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,10 +55,10 @@ jobs:
           cache: false
       - run: python3 -m pip install python-semantic-release==9.6.0 build>=1.2.1
       - run: semantic-release version --no-commit --no-tag --no-push --no-changelog # update version locally to build new version
-      - run: make package
+      - run: make packages
       - uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: dist
           path: ./dist/*
 
   test-cli-windows:
@@ -75,13 +75,15 @@ jobs:
       - uses: actions/download-artifact@v4
         id: download
         with:
-          name: package
+          name: dist
           path: ./dist
-      - run: cmd /r dir /b /a-d dist > files.txt
       - run: |
-          $files = Get-Content files.txt
+          $files=Get-ChildItem dist
           foreach ($file in $files) {
-            pip install dist/$file
+            if ($file.name -like "*-win_amd64.whl") {
+              pip install $file.fullname
+              break
+            }
           }
       - run: numerous --help
 

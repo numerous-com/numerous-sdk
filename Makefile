@@ -28,8 +28,7 @@ LDFLAGS = -s -w \
 
 
 # Python SDK related variables
-SDK_CLI_BINARY_DIR=python/src/numerous/cli/build
-SDK_CLI_BINARY_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(SDK_CLI_BINARY_DIR)/$(SYS)_$(ARCH)))
+SDK_CLI_BINARY_DIR=python/src/numerous/cli/bin
 SDK_CHECK_VENV=@if [ -z "${VIRTUAL_ENV}" ]; then echo "-- Error: An activated virtual environment is required"; exit 1; fi
 
 # Version
@@ -48,9 +47,9 @@ clean:
 	rm -f .lint-mypy.txt
 	rm -f $(VERSION_TXT)
 
-package: sdk-binaries
-	@echo "-- Building SDK package"
-	python -m build
+packages: ${CLI_BUILD_TARGETS}
+	@echo "-- Building SDK packages"
+	bash scripts/build_dists.sh
 
 test: sdk-test cli-test
 
@@ -74,8 +73,6 @@ sdk-dep:
 	@echo "-- Installing SDK dependencies"
 	$(SDK_CHECK_VENV)
 	pip install -e .[dev] -q
-
-sdk-binaries: $(SDK_CLI_BINARY_TARGETS)
 
 # Directory for CLI binaries, in SDK
 $(SDK_CLI_BINARY_DIR):

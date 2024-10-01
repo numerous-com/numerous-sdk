@@ -25,7 +25,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-cli/build/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -181,3 +180,6 @@ internal/version/version.txt
 
 # Python package dist
 numerous-*
+
+# SDK cli binaries
+python/src/numerous/cli/bin

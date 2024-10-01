@@ -31,19 +31,30 @@ def get_executable_arch_name() -> str:
     if arch == "arm64":
         return "arm64"
     print(  # noqa: T201
-        f"Sorry but architecutre {arch} is not currently supported :(",
+        f"Sorry but architecture {arch} is not currently supported :(",
     )
     sys.exit(1)
 
 
-def get_executable_name() -> str:
-    return f"build/{get_executable_os_name()}_{get_executable_arch_name()}"
+def get_generic_executable_name() -> str:
+    return f"{get_executable_os_name()}_{get_executable_arch_name()}"
 
 
 def main() -> int:
     check_for_updates()
-    exe_name = get_executable_name()
-    exe_path = Path(__file__).parent / exe_name
+    bin_dir = Path(__file__).parent / "bin"
+    if (bin_dir / "cli").exists():
+        exe_path = bin_dir / "cli"
+    else:
+        exe_name = get_generic_executable_name()
+        exe_path = bin_dir / exe_name
+
+    if not exe_path.exists():
+        print(  # noqa: T201
+            "Numerous CLI executable compatible with your system was not found. :("
+        )
+        sys.exit(1)
+
     try:
         process = subprocess.Popen(args=[str(exe_path)] + sys.argv[1:])
         exit_code = process.wait()
