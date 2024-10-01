@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.21.0 (2024-10-01)
+
+### Feature
+
+* feat(cli): command `app list` for listing apps (#34) ([`1f93d82`](https://github.com/numerous-com/numerous-sdk/commit/1f93d82386f9f0d9831b47e52ab5f52ee59a0b79))
+
+
+
+
 ## v0.20.0 (2024-09-30)
 
 ### Feature
