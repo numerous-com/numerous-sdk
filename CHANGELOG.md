@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.22.0 (2024-10-01)
+
+### Feature
+
+* feat(python-sdk): local file system collections (#36) ([`8e18f76`](https://github.com/numerous-com/numerous-sdk/commit/8e18f762ecd4ad8e124f1fe4cb4c01196cf91581))
+
+  > 
+  > Enables using the collections features locally, by using an implementation that stores
+  > collections and documents in directories on the local file system, when running locally.
+  > 
+  > Set the environment variable `NUMEROUS_COLLECTIONS_BASE_PATH` to define
+  > where to put collections and documents. Defaults to the directory `collections` in
+  > the working directory.
+  > 
+  > ---------
+  > 
+  > Co-authored-by: lasse-numerous &lt;lasse.thomsen@numerous.com&gt;
+
+
+
+
 ## v0.21.0 (2024-10-01)
 
 ### Feature
