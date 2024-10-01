@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var OrganizationRootCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "organization",
 	Short:   "Manage Numerous organizations",
 	Args:    args.SubCommandRequired,
@@ -17,6 +17,6 @@ var OrganizationRootCmd = &cobra.Command{
 }
 
 func init() {
-	OrganizationRootCmd.AddCommand(create.OrganizationCreateCmd)
-	OrganizationRootCmd.AddCommand(list.OrganizationListCmd)
+	Cmd.AddCommand(create.OrganizationCreateCmd)
+	Cmd.AddCommand(list.OrganizationListCmd)
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var LogsCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "logs [app directory]",
 	RunE:    run,
 	Short:   "Display running application logs",
@@ -72,7 +72,7 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	flags := LogsCmd.Flags()
+	flags := Cmd.Flags()
 	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
 	flags.StringVarP(&appSlug, "app", "a", "", "The app slug identifier of the app to read logs from.")
 	flags.BoolVarP(&timestamps, "timestamps", "t", false, "Print a timestamp for each log entry.")

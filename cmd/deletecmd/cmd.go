@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DeleteCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "delete [app directory]",
 	RunE:    run,
 	Short:   "Delete an app from an organization",
@@ -64,7 +64,7 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	flags := DeleteCmd.Flags()
+	flags := Cmd.Flags()
 	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
 	flags.StringVarP(&appSlug, "app", "a", "", "The app slug identifier of the app to read logs from.")
 }

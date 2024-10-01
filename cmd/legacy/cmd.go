@@ -13,7 +13,7 @@ import (
 	"numerous.com/cli/cmd/legacy/unpublish"
 )
 
-var LegacyRootCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "legacy",
 	Short:   "Commands for managing legacy apps on Numerous",
 	Args:    args.SubCommandRequired,
@@ -21,11 +21,11 @@ var LegacyRootCmd = &cobra.Command{
 }
 
 func init() {
-	LegacyRootCmd.AddCommand(push.PushCmd)
-	LegacyRootCmd.AddCommand(log.LogCmd)
-	LegacyRootCmd.AddCommand(deleteapp.DeleteCmd)
-	LegacyRootCmd.AddCommand(publish.PublishCmd)
-	LegacyRootCmd.AddCommand(unpublish.UnpublishCmd)
-	LegacyRootCmd.AddCommand(list.ListCmd)
-	LegacyRootCmd.AddCommand(initialize.InitCmd)
+	Cmd.AddCommand(push.PushCmd)
+	Cmd.AddCommand(log.LogCmd)
+	Cmd.AddCommand(deleteapp.DeleteCmd)
+	Cmd.AddCommand(publish.PublishCmd)
+	Cmd.AddCommand(unpublish.UnpublishCmd)
+	Cmd.AddCommand(list.ListCmd)
+	Cmd.AddCommand(initialize.InitCmd)
 }

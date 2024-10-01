@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DeployCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "deploy [app directory]",
 	RunE:    run,
 	GroupID: group.AppCommandsGroupID,
@@ -67,7 +67,7 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	flags := DeployCmd.Flags()
+	flags := Cmd.Flags()
 	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to deploy to. List available organizations with 'numerous organization list'.")
 	flags.StringVarP(&appSlug, "app", "a", "", "A app slug identifier of the app to deploy to.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")

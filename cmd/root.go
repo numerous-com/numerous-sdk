@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"numerous.com/cli/cmd/app"
 	"numerous.com/cli/cmd/deletecmd"
 	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/dev"
@@ -89,6 +90,7 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 		"numerous token create",
 		"numerous token list",
 		"numerous token revoke",
+		"numerous app list",
 	}
 
 	for _, cmd := range commandsWithAuthRequired {
@@ -125,18 +127,19 @@ func init() {
 	})
 
 	rootCmd.AddCommand(
-		cmdinit.InitCmd,
-		login.LoginCmd,
-		logout.LogoutCmd,
+		cmdinit.Cmd,
+		login.Cmd,
+		logout.Cmd,
 		dev.DevCmd,
-		organization.OrganizationRootCmd,
-		legacy.LegacyRootCmd,
-		deletecmd.DeleteCmd,
-		deploy.DeployCmd,
-		logs.LogsCmd,
+		organization.Cmd,
+		legacy.Cmd,
+		deletecmd.Cmd,
+		deploy.Cmd,
+		logs.Cmd,
 		download.Cmd,
 		token.Cmd,
 		version.Cmd,
+		app.Cmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),
