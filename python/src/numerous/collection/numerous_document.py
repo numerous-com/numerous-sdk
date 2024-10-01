@@ -2,7 +2,7 @@
 
 from typing import Any, Optional
 
-from numerous._client import Client
+from numerous.collection._client import Client
 from numerous.generated.graphql.fragments import CollectionDocumentReference
 from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import base64_to_dict, dict_to_base64

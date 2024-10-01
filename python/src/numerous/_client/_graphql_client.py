@@ -3,6 +3,7 @@
 import os
 from typing import Optional, Union
 
+from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import (
     CollectionCollectionsCollectionCreateCollection,
@@ -65,7 +66,7 @@ class OrganizationIDMissingError(Exception):
         super().__init__(self._msg)
 
 
-class Client:
+class GraphQLClient:
     def __init__(self, gql: GQLClient) -> None:
         self._gql = gql
         self._threaded_event_loop = ThreadedEventLoop()
@@ -89,33 +90,28 @@ class Client:
             CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode,
             CollectionNotFound,
         ],
-    ) -> Optional[CollectionReference]:
-        if isinstance(
-            collection_response,
-            (
-                CollectionReference,
-                CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode,
-            ),
-        ):
-            return CollectionReference(
-                id=collection_response.id, key=collection_response.key
-            )
-        return None
+    ) -> CollectionReference:
+        if isinstance(collection_response, CollectionNotFound):
+            raise ParentCollectionNotFoundError(collection_id=collection_response.id)
+
+        return CollectionReference(
+            id=collection_response.id, key=collection_response.key
+        )
 
     async def _create_collection(
-        self, collection_key: str, parent_collection_key: Optional[str] = None
-    ) -> Optional[CollectionReference]:
+        self, collection_key: str, parent_collection_id: Optional[str] = None
+    ) -> CollectionReference:
         response = await self._gql.collection_create(
             self._organization_id,
             collection_key,
-            parent_collection_key,
+            parent_collection_id,
             headers=self._headers,
         )
         return self._create_collection_ref(response.collection_create)
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: Optional[str] = None
-    ) -> Optional[CollectionReference]:
+    ) -> CollectionReference:
         """
         Retrieve a collection by its key and parent key.
 
@@ -143,17 +139,7 @@ class Client:
             ]
         ],
     ) -> Optional[CollectionDocumentReference]:
-        if isinstance(
-            collection_response,
-            (
-                CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
-                CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
-                CollectionDocumentSetCollectionDocumentSetCollectionDocument,
-                CollectionDocumentCollectionCreateCollectionDocument,
-                CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
-                CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
-            ),
-        ):
+        if isinstance(collection_response, CollectionDocumentReference):
             return CollectionDocumentReference(
                 id=collection_response.id,
                 key=collection_response.key,
@@ -291,7 +277,7 @@ class Client:
 
     async def _get_collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[Optional[list[Optional[CollectionReference]]], bool, str]:
+    ) -> tuple[Optional[list[CollectionReference]], bool, str]:
         response = await self._gql.collection_collections(
             self._organization_id,
             collection_key,
@@ -308,7 +294,9 @@ class Client:
         edges = collections.edges
         page_info = collections.page_info
 
-        result = [self._create_collection_ref(edge.node) for edge in edges]
+        result = [
+            CollectionReference(id=edge.node.id, key=edge.node.key) for edge in edges
+        ]
 
         end_cursor = page_info.end_cursor or ""
         has_next_page = page_info.has_next_page
@@ -317,24 +305,7 @@ class Client:
 
     def get_collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[Optional[list[Optional[CollectionReference]]], bool, str]:
+    ) -> tuple[Optional[list[CollectionReference]], bool, str]:
         return self._threaded_event_loop.await_coro(
             self._get_collection_collections(collection_key, end_cursor)
         )
-
-
-_client: Optional[Client] = None
-
-
-def _get_client() -> Client:
-    global _client  # noqa: PLW0603
-
-    if _client is not None:
-        return _client
-
-    url = os.getenv("NUMEROUS_API_URL")
-    if not url:
-        raise APIURLMissingError
-
-    _client = Client(GQLClient(url=url))
-    return _client

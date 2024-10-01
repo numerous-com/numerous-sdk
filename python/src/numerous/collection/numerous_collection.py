@@ -2,26 +2,24 @@
 
 from typing import Iterator, Optional
 
-from numerous._client import Client
+from numerous.collection._client import Client
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.fragments import CollectionReference
 from numerous.generated.graphql.input_types import TagInput
 
 
 class NumerousCollection:
-    def __init__(
-        self, collection_ref: Optional[CollectionReference], _client: Client
-    ) -> None:
-        if collection_ref is not None:
-            self.key = collection_ref.key
-            self.id = collection_ref.id
+    def __init__(self, collection_ref: CollectionReference, _client: Client) -> None:
+        self.key = collection_ref.key
+        self.id = collection_ref.id
         self._client = _client
 
-    def collection(self, collection_name: str) -> Optional["NumerousCollection"]:
+    def collection(self, collection_key: str) -> Optional["NumerousCollection"]:
         """Get or create a collection by name."""
         collection_ref = self._client.get_collection_reference(
-            collection_key=collection_name, parent_collection_id=self.id
+            collection_key=collection_key, parent_collection_id=self.id
         )
+
         if collection_ref is not None:
             return NumerousCollection(collection_ref, self._client)
         return None
@@ -107,10 +105,8 @@ class NumerousCollection:
             result = self._client.get_collection_collections(self.key, end_cursor)
             if result is None:
                 break
-            collection_ref_keys, has_next_page, end_cursor = result
-            if collection_ref_keys is None:
+            collection_refs, has_next_page, end_cursor = result
+            if collection_refs is None:
                 break
-            for collection_ref_key in collection_ref_keys:
-                if collection_ref_key is None:
-                    return
-                yield NumerousCollection(collection_ref_key, self._client)
+            for collection_ref in collection_refs:
+                yield NumerousCollection(collection_ref, self._client)
