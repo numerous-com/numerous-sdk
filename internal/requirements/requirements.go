@@ -48,63 +48,6 @@ func Read(r io.Reader) (*requirementsTxt, error) {
 	}, nil
 }
 
-func readLines(data []byte) (lines []string, crln bool, err error) {
-	lines = []string{}
-	crln = false
-	returnedFinalNonTerminatedLine := false
-	returnedLastEmptyLine := false
-
-	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF && len(data) == 0 {
-			if !returnedFinalNonTerminatedLine && !returnedLastEmptyLine {
-				returnedLastEmptyLine = true
-				return 0, []byte{}, nil
-			}
-
-			return 0, nil, nil
-		}
-		if i := bytes.IndexByte(data, '\n'); i >= 0 {
-			// We have a full newline-terminated line.
-			token, lineHadCR := dropCR(data[0:i])
-			crln = crln || lineHadCR
-
-			return i + 1, token, nil
-		}
-		// If we're at EOF, we have a final, non-terminated line. Return it.
-		if atEOF {
-			token, lineCR := dropCR(data)
-			crln = crln || lineCR
-			returnedFinalNonTerminatedLine = true
-
-			return len(data), token, nil
-		}
-		// Request more data.
-		return 0, nil, nil
-	}
-
-	s := bufio.NewScanner(bytes.NewBuffer(data))
-	s.Split(split)
-
-	for s.Scan() {
-		if err := s.Err(); err != nil {
-			return nil, false, err
-		}
-
-		lines = append(lines, s.Text())
-	}
-
-	return lines, crln, nil
-}
-
-// dropCR drops a terminal \r from the data, and return true.
-func dropCR(data []byte) ([]byte, bool) {
-	if len(data) > 0 && data[len(data)-1] == '\r' {
-		return data[0 : len(data)-1], true
-	}
-
-	return data, false
-}
-
 func (r *requirementsTxt) Write(w io.Writer) error {
 	ew := r.encoder.Writer(w)
 
@@ -144,4 +87,71 @@ func (r *requirementsTxt) Add(added string) {
 		r.lines = append(r.lines, added)
 		r.lines = append(r.lines, "")
 	}
+}
+
+// dropCR drops a terminal \r from the data, and return true.
+func dropCR(data []byte) ([]byte, bool) {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1], true
+	}
+
+	return data, false
+}
+
+// Contains state for the Scanner split function
+type requirementsSplitter struct {
+	crln                           bool
+	returnedFinalNonTerminatedLine bool
+	returnedLastEmptyLine          bool
+}
+
+// Implements bufio.SplitFunc
+func (rs *requirementsSplitter) split(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		// ensures that empty lines at the end of the input are preserved, while
+		// empty lines are not added if they did not exist already
+		if !rs.returnedFinalNonTerminatedLine && !rs.returnedLastEmptyLine {
+			rs.returnedLastEmptyLine = true
+			return 0, []byte{}, nil
+		}
+
+		return 0, nil, nil
+	}
+
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line.
+		token, cr := dropCR(data[0:i])
+		rs.crln = rs.crln || cr
+
+		return i + 1, token, nil
+	}
+
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		token, cr := dropCR(data)
+		rs.crln = rs.crln || cr
+		rs.returnedFinalNonTerminatedLine = true
+
+		return len(data), token, nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func readLines(data []byte) (lines []string, crln bool, err error) {
+	lines = []string{}
+	rs := &requirementsSplitter{}
+
+	s := bufio.NewScanner(bytes.NewBuffer(data))
+	s.Split(rs.split)
+
+	for s.Scan() {
+		if err := s.Err(); err != nil {
+			return nil, false, err
+		}
+
+		lines = append(lines, s.Text())
+	}
+
+	return lines, rs.crln, nil
 }
