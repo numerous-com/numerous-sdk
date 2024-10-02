@@ -11,9 +11,9 @@ import (
 )
 
 type requirementsTxt struct {
-	encoder *encoding.Encoder
-	lines   []string
-	crlf    bool
+	encoder *encoding.Encoder // encoder for reencoding requiremnets.txt
+	lines   []string          // decoded requirements
+	crlf    bool              // detected crlf line termination
 }
 
 func Read(r io.Reader) (*requirementsTxt, error) {
@@ -36,7 +36,7 @@ func Read(r io.Reader) (*requirementsTxt, error) {
 		return nil, err
 	}
 
-	lines, crln, err := readLines(data)
+	lines, crlf, err := readLines(data)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func Read(r io.Reader) (*requirementsTxt, error) {
 	return &requirementsTxt{
 		encoder: encoding.NewEncoder(),
 		lines:   lines,
-		crlf:    crln,
+		crlf:    crlf,
 	}, nil
 }
 
@@ -100,7 +100,7 @@ func dropCR(data []byte) ([]byte, bool) {
 
 // Contains state for the Scanner split function
 type requirementsSplitter struct {
-	crln                           bool
+	foundCRLF                      bool
 	returnedFinalNonTerminatedLine bool
 	returnedLastEmptyLine          bool
 }
@@ -120,16 +120,16 @@ func (rs *requirementsSplitter) split(data []byte, atEOF bool) (advance int, tok
 
 	if i := bytes.IndexByte(data, '\n'); i >= 0 {
 		// We have a full newline-terminated line.
-		token, cr := dropCR(data[0:i])
-		rs.crln = rs.crln || cr
+		token, foundCR := dropCR(data[0:i])
+		rs.foundCRLF = rs.foundCRLF || foundCR
 
 		return i + 1, token, nil
 	}
 
 	// If we're at EOF, we have a final, non-terminated line. Return it.
 	if atEOF {
-		token, cr := dropCR(data)
-		rs.crln = rs.crln || cr
+		token, foundCR := dropCR(data)
+		rs.foundCRLF = rs.foundCRLF || foundCR
 		rs.returnedFinalNonTerminatedLine = true
 
 		return len(data), token, nil
@@ -138,7 +138,7 @@ func (rs *requirementsSplitter) split(data []byte, atEOF bool) (advance int, tok
 	return 0, nil, nil
 }
 
-func readLines(data []byte) (lines []string, crln bool, err error) {
+func readLines(data []byte) (lines []string, crlf bool, err error) {
 	lines = []string{}
 	rs := &requirementsSplitter{}
 
@@ -153,5 +153,5 @@ func readLines(data []byte) (lines []string, crln bool, err error) {
 		lines = append(lines, s.Text())
 	}
 
-	return lines, rs.crln, nil
+	return lines, rs.foundCRLF, nil
 }
