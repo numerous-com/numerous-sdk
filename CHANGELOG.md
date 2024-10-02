@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.23.1 (2024-10-02)
+
+### Fix
+
+* fix(cli): handle encoded requirements.txt files (#40) ([`6ab531f`](https://github.com/numerous-com/numerous-sdk/commit/6ab531f638f6c54602ec7158db3cdcbaa1f4c2aa))
+
+  > 
+  > * Handle `requirements.txt` files encoded with `utf-8`, `utf-16` and `utf-32` regardless
+  >   of endianness, by detecting the corresponding BOMs.
+  > * Read `requirements.txt` files with both `lf` and `crlf` line termination.
+  > * Preserve `crlf` line termination by checking if any lines are terminated by
+  >   `crlf`, and then using `crlf` when re-encoding if any `crlf` line termination was found.
+  > 
+  > Fixes #37
+
+
+
+
 ## v0.23.0 (2024-10-02)
 
 ### Feature
