@@ -77,14 +77,10 @@ jobs:
         with:
           name: dist
           path: ./dist
+      - run: pip install pypiserver
       - run: |
-          $files=Get-ChildItem dist
-          foreach ($file in $files) {
-            if ($file.name -like "*-win_amd64.whl") {
-              pip install $file.fullname
-              break
-            }
-          }
+          python -m pypiserver run -p 8000 ./dist &
+          pip install --index-url=http://localhost:8000/simple numerous
       - run: numerous --help
 
   lint-cli:
