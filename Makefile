@@ -33,7 +33,8 @@ SDK_CLI_BINARY_DIR=python/src/numerous/cli/bin
 SDK_CHECK_VENV=@if [ -z "${VIRTUAL_ENV}" ]; then echo "-- Error: An activated virtual environment is required"; exit 1; fi
 
 # Packaging
-PACKAGE_TARGETS := $(foreach TARGET,$(TARGETS),package-$(TARGET))
+PLATFORM_PACKAGE_TARGETS := $(foreach TARGET,$(TARGETS),package-$(TARGET))
+PACKAGE_TARGETS = $(PLATFORM_PACKAGE_TARGETS) package-any
 
 # Version
 create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed 's/^version = "\(.\+\)"/\1/' > $(VERSION_TXT)
@@ -51,7 +52,7 @@ clean:
 	rm -f .lint-mypy.txt
 	rm -f $(VERSION_TXT)
 
-packages: ${PACKAGE_TARGETS}
+packages: $(PACKAGE_TARGETS)
 
 test: sdk-test cli-test
 
@@ -86,7 +87,7 @@ $(SDK_CLI_BINARY_DIR)/%: $(SDK_CLI_BINARY_DIR) $(CLI_BUILD_DIR)/%
 	echo "-- Copying built binary $@"
 	cp $(get_cli_target_from_sdk_binary) $@
 
-$(PACKAGE_TARGETS): package-% : $(CLI_BUILD_DIR)/%
+$(PLATFORM_PACKAGE_TARGETS): package-% : $(CLI_BUILD_DIR)/%
 	echo "-- Building package $*"
 	scripts/build_dists.sh $(notdir $*)
 
