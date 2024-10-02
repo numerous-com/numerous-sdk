@@ -20,6 +20,10 @@ var testCases = []string{
 	"utf-16-le-lf",
 	"utf-16-be-crlf",
 	"utf-16-be-lf",
+	"utf-32-le-crlf",
+	"utf-32-le-lf",
+	"utf-32-be-crlf",
+	"utf-32-be-lf",
 	"last-line-empty-utf-16-be-crlf",
 }
 

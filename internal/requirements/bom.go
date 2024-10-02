@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/encoding/unicode/utf32"
 )
 
 type bom []byte
@@ -27,11 +28,11 @@ var (
 )
 
 var boms = []bom{
-	bomUTF8,
-	bomUTF16LE,
-	bomUTF16BE,
 	bomUTF32LE,
 	bomUTF32BE,
+	bomUTF16LE,
+	bomUTF16BE,
+	bomUTF8,
 }
 
 func (b bom) Encoding() encoding.Encoding {
@@ -42,6 +43,10 @@ func (b bom) Encoding() encoding.Encoding {
 		return unicode.UTF16(unicode.LittleEndian, unicode.UseBOM)
 	case b.Equal(bomUTF16BE):
 		return unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
+	case b.Equal(bomUTF32LE):
+		return utf32.UTF32(utf32.LittleEndian, utf32.UseBOM)
+	case b.Equal(bomUTF32BE):
+		return utf32.UTF32(utf32.BigEndian, utf32.UseBOM)
 	default:
 		return nil
 	}
