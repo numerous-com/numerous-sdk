@@ -40,7 +40,10 @@ jobs:
   build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    name: Build distributions
+    name: Build
+    strategy:
+      matrix:
+        platform: ["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64", "windows_arm64", "any"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +58,45 @@ jobs:
           cache: false
       - run: python3 -m pip install python-semantic-release==9.6.0 build>=1.2.1
       - run: semantic-release version --no-commit --no-tag --no-push --no-changelog # update version locally to build new version
-      - run: make packages
+      - run: make package-${{ matrix.platform }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: ./dist/*
+
+  collect-dists:
+    name: Collect dists
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-darwin_amd64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-darwin_arm64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-linux_amd64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-linux_arm64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-windows_amd64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-windows_arm64
+          path: ./dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-any
+          path: ./dist
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -65,7 +106,7 @@ jobs:
     name: Test CLI on windows
     runs-on: windows-latest
     needs:
-      - build
+      - collect-dists
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

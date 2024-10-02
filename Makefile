@@ -1,13 +1,14 @@
 SHELL = bash
 TARGET_SYSTEMS := darwin windows linux
 TARGET_ARCHS := amd64 arm64
+TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(SYS)_$(ARCH)))
 
 # CLI related variables
 GO_ENV = CGO_ENABLED=0
 GO_BUILD = $(GO_ENV) go build
 CLI_BUILD_DIR=build
 CLI_SOURCE_FILES=$(shell find . -name '*.go' -type f)
-CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
+CLI_BUILD_TARGETS := $(foreach TARGET,$(TARGETS),$(CLI_BUILD_DIR)/$(TARGET))
 VERSION_TXT=internal/version/version.txt
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
@@ -31,13 +32,16 @@ LDFLAGS = -s -w \
 SDK_CLI_BINARY_DIR=python/src/numerous/cli/bin
 SDK_CHECK_VENV=@if [ -z "${VIRTUAL_ENV}" ]; then echo "-- Error: An activated virtual environment is required"; exit 1; fi
 
+# Packaging
+PACKAGE_TARGETS := $(foreach TARGET,$(TARGETS),package-$(TARGET))
+
 # Version
 create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed 's/^version = "\(.\+\)"/\1/' > $(VERSION_TXT)
 
 # RULES
 .DEFAULT_GOAL := help
 
-.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version
+.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version $(PACKAGE_TARGETS)
 
 clean:
 	rm -rf $(CLI_BUILD_DIR)
@@ -83,6 +87,10 @@ $(SDK_CLI_BINARY_DIR):
 $(SDK_CLI_BINARY_DIR)/%: $(SDK_CLI_BINARY_DIR) $(CLI_BUILD_DIR)/%
 	echo "Copying built binary $@"
 	cp $(get_cli_target_from_sdk_binary) $@
+
+$(PACKAGE_TARGETS): package-% : $(CLI_BUILD_DIR)/%
+	echo "Building package $*"
+	scripts/build_dists.sh $(notdir $*)
 
 # CLI for specific OS/architecture
 cli-all: $(CLI_BUILD_TARGETS)
