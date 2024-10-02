@@ -13,7 +13,7 @@ import (
 func TestCheck(t *testing.T) {
 	testErr := errors.New("test error")
 
-	t.Run("keeps working and returns true on error", func(t *testing.T) {
+	t.Run("returns true on error", func(t *testing.T) {
 		checker := MockVersionChecker{}
 		checker.On("Check", mock.Anything).Return(version.CheckVersionOutput{}, testErr)
 
@@ -23,7 +23,7 @@ func TestCheck(t *testing.T) {
 		checker.AssertExpectations(t)
 	})
 
-	t.Run("keeps working and returns", func(t *testing.T) {
+	t.Run("returns", func(t *testing.T) {
 		testCases := []struct {
 			output   version.CheckVersionOutput
 			expected bool

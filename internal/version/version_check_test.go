@@ -28,7 +28,7 @@ func TestCheck(t *testing.T) {
 		actual, err := s.Check(context.TODO())
 
 		assert.Empty(t, actual)
-		assert.NotEmpty(t, err)
+		assert.Error(t, err, "internal error")
 	})
 
 	t.Run("returns expected result with no errors", func(t *testing.T) {
