@@ -41,7 +41,7 @@ create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed
 # RULES
 .DEFAULT_GOAL := help
 
-.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version $(PACKAGE_TARGETS)
+.PHONY: clean packages test lint dep sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version $(PACKAGE_TARGETS)
 
 clean:
 	rm -rf $(CLI_BUILD_DIR)
@@ -135,11 +135,12 @@ version:
 
 help:
 	@echo "Make targets (help is default):"
+	@echo "    clean        Clean all build artifacts"
 	@echo "    test         Run all tests"
 	@echo "    lint         Run all linters"
 	@echo "    dep          Install all dependencies"
-	@echo "    package      Package the SDK python package including CLI builds"
-	@echo "    sdk-binaries Build CLI binaries in SDK package"
+	@echo "    packages     Create all SDK distributions with CLI binaries"
+	@echo "    pkg-PLAT     Create SDK distribution for platform PLAT, e.g. linux_amd64"
 	@echo "    sdk-test     Run SDK tests"
 	@echo "    sdk-lint     Run SDK linters"
 	@echo "    sdk-dep      Install SDK dependencies"
@@ -149,4 +150,6 @@ help:
 	@echo "    cli-all      Build CLI for all systems"
 	@echo "    cli-build    Build CLI for current system"
 	@echo "    cli-local    Build local CLI for current system"
+	@echo "    gqlgen       Generate graphql code"
+	@echo "    version      Generate version file for embedding in CLI"
 	@echo "    help         Display this message"
