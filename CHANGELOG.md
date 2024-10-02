@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.23.0 (2024-10-02)
+
+### Feature
+
+* feat(cli): version check (#39) ([`79384f6`](https://github.com/numerous-com/numerous-sdk/commit/79384f6c99a9785499709b95f878e04af3ebd115))
+
+  > 
+  > Adds CLI compatibility check so depending on the version it:
+  > * continues to work;
+  > * shows a warning and continues to work;
+  > * stops with an error message.
+
+
+
+
 ## v0.22.0 (2024-10-01)
 
 ### Feature
