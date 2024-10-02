@@ -51,9 +51,7 @@ clean:
 	rm -f .lint-mypy.txt
 	rm -f $(VERSION_TXT)
 
-packages: ${CLI_BUILD_TARGETS}
-	@echo "-- Building SDK packages"
-	bash scripts/build_dists.sh
+packages: ${PACKAGE_TARGETS}
 
 test: sdk-test cli-test
 
@@ -85,12 +83,16 @@ $(SDK_CLI_BINARY_DIR):
 
 # CLI executables in SDK
 $(SDK_CLI_BINARY_DIR)/%: $(SDK_CLI_BINARY_DIR) $(CLI_BUILD_DIR)/%
-	echo "Copying built binary $@"
+	echo "-- Copying built binary $@"
 	cp $(get_cli_target_from_sdk_binary) $@
 
 $(PACKAGE_TARGETS): package-% : $(CLI_BUILD_DIR)/%
-	echo "Building package $*"
+	echo "-- Building package $*"
 	scripts/build_dists.sh $(notdir $*)
+
+package-any: $(CLI_BUILD_TARGETS)
+	echo "-- Building 'any' package"
+	scripts/build_dists.sh any
 
 # CLI for specific OS/architecture
 cli-all: $(CLI_BUILD_TARGETS)
