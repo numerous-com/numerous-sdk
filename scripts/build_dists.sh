@@ -8,8 +8,8 @@ function python_platforms() {
         'linux_arm64') echo "manylinux_2_17_aarch64";;
         'windows_amd64') echo "win_amd64";;
         'windows_arm64') echo "win_arm64";;
-        'darwin_amd64') echo "macosx_10_0_x86_64 macosx_11_0_x86_64 macosx_12_0_x86_64 macosx_13_0_x86_64 macosx_14_0_x86_64";;
-        'darwin_arm64') echo "macosx_10_0_arm64 macosx_11_0_arm64 macosx_12_0_arm64 macosx_13_0_arm64 macosx_14_0_arm64";;
+        'darwin_amd64') echo "macosx_10_0_x86_64 macosx_11_0_x86_64";;
+        'darwin_arm64') echo "macosx_10_0_arm64 macosx_11_0_arm64";;
         *) >&2 echo "Unexpected platform $1"; exit 1;;
     esac
 }
