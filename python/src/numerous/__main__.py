@@ -10,6 +10,7 @@ from numerous.appdev.commands import (
     read_app,
     run_app_session,
 )
+from numerous.experimental.marimo._run import run_marimo
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +33,8 @@ if __name__ == "__main__":
     run_parser.add_argument("--graphql-url", required=True)
     run_parser.add_argument("--graphql-ws-url", required=True)
     run_parser.add_argument("session_id")
-
+    marimo_parser = cmd_parsers.add_parser("marimo")
+    marimo_parser.add_argument("marimo_args", nargs=argparse.REMAINDER)
     ns = parser.parse_args()
 
     if ns.cmd == "read":
@@ -46,6 +48,8 @@ if __name__ == "__main__":
             ns.class_name,
         )
         asyncio.run(coroutine)
+    elif ns.cmd == "marimo":
+        run_marimo(ns.marimo_args)
     else:
         print(f"Unsupported command {ns.cmd!r}")  # noqa: T201
         sys.exit(1)
