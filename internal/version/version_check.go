@@ -45,7 +45,7 @@ func (s *Service) Check(ctx context.Context) (CheckVersionOutput, error) {
 	result := resp.VersionCheck
 	switch result.Typename {
 	case "VersionCheckOK":
-		return CheckVersionOutput{Result: VersionCheckResultOK, Message: "Version is actual"}, nil
+		return CheckVersionOutput{Result: VersionCheckResultOK, Message: "Version is compatible"}, nil
 	case "VersionCheckWarning":
 		return CheckVersionOutput{Result: VersionCheckResultWarning, Message: result.Warning.Message}, nil
 	case "VersionCheckCritical":

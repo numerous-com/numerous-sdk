@@ -29,7 +29,7 @@ func TestCheck(t *testing.T) {
 			expected bool
 		}{
 			{
-				output:   version.CheckVersionOutput{Result: version.VersionCheckResultOK, Message: "Version is actual"},
+				output:   version.CheckVersionOutput{Result: version.VersionCheckResultOK, Message: "Version is compatible"},
 				expected: true,
 			},
 			{

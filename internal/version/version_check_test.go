@@ -48,7 +48,7 @@ func TestCheck(t *testing.T) {
 						}
 					}
 				}`,
-				expected: CheckVersionOutput{Result: VersionCheckResultOK, Message: "Version is actual"},
+				expected: CheckVersionOutput{Result: VersionCheckResultOK, Message: "Version is compatible"},
 			},
 			{
 				name: "if version check warning",
