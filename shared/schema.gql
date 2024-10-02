@@ -1192,3 +1192,37 @@ extend type Mutation {
 ###############################################################################
 ### End of Payment
 ###############################################################################
+
+###############################################################################
+### Version check
+###############################################################################
+
+type VersionCheckOK {
+  version: String!
+}
+
+type VersionCheckWarning {
+  message: String!
+}
+
+type VersionCheckCritical {
+  message: String!
+}
+
+type VersionUnknown {
+  version: String!
+}
+
+union VersionCheckResult =
+    VersionCheckOK
+  | VersionCheckWarning
+  | VersionCheckCritical
+  | VersionUnknown
+
+extend type Query {
+  checkVersion(version: String!): VersionCheckResult!
+}
+
+###############################################################################
+### Version check end
+###############################################################################

@@ -22,12 +22,17 @@ import (
 	"numerous.com/cli/cmd/token"
 	"numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/auth"
+	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/logging"
+	ver "numerous.com/cli/internal/version"
 
 	"github.com/spf13/cobra"
 )
 
-var ErrNotAuthorized = errors.New("not authorized")
+var (
+	ErrNotAuthorized       = errors.New("not authorized")
+	ErrIncompatibleVersion = errors.New("incompatible version")
+)
 
 var (
 	logLevel logging.Level = logging.LevelError
@@ -52,6 +57,10 @@ var (
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			output.NotifyFeedbackMaybe()
+
+			if !version.Check(ver.NewService(gql.NewClient())) {
+				return errorhandling.ErrorAlreadyPrinted(ErrIncompatibleVersion)
+			}
 
 			if !commandRequiresAuthentication(cmd.CommandPath()) {
 				return nil

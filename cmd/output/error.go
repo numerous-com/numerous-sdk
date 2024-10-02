@@ -10,12 +10,23 @@ import (
 // Prints an error message prefixed with an error symbol. Variadic arguments are
 // formatted into both header and body, as if they were one string.
 func PrintError(header, body string, args ...any) {
-	if body != "" && !strings.HasSuffix(body, "\n") {
-		body += "\n"
-	}
-
+	body = addTrailingNewLine(body)
 	f := errorcross + " " + AnsiRed + header + AnsiReset + "\n" + AnsiYellow + body + AnsiReset
 	fmt.Printf(f, args...)
+}
+
+func PrintWarning(header, body string) {
+	body = addTrailingNewLine(body)
+	f := AnsiYellow + "! " + header + "\n" + body + AnsiReset
+	fmt.Print(f)
+}
+
+func addTrailingNewLine(value string) string {
+	if value != "" && !strings.HasSuffix(value, "\n") {
+		value += "\n"
+	}
+
+	return value
 }
 
 // Prints an error message with the given header, and a body that contains
