@@ -51,24 +51,15 @@ func Read(r io.Reader) (*requirementsTxt, error) {
 func (r *requirementsTxt) Write(w io.Writer) error {
 	ew := r.encoder.Writer(w)
 
-	lineEnding := []byte("\n")
+	lineEnding := "\n"
 	if r.crlf {
-		lineEnding = []byte("\r\n")
+		lineEnding = "\r\n"
 	}
 
-	for i, l := range r.lines {
-		if i > 0 {
-			if _, err := ew.Write(lineEnding); err != nil {
-				return err
-			}
-		}
+	data := strings.Join(r.lines, lineEnding)
+	_, err := ew.Write([]byte(data))
 
-		if _, err := ew.Write([]byte(l)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return err
 }
 
 func (r *requirementsTxt) Add(added string) {
@@ -91,7 +82,7 @@ func (r *requirementsTxt) Add(added string) {
 
 // dropCR drops a terminal \r from the data, and return true.
 func dropCR(data []byte) ([]byte, bool) {
-	if len(data) > 0 && data[len(data)-1] == '\r' {
+	if bytes.HasSuffix(data, []byte{'\r'}) {
 		return data[0 : len(data)-1], true
 	}
 
