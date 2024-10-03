@@ -1,6 +1,38 @@
 # CHANGELOG
 
 
+## v0.24.0 (2024-10-03)
+
+### Feature
+
+* feat: reduce package size with platform specific distributions (#38) ([`057f124`](https://github.com/numerous-com/numerous-sdk/commit/057f1241726631e5bdc5ed9b83f57ecfeab1884d))
+
+  > 
+  > Reduces package size by a factor of 6: ~66MB to ~11MB.
+  > 
+  > Changes how the CLI binaries are added to the python package, and how
+  > the python executable launches the binary.
+  > 
+  > 1. The binaries are now located in `numerous/cli/bin`.
+  > 2. The python script tries to launch `numerous/cli/bin/cli` if it
+  >    exists. It exists if the package is installed from a platform
+  >    specific wheel.
+  > 3. Otherwise the python script will attempt to match the the current OS
+  >    with a binary, similar to the approach until now. This is meant for
+  >    non-platform specific wheels.
+  > 
+  > The build process is changed. Wheels and source distribution are created
+  > by `scripts/build_dists.sh`, which can create a bdist for each relevant
+  > platform that we build CLI binaries for. The CLI binary directory
+  > `numerous/cli/bin` is cleared, and the relevant CLI binary is copied
+  > into `numerous/cli/bin/cli`, and the corresponding wheel is created.
+  > 
+  > For the platform non-specific wheel and the source distribution all
+  > binaries are added, as before.
+
+
+
+
 ## v0.23.1 (2024-10-02)
 
 ### Fix
