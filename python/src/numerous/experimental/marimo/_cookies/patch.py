@@ -6,7 +6,7 @@ from starlette.requests import Request
 from starlette.routing import Route
 
 from .cookies import set_cookies_impl
-from .tempfile import TempFileCookies
+from .tempfile import TempFileCookieStorage
 
 
 def patch_cookies(marimo_args: list[str]) -> None:
@@ -20,7 +20,7 @@ def patch_cookies(marimo_args: list[str]) -> None:
     )
 
     ident = _thread_ident if marimo_args and marimo_args[0] == "edit" else _proc_ident
-    cookies = TempFileCookies(ident)
+    cookies = TempFileCookieStorage(ident)
     set_cookies_impl(cookies)
 
     router: APIRouter = execution.router

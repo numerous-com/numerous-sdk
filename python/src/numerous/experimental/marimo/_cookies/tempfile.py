@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable
 
 
-class TempFileCookies:
+class TempFileCookieStorage:
     def __init__(self, ident: Callable[[], str]) -> None:
         self._ident = ident
         self._tempdir = Path(tempfile.mkdtemp("_cookies"))

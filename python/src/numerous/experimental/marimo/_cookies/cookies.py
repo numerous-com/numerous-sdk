@@ -6,7 +6,7 @@ from typing import Optional, Protocol
 class CookiesNotPatchedError(Exception): ...
 
 
-class Cookies(Protocol):
+class CookieStorage(Protocol):
     def set(self, c: dict[str, str]) -> None:
         """Set cookies for the current session."""
 
@@ -14,10 +14,10 @@ class Cookies(Protocol):
         """Get cookies for the current session."""
 
 
-_cookies: Optional[Cookies] = None
+_cookies: Optional[CookieStorage] = None
 
 
-def set_cookies_impl(impl: Cookies) -> None:
+def set_cookies_impl(impl: CookieStorage) -> None:
     global _cookies  # noqa: PLW0603
     _cookies = impl
 
