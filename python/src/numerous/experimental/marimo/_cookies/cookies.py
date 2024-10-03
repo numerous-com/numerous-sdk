@@ -1,29 +1,28 @@
 """Access cookies in a marimo notebook."""
 
-import json
-import tempfile
-from multiprocessing import process
-from pathlib import Path
+from typing import Optional, Protocol
 
 
-_tmp_cookies = Path(tempfile.mkdtemp("_cookies"))
+class CookiesNotPatchedError(Exception): ...
+
+
+class Cookies(Protocol):
+    def set(self, c: dict[str, str]) -> None:
+        pass
+
+    def get(self) -> dict[str, str]:
+        pass
+
+
+_cookies: Optional[Cookies] = None
+
+
+def set_cookies_impl(impl: Cookies) -> None:
+    global _cookies  # noqa: PLW0603
+    _cookies = impl
 
 
 def cookies() -> dict[str, str]:
-    try:
-        pid = process.current_process().ident
-        with (_tmp_cookies / str(pid)).open("r") as f:
-            c = json.load(f)
-    except (json.decoder.JSONDecodeError, TypeError):
-        return {}
-
-    if not isinstance(c, dict):
-        msg = f"unexpected cookies data stored expected dict, got {type(c).__name__}"
-        raise TypeError(msg)
-    return c
-
-
-def set_cookies(c: dict[str, str]) -> None:
-    pid = process.current_process().ident
-    with (_tmp_cookies / str(pid)).open("w+") as f:
-        json.dump(c, f)
+    if _cookies is None:
+        raise CookiesNotPatchedError
+    return _cookies.get()
