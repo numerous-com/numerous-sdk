@@ -144,11 +144,11 @@ func TestRunDevSession(t *testing.T) {
 		runCmd.On("SetEnv", mock.Anything).Return()
 		runCmd.On("StdoutPipe", mock.Anything).Return(io.NopCloser(bytes.NewBuffer(nil)), nil)
 		runCmd.On("StderrPipe", mock.Anything).Return(io.NopCloser(bytes.NewBuffer(nil)), nil)
-		runCmd.On("Start").Return(nil)
-		executor.On("Create", "python", "-m", "numerous", "read", appFileName, appClassName).Return(&readCmd, nil)
-		executor.On("Create", "python", "-m", "numerous", "run", "--graphql-url", "http://localhost:7001/query", "--graphql-ws-url", "ws://localhost:7001/query", appFileName, appClassName, "0").Return(&runCmd, nil).Run(func(args mock.Arguments) {
+		runCmd.On("Start").Return(nil).Run(func(args mock.Arguments) {
 			session.signalExit()
 		})
+		executor.On("Create", "python", "-m", "numerous", "read", appFileName, appClassName).Return(&readCmd, nil)
+		executor.On("Create", "python", "-m", "numerous", "run", "--graphql-url", "http://localhost:7001/query", "--graphql-ws-url", "ws://localhost:7001/query", appFileName, appClassName, "0").Return(&runCmd, nil)
 
 		session.run()
 
@@ -219,7 +219,9 @@ func TestRunDevSession(t *testing.T) {
 		updateRunCmd.On("SetEnv", mock.Anything).Return()
 		updateRunCmd.On("StdoutPipe", mock.Anything).Return(io.NopCloser(bytes.NewBuffer(nil)), nil)
 		updateRunCmd.On("StderrPipe", mock.Anything).Return(io.NopCloser(bytes.NewBuffer(nil)), nil)
-		updateRunCmd.On("Start").Return(nil)
+		updateRunCmd.On("Start").Return(nil).Run(func(args mock.Arguments) {
+			session.signalExit()
+		})
 
 		mockClock.On("Now", mock.Anything).Return(time.Time{})
 		mockClock.On("Since", mock.Anything).Return(2 * session.minUpdateInterval)
@@ -230,17 +232,11 @@ func TestRunDevSession(t *testing.T) {
 			Return(&initialRunCmd, nil).
 			Once().
 			Run(func(args mock.Arguments) {
-				println("Creating a run command first time!")
 				fileEvents <- fsnotify.Event{Name: appFileName, Op: fsnotify.Write}
 			})
 		executor.On("Create", "python", "-m", "numerous", "run", "--graphql-url", "http://localhost:7001/query", "--graphql-ws-url", "ws://localhost:7001/query", appFileName, appClassName, "0").
 			Return(&updateRunCmd, nil).
-			Once().
-			Run(func(args mock.Arguments) {
-				println("Creating a run command second time!")
-				session.signalExit()
-			})
-
+			Once()
 		session.run()
 		close(fileEvents)
 
