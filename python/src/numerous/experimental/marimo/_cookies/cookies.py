@@ -8,10 +8,10 @@ class CookiesNotPatchedError(Exception): ...
 
 class Cookies(Protocol):
     def set(self, c: dict[str, str]) -> None:
-        pass
+        """Set cookies for the current session."""
 
     def get(self) -> dict[str, str]:
-        pass
+        """Get cookies for the current session."""
 
 
 _cookies: Optional[Cookies] = None
