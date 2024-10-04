@@ -37,6 +37,11 @@ function build_platform_dist() {
     done
 }
 
+function build_local() {
+    copy_bin local
+    python -m build
+}
+
 function build_multi_dist {
     copy_bins
     python -m build
@@ -57,6 +62,8 @@ if [[ -z "$1" ]]; then
     build_dists
 elif [[ "$1" = "any" ]]; then
     build_multi_dist
+elif [[ "$1" = "local" ]]; then
+    build_local
 else
     build_platform_dist $1
 fi

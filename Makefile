@@ -95,6 +95,10 @@ package-any: $(CLI_BUILD_TARGETS)
 	echo "-- Building 'any' package"
 	scripts/build_dists.sh any
 
+package-local: $(CLI_BUILD_DIR)/local
+	echo "-- Building 'local' package"
+	scripts/build_dists.sh local
+
 # CLI for specific OS/architecture
 cli-all: $(CLI_BUILD_TARGETS)
 
@@ -103,10 +107,12 @@ $(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES)
 	$(create_version_txt_cmd)
 	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o $@ .
 
-cli-local:
+$(CLI_BUILD_DIR)/local:
 	@echo "-- Building local CLI"
 	$(create_version_txt_cmd)
 	$(GO_BUILD) -o $(CLI_BUILD_DIR)/local .
+
+cli-local: $(CLI_BUILD_DIR)/local
 
 cli-build:
 	@echo "-- Building CLI"
