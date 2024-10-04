@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.25.0 (2024-10-04)
+
+### Feature
+
+* feat(python-sdk): experimental marimo cookie support (#41) ([`1a832f9`](https://github.com/numerous-com/numerous-sdk/commit/1a832f9a836779cd5a57642d981f2cb257f2eeeb))
+
+  > 
+  > Load cookies in marimo apps with `numerous.experimental.marimo.cookies`.
+  > 
+  > In order to use the above function, either:
+  > 1. run the marimo notebook with `python -m numerous marimo run` (as
+  >    opposed to `marimo run`) which will launch the app with a modified
+  >    marimo server that enables reading cookies.
+  > 2. If adding the marimo app to a fastapi app with
+  >    `marimo.create_asgi_app()`, use `add_marimo_cookie_middleware` to add
+  >    cookie middleware to the fastapi app.
+
+
+
+
 ## v0.24.0 (2024-10-03)
 
 ### Feature
