@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.25.1 (2024-10-10)
+
+### Fix
+
+* fix(api): deterministic local collections and documents order ([`bae586d`](https://github.com/numerous-com/numerous-sdk/commit/bae586dae68a0afc7cf9df3b1a161e57d179c7d1))
+
+  > 
+  > Order `collection(...).collections` and `collection.documents(...)`
+  > by collection and document IDs respectively.
+
+
+
+
 ## v0.25.0 (2024-10-04)
 
 ### Feature

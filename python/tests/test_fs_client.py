@@ -222,15 +222,15 @@ def test_get_collection_documents_returns_all_documents(
 
     assert result == [
         CollectionDocumentReference(
-            id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
-            key=_TEST_DOCUMENT_KEY,
-            data=dict_to_base64(test_data),
-            tags=[],
-        ),
-        CollectionDocumentReference(
             id=str(Path(_TEST_COLLECTION_ID) / _TEST_ANOTHER_DOCUMENT_KEY),
             key=_TEST_ANOTHER_DOCUMENT_KEY,
             data=dict_to_base64(test_another_data),
+            tags=[],
+        ),
+        CollectionDocumentReference(
+            id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
+            key=_TEST_DOCUMENT_KEY,
+            data=dict_to_base64(test_data),
             tags=[],
         ),
     ]
@@ -289,11 +289,11 @@ def test_get_collection_collections_returns_expected_collections(
     assert end_cursor == ""
     assert [
         CollectionReference(
-            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
-        ),
-        CollectionReference(
             id=_TEST_ANOTHER_NESTED_COLLECTION_ID,
             key=_TEST_ANOTHER_NESTED_COLLECTION_KEY,
+        ),
+        CollectionReference(
+            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
         ),
     ] == collections
 
