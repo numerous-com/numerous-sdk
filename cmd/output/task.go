@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	fallbackTaskLineWidth = 80
+	fallbackTaskLineWidth = 60
+	maxTaskLineWidth      = 120
 	minDots               = 3
 )
 
@@ -93,10 +94,13 @@ func terminalWidthFunc() lineWidthFunc {
 	// otherwise get terminal size
 	return func() int {
 		w, _, err := term.GetSize(stdout)
-		if err != nil {
+		switch {
+		case err != nil:
 			return fallbackTaskLineWidth
-		} else {
+		case w < maxTaskLineWidth:
 			return w
+		default:
+			return maxTaskLineWidth
 		}
 	}
 }
