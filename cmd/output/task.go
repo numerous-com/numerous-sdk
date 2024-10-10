@@ -3,10 +3,7 @@ package output
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
-
-	"golang.org/x/term"
 )
 
 const (
@@ -21,6 +18,7 @@ type Task struct {
 	msg       string
 	lineAdded bool
 	lineWidth lineWidthFunc
+	w         io.Writer
 }
 
 func (t *Task) line(icon string) string {
@@ -55,45 +53,49 @@ func (t *Task) trimMessage() (int, string) {
 
 func (t *Task) start() {
 	ln := t.line(hourglass)
-	fmt.Print(ln)
+	fmt.Fprint(t.w, ln)
 }
 
 func (t *Task) AddLine(prefix string, line string) {
 	if !t.lineAdded {
-		fmt.Println()
+		fmt.Fprintln(t.w)
 	}
-	fmt.Println(AnsiReset+AnsiFaint+prefix+AnsiReset, line)
+	fmt.Fprintln(t.w, AnsiReset+AnsiFaint+prefix+AnsiReset, line)
 	t.lineAdded = true
 }
 
 func (t *Task) Done() {
 	ln := t.line(checkmark)
 	if !t.lineAdded {
-		fmt.Print("\r")
+		fmt.Fprint(t.w, "\r")
 	}
-	fmt.Println(ln + AnsiGreen + "OK" + AnsiReset)
+	fmt.Fprintln(t.w, ln+AnsiGreen+"OK"+AnsiReset)
 }
 
 func (t *Task) Error() {
 	ln := t.line(errorcross)
 	if !t.lineAdded {
-		fmt.Print("\r")
+		fmt.Fprint(t.w, "\r")
 	}
-	fmt.Println(ln + AnsiRed + "Error" + AnsiReset)
+	fmt.Fprintln(t.w, ln+AnsiRed+"Error"+AnsiReset)
 }
 
-func terminalWidthFunc() lineWidthFunc {
-	stdout := int(os.Stdout.Fd())
+type terminal interface {
+	IsTerminal() bool
+	GetSize() (int, int, error)
+	Writer() io.Writer
+}
 
+func terminalWidthFunc(t terminal) lineWidthFunc {
 	// if we are not writing to a terminal (e.g. piping to a file) fall back to
 	// fallback task line width
-	if !term.IsTerminal(stdout) {
+	if !t.IsTerminal() {
 		return func() int { return fallbackTaskLineWidth }
 	}
 
 	// otherwise get terminal size
 	return func() int {
-		w, _, err := term.GetSize(stdout)
+		w, _, err := t.GetSize()
 		switch {
 		case err != nil:
 			return fallbackTaskLineWidth
@@ -106,11 +108,15 @@ func terminalWidthFunc() lineWidthFunc {
 }
 
 func StartTask(msg string) *Task {
-	f := terminalWidthFunc()
-	t := Task{msg: msg, lineWidth: f}
-	t.start()
+	return StartTaskWithTerminal(msg, newTermTerminal())
+}
 
-	return &t
+func StartTaskWithTerminal(msg string, t terminal) *Task {
+	f := terminalWidthFunc(t)
+	task := Task{msg: msg, lineWidth: f, w: t.Writer()}
+	task.start()
+
+	return &task
 }
 
 var _ io.Writer = &TaskLineWriter{}
