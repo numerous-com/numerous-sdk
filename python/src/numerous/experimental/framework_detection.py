@@ -1,44 +1,64 @@
-import sys
+"""Module for framework detection functionality."""
+
 from importlib import import_module
+from types import ModuleType
+from typing import Any, Callable, Dict
+
+import numerous.experimental.marimo
+
 
 class FrameworkDetector:
-    def __init__(self):
+    def __init__(self) -> None:
         self.framework = self._detect_framework()
-        self._framework_module = None
+        self._framework_module: Any = self._import_framework(self.framework.lower())
 
-    def _detect_framework(self):
-        frameworks = ['streamlit', 'marimo', 'dash', 'panel', 'flask', 'fastapi']
+    def _detect_framework(self) -> str:
+        frameworks = ["streamlit", "marimo", "dash", "panel", "flask", "fastapi"]
         for fw in frameworks:
-            if fw in sys.modules:
-                self._import_framework(fw)
-                
+            if self._try_import(fw):
+                # Found the framework
                 return fw.capitalize()
-        raise ValueError("No framework detected")
+        no_framework_error = "No framework detected"
+        raise ValueError(no_framework_error)
 
-    def _import_framework(self, framework):
+    def _try_import(self, module: str) -> bool:
         try:
-            self._framework_module = import_module(framework)
-            if framework == 'dash':
-                import flask
-                globals()['flask'] = flask
+            import_module(module)
         except ImportError:
-            raise ImportError(f"Framework {framework} not found")
+            return False
+        return True
 
-    def get_framework(self):
+    def _import_framework(self, framework: str) -> ModuleType:
+        try:
+            module = import_module(framework)
+            if framework == "flask":
+                import flask
+                globals()["flask"] = flask
+        except ImportError as err:
+            framework_not_found = f"Framework {framework} not found"
+            raise ImportError(framework_not_found) from err
+        else:
+            return module
+
+    def get_framework(self) -> str:
+        """Get the detected framework."""
         return self.framework
 
-    def get_cookies(self):
-        if self.framework == 'Streamlit':
-            return self._framework_module.context.cookies
-        elif self.framework == 'Marimo':
+    def get_cookies(self) -> Dict[str, Any]:
+        """Get cookies based on the detected framework."""
+        if self._framework_module is None:
+            framework_not_imported_error = "Framework module not imported"
+            raise RuntimeError(framework_not_imported_error)
+
+        cookie_getters: Dict[str, Callable[[], Dict[str, Any]]] = {
+            "Streamlit": lambda: self._framework_module.context.cookies,
+            "Marimo": lambda: numerous.experimental.marimo.cookies(),
+            "Dash": lambda: self._framework_module.request.cookies,
+            "Panel": lambda: self._framework_module.state.cookies,
+            "Flask": lambda: self._framework_module.request.cookies,
+            "Fastapi": lambda: self._framework_module.Request.cookies,
+        }
+        getter = cookie_getters.get(self.framework)
+        if getter is None:
             return {}
-        elif self.framework == 'Dash':
-            return flask.request.cookies
-        elif self.framework == 'Panel':
-            return self._framework_module.state.cookies
-        elif self.framework == 'Flask':
-            return self._framework_module.request.cookies
-        elif self.framework == 'Fastapi':
-            return lambda request: self._framework_module.Request.cookies
-        else:
-            return {}
+        return getter()
