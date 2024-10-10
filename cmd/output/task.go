@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"golang.org/x/term"
 )
 
 const (
-	taskLineLength = 80
-	minDots        = 3
+	fallbackTaskLineWidth = 80
+	minDots               = 3
 )
 
 type lineWidthFunc func() int
@@ -22,12 +23,10 @@ type Task struct {
 }
 
 func (t *Task) line(icon string) string {
-	lenDiff, msg := t.trimMessage()
+	dotCount, msg := t.trimMessage()
 
 	line := icon + " " + msg + AnsiFaint + "..."
-	for i := 0; i < lenDiff; i++ {
-		line += "."
-	}
+	line += strings.Repeat(".", dotCount)
 
 	return line + AnsiReset
 }
@@ -38,6 +37,7 @@ func (t *Task) trimMessage() (int, string) {
 	errLineLen := 2 + len(t.msg) + minDots + len("Error") // +2 for icon and space
 	lenDiff := w - errLineLen
 	msg := t.msg
+	dotCount := 0
 	if lenDiff < 0 {
 		msgEnd := len(t.msg) + lenDiff
 		if msgEnd < 0 {
@@ -45,9 +45,11 @@ func (t *Task) trimMessage() (int, string) {
 		}
 
 		msg = t.msg[0:msgEnd]
+	} else {
+		dotCount = lenDiff
 	}
 
-	return lenDiff, msg
+	return dotCount, msg
 }
 
 func (t *Task) start() {
@@ -81,14 +83,18 @@ func (t *Task) Error() {
 
 func terminalWidthFunc() lineWidthFunc {
 	stdout := int(os.Stdout.Fd())
+
+	// if we are not writing to a terminal (e.g. piping to a file) fall back to
+	// fallback task line width
 	if !term.IsTerminal(stdout) {
-		return func() int { return taskLineLength }
+		return func() int { return fallbackTaskLineWidth }
 	}
 
+	// otherwise get terminal size
 	return func() int {
 		w, _, err := term.GetSize(stdout)
 		if err != nil {
-			return taskLineLength
+			return fallbackTaskLineWidth
 		} else {
 			return w
 		}
