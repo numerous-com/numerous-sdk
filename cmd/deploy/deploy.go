@@ -19,6 +19,14 @@ import (
 	"numerous.com/cli/internal/manifest"
 )
 
+type deployBuildError struct {
+	Message string
+}
+
+func (e *deployBuildError) Error() string {
+	return e.Message
+}
+
 type AppService interface {
 	ReadApp(ctx context.Context, input app.ReadAppInput) (app.ReadAppOutput, error)
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
@@ -134,6 +142,13 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	appID, err := readOrCreateApp(ctx, apps, ai, manifest)
 	if err != nil {
 		task.Error()
+		switch {
+		case errors.Is(err, app.ErrAccessDenied):
+			app.PrintErrorAccessDenied(ai)
+		case !errors.Is(err, app.ErrAppNotFound):
+			output.PrintErrorDetails("Error reading remote app", err)
+		}
+
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
@@ -156,14 +171,9 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 		AppSlug:          ai.AppSlug,
 	}
 	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
-	switch {
-	case err == nil:
+	if err == nil {
 		return appReadOutput.AppID, nil
-	case errors.Is(err, app.ErrAccessDenied):
-		app.PrintErrorAccessDenied(ai)
-		return "", err
-	case !errors.Is(err, app.ErrAppNotFound):
-		output.PrintErrorDetails("Error reading remote app", err)
+	} else if !errors.Is(err, app.ErrAppNotFound) {
 		return "", err
 	}
 
@@ -231,7 +241,7 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 					}
 				}
 
-				return fmt.Errorf("build error: %s", de.BuildError.Message)
+				return &deployBuildError{Message: de.BuildError.Message}
 			case "AppDeploymentStatusEvent":
 				if input.Verbose {
 					task.AddLine("Deploy", "Status is "+de.DeploymentStatus.Status)
@@ -249,8 +259,13 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 
 	err = apps.DeployEvents(ctx, eventsInput)
 	if err != nil {
+		var buildError *deployBuildError
 		task.Error()
-		output.PrintErrorDetails("Error occurred during deploy", err)
+		if errors.As(err, &buildError) {
+			output.PrintError("Build error", buildError.Message)
+		} else {
+			output.PrintErrorDetails("Error occurred during deploy", err)
+		}
 
 		return err
 	}
