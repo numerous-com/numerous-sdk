@@ -1,41 +1,46 @@
+from typing import Generator
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from numerous.experimental.framework_detection import FrameworkDetector
 
+
 @pytest.fixture
-def mock_import_module():
-    with patch('numerous.experimental.framework_detection.import_module') as mock:
+def mock_import_module() -> Generator[MagicMock, None, None]:
+    with patch("numerous.experimental.framework_detection.import_module") as mock:
         yield mock
 
-def test_detect_framework_streamlit(mock_import_module):
-    with patch.object(FrameworkDetector, '_detect_framework', return_value='Streamlit'):
+def test_detect_framework_streamlit() -> None:
+    with patch.object(FrameworkDetector, "_detect_framework", return_value="Streamlit"):
         detector = FrameworkDetector()
         assert detector.framework == "Streamlit"
 
-def test_detect_framework_marimo(mock_import_module):
-    with patch.object(FrameworkDetector, '_detect_framework', return_value='Marimo'):
+def test_detect_framework_marimo() -> None:
+    with patch.object(FrameworkDetector, "_detect_framework", return_value="Marimo"):
         detector = FrameworkDetector()
         assert detector.framework == "Marimo"
 
-def test_detect_framework_not_found(mock_import_module):
+def test_detect_framework_not_found(mock_import_module: MagicMock) -> None:
     mock_import_module.side_effect = ImportError
     with pytest.raises(ValueError, match="No framework detected"):
         FrameworkDetector()
 
-def test_import_framework_success(mock_import_module):
+def test_import_framework_success(mock_import_module: MagicMock) -> None:
     mock_module = MagicMock()
     mock_import_module.return_value = mock_module
     detector = FrameworkDetector()
     module = detector._import_framework("streamlit")
     assert module == mock_module
 
-def test_import_framework_failure(mock_import_module):
+def test_import_framework_failure(mock_import_module: MagicMock) -> None:
     mock_import_module.side_effect = ImportError
+    detector = FrameworkDetector()
     with pytest.raises(ValueError, match="No framework detected"):
-        detector = FrameworkDetector()
         detector._import_framework("streamlit")
-        
-@pytest.mark.parametrize("framework,expected_cookies", [
+
+
+@pytest.mark.parametrize(("framework", "expected_cookies"), [
     ("Streamlit", {"key": "value"}),
     ("Marimo", {"key": "value"}),
     ("Dash", {"key": "value"}),
@@ -43,19 +48,22 @@ def test_import_framework_failure(mock_import_module):
     ("Flask", {"key": "value"}),
     ("Fastapi", {"key": "value"}),
 ])
-def test_get_cookies(framework, expected_cookies, mock_import_module):
+def test_get_cookies(
+    framework: str,
+    expected_cookies: dict[str, str],
+    mock_import_module: MagicMock
+) -> None:
     mock_module = MagicMock()
     mock_import_module.return_value = mock_module
 
     if framework == "Streamlit":
         mock_module.context.cookies = expected_cookies
     elif framework == "Marimo":
-        with patch('numerous.experimental.framework_detection.FrameworkDetector._import_framework') as mock_import, \
-             patch('numerous.experimental.marimo._cookies.cookies._cookies') as mock_cookies:
-            mock_cookie_storage = MagicMock()
-            mock_cookie_storage.get.return_value = expected_cookies
+        with patch("numerous.experimental.framework_detection.\
+                   FrameworkDetector._import_framework") as mock_import, \
+             patch("numerous.experimental.marimo._cookies.cookies._cookies")\
+                  as mock_cookies:
             mock_cookies.get.return_value = expected_cookies
-            #mock_cookies.return_value = mock_cookie_storage
             mock_import.return_value = MagicMock()
             detector = FrameworkDetector()
             detector.framework = framework
@@ -70,20 +78,21 @@ def test_get_cookies(framework, expected_cookies, mock_import_module):
 
     detector = FrameworkDetector()
     detector.framework = framework
-    detector._framework_module = mock_module
+    # ruff: noqa: SLF001
+    detector._framework_module = mock_module  # Consider making this attribute public
 
     assert detector.get_cookies() == expected_cookies
 
-def test_get_cookies_unknown_framework():
+def test_get_cookies_unknown_framework() -> None:
     detector = FrameworkDetector()
     detector.framework = "Unknown"
-    detector._framework_module = MagicMock()
+    detector._framework_module = MagicMock()  # Consider making this attribute public
 
     assert detector.get_cookies() == {}
 
-def test_get_cookies_framework_not_imported():
+def test_get_cookies_framework_not_imported() -> None:
     detector = FrameworkDetector()
-    detector._framework_module = None
-    
+    detector._framework_module = None  # Consider making this attribute public
+
     with pytest.raises(RuntimeError, match="Framework module not imported"):
         detector.get_cookies()
