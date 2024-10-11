@@ -3,59 +3,120 @@ package output
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
-const taskLineLength = 80
+const (
+	fallbackTaskLineWidth = 60
+	maxTaskLineWidth      = 120
+	minDots               = 3
+)
+
+type lineWidthFunc func() int
 
 type Task struct {
 	msg       string
-	length    int
 	lineAdded bool
+	lineWidth lineWidthFunc
+	w         io.Writer
 }
 
 func (t *Task) line(icon string) string {
-	ln := icon + " " + t.msg + AnsiFaint
-	for d := len(t.msg); d < t.length; d++ {
-		ln += "."
+	dotCount, msg := t.trimMessage()
+
+	line := icon + " " + msg + AnsiFaint + "..."
+	line += strings.Repeat(".", dotCount)
+
+	return line + AnsiReset
+}
+
+func (t *Task) trimMessage() (int, string) {
+	w := t.lineWidth()
+
+	errLineLen := 2 + len(t.msg) + minDots + len("Error") // +2 for icon and space
+	lenDiff := w - errLineLen
+	msg := t.msg
+	dotCount := 0
+	if lenDiff < 0 {
+		msgEnd := len(t.msg) + lenDiff
+		if msgEnd < 0 {
+			msgEnd = 0
+		}
+
+		msg = t.msg[0:msgEnd]
+	} else {
+		dotCount = lenDiff
 	}
 
-	return ln + AnsiReset
+	return dotCount, msg
 }
 
 func (t *Task) start() {
 	ln := t.line(hourglass)
-	fmt.Print(ln)
+	fmt.Fprint(t.w, ln)
 }
 
 func (t *Task) AddLine(prefix string, line string) {
 	if !t.lineAdded {
-		fmt.Println()
+		fmt.Fprintln(t.w)
 	}
-	fmt.Println(AnsiReset+AnsiFaint+prefix+AnsiReset, line)
+	fmt.Fprintln(t.w, AnsiReset+AnsiFaint+prefix+AnsiReset, line)
 	t.lineAdded = true
 }
 
 func (t *Task) Done() {
 	ln := t.line(checkmark)
 	if !t.lineAdded {
-		fmt.Print("\r")
+		fmt.Fprint(t.w, "\r")
 	}
-	fmt.Println(ln + AnsiGreen + "OK" + AnsiReset)
+	fmt.Fprintln(t.w, ln+AnsiGreen+"OK"+AnsiReset)
 }
 
 func (t *Task) Error() {
 	ln := t.line(errorcross)
 	if !t.lineAdded {
-		fmt.Print("\r")
+		fmt.Fprint(t.w, "\r")
 	}
-	fmt.Println(ln + AnsiRed + "Error" + AnsiReset)
+	fmt.Fprintln(t.w, ln+AnsiRed+"Error"+AnsiReset)
+}
+
+type terminal interface {
+	IsTerminal() bool
+	GetSize() (int, int, error)
+	Writer() io.Writer
+}
+
+func terminalWidthFunc(t terminal) lineWidthFunc {
+	// if we are not writing to a terminal (e.g. piping to a file) fall back to
+	// fallback task line width
+	if !t.IsTerminal() {
+		return func() int { return fallbackTaskLineWidth }
+	}
+
+	// otherwise get terminal size
+	return func() int {
+		w, _, err := t.GetSize()
+		switch {
+		case err != nil:
+			return fallbackTaskLineWidth
+		case w < maxTaskLineWidth:
+			return w
+		default:
+			return maxTaskLineWidth
+		}
+	}
 }
 
 func StartTask(msg string) *Task {
-	t := Task{msg: msg, length: taskLineLength}
-	t.start()
+	return StartTaskWithTerminal(msg, newTermTerminal())
+}
 
-	return &t
+func StartTaskWithTerminal(msg string, t terminal) *Task {
+	f := terminalWidthFunc(t)
+	task := Task{msg: msg, lineWidth: f, w: t.Writer()}
+	task.start()
+
+	return &task
 }
 
 var _ io.Writer = &TaskLineWriter{}
