@@ -161,18 +161,21 @@ func TestTask(t *testing.T) {
 	})
 
 	t.Run("StartTask", func(t *testing.T) {
-		stdout := os.Stdout
-		defer func() { os.Stdout = stdout }()
-		r, w, err := os.Pipe()
-		require.NoError(t, err)
-		os.Stdout = w
+		t.Run("writes expected output to stdout", func(t *testing.T) {
+			// replace stdout with a pipe that we can read
+			stdout := os.Stdout
+			defer func() { os.Stdout = stdout }() // restore stdout afterwards
+			r, w, err := os.Pipe()
+			require.NoError(t, err)
+			os.Stdout = w
 
-		StartTask("message")
+			StartTask("message")
 
-		w.Close()
-		actual, err := io.ReadAll(r)
-		assert.NoError(t, err)
-		expected := hourglass + " message" + AnsiFaint + ".............................................." + AnsiReset
-		assert.Equal(t, expected, string(actual))
+			assert.NoError(t, w.Close())
+			actual, err := io.ReadAll(r)
+			assert.NoError(t, err)
+			expected := hourglass + " message" + AnsiFaint + ".............................................." + AnsiReset
+			assert.Equal(t, expected, string(actual))
+		})
 	})
 }
