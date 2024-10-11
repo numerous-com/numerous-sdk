@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.26.0 (2024-10-11)
+
+### Feature
+
+* feat(cli): adjust command task output width to terminal (#43) ([`4fdc34b`](https://github.com/numerous-com/numerous-sdk/commit/4fdc34bbb9b092098d0486e9ba0401ed435b8050))
+
+  > 
+  > Detects terminal width and expands or trims command task messages to fit
+  > the terminal, up to a maximum width of 120 columns.
+
+
+
+
 ## v0.25.1 (2024-10-10)
 
 ### Fix
