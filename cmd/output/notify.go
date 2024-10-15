@@ -3,6 +3,7 @@ package output
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 )
 
 var notifyCmdMovedBody = AnsiFaint + "A new set of commands related to apps in organizations have been promoted as \n" +
@@ -10,7 +11,10 @@ var notifyCmdMovedBody = AnsiFaint + "A new set of commands related to apps in o
 	"See https://www.numerous.com/docs/cli#legacy-commands for more information."
 
 func Notify(header, body string, args ...any) {
-	fmt.Printf(AnsiCyanBold+header+AnsiReset+"\n"+body+"\n", args...)
+	if body != "" && strings.HasSuffix(body, "\n") {
+		body += "\n"
+	}
+	fmt.Printf(AnsiCyanBold+header+AnsiReset+"\n"+body, args...)
 }
 
 func NotifyCmdMoved(cmd string, newCmd string) {

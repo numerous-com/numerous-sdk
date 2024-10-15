@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/appident"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -55,4 +56,10 @@ func (m *mockAppService) CreateVersion(ctx context.Context, input app.CreateAppV
 func (m *mockAppService) UploadAppSource(uploadURL string, archive io.Reader) error {
 	args := m.Called(uploadURL, archive)
 	return args.Error(0)
+}
+
+// AppDeployLogs implements AppService.
+func (m *mockAppService) AppDeployLogs(ai appident.AppIdentifier) (chan app.AppDeployLogEntry, error) {
+	args := m.Called(ai)
+	return args.Get(0).(chan app.AppDeployLogEntry), args.Error(1)
 }
