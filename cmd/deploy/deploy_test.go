@@ -2,14 +2,19 @@ package deploy
 
 import (
 	"context"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
+	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeploy(t *testing.T) {
@@ -20,20 +25,28 @@ func TestDeploy(t *testing.T) {
 	const uploadURL = "https://upload/url"
 	const deployVersionID = "deploy-version-id"
 
-	mockVersionDeploy := func(apps *mockAppService) {
+	mockVersionDeployWithDeployEventsRun := func(apps *mockAppService, deployEventsRun func(mock.Arguments)) {
 		apps.On("CreateVersion", mock.Anything, mock.Anything).Return(app.CreateAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionUploadURL", mock.Anything, mock.Anything).Return(app.AppVersionUploadURLOutput{UploadURL: uploadURL}, nil)
 		apps.On("UploadAppSource", mock.Anything, mock.Anything).Return(nil)
 		apps.On("DeployApp", mock.Anything, mock.Anything).Return(app.DeployAppOutput{DeploymentVersionID: deployVersionID}, nil)
-		apps.On("DeployEvents", mock.Anything, mock.Anything).Return(nil)
+		apps.On("DeployEvents", mock.Anything, mock.Anything).Run(deployEventsRun).Return(nil)
+	}
+
+	mockVersionDeploy := func(apps *mockAppService) {
+		mockVersionDeployWithDeployEventsRun(apps, nil)
+	}
+
+	mockAppExistsWithDeployEventsRun := func(deployEventsRun func(mock.Arguments)) *mockAppService {
+		apps := &mockAppService{}
+		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{AppID: appID}, nil)
+		mockVersionDeployWithDeployEventsRun(apps, deployEventsRun)
+
+		return apps
 	}
 
 	mockAppExists := func() *mockAppService {
-		apps := &mockAppService{}
-		apps.On("ReadApp", mock.Anything, mock.Anything).Return(app.ReadAppOutput{AppID: appID}, nil)
-		mockVersionDeploy(apps)
-
-		return apps
+		return mockAppExistsWithDeployEventsRun(nil)
 	}
 
 	mockAppNotExists := func() *mockAppService {
@@ -196,4 +209,73 @@ func TestDeploy(t *testing.T) {
 			apps.AssertCalled(t, "CreateVersion", mock.Anything, expectedInput)
 		}
 	})
+
+	t.Run("prints expected verbose messages", func(t *testing.T) {
+		appDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
+		expectedVersion := "v1.2.3"
+		expectedMessage := "expected message"
+		apps := mockAppExistsWithDeployEventsRun(func(args mock.Arguments) {
+			input := args.Get(1).(app.DeployEventsInput)
+			input.Handler(app.DeployEvent{Typename: "AppBuildMessageEvent", BuildMessage: app.AppBuildMessageEvent{Message: "Build message 1"}})    // nolint:errcheck
+			input.Handler(app.DeployEvent{Typename: "AppBuildMessageEvent", BuildMessage: app.AppBuildMessageEvent{Message: "Build message 2"}})    // nolint:errcheck
+			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "PENDING"}}) // nolint:errcheck
+			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "PENDING"}}) // nolint:errcheck
+			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "PENDING"}}) // nolint:errcheck
+			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "RUNNING"}}) // nolint:errcheck
+		})
+		stdout := os.Stdout
+		r, w, err := os.Pipe()
+		require.NoError(t, err)
+		os.Stdout = w
+		defer func() {
+			os.Stdout = stdout
+		}()
+
+		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true}
+		err = Deploy(context.TODO(), apps, input)
+
+		require.NoError(t, w.Close())
+		assert.NoError(t, err)
+		expected := []string{
+			"<nonascii> Loading app configuration............................",
+			"\r<nonascii> Loading app configuration............................OK\n",
+			"<nonascii> Registering new version for organization-slug/app-...",
+			"\r<nonascii> Registering new version for organization-slug/app-...OK\n",
+			"<nonascii> Creating app archive.................................",
+			"\r<nonascii> Creating app archive.................................OK\n",
+			"<nonascii> Uploading app archive................................",
+			"\r<nonascii> Uploading app archive................................OK\n",
+			"<nonascii> Deploying app........................................\n",
+			"Build Build message 1\n",
+			"Build Build message 2\n",
+			"\rDeploy Workload is pending",
+			"\rDeploy Workload is pending.",
+			"\rDeploy Workload is pending..",
+			"\rDeploy Workload is pending..\n",
+			"\rDeploy Workload is running\n",
+			"<nonascii> Deploying app........................................OK\n",
+			"<nonascii> Access your app at: https://www.numerous.com/app/organization/organization-slug/private/app-slug\n",
+		}
+		output, _ := io.ReadAll(r)
+		actual := stripNonASCII(string(output))
+		assert.Equal(t, strings.Join(expected, ""), actual)
+	})
+}
+
+func stripNonASCII(s string) string {
+	var stripped string
+	for _, r := range s {
+		if r < 128 {
+			stripped += string(r)
+		} else {
+			stripped += "<nonascii>"
+		}
+	}
+
+	for _, code := range []string{output.AnsiRed, output.AnsiReset, output.AnsiGreen, output.AnsiFaint} {
+		stripped = strings.ReplaceAll(stripped, code, "")
+	}
+
+	return stripped
 }
