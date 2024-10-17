@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
@@ -224,18 +225,13 @@ func TestDeploy(t *testing.T) {
 			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "PENDING"}}) // nolint:errcheck
 			input.Handler(app.DeployEvent{Typename: "AppDeploymentStatusEvent", DeploymentStatus: app.AppDeploymentStatusEvent{Status: "RUNNING"}}) // nolint:errcheck
 		})
-		stdout := os.Stdout
-		r, w, err := os.Pipe()
-		require.NoError(t, err)
-		os.Stdout = w
-		defer func() {
-			os.Stdout = stdout
-		}()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true}
-		err = Deploy(context.TODO(), apps, input)
 
-		require.NoError(t, w.Close())
+		stdout, err := mockStdout(t, func() error {
+			return Deploy(context.TODO(), apps, input)
+		})
+
 		assert.NoError(t, err)
 		expected := []string{
 			"<non-ascii> Loading app configuration............................",
@@ -255,13 +251,53 @@ func TestDeploy(t *testing.T) {
 			"\rDeploy Workload is running\n",
 			"<non-ascii> Deploying app........................................OK\n",
 			"<non-ascii> Access your app at: https://www.numerous.com/app/organization/organization-slug/private/app-slug\n",
+			"\n",
+			"To read the logs from your app you can:\n",
+			"  numerous logs --organization=organization-slug --app=app-slug\n",
+			"Or you can use the --follow flag:\n",
+			"  numerous deploy --follow --organization=organization-slug --app=app-slug " + appDir + "\n",
 		}
-		output, _ := io.ReadAll(r)
+		output, _ := io.ReadAll(stdout)
 		actual := cleanNonASCIIAndANSI(string(output))
 		assert.Equal(t, strings.Join(expected, ""), actual)
 	})
+
+	t.Run("given follow flag it reads deployment logs", func(t *testing.T) {
+		appDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
+		expectedVersion := "v1.2.3"
+		expectedMessage := "expected message"
+		apps := mockAppExists()
+		ch := make(chan app.AppDeployLogEntry, 2)
+		expectedEntry1 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.January, 1, 1, 1, 1, 0, time.UTC), Text: "Log entry 1"}
+		expectedEntry2 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.January, 1, 1, 1, 2, 0, time.UTC), Text: "Log entry 2"}
+		ch <- expectedEntry1
+		ch <- expectedEntry2
+		close(ch)
+		apps.On("AppDeployLogs", appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}).Once().Return(ch, nil)
+
+		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true, Follow: true}
+		stdout, err := mockStdout(t, func() error {
+			return Deploy(context.TODO(), apps, input)
+		})
+
+		assert.NoError(t, err)
+		output, _ := io.ReadAll(stdout)
+		actual := cleanNonASCIIAndANSI(string(output))
+
+		expected := strings.Join(
+			[]string{
+				"Following logs of organization-slug/app-slug:",
+				expectedEntry1.Timestamp.Format(time.RFC3339Nano) + " " + expectedEntry1.Text,
+				expectedEntry2.Timestamp.Format(time.RFC3339Nano) + " " + expectedEntry2.Text,
+			}, "\n",
+		)
+		assert.Contains(t, actual, expected)
+		apps.AssertExpectations(t)
+	})
 }
 
+// Strips output of known ANSI terminal escapes, and non-ascii runes (e.g. icons).
 func cleanNonASCIIAndANSI(s string) string {
 	var cleaned string
 	for _, r := range s {
@@ -272,9 +308,29 @@ func cleanNonASCIIAndANSI(s string) string {
 		}
 	}
 
-	for _, code := range []string{output.AnsiRed, output.AnsiReset, output.AnsiGreen, output.AnsiFaint} {
+	for _, code := range []string{output.AnsiRed, output.AnsiReset, output.AnsiGreen, output.AnsiFaint, output.AnsiCyanBold} {
 		cleaned = strings.ReplaceAll(cleaned, code, "")
 	}
 
 	return cleaned
+}
+
+func mockStdout(t *testing.T, f func() error) (io.Reader, error) {
+	t.Helper()
+
+	realStdout := os.Stdout
+
+	defer func() {
+		os.Stdout = realStdout
+	}()
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	err = f()
+
+	require.NoError(t, w.Close())
+
+	return r, err
 }
