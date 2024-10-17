@@ -33,8 +33,12 @@ from numerous.generated.graphql.collection_documents import (
     CollectionDocumentsCollectionCollection,
     CollectionDocumentsCollectionCollectionDocumentsEdgesNode,
 )
+from numerous.generated.graphql.collection_files import (
+    CollectionFilesCollectionCreateCollection,
+)
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
+    CollectionFileReference,
     CollectionNotFound,
     CollectionReference,
 )
@@ -273,6 +277,122 @@ class GraphQLClient:
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
         return self._threaded_event_loop.await_coro(
             self._get_collection_documents(collection_id, end_cursor, tag_input)
+        )
+
+    def _create_collection_files_ref(
+        self,
+        collection_response: Optional[
+            Union[
+                CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
+            ]
+        ],
+    ) -> Optional[CollectionFileReference]:
+        if isinstance(collection_response, CollectionFileReference):
+            return CollectionFileReference(
+                id=collection_response.id,
+                key=collection_response.key,
+                download_url=collection_response.download_url,
+                upload_url=collection_response.upload_url,
+                tags=collection_response.tags,
+            )
+        return None
+
+    async def _get_collection_file(
+        self, collection_id: str, file_key: str
+    ) -> Optional[CollectionFileReference]:
+        response = await self._gql.collection_file(
+            collection_id,
+            file_key,
+            headers=self._headers,
+        )
+        return self._create_collection_files_ref(response.collection_file_create)
+
+    def get_collection_file(
+        self, collection_id: str, file_key: str
+    ) -> Optional[CollectionFileReference]:
+        return self._threaded_event_loop.await_coro(
+            self._get_collection_file(collection_id, file_key)
+        )
+
+    async def _delete_collection_file(
+        self, file_id: str
+    ) -> Optional[CollectionFileReference]:
+        response = await self._gql.collection_file_delete(
+            file_id,
+            headers=self._headers,
+        )
+        return self._create_collection_files_ref(response.collection_file_delete)
+
+    def delete_collection_file(self, file_id: str) -> Optional[CollectionFileReference]:
+        return self._threaded_event_loop.await_coro(
+            self._delete_collection_file(file_id)
+        )
+
+    async def _get_collection_files(
+        self,
+        collection_key: str,
+        end_cursor: str,
+        tag_input: Optional[TagInput],
+    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+        response = await self._gql.collection_files(
+            self._organization_id,
+            collection_key,
+            tag_input,
+            after=end_cursor,
+            first=COLLECTED_OBJECTS_NUMBER,
+            headers=self._headers,
+        )
+
+        collection = response.collection_create
+        if not isinstance(collection, CollectionFilesCollectionCreateCollection):
+            return [], False, ""
+
+        files = collection.files
+        edges = files.edges
+        page_info = files.page_info
+
+        result = [self._create_collection_files_ref(edge.node) for edge in edges]
+
+        end_cursor = page_info.end_cursor or ""
+        has_next_page = page_info.has_next_page
+
+        return result, has_next_page, end_cursor
+
+    def get_collection_files(
+        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
+    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+        return self._threaded_event_loop.await_coro(
+            self._get_collection_files(collection_key, end_cursor, tag_input)
+        )
+
+    async def _add_collection_file_tag(
+        self, file_id: str, tag: TagInput
+    ) -> Optional[CollectionFileReference]:
+        response = await self._gql.collection_file_tag_add(
+            file_id, tag, headers=self._headers
+        )
+        return self._create_collection_files_ref(response.collection_file_tag_add)
+
+    def add_collection_file_tag(
+        self, file_id: str, tag: TagInput
+    ) -> Optional[CollectionFileReference]:
+        return self._threaded_event_loop.await_coro(
+            self._add_collection_file_tag(file_id, tag)
+        )
+
+    async def _delete_collection_file_tag(
+        self, file_id: str, tag_key: str
+    ) -> Optional[CollectionFileReference]:
+        response = await self._gql.collection_file_tag_delete(
+            file_id, tag_key, headers=self._headers
+        )
+        return self._create_collection_files_ref(response.collection_file_tag_delete)
+
+    def delete_collection_file_tag(
+        self, file_id: str, tag_key: str
+    ) -> Optional[CollectionFileReference]:
+        return self._threaded_event_loop.await_coro(
+            self._delete_collection_file_tag(file_id, tag_key)
         )
 
     async def _get_collection_collections(

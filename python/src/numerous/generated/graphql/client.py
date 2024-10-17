@@ -13,6 +13,11 @@ from .collection_document_set import CollectionDocumentSet
 from .collection_document_tag_add import CollectionDocumentTagAdd
 from .collection_document_tag_delete import CollectionDocumentTagDelete
 from .collection_documents import CollectionDocuments
+from .collection_file import CollectionFile
+from .collection_file_delete import CollectionFileDelete
+from .collection_file_tag_add import CollectionFileTagAdd
+from .collection_file_tag_delete import CollectionFileTagDelete
+from .collection_files import CollectionFiles
 from .input_types import TagInput
 
 
@@ -368,3 +373,204 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionDocuments.model_validate(data)
+
+    async def collection_file(
+        self, collection_id: str, key: str, **kwargs: Any
+    ) -> CollectionFile:
+        query = gql(
+            """
+            mutation CollectionFile($collectionID: ID!, $key: ID!) {
+              collectionFileCreate(collectionID: $collectionID, key: $key) {
+                __typename
+                ... on CollectionFile {
+                  ...CollectionFileReference
+                }
+              }
+            }
+
+            fragment CollectionFileReference on CollectionFile {
+              id
+              key
+              downloadURL
+              uploadURL
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"collectionID": collection_id, "key": key}
+        response = await self.execute(
+            query=query, operation_name="CollectionFile", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionFile.model_validate(data)
+
+    async def collection_file_delete(
+        self, id: str, **kwargs: Any
+    ) -> CollectionFileDelete:
+        query = gql(
+            """
+            mutation collectionFileDelete($id: ID!) {
+              collectionFileDelete(id: $id) {
+                __typename
+                ... on CollectionFile {
+                  ...CollectionFileReference
+                }
+              }
+            }
+
+            fragment CollectionFileReference on CollectionFile {
+              id
+              key
+              downloadURL
+              uploadURL
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionFileDelete",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionFileDelete.model_validate(data)
+
+    async def collection_files(
+        self,
+        organization_id: str,
+        key: str,
+        tag: Union[Optional[TagInput], UnsetType] = UNSET,
+        after: Union[Optional[str], UnsetType] = UNSET,
+        first: Union[Optional[int], UnsetType] = UNSET,
+        **kwargs: Any
+    ) -> CollectionFiles:
+        query = gql(
+            """
+            mutation collectionFiles($organizationID: ID!, $key: ID!, $tag: TagInput, $after: ID, $first: Int) {
+              collectionCreate(organizationID: $organizationID, key: $key) {
+                __typename
+                ... on Collection {
+                  id
+                  key
+                  files(after: $after, first: $first, tag: $tag) {
+                    edges {
+                      node {
+                        __typename
+                        ... on CollectionFile {
+                          ...CollectionFileReference
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
+                  }
+                }
+              }
+            }
+
+            fragment CollectionFileReference on CollectionFile {
+              id
+              key
+              downloadURL
+              uploadURL
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationID": organization_id,
+            "key": key,
+            "tag": tag,
+            "after": after,
+            "first": first,
+        }
+        response = await self.execute(
+            query=query, operation_name="collectionFiles", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionFiles.model_validate(data)
+
+    async def collection_file_tag_add(
+        self, id: str, tag: TagInput, **kwargs: Any
+    ) -> CollectionFileTagAdd:
+        query = gql(
+            """
+            mutation collectionFileTagAdd($id: ID!, $tag: TagInput!) {
+              collectionFileTagAdd(id: $id, tag: $tag) {
+                __typename
+                ... on CollectionFile {
+                  ...CollectionFileReference
+                }
+              }
+            }
+
+            fragment CollectionFileReference on CollectionFile {
+              id
+              key
+              downloadURL
+              uploadURL
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id, "tag": tag}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionFileTagAdd",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionFileTagAdd.model_validate(data)
+
+    async def collection_file_tag_delete(
+        self, id: str, tag_key: str, **kwargs: Any
+    ) -> CollectionFileTagDelete:
+        query = gql(
+            """
+            mutation collectionFileTagDelete($id: ID!, $tag_key: String!) {
+              collectionFileTagDelete(id: $id, key: $tag_key) {
+                __typename
+                ... on CollectionFile {
+                  ...CollectionFileReference
+                }
+              }
+            }
+
+            fragment CollectionFileReference on CollectionFile {
+              id
+              key
+              downloadURL
+              uploadURL
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"id": id, "tag_key": tag_key}
+        response = await self.execute(
+            query=query,
+            operation_name="collectionFileTagDelete",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionFileTagDelete.model_validate(data)

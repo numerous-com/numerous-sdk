@@ -9,6 +9,7 @@ from typing import Optional, Protocol
 
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
+    CollectionFileReference,
     CollectionReference,
 )
 from numerous.generated.graphql.input_types import TagInput
@@ -46,3 +47,23 @@ class Client(Protocol):
     def get_collection_collections(
         self, collection_key: str, end_cursor: str
     ) -> tuple[Optional[list[CollectionReference]], bool, str]: ...
+
+    def get_collection_file(
+        self, collection_id: str, file_key: str
+    ) -> Optional[CollectionFileReference]: ...
+
+    def delete_collection_file(
+        self, file_id: str
+    ) -> Optional[CollectionFileReference]: ...
+
+    def get_collection_files(
+        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
+    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]: ...
+
+    def add_file_document_tag(
+        self, file_id: str, tag: TagInput
+    ) -> Optional[CollectionFileReference]: ...
+
+    def delete_collection_file_tag(
+        self, file_id: str, tag_key: str
+    ) -> Optional[CollectionFileReference]: ...

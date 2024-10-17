@@ -1,11 +1,14 @@
 import json
 from dataclasses import asdict, dataclass
+import os
 from pathlib import Path
 from typing import Any, Optional
 
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
+    CollectionFileReference,
+    CollectionFileReferenceTags,
     CollectionReference,
 )
 from numerous.generated.graphql.input_types import TagInput
@@ -13,25 +16,25 @@ from numerous.jsonbase64 import base64_to_dict, dict_to_base64
 
 
 @dataclass
-class FileSystemCollectionTag:
+class FileSystemCollectionDocumentTag:
     key: str
     value: str
 
     @staticmethod
-    def load(tag: dict[str, Any]) -> "FileSystemCollectionTag":
+    def load(tag: dict[str, Any]) -> "FileSystemCollectionDocumentTag":
         key = tag.get("key")
         if not isinstance(key, str):
             tname = type(key).__name__
-            msg = f"FileSystemCollectionTag key must be str, found {tname}"
+            msg = f"FileSystemCollectionDocumentTag key must be str, found {tname}"
             raise TypeError(msg)
 
         value = tag.get("value")
         if not isinstance(value, str):
             tname = type(value).__name__
-            msg = f"FileSystemCollectionTag value must be str, found {tname}"
+            msg = f"FileSystemCollectionDocumentTag value must be str, found {tname}"
             raise TypeError(msg)
 
-        return FileSystemCollectionTag(key=key, value=value)
+        return FileSystemCollectionDocumentTag(key=key, value=value)
 
     def to_reference_tag(self) -> CollectionDocumentReferenceTags:
         return CollectionDocumentReferenceTags(
@@ -41,9 +44,94 @@ class FileSystemCollectionTag:
 
 
 @dataclass
+class FileSystemCollectionFileTag:
+    key: str
+    value: str
+
+    @staticmethod
+    def load(tag: dict[str, Any]) -> "FileSystemCollectionFileTag":
+        key = tag.get("key")
+        if not isinstance(key, str):
+            tname = type(key).__name__
+            msg = f"FileSystemCollectionFileTag key must be str, found {tname}"
+            raise TypeError(msg)
+
+        value = tag.get("value")
+        if not isinstance(value, str):
+            tname = type(value).__name__
+            msg = f"FileSystemCollectionFileTag value must be str, found {tname}"
+            raise TypeError(msg)
+
+        return FileSystemCollectionFileTag(key=key, value=value)
+
+    def to_reference_tag(self) -> CollectionFileReferenceTags:
+        return CollectionFileReferenceTags(
+            key=self.key,
+            value=self.value,
+        )
+
+
+@dataclass
+class FileSystemCollectionFile:
+    path: str
+    tags: list[FileSystemCollectionFileTag]
+
+    def save(self, path: Path) -> None:
+        with path.open("w") as f:
+            json.dump(asdict(self), f)
+
+    @staticmethod
+    def load(file_path: Path) -> "FileSystemCollectionDocument":
+        with file_path.open("r") as f:
+            file_content = json.load(f)
+
+        if not isinstance(file_content, dict):
+            tname = type(file_content).__name__
+            msg = f"FileSystemCollection document must be a dict, found {tname}"
+            raise TypeError(msg)
+
+        tags = file_content.get("tags", [])
+        if not isinstance(tags, list):
+            tname = type(tags).__name__
+            msg = f"FileSystemCollection tags must be a list, found {tname}"
+            raise TypeError(msg)
+
+        path = file_content.get("path", {})
+        if not isinstance(path, str):
+            tname = type(path).__name__
+            msg = f"FileSystemCollection data must be a dict, found {tname}"
+            raise TypeError(msg)
+
+        return FileSystemCollectionFile(
+            path=path, tags=[FileSystemCollectionFileTag.load(tag) for tag in tags]
+        )
+
+    def reference_tags(self) -> list[CollectionFileReferenceTags]:
+        return [
+            CollectionFileReferenceTags(
+                key=tag.key,
+                value=tag.value,
+            )
+            for tag in self.tags
+        ]
+
+    def tag_matches(self, tag_input: TagInput) -> bool:
+        matching_tag = next(
+            (
+                tag
+                for tag in self.tags
+                if tag.key == tag_input.key and tag.value == tag_input.value
+            ),
+            None,
+        )
+
+        return matching_tag is not None
+
+
+@dataclass
 class FileSystemCollectionDocument:
     data: dict[str, Any]
-    tags: list[FileSystemCollectionTag]
+    tags: list[FileSystemCollectionDocumentTag]
 
     def save(self, path: Path) -> None:
         with path.open("w") as f:
@@ -72,7 +160,7 @@ class FileSystemCollectionDocument:
             raise TypeError(msg)
 
         return FileSystemCollectionDocument(
-            data=data, tags=[FileSystemCollectionTag.load(tag) for tag in tags]
+            data=data, tags=[FileSystemCollectionDocumentTag.load(tag) for tag in tags]
         )
 
     def reference_tags(self) -> list[CollectionDocumentReferenceTags]:
@@ -178,7 +266,7 @@ class FileSystemClient:
             return None
 
         doc = FileSystemCollectionDocument.load(doc_path)
-        doc.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
+        doc.tags.append(FileSystemCollectionDocumentTag(key=tag.key, value=tag.value))
         doc.save(doc_path)
 
         return CollectionDocumentReference(
@@ -238,6 +326,24 @@ class FileSystemClient:
             )
 
         return sorted(documents, key=lambda d: d.id if d else ""), False, ""
+
+    def get_collection_file(
+        self, collection_id: str, document_key: str
+    ) -> Optional[CollectionFileReference]:
+        path = self._base_path / collection_id / f"m_{document_key}.json"
+        if not path.exists():
+            return None
+
+        doc = FileSystemCollectionFile.load(path)
+
+        doc_id = str(Path(collection_id) / document_key)
+        return CollectionFileReference(
+            id=doc_id,
+            key=document_key,
+            downloadURL=os.fspath(path),
+            uploadURL=os.fspath(path),
+            tags=[tag.to_reference_tag() for tag in doc.tags],
+        )
 
     def get_collection_collections(
         self,

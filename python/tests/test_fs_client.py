@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +9,8 @@ from numerous._client._fs_client import FileSystemClient
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
+    CollectionFileReference,
+    CollectionFileReferenceTags,
     CollectionReference,
 )
 from numerous.generated.graphql.input_types import TagInput
@@ -32,6 +35,8 @@ _TEST_ANOTHER_COLLECTION_ID = _TEST_ANOTHER_COLLECTION_KEY
 
 _TEST_DOCUMENT_KEY = "document_key"
 _TEST_ANOTHER_DOCUMENT_KEY = "another_document_key"
+
+_TEST_FILE_KEY = "file_key"
 
 
 @pytest.fixture
@@ -219,21 +224,25 @@ def test_get_collection_documents_returns_all_documents(
     result, has_next_page, end_cursor = client.get_collection_documents(
         _TEST_COLLECTION_KEY, "", None
     )
-
-    assert result == [
-        CollectionDocumentReference(
-            id=str(Path(_TEST_COLLECTION_ID) / _TEST_ANOTHER_DOCUMENT_KEY),
-            key=_TEST_ANOTHER_DOCUMENT_KEY,
-            data=dict_to_base64(test_another_data),
-            tags=[],
-        ),
+    assert (
         CollectionDocumentReference(
             id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
             key=_TEST_DOCUMENT_KEY,
             data=dict_to_base64(test_data),
             tags=[],
-        ),
-    ]
+        )
+        in result
+    )
+    assert (
+        CollectionDocumentReference(
+            id=str(Path(_TEST_COLLECTION_ID) / _TEST_ANOTHER_DOCUMENT_KEY),
+            key=_TEST_ANOTHER_DOCUMENT_KEY,
+            data=dict_to_base64(test_another_data),
+            tags=[],
+        )
+        in result
+    )
+    assert len(result) == 2
     assert has_next_page is False
     assert end_cursor == ""
 
@@ -287,15 +296,47 @@ def test_get_collection_collections_returns_expected_collections(
 
     assert has_next_page is False
     assert end_cursor == ""
-    assert [
+    assert (
+        CollectionReference(
+            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
+        )
+        in collections
+    )
+    assert (
         CollectionReference(
             id=_TEST_ANOTHER_NESTED_COLLECTION_ID,
             key=_TEST_ANOTHER_NESTED_COLLECTION_KEY,
-        ),
-        CollectionReference(
-            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
-        ),
-    ] == collections
+        )
+        in collections
+    )
+    assert len(collections) == 2
+
+
+def test_get_file_returns_expected_existing_file_reference(
+    client: FileSystemClient, base_path: Path
+) -> None:
+    data = "file data, "
+    tags = [
+        {"key": "tag-1-key", "value": "tag-1-value"},
+        {"key": "tag-2-key", "value": "tag-2-value"},
+    ]
+    _create_test_file_system_file(
+        base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=tags
+    )
+    path = str(base_path / _TEST_COLLECTION_KEY / f"m_{_TEST_FILE_KEY}.json")
+
+    doc = client.get_collection_file(_TEST_COLLECTION_ID, _TEST_FILE_KEY)
+
+    assert doc == CollectionFileReference(
+        id=str(Path(_TEST_COLLECTION_KEY) / _TEST_FILE_KEY),
+        key=_TEST_FILE_KEY,
+        uploadURL=path,
+        downloadURL=path,
+        tags=[
+            CollectionFileReferenceTags(key="tag-1-key", value="tag-1-value"),
+            CollectionFileReferenceTags(key="tag-2-key", value="tag-2-value"),
+        ],
+    )
 
 
 def _create_test_file_system_document(
@@ -308,3 +349,14 @@ def _create_test_file_system_document(
     stored_doc_data = json.dumps({"data": data, "tags": tags})
     doc_path = collection_path / f"{document_key}.json"
     doc_path.write_text(stored_doc_data)
+
+
+def _create_test_file_system_file(
+    collection_path: Path, file_key: str, tags: list[dict[str, str]], data: str
+) -> None:
+    collection_path.mkdir(exist_ok=True, parents=True)
+    metadata_path = collection_path / f"m_{file_key}.json"
+    path = collection_path / f"{file_key}"
+    stored_file_data = json.dumps({"path": os.fspath(path), "tags": tags})
+    metadata_path.write_text(stored_file_data)
+    path.write_text(data)

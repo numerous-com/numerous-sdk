@@ -17,6 +17,17 @@ fragment CollectionNotFound on CollectionNotFound {
   id
 }
 
+fragment CollectionFileReference on CollectionFile {
+  id
+  key
+  downloadURL
+  uploadURL
+  tags {
+    key
+    value
+  }
+}
+
 mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   collectionCreate(
     organizationID: $organizationID
@@ -139,6 +150,72 @@ query CollectionDocuments(
           endCursor
         }
       }
+    }
+  }
+}
+
+mutation CollectionFile($collectionID: ID!, $key: ID!) {
+  collectionFileCreate(collectionID: $collectionID, key: $key) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+mutation collectionFileDelete($id: ID!) {
+  collectionFileDelete(id: $id) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+mutation collectionFiles(
+  $organizationID: ID!
+  $key: ID!
+  $tag: TagInput
+  $after: ID
+  $first: Int
+) {
+  collectionCreate(organizationID: $organizationID, key: $key) {
+    __typename
+    ... on Collection {
+      id
+      key
+      files(after: $after, first: $first, tag: $tag) {
+        edges {
+          node {
+            __typename
+            ... on CollectionFile {
+              ...CollectionFileReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
+
+mutation collectionFileTagAdd($id: ID!, $tag: TagInput!) {
+  collectionFileTagAdd(id: $id, tag: $tag) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+mutation collectionFileTagDelete($id: ID!, $tag_key: String!) {
+  collectionFileTagDelete(id: $id, key: $tag_key) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
     }
   }
 }
