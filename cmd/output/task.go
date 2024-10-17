@@ -75,6 +75,13 @@ func (t *Task) UpdateLine(prefix string, line string) {
 	t.lineAdded = true
 }
 
+func (t *Task) EndUpdateLine() {
+	if t.lineUpdating {
+		fmt.Fprintln(t.w)
+		t.lineUpdating = false
+	}
+}
+
 func (t *Task) Done() {
 	t.terminate(checkmarkIcon, AnsiGreen+"OK"+AnsiReset)
 }

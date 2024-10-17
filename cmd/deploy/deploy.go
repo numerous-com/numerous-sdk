@@ -273,14 +273,14 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 type statusUpdater struct {
 	verbose               bool
 	lastStatus            *string
-	sameStatusUpdateCount int
+	sameStatusUpdateCount uint
 	task                  *output.Task
 }
 
 func (s *statusUpdater) update(status string) error {
 	if s.verbose {
 		if s.lastStatus != nil && *s.lastStatus != status {
-			s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(*s.lastStatus)+strings.Repeat(".", s.sameStatusUpdateCount)+"\n")
+			s.task.EndUpdateLine()
 		}
 
 		isDifferent := s.lastStatus == nil || *s.lastStatus != status
@@ -291,7 +291,7 @@ func (s *statusUpdater) update(status string) error {
 		}
 
 		s.lastStatus = &status
-		s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(status)+strings.Repeat(".", s.sameStatusUpdateCount))
+		s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(status)+strings.Repeat(".", int(s.sameStatusUpdateCount)))
 	}
 
 	switch status {

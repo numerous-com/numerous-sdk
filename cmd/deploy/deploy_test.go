@@ -238,44 +238,43 @@ func TestDeploy(t *testing.T) {
 		require.NoError(t, w.Close())
 		assert.NoError(t, err)
 		expected := []string{
-			"<nonascii> Loading app configuration............................",
-			"\r<nonascii> Loading app configuration............................OK\n",
-			"<nonascii> Registering new version for organization-slug/app-...",
-			"\r<nonascii> Registering new version for organization-slug/app-...OK\n",
-			"<nonascii> Creating app archive.................................",
-			"\r<nonascii> Creating app archive.................................OK\n",
-			"<nonascii> Uploading app archive................................",
-			"\r<nonascii> Uploading app archive................................OK\n",
-			"<nonascii> Deploying app........................................\n",
+			"<non-ascii> Loading app configuration............................",
+			"\r<non-ascii> Loading app configuration............................OK\n",
+			"<non-ascii> Registering new version for organization-slug/app-...",
+			"\r<non-ascii> Registering new version for organization-slug/app-...OK\n",
+			"<non-ascii> Creating app archive.................................",
+			"\r<non-ascii> Creating app archive.................................OK\n",
+			"<non-ascii> Uploading app archive................................",
+			"\r<non-ascii> Uploading app archive................................OK\n",
+			"<non-ascii> Deploying app........................................\n",
 			"Build Build message 1\n",
 			"Build Build message 2\n",
 			"\rDeploy Workload is pending",
 			"\rDeploy Workload is pending.",
-			"\rDeploy Workload is pending..",
 			"\rDeploy Workload is pending..\n",
 			"\rDeploy Workload is running\n",
-			"<nonascii> Deploying app........................................OK\n",
-			"<nonascii> Access your app at: https://www.numerous.com/app/organization/organization-slug/private/app-slug\n",
+			"<non-ascii> Deploying app........................................OK\n",
+			"<non-ascii> Access your app at: https://www.numerous.com/app/organization/organization-slug/private/app-slug\n",
 		}
 		output, _ := io.ReadAll(r)
-		actual := stripNonASCII(string(output))
+		actual := cleanNonASCIIAndANSI(string(output))
 		assert.Equal(t, strings.Join(expected, ""), actual)
 	})
 }
 
-func stripNonASCII(s string) string {
-	var stripped string
+func cleanNonASCIIAndANSI(s string) string {
+	var cleaned string
 	for _, r := range s {
 		if r < 128 {
-			stripped += string(r)
+			cleaned += string(r)
 		} else {
-			stripped += "<nonascii>"
+			cleaned += "<non-ascii>"
 		}
 	}
 
 	for _, code := range []string{output.AnsiRed, output.AnsiReset, output.AnsiGreen, output.AnsiFaint} {
-		stripped = strings.ReplaceAll(stripped, code, "")
+		cleaned = strings.ReplaceAll(cleaned, code, "")
 	}
 
-	return stripped
+	return cleaned
 }
