@@ -73,7 +73,7 @@ class FileSystemCollectionFileTag:
 
 @dataclass
 class FileSystemCollectionFile:
-    path: str
+    path: Path
     tags: list[FileSystemCollectionFileTag]
 
     def save(self, path: Path) -> None:
@@ -101,6 +101,7 @@ class FileSystemCollectionFile:
             tname = type(path).__name__
             msg = f"FileSystemCollection data must be a dict, found {tname}"
             raise TypeError(msg)
+        path = Path(path) 
 
         return FileSystemCollectionFile(
             path=path, tags=[FileSystemCollectionFileTag.load(tag) for tag in tags]
@@ -328,22 +329,79 @@ class FileSystemClient:
         return sorted(documents, key=lambda d: d.id if d else ""), False, ""
 
     def get_collection_file(
-        self, collection_id: str, document_key: str
+        self, collection_id: str, file_key: str
     ) -> Optional[CollectionFileReference]:
-        path = self._base_path / collection_id / f"m_{document_key}.json"
+        path = self._base_path / collection_id / f"{file_key}.json"
         if not path.exists():
             return None
 
-        doc = FileSystemCollectionFile.load(path)
+        file = FileSystemCollectionFile.load(path)
 
-        doc_id = str(Path(collection_id) / document_key)
+        file_id = str(Path(collection_id) / file_key)
         return CollectionFileReference(
-            id=doc_id,
-            key=document_key,
-            downloadURL=os.fspath(path),
-            uploadURL=os.fspath(path),
-            tags=[tag.to_reference_tag() for tag in doc.tags],
+            id=file_id,
+            key=file_key,
+            downloadURL=os.fspath(file.path),
+            uploadURL=os.fspath(file.path),
+            tags=[tag.to_reference_tag() for tag in file.tags],
         )
+        
+        
+        
+    def delete_collection_file(
+        self, file_id: str
+    ) -> Optional[CollectionFileReference]:
+        file_path = self._base_path / (file_id + ".json")
+        if not file_path.exists():
+            return None
+
+        file = FileSystemCollectionFile.load(file_path)
+        
+        file_path.unlink()
+        file.path.unlink()
+        
+
+        return CollectionFileReference(
+            id=file_id,
+            key=file_path.stem,
+            downloadURL=os.fspath(file.path),
+            uploadURL=os.fspath(file.path),
+            tags=file.reference_tags(),
+        )
+
+    def get_collection_files(
+        self,
+        collection_key: str,
+        end_cursor: str,  # noqa: ARG002
+        tag_input: Optional[TagInput],
+    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+        col_path = self._base_path / collection_key
+        if not col_path.exists():
+            return [], False, ""
+
+        files: list[Optional[CollectionFileReference]] = []
+        for file_path in col_path.iterdir():
+            if file_path.suffix != ".json":
+                continue
+
+            file = FileSystemCollectionFile.load(file_path)
+
+            if tag_input and not file.tag_matches(tag_input):
+                # skips files that do not match tag input, if it is given
+                continue
+
+            file_id = str(file_path.relative_to(self._base_path).with_suffix(""))
+            files.append(
+                CollectionFileReference(
+                    id=file_id,
+                    key=file_path.stem,
+                    downloadURL=os.fspath(file.path),
+                    uploadURL=os.fspath(file.path),
+                    tags=file.reference_tags(),
+                )
+            )
+
+        return files, False, ""
 
     def get_collection_collections(
         self,

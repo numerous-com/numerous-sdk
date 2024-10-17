@@ -162,12 +162,6 @@ def _collection_file_reference(key: str) -> CollectionFile:
     )
 
 
-def _collection_create_collection_not_found(ref_id: str) -> CollectionCreate:
-    return CollectionCreate.model_validate(
-        {"collectionCreate": {"typename__": "CollectionNotFound", "id": ref_id}}
-    )
-
-
 @pytest.fixture(autouse=True)
 def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
