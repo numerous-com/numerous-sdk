@@ -8,10 +8,9 @@ readme = "README.md"
 version = "0.27.0"
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
-    "typing-extensions==4.12.2",
-    "ariadne-codegen[subscriptions]==0.14.0",
+    "typing-extensions>=4.12.2",
+    "ariadne-codegen[subscriptions]>=0.14.0",
     "plotly>4",
-    "packaging==24.0",
 ]
 
 [project.optional-dependencies]
