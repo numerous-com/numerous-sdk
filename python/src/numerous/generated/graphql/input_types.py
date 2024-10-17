@@ -54,6 +54,9 @@ class AppCreateInfo(BaseModel):
 class AppDeployInput(BaseModel):
     app_relative_path: Optional[str] = Field(alias="appRelativePath", default=None)
     secrets: Optional[List["AppSecret"]] = None
+    skip_metadata_update: Optional[bool] = Field(
+        alias="skipMetadataUpdate", default=None
+    )
 
 
 class AppDeployLogsInput(BaseModel):
