@@ -224,6 +224,7 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 		output.PrintErrorDetails("Error deploying app", err)
 	}
 
+	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.Verbose, task: task}
 	eventsInput := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) error {
@@ -243,13 +244,8 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 
 				return &deployBuildError{Message: de.BuildError.Message}
 			case "AppDeploymentStatusEvent":
-				if input.Verbose {
-					task.AddLine("Deploy", "Status is "+de.DeploymentStatus.Status)
-				}
-				switch de.DeploymentStatus.Status {
-				case "PENDING", "RUNNING":
-				default:
-					return fmt.Errorf("got status %s while deploying", de.DeploymentStatus.Status)
+				if err := appDeploymentStatusEventUpdater.update(de.DeploymentStatus.Status); err != nil {
+					return err
 				}
 			}
 
@@ -270,6 +266,39 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 		return err
 	}
 	task.Done()
+
+	return nil
+}
+
+type statusUpdater struct {
+	verbose               bool
+	lastStatus            *string
+	sameStatusUpdateCount uint
+	task                  *output.Task
+}
+
+func (s *statusUpdater) update(status string) error {
+	if s.verbose {
+		if s.lastStatus != nil && *s.lastStatus != status {
+			s.task.EndUpdateLine()
+		}
+
+		isDifferent := s.lastStatus == nil || *s.lastStatus != status
+		if isDifferent {
+			s.sameStatusUpdateCount = 0
+		} else {
+			s.sameStatusUpdateCount++
+		}
+
+		s.lastStatus = &status
+		s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(status)+strings.Repeat(".", int(s.sameStatusUpdateCount)))
+	}
+
+	switch status {
+	case "PENDING", "RUNNING":
+	default:
+		return fmt.Errorf("got status %s while deploying", status)
+	}
 
 	return nil
 }
