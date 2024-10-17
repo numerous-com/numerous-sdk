@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.27.0 (2024-10-17)
+
+### Feature
+
+* feat(api): streamline deployment workload status output (#44) ([`6ea372a`](https://github.com/numerous-com/numerous-sdk/commit/6ea372a4dc159367564349319565ad72a8760ffa))
+
+  > 
+  > Instead of printing repeated messages about the same workload status print dots for each deployment stage is it goes on.
+
+
+
+
 ## v0.26.0 (2024-10-11)
 
 ### Feature
