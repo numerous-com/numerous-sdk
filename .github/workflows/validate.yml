@@ -64,34 +64,10 @@ jobs:
           name: dist-${{ matrix.platform }}
           path: ./dist/*
 
-  build-any:
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-    name: Build (any platform)
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"
-          cache: "pip"
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
-          cache: false
-      - run: python3 -m pip install python-semantic-release==9.6.0 build>=1.2.1
-      - run: semantic-release version --no-commit --no-tag --no-push --no-changelog # update version locally to build new version
-      - run: make package-any
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-any
-          path: ./dist/*
-
   collect-dists:
     name: Collect dists
     runs-on: ubuntu-latest
-    needs: [build, build-any]
+    needs: [build]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -116,10 +92,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dist-windows_arm64
-          path: ./dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist-any
           path: ./dist
       - uses: actions/upload-artifact@v4
         with:
