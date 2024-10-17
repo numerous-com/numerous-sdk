@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.27.1 (2024-10-17)
+
+### Fix
+
+* fix(python-sdk): soften dependency version requirements ([`74bc2ca`](https://github.com/numerous-com/numerous-sdk/commit/74bc2ca8ab1e2d57b6633a04ccc43949ee9c3c05))
+
+
+
+
 ## v0.27.0 (2024-10-17)
 
 ### Feature
