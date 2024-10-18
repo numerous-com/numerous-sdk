@@ -68,7 +68,7 @@ def _collection_file_tag_delete_found(_id: str) -> CollectionFileTagDelete:
     )
 
 
-def _collection_file_tag_add_found(_id: str) -> CollectionDocumentTagAdd:
+def _collection_file_tag_add_found(_id: str) -> CollectionFileTagAdd:
     return CollectionFileTagAdd.model_validate(
         {
             "collectionFileTagAdd": {
@@ -88,7 +88,7 @@ def _collection_file_delete_found(_id: str) -> CollectionFileDelete:
         {
             "collectionFileDelete": {
                 "__typename": "CollectionFile",
-                "id": FILE_ID,
+                "id": _id,
                 "key": "t21",
                 "downloadURL": _TEST_DOWNLOAD_URL_,
                 "uploadURL": _TEST_UPLOAD_URL_,
@@ -98,7 +98,7 @@ def _collection_file_delete_found(_id: str) -> CollectionFileDelete:
     )
 
 
-def _collection_files_reference() -> CollectionDocuments:
+def _collection_files_reference() -> CollectionFiles:
     return CollectionFiles.model_validate(
         {
             "collectionCreate": {
@@ -112,8 +112,8 @@ def _collection_files_reference() -> CollectionDocuments:
                                 "__typename": "CollectionFile",
                                 "id": "0ac6436b-f044-4616-97c6-2bb5a8dbf7a1",
                                 "key": "t22",
-                                "downloadURL": "http://127.0.0.1:8082/download/collection_files/0ac6436b-f044-4616-97c6-2bb5a8dbf7a1",
-                                "uploadURL": "http://127.0.0.1:8082/upload/collection_files/0ac6436b-f044-4616-97c6-2bb5a8dbf7a1",
+                                "downloadURL": _TEST_DOWNLOAD_URL_,
+                                "uploadURL": _TEST_UPLOAD_URL_,
                                 "tags": [],
                             }
                         },
@@ -246,7 +246,7 @@ def test_collection_file_returns_file_text_content_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(base_path / COLLECTION_FILE_KEY)
+    fileref.download(str(base_path / COLLECTION_FILE_KEY))
     text = fileref.read_text()
 
     mock_get.assert_called_once_with(
@@ -281,7 +281,7 @@ def test_collection_file_returns_file_byte_content_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(base_path / COLLECTION_FILE_KEY)
+    fileref.download(str(base_path / COLLECTION_FILE_KEY))
     bytes_data = fileref.read_bytes()
 
     mock_get.assert_called_once_with(
@@ -316,8 +316,8 @@ def test_collection_file_returns_file_can_be_opened_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(base_path / COLLECTION_FILE_KEY)
-
+    fileref.download(str(base_path / COLLECTION_FILE_KEY))
+    
     with fileref.open() as file:
         bytes_data = file.read()
 
@@ -337,7 +337,7 @@ def test_collection_file_returns_file_can_be_opened_after_load(
 
 @patch("requests.post")
 @patch("requests.get")
-def test_collection_file_can_be_uploaded_on_save(
+def test_collection_bytefile_can_be_uploaded_on_save(
     mock_get: MagicMock, mock_post: MagicMock
 ) -> None:
     gql = Mock(GQLClient)
@@ -377,6 +377,46 @@ def test_collection_file_can_be_uploaded_on_save(
 
 @patch("requests.post")
 @patch("requests.get")
+def test_collection_textfile_can_be_uploaded_on_save(
+    mock_get: MagicMock, mock_post: MagicMock
+) -> None:
+    gql = Mock(GQLClient)
+    _client = GraphQLClient(gql)
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
+    )
+    gql.collection_file.return_value = _collection_file_reference(COLLECTION_FILE_KEY)
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_post.return_value = mock_response
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = _TEST_FILE_CONTENT_TEXT_
+    mock_get.return_value = mock_response
+
+    test_collection = collection(COLLECTION_NAME, _client)
+
+    fileref = test_collection.file(COLLECTION_FILE_KEY)
+    fileref.save(_TEST_FILE_CONTENT_TEXT_)
+
+    mock_post.assert_called_once_with(
+        _TEST_UPLOAD_URL_,
+        files={"file": _TEST_FILE_CONTENT_TEXT_},
+        timeout=_REQUEST_TIMEOUT_SECONDS_,
+    )
+    gql.collection_file.assert_called_once_with(
+        COLLECTION_REFERENCE_ID,
+        COLLECTION_FILE_KEY,
+        **HEADERS_WITH_AUTHORIZATION,
+    )
+
+    assert isinstance(fileref, NumerousFile)
+    assert fileref.exists is True
+
+
+@patch("requests.post")
+@patch("requests.get")
 def test_collection_file_can_be_save_from_collection(
     mock_get: MagicMock, mock_post: MagicMock
 ) -> None:
@@ -392,15 +432,15 @@ def test_collection_file_can_be_save_from_collection(
 
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.content = _TEST_FILE_CONTENT_TEXT_BYTE_
+    mock_response.content = _TEST_FILE_CONTENT_TEXT_
     mock_get.return_value = mock_response
 
     test_collection = collection(COLLECTION_NAME, _client)
-    test_collection.save_file(COLLECTION_FILE_KEY, _TEST_FILE_CONTENT_TEXT_BYTE_)
+    test_collection.save_file(COLLECTION_FILE_KEY, _TEST_FILE_CONTENT_TEXT_)
 
     mock_post.assert_called_once_with(
         _TEST_UPLOAD_URL_,
-        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
+        files={"file": _TEST_FILE_CONTENT_TEXT_},
         timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(
@@ -471,7 +511,7 @@ def test_collection_file_delete_marks_file_exists_false(mock_get: MagicMock) -> 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
     assert fileref.exists is True
     gql.collection_file_delete.return_value = _collection_file_delete_found(
-        fileref.file_id
+        FILE_ID
     )
 
     fileref.delete()
@@ -541,7 +581,7 @@ def test_collection_document_tag_add(mock_get: MagicMock) -> None:
     fileref = test_collection.file(COLLECTION_FILE_KEY)
 
     gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(
-        fileref.file_id
+        FILE_ID
     )
     assert fileref.exists
 
@@ -573,10 +613,10 @@ def test_collection_document_tag_delete(mock_get: MagicMock) -> None:
     fileref = test_collection.file(COLLECTION_FILE_KEY)
 
     gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(
-        fileref.file_id
+       FILE_ID
     )
     gql.collection_file_tag_delete.return_value = _collection_file_tag_delete_found(
-        fileref.file_id
+        FILE_ID
     )
     assert fileref.exists
     fileref.tag("key", "test")

@@ -2,7 +2,7 @@
 
 from io import BufferedReader, TextIOWrapper
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import requests
 
@@ -171,6 +171,9 @@ class NumerousFile:
 
 
         """
+        if self.local_path is None:
+            msg = "No local path for this file."
+            raise ValueError(msg)
         try:
             with Path.open(self.local_path, "rb") as file:
                 return file.read()
@@ -189,17 +192,16 @@ class NumerousFile:
         Raises
         ------
             ValueError: If there is no local path for the file.
-
+            OSError: If an error occurs while reading the file.
         """
         if self.local_path is None:
             msg = "No local path for this file."
             raise ValueError(msg)
-        try:
-            return Path.open(self.local_path, "rb")
-        except OSError:
-            return None
+        
+        return Path.open(self.local_path, "rb")
 
-    def save(self, data: bytes) -> None:
+
+    def save(self, data: Union[bytes, str]) -> None:
         """
         Upload and save the file to the server.
 
@@ -233,11 +235,15 @@ class NumerousFile:
         Raises:
         ------
             HTTPError: If an error occurs during the upload.
+            ValueError: If there is no upload URL for the file.
+
 
         """
         data.seek(0)
         file_content = data.read().encode("utf-8")
-
+        if self.upload_url is None:
+            msg = "No upload URL for this file."
+            raise ValueError(msg)
         response = requests.post(
             self.upload_url,
             files={"file": file_content},

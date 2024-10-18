@@ -33,8 +33,25 @@ from numerous.generated.graphql.collection_documents import (
     CollectionDocumentsCollectionCollection,
     CollectionDocumentsCollectionCollectionDocumentsEdgesNode,
 )
+from numerous.generated.graphql.collection_file import (
+    CollectionFileCollectionFileCreateCollectionFile,
+    CollectionFileCollectionFileCreateCollectionNotFound,
+)
+from numerous.generated.graphql.collection_file_delete import (
+    CollectionFileDeleteCollectionFileDeleteCollectionFile,
+    CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound,
+)
+from numerous.generated.graphql.collection_file_tag_add import (
+    CollectionFileTagAddCollectionFileTagAddCollectionFile,
+    CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound,
+)
+from numerous.generated.graphql.collection_file_tag_delete import (
+    CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile,
+    CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
+)
 from numerous.generated.graphql.collection_files import (
     CollectionFilesCollectionCreateCollection,
+    CollectionFilesCollectionCreateCollectionFilesEdgesNode,
 )
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
@@ -284,6 +301,15 @@ class GraphQLClient:
         collection_response: Optional[
             Union[
                 CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
+                CollectionFileCollectionFileCreateCollectionFile,
+                CollectionFileCollectionFileCreateCollectionNotFound,
+                CollectionFileDeleteCollectionFileDeleteCollectionFile,
+                CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound,
+                CollectionFilesCollectionCreateCollectionFilesEdgesNode,
+                CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile,
+                CollectionFileTagAddCollectionFileTagAddCollectionFile,
+                CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound,
+                CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
             ]
         ],
     ) -> Optional[CollectionFileReference]:
@@ -291,8 +317,8 @@ class GraphQLClient:
             return CollectionFileReference(
                 id=collection_response.id,
                 key=collection_response.key,
-                download_url=collection_response.download_url,
-                upload_url=collection_response.upload_url,
+                downloadURL=collection_response.download_url,
+                uploadURL=collection_response.upload_url,
                 tags=collection_response.tags,
             )
         return None

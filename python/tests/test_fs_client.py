@@ -365,26 +365,22 @@ def test_get_collection_files_returns_all_files(
     result, has_next_page, end_cursor = client.get_collection_files(
         _TEST_COLLECTION_KEY, "", None
     )
-    assert (
+    assert result == [
         CollectionFileReference(
             id=str(Path(_TEST_COLLECTION_KEY) / _TEST_FILE_KEY),
             key=_TEST_FILE_KEY,
             uploadURL=path,
             downloadURL=path,
             tags=[],
-        )
-        in result
-    )
-    assert (
+        ),
         CollectionFileReference(
             id=str(Path(_TEST_COLLECTION_KEY) / another_file_key),
             key=another_file_key,
             uploadURL=another_path,
             downloadURL=another_path,
             tags=[],
-        )
-        in result
-    )
+        ),
+    ]
     assert len(result) == expected_number_of_files
     assert has_next_page is False
     assert end_cursor == ""
@@ -394,9 +390,8 @@ def test_delete_collection_file_removes_expected_file(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = "File content 1;2;3;4;\n1;2;3;4"
-    tags = []
     _create_test_file_system_file(
-        base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=tags
+        base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=[]
     )
     path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}"
 
