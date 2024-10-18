@@ -3,9 +3,9 @@ from unittest.mock import Mock
 import pytest
 
 from numerous import collection
-from numerous.client._graphql_client import GraphQLClient
-from numerous.collection.exceptions import ParentCollectionNotFoundError
+from numerous._client._graphql_client import GraphQLClient
 from numerous.generated.graphql.client import Client as GQLClient
+from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.generated.graphql.collection_create import CollectionCreate
 from numerous.jsonbase64 import dict_to_base64
 
