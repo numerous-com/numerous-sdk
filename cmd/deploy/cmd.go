@@ -47,6 +47,7 @@ var (
 	projectDir string = "."
 	message    string
 	version    string
+	follow     bool
 )
 
 func run(cmd *cobra.Command, args []string) error {
@@ -60,6 +61,7 @@ func run(cmd *cobra.Command, args []string) error {
 		Message:    message,
 		Version:    version,
 		Verbose:    verbose,
+		Follow:     follow,
 	}
 	err := Deploy(cmd.Context(), service, input)
 
@@ -71,5 +73,6 @@ func init() {
 	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to deploy to. List available organizations with 'numerous organization list'.")
 	flags.StringVarP(&appSlug, "app", "a", "", "A app slug identifier of the app to deploy to.")
 	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
+	flags.BoolVarP(&follow, "follow", "f", false, "Follow app deployment logs after deployment has succeeded.")
 	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 }

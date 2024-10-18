@@ -10,7 +10,8 @@ var notifyCmdMovedBody = AnsiFaint + "A new set of commands related to apps in o
 	"See https://www.numerous.com/docs/cli#legacy-commands for more information."
 
 func Notify(header, body string, args ...any) {
-	fmt.Printf(AnsiCyanBold+header+AnsiReset+"\n"+body+"\n", args...)
+	body = addTrailingNewLine(body)
+	fmt.Printf(AnsiCyanBold+header+AnsiReset+"\n"+body, args...)
 }
 
 func NotifyCmdMoved(cmd string, newCmd string) {

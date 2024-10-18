@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -35,6 +36,7 @@ type AppService interface {
 	UploadAppSource(uploadURL string, archive io.Reader) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
+	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
 type DeployInput struct {
@@ -45,6 +47,7 @@ type DeployInput struct {
 	Version    string
 	Message    string
 	Verbose    bool
+	Follow     bool
 }
 
 func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
@@ -72,6 +75,30 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	}
 
 	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
+
+	if input.Follow {
+		output.Notify("Following logs of %s/%s:", "", orgSlug, appSlug)
+		if err := followLogs(ctx, apps, orgSlug, appSlug); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println()
+		fmt.Println("To read the logs from your app you can:")
+		fmt.Println("  " + output.Highlight("numerous logs --organization="+orgSlug+" --app="+appSlug))
+		fmt.Println("Or you can use the " + output.Highlight("--follow") + " flag:")
+
+		projectDirArg := ""
+		if input.ProjectDir != "" {
+			projectDirArg = " --project-dir=" + input.ProjectDir
+		}
+
+		appDirArg := ""
+		if input.AppDir != "" {
+			appDirArg = " " + input.AppDir
+		}
+
+		fmt.Println("  " + output.Highlight("numerous deploy --follow --organization="+orgSlug+" --app="+appSlug+projectDirArg+appDirArg))
+	}
 
 	return nil
 }
@@ -306,4 +333,25 @@ func (s *statusUpdater) update(status string) error {
 func loadSecretsFromEnv(appDir string) map[string]string {
 	env, _ := dotenv.Load(path.Join(appDir, manifest.EnvFileName))
 	return env
+}
+
+func followLogs(ctx context.Context, apps AppService, orgSlug, appSlug string) error {
+	ai := appident.AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
+	ch, err := apps.AppDeployLogs(ai)
+	if err != nil {
+		app.PrintAppError(err, ai)
+		return err
+	}
+
+	for {
+		select {
+		case entry, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			logs.TimestampPrinter(entry)
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
