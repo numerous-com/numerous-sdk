@@ -60,7 +60,7 @@ class Client(Protocol):
         self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
     ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]: ...
 
-    def add_file_document_tag(
+    def add_collection_file_tag(
         self, file_id: str, tag: TagInput
     ) -> Optional[CollectionFileReference]: ...
 

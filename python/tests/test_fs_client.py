@@ -220,10 +220,12 @@ def test_get_collection_documents_returns_all_documents(
         data=test_another_data,
         tags=[],
     )
+    expected_number_of_files = 2
 
     result, has_next_page, end_cursor = client.get_collection_documents(
         _TEST_COLLECTION_KEY, "", None
     )
+
     assert (
         CollectionDocumentReference(
             id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
@@ -242,7 +244,7 @@ def test_get_collection_documents_returns_all_documents(
         )
         in result
     )
-    assert len(result) == 2
+    assert len(result) == expected_number_of_files
     assert has_next_page is False
     assert end_cursor == ""
 
@@ -293,6 +295,7 @@ def test_get_collection_collections_returns_expected_collections(
     collections, has_next_page, end_cursor = client.get_collection_collections(
         _TEST_COLLECTION_KEY, ""
     )
+    expected_number_of_files = 2
 
     assert has_next_page is False
     assert end_cursor == ""
@@ -309,7 +312,7 @@ def test_get_collection_collections_returns_expected_collections(
         )
         in collections
     )
-    assert len(collections) == 2
+    assert len(collections) == expected_number_of_files
 
 
 def test_get_file_returns_expected_existing_file_reference(
@@ -357,6 +360,7 @@ def test_get_collection_files_returns_all_files(
         tags=[],
     )
     another_path = str(base_path / _TEST_COLLECTION_KEY / f"{another_file_key}")
+    expected_number_of_files = 2
 
     result, has_next_page, end_cursor = client.get_collection_files(
         _TEST_COLLECTION_KEY, "", None
@@ -381,7 +385,7 @@ def test_get_collection_files_returns_all_files(
         )
         in result
     )
-    assert len(result) == 2
+    assert len(result) == expected_number_of_files
     assert has_next_page is False
     assert end_cursor == ""
 
