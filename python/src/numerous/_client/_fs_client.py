@@ -406,7 +406,6 @@ class FileSystemClient:
     def add_collection_file_tag(
         self, file_id: str, tag: TagInput
     ) -> Optional[CollectionFileReference]:
-
         file_path = self._base_path / (file_id + ".json")
         if not file_path.exists():
             return None
