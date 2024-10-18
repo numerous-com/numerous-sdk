@@ -8,10 +8,6 @@ from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLCl
 from numerous.collection.numerous_file import NumerousFile
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_create import CollectionCreate
-from numerous.generated.graphql.collection_document_tag_add import (
-    CollectionDocumentTagAdd,
-)
-from numerous.generated.graphql.collection_documents import CollectionDocuments
 from numerous.generated.graphql.collection_file import CollectionFile
 from numerous.generated.graphql.collection_file_delete import CollectionFileDelete
 from numerous.generated.graphql.collection_file_tag_add import CollectionFileTagAdd
@@ -317,7 +313,7 @@ def test_collection_file_returns_file_can_be_opened_after_load(
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
     fileref.download(str(base_path / COLLECTION_FILE_KEY))
-    
+
     with fileref.open() as file:
         bytes_data = file.read()
 
