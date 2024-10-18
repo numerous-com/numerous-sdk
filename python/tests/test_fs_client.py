@@ -220,31 +220,25 @@ def test_get_collection_documents_returns_all_documents(
         data=test_another_data,
         tags=[],
     )
-    expected_number_of_files = 2
 
     result, has_next_page, end_cursor = client.get_collection_documents(
         _TEST_COLLECTION_KEY, "", None
     )
 
-    assert (
-        CollectionDocumentReference(
-            id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
-            key=_TEST_DOCUMENT_KEY,
-            data=dict_to_base64(test_data),
-            tags=[],
-        )
-        in result
-    )
-    assert (
+    assert result == [
         CollectionDocumentReference(
             id=str(Path(_TEST_COLLECTION_ID) / _TEST_ANOTHER_DOCUMENT_KEY),
             key=_TEST_ANOTHER_DOCUMENT_KEY,
             data=dict_to_base64(test_another_data),
             tags=[],
-        )
-        in result
-    )
-    assert len(result) == expected_number_of_files
+        ),
+        CollectionDocumentReference(
+            id=str(Path(_TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
+            key=_TEST_DOCUMENT_KEY,
+            data=dict_to_base64(test_data),
+            tags=[],
+        ),
+    ]
     assert has_next_page is False
     assert end_cursor == ""
 
@@ -295,24 +289,18 @@ def test_get_collection_collections_returns_expected_collections(
     collections, has_next_page, end_cursor = client.get_collection_collections(
         _TEST_COLLECTION_KEY, ""
     )
-    expected_number_of_files = 2
 
     assert has_next_page is False
     assert end_cursor == ""
-    assert (
-        CollectionReference(
-            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
-        )
-        in collections
-    )
-    assert (
+    assert [
         CollectionReference(
             id=_TEST_ANOTHER_NESTED_COLLECTION_ID,
             key=_TEST_ANOTHER_NESTED_COLLECTION_KEY,
-        )
-        in collections
-    )
-    assert len(collections) == expected_number_of_files
+        ),
+        CollectionReference(
+            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
+        ),
+    ] == collections
 
 
 def test_get_file_returns_expected_existing_file_reference(
@@ -411,6 +399,14 @@ def test_delete_collection_file_removes_expected_file(
         downloadURL=str(path),
         tags=[],
     )
+            id=_TEST_ANOTHER_NESTED_COLLECTION_ID,
+            key=_TEST_ANOTHER_NESTED_COLLECTION_KEY,
+        ),
+        CollectionReference(
+            id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
+        ),
+    ] == collections
+
 
 
 def _create_test_file_system_document(

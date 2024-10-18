@@ -1,13 +1,14 @@
 SHELL = bash
 TARGET_SYSTEMS := darwin windows linux
 TARGET_ARCHS := amd64 arm64
+TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(SYS)_$(ARCH)))
 
 # CLI related variables
 GO_ENV = CGO_ENABLED=0
 GO_BUILD = $(GO_ENV) go build
 CLI_BUILD_DIR=build
 CLI_SOURCE_FILES=$(shell find . -name '*.go' -type f)
-CLI_BUILD_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(CLI_BUILD_DIR)/$(SYS)_$(ARCH)))
+CLI_BUILD_TARGETS := $(foreach TARGET,$(TARGETS),$(CLI_BUILD_DIR)/$(TARGET))
 VERSION_TXT=internal/version/version.txt
 
 get_cli_target_from_sdk_binary = $(word 1,$(subst $(SDK_CLI_BINARY_DIR)/,,$(CLI_BUILD_DIR)/$@))
@@ -28,9 +29,11 @@ LDFLAGS = -s -w \
 
 
 # Python SDK related variables
-SDK_CLI_BINARY_DIR=python/src/numerous/cli/build
-SDK_CLI_BINARY_TARGETS := $(foreach SYS,$(TARGET_SYSTEMS),$(foreach ARCH,$(TARGET_ARCHS),$(SDK_CLI_BINARY_DIR)/$(SYS)_$(ARCH)))
+SDK_CLI_BINARY_DIR=python/src/numerous/cli/bin
 SDK_CHECK_VENV=@if [ -z "${VIRTUAL_ENV}" ]; then echo "-- Error: An activated virtual environment is required"; exit 1; fi
+
+# Packaging
+PACKAGE_TARGETS := $(foreach TARGET,$(TARGETS),package-$(TARGET))
 
 # Version
 create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed 's/^version = "\(.\+\)"/\1/' > $(VERSION_TXT)
@@ -38,7 +41,7 @@ create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed
 # RULES
 .DEFAULT_GOAL := help
 
-.PHONY: clean test lint dep package sdk-binaries sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version
+.PHONY: clean packages test lint dep sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version $(PACKAGE_TARGETS)
 
 clean:
 	rm -rf $(CLI_BUILD_DIR)
@@ -48,9 +51,7 @@ clean:
 	rm -f .lint-mypy.txt
 	rm -f $(VERSION_TXT)
 
-package: sdk-binaries
-	@echo "-- Building SDK package"
-	python -m build
+packages: $(PACKAGE_TARGETS)
 
 test: sdk-test cli-test
 
@@ -75,8 +76,6 @@ sdk-dep:
 	$(SDK_CHECK_VENV)
 	pip install -e .[dev] -q
 
-sdk-binaries: $(SDK_CLI_BINARY_TARGETS)
-
 # Directory for CLI binaries, in SDK
 $(SDK_CLI_BINARY_DIR):
 	@echo "-- Creating SDK binary directory"
@@ -84,8 +83,16 @@ $(SDK_CLI_BINARY_DIR):
 
 # CLI executables in SDK
 $(SDK_CLI_BINARY_DIR)/%: $(SDK_CLI_BINARY_DIR) $(CLI_BUILD_DIR)/%
-	echo "Copying built binary $@"
+	echo "-- Copying built binary $@"
 	cp $(get_cli_target_from_sdk_binary) $@
+
+$(PACKAGE_TARGETS): package-% : $(CLI_BUILD_DIR)/%
+	echo "-- Building package $*"
+	scripts/build_dists.sh $(notdir $*)
+
+package-local: $(CLI_BUILD_DIR)/local
+	echo "-- Building 'local' package"
+	scripts/build_dists.sh local
 
 # CLI for specific OS/architecture
 cli-all: $(CLI_BUILD_TARGETS)
@@ -95,10 +102,12 @@ $(CLI_BUILD_TARGETS): %: $(CLI_SOURCE_FILES)
 	$(create_version_txt_cmd)
 	export GOARCH=$(getarch) GOOS=$(getsystem) && $(GO_BUILD) -ldflags '$(LDFLAGS)' -o $@ .
 
-cli-local:
+$(CLI_BUILD_DIR)/local:
 	@echo "-- Building local CLI"
 	$(create_version_txt_cmd)
 	$(GO_BUILD) -o $(CLI_BUILD_DIR)/local .
+
+cli-local: $(CLI_BUILD_DIR)/local
 
 cli-build:
 	@echo "-- Building CLI"
@@ -130,11 +139,12 @@ version:
 
 help:
 	@echo "Make targets (help is default):"
+	@echo "    clean        Clean all build artifacts"
 	@echo "    test         Run all tests"
 	@echo "    lint         Run all linters"
 	@echo "    dep          Install all dependencies"
-	@echo "    package      Package the SDK python package including CLI builds"
-	@echo "    sdk-binaries Build CLI binaries in SDK package"
+	@echo "    packages     Create all SDK distributions with CLI binaries"
+	@echo "    pkg-PLAT     Create SDK distribution for platform PLAT, e.g. linux_amd64"
 	@echo "    sdk-test     Run SDK tests"
 	@echo "    sdk-lint     Run SDK linters"
 	@echo "    sdk-dep      Install SDK dependencies"
@@ -144,4 +154,6 @@ help:
 	@echo "    cli-all      Build CLI for all systems"
 	@echo "    cli-build    Build CLI for current system"
 	@echo "    cli-local    Build local CLI for current system"
+	@echo "    gqlgen       Generate graphql code"
+	@echo "    version      Generate version file for embedding in CLI"
 	@echo "    help         Display this message"

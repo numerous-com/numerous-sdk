@@ -19,6 +19,14 @@ import (
 	"numerous.com/cli/internal/manifest"
 )
 
+type deployBuildError struct {
+	Message string
+}
+
+func (e *deployBuildError) Error() string {
+	return e.Message
+}
+
 type AppService interface {
 	ReadApp(ctx context.Context, input app.ReadAppInput) (app.ReadAppOutput, error)
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
@@ -134,6 +142,13 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	appID, err := readOrCreateApp(ctx, apps, ai, manifest)
 	if err != nil {
 		task.Error()
+		switch {
+		case errors.Is(err, app.ErrAccessDenied):
+			app.PrintErrorAccessDenied(ai)
+		case !errors.Is(err, app.ErrAppNotFound):
+			output.PrintErrorDetails("Error reading remote app", err)
+		}
+
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
@@ -156,14 +171,9 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 		AppSlug:          ai.AppSlug,
 	}
 	appReadOutput, err := apps.ReadApp(ctx, appReadInput)
-	switch {
-	case err == nil:
+	if err == nil {
 		return appReadOutput.AppID, nil
-	case errors.Is(err, app.ErrAccessDenied):
-		app.PrintErrorAccessDenied(ai)
-		return "", err
-	case !errors.Is(err, app.ErrAppNotFound):
-		output.PrintErrorDetails("Error reading remote app", err)
+	} else if !errors.Is(err, app.ErrAppNotFound) {
 		return "", err
 	}
 
@@ -214,6 +224,7 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 		output.PrintErrorDetails("Error deploying app", err)
 	}
 
+	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.Verbose, task: task}
 	eventsInput := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) error {
@@ -231,15 +242,10 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 					}
 				}
 
-				return fmt.Errorf("build error: %s", de.BuildError.Message)
+				return &deployBuildError{Message: de.BuildError.Message}
 			case "AppDeploymentStatusEvent":
-				if input.Verbose {
-					task.AddLine("Deploy", "Status is "+de.DeploymentStatus.Status)
-				}
-				switch de.DeploymentStatus.Status {
-				case "PENDING", "RUNNING":
-				default:
-					return fmt.Errorf("got status %s while deploying", de.DeploymentStatus.Status)
+				if err := appDeploymentStatusEventUpdater.update(de.DeploymentStatus.Status); err != nil {
+					return err
 				}
 			}
 
@@ -249,12 +255,50 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 
 	err = apps.DeployEvents(ctx, eventsInput)
 	if err != nil {
+		var buildError *deployBuildError
 		task.Error()
-		output.PrintErrorDetails("Error occurred during deploy", err)
+		if errors.As(err, &buildError) {
+			output.PrintError("Build error", buildError.Message)
+		} else {
+			output.PrintErrorDetails("Error occurred during deploy", err)
+		}
 
 		return err
 	}
 	task.Done()
+
+	return nil
+}
+
+type statusUpdater struct {
+	verbose               bool
+	lastStatus            *string
+	sameStatusUpdateCount uint
+	task                  *output.Task
+}
+
+func (s *statusUpdater) update(status string) error {
+	if s.verbose {
+		if s.lastStatus != nil && *s.lastStatus != status {
+			s.task.EndUpdateLine()
+		}
+
+		isDifferent := s.lastStatus == nil || *s.lastStatus != status
+		if isDifferent {
+			s.sameStatusUpdateCount = 0
+		} else {
+			s.sameStatusUpdateCount++
+		}
+
+		s.lastStatus = &status
+		s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(status)+strings.Repeat(".", int(s.sameStatusUpdateCount)))
+	}
+
+	switch status {
+	case "PENDING", "RUNNING":
+	default:
+		return fmt.Errorf("got status %s while deploying", status)
+	}
 
 	return nil
 }

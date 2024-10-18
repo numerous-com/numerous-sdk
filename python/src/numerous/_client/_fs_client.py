@@ -326,7 +326,7 @@ class FileSystemClient:
                 )
             )
 
-        return documents, False, ""
+        return sorted(documents, key=lambda d: d.id if d else ""), False, ""
 
     def get_collection_file(
         self, collection_id: str, file_key: str
@@ -413,4 +413,4 @@ class FileSystemClient:
                 col_id = str(item.relative_to(self._base_path))
                 collections.append(CollectionReference(id=col_id, key=item.name))
 
-        return collections, False, ""
+        return sorted(collections, key=lambda c: c.id), False, ""

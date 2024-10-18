@@ -1,6 +1,105 @@
 # CHANGELOG
 
 
+## v0.27.1 (2024-10-17)
+
+### Fix
+
+* fix(python-sdk): soften dependency version requirements ([`74bc2ca`](https://github.com/numerous-com/numerous-sdk/commit/74bc2ca8ab1e2d57b6633a04ccc43949ee9c3c05))
+
+
+
+
+## v0.27.0 (2024-10-17)
+
+### Feature
+
+* feat(api): streamline deployment workload status output (#44) ([`6ea372a`](https://github.com/numerous-com/numerous-sdk/commit/6ea372a4dc159367564349319565ad72a8760ffa))
+
+  > 
+  > Instead of printing repeated messages about the same workload status print dots for each deployment stage is it goes on.
+
+
+
+
+## v0.26.0 (2024-10-11)
+
+### Feature
+
+* feat(cli): adjust command task output width to terminal (#43) ([`4fdc34b`](https://github.com/numerous-com/numerous-sdk/commit/4fdc34bbb9b092098d0486e9ba0401ed435b8050))
+
+  > 
+  > Detects terminal width and expands or trims command task messages to fit
+  > the terminal, up to a maximum width of 120 columns.
+
+
+
+
+## v0.25.1 (2024-10-10)
+
+### Fix
+
+* fix(api): deterministic local collections and documents order ([`bae586d`](https://github.com/numerous-com/numerous-sdk/commit/bae586dae68a0afc7cf9df3b1a161e57d179c7d1))
+
+  > 
+  > Order `collection(...).collections` and `collection.documents(...)`
+  > by collection and document IDs respectively.
+
+
+
+
+## v0.25.0 (2024-10-04)
+
+### Feature
+
+* feat(python-sdk): experimental marimo cookie support (#41) ([`1a832f9`](https://github.com/numerous-com/numerous-sdk/commit/1a832f9a836779cd5a57642d981f2cb257f2eeeb))
+
+  > 
+  > Load cookies in marimo apps with `numerous.experimental.marimo.cookies`.
+  > 
+  > In order to use the above function, either:
+  > 1. run the marimo notebook with `python -m numerous marimo run` (as
+  >    opposed to `marimo run`) which will launch the app with a modified
+  >    marimo server that enables reading cookies.
+  > 2. If adding the marimo app to a fastapi app with
+  >    `marimo.create_asgi_app()`, use `add_marimo_cookie_middleware` to add
+  >    cookie middleware to the fastapi app.
+
+
+
+
+## v0.24.0 (2024-10-03)
+
+### Feature
+
+* feat: reduce package size with platform specific distributions (#38) ([`057f124`](https://github.com/numerous-com/numerous-sdk/commit/057f1241726631e5bdc5ed9b83f57ecfeab1884d))
+
+  > 
+  > Reduces package size by a factor of 6: ~66MB to ~11MB.
+  > 
+  > Changes how the CLI binaries are added to the python package, and how
+  > the python executable launches the binary.
+  > 
+  > 1. The binaries are now located in `numerous/cli/bin`.
+  > 2. The python script tries to launch `numerous/cli/bin/cli` if it
+  >    exists. It exists if the package is installed from a platform
+  >    specific wheel.
+  > 3. Otherwise the python script will attempt to match the the current OS
+  >    with a binary, similar to the approach until now. This is meant for
+  >    non-platform specific wheels.
+  > 
+  > The build process is changed. Wheels and source distribution are created
+  > by `scripts/build_dists.sh`, which can create a bdist for each relevant
+  > platform that we build CLI binaries for. The CLI binary directory
+  > `numerous/cli/bin` is cleared, and the relevant CLI binary is copied
+  > into `numerous/cli/bin/cli`, and the corresponding wheel is created.
+  > 
+  > For the platform non-specific wheel and the source distribution all
+  > binaries are added, as before.
+
+
+
+
 ## v0.23.1 (2024-10-02)
 
 ### Fix
