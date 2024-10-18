@@ -7,8 +7,6 @@ from numerous._client._graphql_client import GraphQLClient
 from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_create import CollectionCreate
-from numerous.jsonbase64 import dict_to_base64
-
 
 ORGANIZATION_ID = "test_org"
 COLLECTION_NAME = "test_collection"
@@ -17,10 +15,6 @@ COLLECTION_REFERENCE_KEY = "test_key"
 COLLECTION_REFERENCE_ID = "test_id"
 NESTED_COLLECTION_REFERENCE_KEY = "nested_test_key"
 NESTED_COLLECTION_REFERENCE_ID = "nested_test_id"
-COLLECTION_DOCUMENT_KEY = "test_document"
-DOCUMENT_DATA = {"test": "test"}
-BASE64_DOCUMENT_DATA = dict_to_base64(DOCUMENT_DATA)
-DOCUMENT_ID = "915b75c5-9e95-4fa7-aaa2-2214c8d251ce"
 HEADERS_WITH_AUTHORIZATION = {"headers": {"Authorization": "Bearer token"}}
 
 
