@@ -201,7 +201,6 @@ class NumerousFile:
 
         return Path.open(self.local_path, "rb")
 
-
     def save(self, data: Union[bytes, str]) -> None:
         """
         Upload and save the file to the server.

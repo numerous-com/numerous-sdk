@@ -506,9 +506,7 @@ def test_collection_file_delete_marks_file_exists_false(mock_get: MagicMock) -> 
     test_collection = collection(COLLECTION_NAME, _client)
     fileref = test_collection.file(COLLECTION_FILE_KEY)
     assert fileref.exists is True
-    gql.collection_file_delete.return_value = _collection_file_delete_found(
-        FILE_ID
-    )
+    gql.collection_file_delete.return_value = _collection_file_delete_found(FILE_ID)
 
     fileref.delete()
 
@@ -576,9 +574,7 @@ def test_collection_document_tag_add(mock_get: MagicMock) -> None:
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
 
-    gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(
-        FILE_ID
-    )
+    gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(FILE_ID)
     assert fileref.exists
 
     fileref.tag("key", "test")
@@ -608,9 +604,7 @@ def test_collection_document_tag_delete(mock_get: MagicMock) -> None:
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
 
-    gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(
-       FILE_ID
-    )
+    gql.collection_file_tag_add.return_value = _collection_file_tag_add_found(FILE_ID)
     gql.collection_file_tag_delete.return_value = _collection_file_tag_delete_found(
         FILE_ID
     )
