@@ -408,6 +408,54 @@ def test_delete_collection_file_removes_expected_file(
     )
 
 
+def test_add_collection_file_tag_adds_expected_tag(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    data = "File content 1;2;3;4;\n1;2;3;4"
+
+    _create_test_file_system_file(
+        base_path / _TEST_COLLECTION_KEY,
+        _TEST_FILE_KEY,
+        data=data,
+        tags=[{"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"}],
+    )
+
+    path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}.json"
+    file_id = str(Path(_TEST_COLLECTION_ID) / _TEST_FILE_KEY)
+
+    client.add_collection_file_tag(
+        file_id, TagInput(key="added-tag-key", value="added-tag-value")
+    )
+
+    assert json.loads(path.read_text())["tags"] == [
+        {"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"},
+        {"key": "added-tag-key", "value": "added-tag-value"},
+    ]
+
+
+def test_delete_collection_file_tag_deletes_expected_tag(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    data = "File content 1;2;3;4;\n1;2;3;4"
+    _create_test_file_system_file(
+        base_path / _TEST_COLLECTION_KEY,
+        _TEST_FILE_KEY,
+        data=data,
+        tags=[
+            {"key": "tag-key", "value": "tag-value"},
+            {"key": "tag-to-be-deleted-key", "value": "tag-to-be-deleted-value"},
+        ],
+    )
+
+    path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}.json"
+    file_id = str(Path(_TEST_COLLECTION_ID) / _TEST_FILE_KEY)
+    client.delete_collection_file_tag(file_id, "tag-to-be-deleted-key")
+
+    assert json.loads(path.read_text())["tags"] == [
+        {"key": "tag-key", "value": "tag-value"},
+    ]
+
+
 def _create_test_file_system_document(
     collection_path: Path,
     document_key: str,

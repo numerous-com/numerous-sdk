@@ -77,8 +77,13 @@ class FileSystemCollectionFile:
     tags: list[FileSystemCollectionFileTag]
 
     def save(self, path: Path) -> None:
+        def convert_to_serializable(obj: Path) -> str:
+            if isinstance(obj, Path):
+                return str(obj)
+            return None
+
         with path.open("w") as f:
-            json.dump(asdict(self), f)
+            json.dump(asdict(self), f, default=convert_to_serializable)
 
     @staticmethod
     def load(file_path: Path) -> "FileSystemCollectionFile":
@@ -397,6 +402,45 @@ class FileSystemClient:
             )
 
         return files, False, ""
+
+    def add_collection_file_tag(
+        self, file_id: str, tag: TagInput
+    ) -> Optional[CollectionFileReference]:
+
+        file_path = self._base_path / (file_id + ".json")
+        if not file_path.exists():
+            return None
+
+        file = FileSystemCollectionFile.load(file_path)
+        file.tags.append(FileSystemCollectionFileTag(key=tag.key, value=tag.value))
+        file.save(file_path)
+
+        return CollectionFileReference(
+            id=file_id,
+            key=file_path.stem,
+            downloadURL=os.fspath(file.path),
+            uploadURL=os.fspath(file.path),
+            tags=file.reference_tags(),
+        )
+
+    def delete_collection_file_tag(
+        self, file_id: str, tag_key: str
+    ) -> Optional[CollectionFileReference]:
+        file_path = self._base_path / (file_id + ".json")
+        if not file_path.exists():
+            return None
+
+        file = FileSystemCollectionFile.load(file_path)
+        file.tags = [tag for tag in file.tags if tag.key != tag_key]
+        file.save(file_path)
+
+        return CollectionFileReference(
+            id=file_id,
+            key=file_path.stem,
+            downloadURL=os.fspath(file.path),
+            uploadURL=os.fspath(file.path),
+            tags=file.reference_tags(),
+        )
 
     def get_collection_collections(
         self,

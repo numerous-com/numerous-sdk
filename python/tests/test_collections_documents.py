@@ -4,7 +4,6 @@ import pytest
 
 from numerous import collection
 from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
-from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import CollectionCollections

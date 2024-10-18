@@ -8,6 +8,7 @@ from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_create import CollectionCreate
 
+
 ORGANIZATION_ID = "test_org"
 COLLECTION_NAME = "test_collection"
 NESTED_COLLECTION_ID = "nested_test_collection"
