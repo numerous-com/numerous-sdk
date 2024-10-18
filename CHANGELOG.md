@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.28.0 (2024-10-18)
+
+### Build
+
+* build: only distribute platform specific packages ([`42f7836`](https://github.com/numerous-com/numerous-sdk/commit/42f7836e27314be53fd9e172c78256f9f7ac3aea))
+
+  > 
+  > In order to save space on pypi, and since the platform specific wheels
+  > should support our users, we remove the distribution of the source archive,
+  > and the catch-all wheel.
+
+
+
+### Feature
+
+* feat(cli): `deploy` command `--follow` flag for following logs after deploy (#45) ([`9d80b58`](https://github.com/numerous-com/numerous-sdk/commit/9d80b584848ce58a56fae63868d42d53b67c5eb9))
+
+
+
+
 ## v0.27.1 (2024-10-17)
 
 ### Fix
