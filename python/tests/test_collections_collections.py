@@ -29,6 +29,7 @@ def _collection_create_collection_reference(key: str, ref_id: str) -> Collection
         {"collectionCreate": {"typename__": "Collection", "key": key, "id": ref_id}}
     )
 
+
 def _collection_create_collection_not_found(ref_id: str) -> CollectionCreate:
     return CollectionCreate.model_validate(
         {"collectionCreate": {"typename__": "CollectionNotFound", "id": ref_id}}
