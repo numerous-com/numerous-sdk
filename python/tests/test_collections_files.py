@@ -1,6 +1,5 @@
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, call, patch
-
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -8,18 +7,9 @@ from numerous import collection
 from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
 from numerous.collection.numerous_file import NumerousFile
 from numerous.generated.graphql.client import Client as GQLClient
-from numerous.generated.graphql.collection_collections import CollectionCollections
 from numerous.generated.graphql.collection_create import CollectionCreate
-from numerous.generated.graphql.collection_document import CollectionDocument
-from numerous.generated.graphql.collection_document_delete import (
-    CollectionDocumentDelete,
-)
-from numerous.generated.graphql.collection_document_set import CollectionDocumentSet
 from numerous.generated.graphql.collection_document_tag_add import (
     CollectionDocumentTagAdd,
-)
-from numerous.generated.graphql.collection_document_tag_delete import (
-    CollectionDocumentTagDelete,
 )
 from numerous.generated.graphql.collection_documents import CollectionDocuments
 from numerous.generated.graphql.collection_file import CollectionFile
@@ -46,6 +36,7 @@ DOCUMENT_DATA = {"test": "test"}
 BASE64_DOCUMENT_DATA = dict_to_base64(DOCUMENT_DATA)
 FILE_ID = "ce5aba38-842d-4ee0-877b-4af9d426c848"
 HEADERS_WITH_AUTHORIZATION = {"headers": {"Authorization": "Bearer token"}}
+_REQUEST_TIMEOUT_SECONDS_ = 1.5
 
 
 _TEST_DOWNLOAD_URL_ = "http://127.0.0.1:8082/download/collection_files/" + FILE_ID
@@ -175,7 +166,7 @@ def base_path(tmp_path: Path) -> Path:
 
 
 @patch("requests.get")
-def test_collection_file_returns_new_file(mock_get) -> None:
+def test_collection_file_returns_new_file(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -202,14 +193,9 @@ def test_collection_file_returns_new_file(mock_get) -> None:
     assert fileref.exists is False
 
 
-@pytest.fixture
-def base_path(tmp_path: Path) -> Path:
-    return tmp_path
-
-
 @patch("requests.get")
 def test_collection_file_returns_new_file_exists_after_load(
-    mock_get, base_path: Path
+    mock_get: MagicMock, base_path: Path
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -227,7 +213,7 @@ def test_collection_file_returns_new_file_exists_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(base_path / COLLECTION_FILE_KEY)
+    fileref.download(str(base_path / COLLECTION_FILE_KEY))
 
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -235,14 +221,16 @@ def test_collection_file_returns_new_file_exists_after_load(
         **HEADERS_WITH_AUTHORIZATION,
     )
 
-    mock_get.assert_called_once_with(_TEST_DOWNLOAD_URL_)
+    mock_get.assert_called_once_with(
+        _TEST_DOWNLOAD_URL_, timeout=_REQUEST_TIMEOUT_SECONDS_
+    )
     assert isinstance(fileref, NumerousFile)
     assert fileref.exists is True
 
 
 @patch("requests.get")
 def test_collection_file_returns_file_text_content_after_load(
-    mock_get, base_path: Path
+    mock_get: MagicMock, base_path: Path
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -261,7 +249,9 @@ def test_collection_file_returns_file_text_content_after_load(
     fileref.download(base_path / COLLECTION_FILE_KEY)
     text = fileref.read_text()
 
-    mock_get.assert_called_once_with(_TEST_DOWNLOAD_URL_)
+    mock_get.assert_called_once_with(
+        _TEST_DOWNLOAD_URL_, timeout=_REQUEST_TIMEOUT_SECONDS_
+    )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
         COLLECTION_FILE_KEY,
@@ -275,7 +265,7 @@ def test_collection_file_returns_file_text_content_after_load(
 
 @patch("requests.get")
 def test_collection_file_returns_file_byte_content_after_load(
-    mock_get, base_path: Path
+    mock_get: MagicMock, base_path: Path
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -292,23 +282,25 @@ def test_collection_file_returns_file_byte_content_after_load(
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
     fileref.download(base_path / COLLECTION_FILE_KEY)
-    bytes = fileref.read_bytes()
+    bytes_data = fileref.read_bytes()
 
-    mock_get.assert_called_once_with(_TEST_DOWNLOAD_URL_)
+    mock_get.assert_called_once_with(
+        _TEST_DOWNLOAD_URL_, timeout=_REQUEST_TIMEOUT_SECONDS_
+    )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
         COLLECTION_FILE_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
 
-    assert bytes == _TEST_FILE_CONTENT_TEXT_BYTE_
+    assert bytes_data == _TEST_FILE_CONTENT_TEXT_BYTE_
     assert isinstance(fileref, NumerousFile)
     assert fileref.exists is True
 
 
 @patch("requests.get")
 def test_collection_file_returns_file_can_be_opened_after_load(
-    mock_get, base_path: Path
+    mock_get: MagicMock, base_path: Path
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -327,23 +319,27 @@ def test_collection_file_returns_file_can_be_opened_after_load(
     fileref.download(base_path / COLLECTION_FILE_KEY)
 
     with fileref.open() as file:
-        bytes = file.read()
+        bytes_data = file.read()
 
-    mock_get.assert_called_once_with(_TEST_DOWNLOAD_URL_)
+    mock_get.assert_called_once_with(
+        _TEST_DOWNLOAD_URL_, timeout=_REQUEST_TIMEOUT_SECONDS_
+    )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
         COLLECTION_FILE_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
 
-    assert bytes == _TEST_FILE_CONTENT_TEXT_BYTE_
+    assert bytes_data == _TEST_FILE_CONTENT_TEXT_BYTE_
     assert isinstance(fileref, NumerousFile)
     assert fileref.exists is True
 
 
 @patch("requests.post")
 @patch("requests.get")
-def test_collection_file_can_be_uploaded_on_save(mock_get, mock_post) -> None:
+def test_collection_file_can_be_uploaded_on_save(
+    mock_get: MagicMock, mock_post: MagicMock
+) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -365,7 +361,9 @@ def test_collection_file_can_be_uploaded_on_save(mock_get, mock_post) -> None:
     fileref.save(_TEST_FILE_CONTENT_TEXT_BYTE_)
 
     mock_post.assert_called_once_with(
-        _TEST_UPLOAD_URL_, files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_}
+        _TEST_UPLOAD_URL_,
+        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
+        timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -379,7 +377,9 @@ def test_collection_file_can_be_uploaded_on_save(mock_get, mock_post) -> None:
 
 @patch("requests.post")
 @patch("requests.get")
-def test_collection_file_can_be_save_from_collection(mock_get, mock_post) -> None:
+def test_collection_file_can_be_save_from_collection(
+    mock_get: MagicMock, mock_post: MagicMock
+) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -399,7 +399,9 @@ def test_collection_file_can_be_save_from_collection(mock_get, mock_post) -> Non
     test_collection.save_file(COLLECTION_FILE_KEY, _TEST_FILE_CONTENT_TEXT_BYTE_)
 
     mock_post.assert_called_once_with(
-        _TEST_UPLOAD_URL_, files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_}
+        _TEST_UPLOAD_URL_,
+        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
+        timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -410,8 +412,8 @@ def test_collection_file_can_be_save_from_collection(mock_get, mock_post) -> Non
 
 @patch("requests.post")
 @patch("requests.get")
-def test_collection_file_can_be_uploaded_on_save(
-    mock_get, mock_post, base_path: Path
+def test_collection_file_can_be_uploaded_on_save_open(
+    mock_get: MagicMock, mock_post: MagicMock, base_path: Path
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -433,11 +435,13 @@ def test_collection_file_can_be_uploaded_on_save(
     file_name = "file_name"
     _create_test_file_system_file(base_path, file_name, _TEST_FILE_CONTENT_TEXT_BYTE_)
 
-    with open(base_path / f"{file_name}", "r") as f:
+    with Path.open(base_path / f"{file_name}") as f:
         fileref.save_file(f)
 
     mock_post.assert_called_once_with(
-        _TEST_UPLOAD_URL_, files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_}
+        _TEST_UPLOAD_URL_,
+        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
+        timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -450,7 +454,7 @@ def test_collection_file_can_be_uploaded_on_save(
 
 
 @patch("requests.get")
-def test_collection_file_delete_marks_file_exists_false(mock_get) -> None:
+def test_collection_file_delete_marks_file_exists_false(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -487,7 +491,7 @@ def _create_test_file_system_file(
 
 
 @patch("requests.get")
-def test_collection_files_return_more_than_one(mock_get) -> None:
+def test_collection_files_return_more_than_one(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -518,7 +522,7 @@ def test_collection_files_return_more_than_one(mock_get) -> None:
 
 
 @patch("requests.get")
-def test_collection_document_tag_add(mock_get) -> None:
+def test_collection_document_tag_add(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -550,7 +554,7 @@ def test_collection_document_tag_add(mock_get) -> None:
 
 
 @patch("requests.get")
-def test_collection_document_tag_delete(mock_get) -> None:
+def test_collection_document_tag_delete(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -587,7 +591,7 @@ def test_collection_document_tag_delete(mock_get) -> None:
 
 
 @patch("requests.get")
-def test_collection_files_query_tag_specific_file(mock_get) -> None:
+def test_collection_files_query_tag_specific_file(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(

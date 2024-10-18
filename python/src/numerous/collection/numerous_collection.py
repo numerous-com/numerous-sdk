@@ -87,11 +87,28 @@ class NumerousCollection:
                 numerous_file_ref,
             )
         else:
-            raise "Failed to  create file"
+            msg = "Failed to retrieve or create the file."
+            raise ValueError(msg)
 
         return numerous_file
 
-    def save_file(self, file_key: str, file_data: str):
+    def save_file(self, file_key: str, file_data: str) -> None:
+        """
+        Save data to a file in the collection.
+
+        If the file with the specified key already exists,
+        it will be overwritten with the new data.
+
+        Args:
+        ----
+            file_key (str): The key of the file to save or update.
+            file_data (str): The data to be written to the file.
+
+        Raises:
+        ------
+            ValueError: If the file cannot be created or saved.
+
+        """
         numerous_file = self.file(file_key)
         numerous_file.save(file_data)
 

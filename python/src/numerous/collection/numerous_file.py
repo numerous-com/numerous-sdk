@@ -1,14 +1,17 @@
 """Class for working with numerous files."""
 
 from io import BufferedReader, TextIOWrapper
-from typing import Any, List, Optional
+from pathlib import Path
+from typing import List, Optional
 
 import requests
 
 from numerous.collection._client import Client
 from numerous.generated.graphql.fragments import CollectionFileReference
 from numerous.generated.graphql.input_types import TagInput
-from numerous.jsonbase64 import base64_to_dict, dict_to_base64
+
+
+_REQUEST_TIMEOUT_SECONDS_ = 1.5
 
 
 class NumerousFile:
@@ -39,7 +42,7 @@ class NumerousFile:
         self.collection_key: str = collection_info[1]
         self._client: Client = client
         self.file_id: Optional[str] = None
-        self.local_path: str = None
+        self.local_path: Optional[Path] = None
         self.is_deleted = False
 
         if numerous_file_ref is not None:
@@ -53,82 +56,194 @@ class NumerousFile:
 
     @property
     def exists(self) -> bool:
-        """Check if the file is not empty."""
-        if self.is_deleted:
+        """
+        Check if the file exists by verifying its contents.
+
+        Returns
+        -------
+            bool: True if the file exists and has content, False otherwise.
+
+        """
+        if self.is_deleted or self.download_url is None:
             return False
         try:
-            response = requests.get(self.download_url)
+            response = requests.get(
+                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
             response.raise_for_status()
 
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             return False
 
         return len(response.content) > 0
 
     @property
     def tags(self) -> dict[str, str]:
-        """Get the tags for the files."""
+        """
+        Get the tags associated with the file.
+
+        Returns
+        -------
+            dict[str, str]: Dictionary of tag key-value pairs.
+
+        Raises
+        ------
+            ValueError: If the file does not exist.
+
+        """
         if self.file_id is not None:
             return self._tags
 
         msg = "Cannot get tags from a non-existent files."
         raise ValueError(msg)
 
-    def download(self, local_path) -> None:
+    def download(self, local_path: str) -> None:
+        """
+        Download the file to the specified local path.
 
-        self.local_path = local_path
+        Args:
+        ----
+            local_path (str): The local path to save the downloaded file.
+
+        """
+        self.local_path = Path(local_path)
 
         self._update_file()
 
     def _update_file(self) -> None:
-        try:
-            response = requests.get(self.download_url)
-            response.raise_for_status()
+        """
+        Update the local file by downloading it from the server.
 
-            with open(self.local_path, "wb") as local_file:
-                local_file.write(response.content)
+        Raises
+        ------
+            ValueError: If there is no download URL or local path for the file.
+            RequestException: If an error occurs during the request.
+            OSError: If an error occurs while saving the file locally.
 
-        except requests.exceptions.RequestException as e:
-            raise e
-        except IOError as e:
-            raise e
+        """
+        if self.download_url is None:
+            msg = "No download URL for this file."
+            raise ValueError(msg)
+        if self.local_path is None:
+            msg = "No local path for this file."
+            raise ValueError(msg)
+        response = requests.get(self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
+        response.raise_for_status()
+
+        with Path.open(self.local_path, "wb") as local_file:
+            local_file.write(response.content)
 
     def read_text(self) -> List[str]:
+        """
+        Read the file's content as text.
+
+        Returns
+        -------
+            List[str]: The lines of text from the file.
+
+        Raises
+        ------
+            OSError: If an error occurs while reading the file.
+            ValueError: If there is no local path for the file.
+
+        """
+        if self.local_path is None:
+            msg = "No local path for this file."
+            raise ValueError(msg)
         try:
-            with open(self.local_path, "r") as file:
+            with Path.open(self.local_path) as file:
                 return file.readlines()
-        except IOError as e:
+        except OSError:
             return []
 
     def read_bytes(self) -> bytes:
+        """
+        Read the file's content as bytes.
+
+        Returns
+        -------
+            bytes: The byte content of the file.
+
+        Raises
+        ------
+            OSError: If an error occurs while reading the file.
+            ValueError: If there is no local path for the file.
+
+
+        """
         try:
-            with open(self.local_path, "rb") as file:
+            with Path.open(self.local_path, "rb") as file:
                 return file.read()
-        except IOError as e:
+        except OSError:
             return b""
 
     def open(self) -> BufferedReader:
+        """
+        Open the file for reading in binary mode.
+
+        Returns
+        -------
+            Optional[BufferedReader]: The file reader,
+            or None if the file cannot be opened.
+
+        Raises
+        ------
+            ValueError: If there is no local path for the file.
+
+        """
+        if self.local_path is None:
+            msg = "No local path for this file."
+            raise ValueError(msg)
         try:
-            return open(self.local_path, "rb")
-        except IOError:
+            return Path.open(self.local_path, "rb")
+        except OSError:
             return None
 
     def save(self, data: bytes) -> None:
-        try:
-            response = requests.post(self.upload_url, files={"file": data})
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            raise e
+        """
+        Upload and save the file to the server.
+
+        Args:
+        ----
+            data (bytes): The binary content to save to the file.
+
+        Raises:
+        ------
+            HTTPError: If an error occurs during the upload.
+            ValueError: If there is no upload URL for the file.
+
+
+        """
+        if self.upload_url is None:
+            msg = "No upload URL for this file."
+            raise ValueError(msg)
+        response = requests.post(
+            self.upload_url, files={"file": data}, timeout=_REQUEST_TIMEOUT_SECONDS_
+        )
+        response.raise_for_status()
 
     def save_file(self, data: TextIOWrapper) -> None:
-        try:
-            data.seek(0)
-            file_content = data.read().encode("utf-8")
+        """
+        Upload and save a text file to the server.
 
-            response = requests.post(self.upload_url, files={"file": file_content})
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            raise e
+        Args:
+        ----
+            data (TextIOWrapper): The text content to upload.
+
+        Raises:
+        ------
+            HTTPError: If an error occurs during the upload.
+
+        """
+        data.seek(0)
+        file_content = data.read().encode("utf-8")
+
+        response = requests.post(
+            self.upload_url,
+            files={"file": file_content},
+            timeout=_REQUEST_TIMEOUT_SECONDS_,
+        )
+        response.raise_for_status()
 
     def delete(self) -> None:
         """

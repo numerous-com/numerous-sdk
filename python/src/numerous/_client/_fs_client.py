@@ -1,6 +1,6 @@
 import json
-from dataclasses import asdict, dataclass
 import os
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Optional
 
@@ -81,7 +81,7 @@ class FileSystemCollectionFile:
             json.dump(asdict(self), f)
 
     @staticmethod
-    def load(file_path: Path) -> "FileSystemCollectionDocument":
+    def load(file_path: Path) -> "FileSystemCollectionFile":
         with file_path.open("r") as f:
             file_content = json.load(f)
 
@@ -101,7 +101,7 @@ class FileSystemCollectionFile:
             tname = type(path).__name__
             msg = f"FileSystemCollection data must be a dict, found {tname}"
             raise TypeError(msg)
-        path = Path(path) 
+        path = Path(path)
 
         return FileSystemCollectionFile(
             path=path, tags=[FileSystemCollectionFileTag.load(tag) for tag in tags]
@@ -345,21 +345,16 @@ class FileSystemClient:
             uploadURL=os.fspath(file.path),
             tags=[tag.to_reference_tag() for tag in file.tags],
         )
-        
-        
-        
-    def delete_collection_file(
-        self, file_id: str
-    ) -> Optional[CollectionFileReference]:
+
+    def delete_collection_file(self, file_id: str) -> Optional[CollectionFileReference]:
         file_path = self._base_path / (file_id + ".json")
         if not file_path.exists():
             return None
 
         file = FileSystemCollectionFile.load(file_path)
-        
+
         file_path.unlink()
         file.path.unlink()
-        
 
         return CollectionFileReference(
             id=file_id,

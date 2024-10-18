@@ -1,11 +1,10 @@
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
 from numerous import collection
-from numerous.client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
+from numerous.client._graphql_client import GraphQLClient
 from numerous.collection.exceptions import ParentCollectionNotFoundError
-from numerous.collection.numerous_document import NumerousDocument
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import CollectionCollections
 from numerous.generated.graphql.collection_create import CollectionCreate
@@ -21,7 +20,6 @@ from numerous.generated.graphql.collection_document_tag_delete import (
     CollectionDocumentTagDelete,
 )
 from numerous.generated.graphql.collection_documents import CollectionDocuments
-from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import dict_to_base64
 
 
