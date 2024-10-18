@@ -193,11 +193,12 @@ class NumerousFile:
         ------
             ValueError: If there is no local path for the file.
             OSError: If an error occurs while reading the file.
+
         """
         if self.local_path is None:
             msg = "No local path for this file."
             raise ValueError(msg)
-        
+
         return Path.open(self.local_path, "rb")
 
 
