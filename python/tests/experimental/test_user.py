@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from numerous.collection import NumerousCollection
-from numerous.experimental.user import User
+from numerous.user import User
 
 
 @pytest.fixture
