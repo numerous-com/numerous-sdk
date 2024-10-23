@@ -17,9 +17,9 @@ class CookieStorage(Protocol):
 _cookies: Optional[CookieStorage] = None
 
 
-def set_cookies_impl(impl: CookieStorage) -> None:
+def set_cookie_storage(cs: CookieStorage) -> None:
     global _cookies  # noqa: PLW0603
-    _cookies = impl
+    _cookies = cs
 
 
 def cookies() -> dict[str, str]:
