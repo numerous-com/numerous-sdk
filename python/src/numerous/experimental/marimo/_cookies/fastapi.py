@@ -5,8 +5,8 @@ import typing as t
 from multiprocessing import process
 from pathlib import Path
 
-from .cookies import set_cookie_storage
-from .tempfile import FileCookieStorage
+from .cookies import use_cookie_storage
+from .files import FileCookieStorage
 
 
 if t.TYPE_CHECKING:
@@ -37,7 +37,7 @@ def add_marimo_cookie_middleware(
         tempfile.mkdtemp(prefix="numerous_marimo_cookies")
     )
     cookies = FileCookieStorage(cookies_dir, session_ident or _ident)
-    set_cookie_storage(cookies)
+    use_cookie_storage(cookies)
 
     @app.middleware("http")  # type: ignore[misc]
     async def middleware(
