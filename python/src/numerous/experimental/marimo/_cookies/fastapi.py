@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import tempfile
 import typing as t
 from multiprocessing import process
+from pathlib import Path
 
-from .cookies import set_cookies_impl
-from .tempfile import TempFileCookieStorage
+from .cookies import use_cookie_storage
+from .files import FileCookieStorage
 
 
 if t.TYPE_CHECKING:
@@ -12,7 +14,9 @@ if t.TYPE_CHECKING:
 
 
 def add_marimo_cookie_middleware(
-    app: FastAPI, session_ident: t.Callable[[], str] | None = None
+    app: FastAPI,
+    session_ident: t.Callable[[], str] | None = None,
+    cookies_dir: Path | None = None,
 ) -> None:
     """
     Add a middleware that enables accessing cookies in marimo apps.
@@ -25,9 +29,15 @@ def add_marimo_cookie_middleware(
     session_ident : Optional[Callable[[], str]]
         The identity function which must return a unique value for each session.
 
+    cookies_dir : Path | None
+        Path to the directory where cookies are stored.
+
     """
-    cookies = TempFileCookieStorage(session_ident or _ident)
-    set_cookies_impl(cookies)
+    cookies_dir = cookies_dir or Path(
+        tempfile.mkdtemp(prefix="numerous_marimo_cookies")
+    )
+    cookies = FileCookieStorage(cookies_dir, session_ident or _ident)
+    use_cookie_storage(cookies)
 
     @app.middleware("http")  # type: ignore[misc]
     async def middleware(

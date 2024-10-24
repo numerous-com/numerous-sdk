@@ -1,12 +1,13 @@
-import threading
+import tempfile
 from multiprocessing import process
+from pathlib import Path
 
 from marimo._server.router import APIRouter
 from starlette.requests import Request
 from starlette.routing import Route
 
-from .cookies import set_cookies_impl
-from .tempfile import TempFileCookieStorage
+from .cookies import use_cookie_storage, use_fallback_cookie_storage
+from .files import FileCookieStorage
 
 
 def patch_cookies(marimo_args: list[str]) -> None:
@@ -19,9 +20,12 @@ def patch_cookies(marimo_args: list[str]) -> None:
         SuccessResponse,
     )
 
-    ident = _thread_ident if marimo_args and marimo_args[0] == "edit" else _proc_ident
-    cookies = TempFileCookieStorage(ident)
-    set_cookies_impl(cookies)
+    if marimo_args and marimo_args[0] == "edit":
+        cookies = use_fallback_cookie_storage()
+    else:
+        cookie_path = tempfile.mkdtemp(prefix="marimo_cookies")
+        cookies = FileCookieStorage(Path(cookie_path), _proc_ident)
+        use_cookie_storage(cookies)
 
     router: APIRouter = execution.router
     _remove_old_route(router)
@@ -37,10 +41,6 @@ def patch_cookies(marimo_args: list[str]) -> None:
         app_state.require_current_session().instantiate(body)
 
         return SuccessResponse()
-
-
-def _thread_ident() -> str:
-    return f"thread-{threading.get_ident()}"
 
 
 def _proc_ident() -> str:
