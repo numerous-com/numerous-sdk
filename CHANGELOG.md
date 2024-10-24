@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.28.3 (2024-10-24)
+
+### Fix
+
+* fix(python-sdk): experimental marimo cookie patching on windows (#48) ([`3bf5112`](https://github.com/numerous-com/numerous-sdk/commit/3bf51128981a2df5e2aa5f1a00e5af85b71d1909))
+
+  > 
+  > Simplifies the cookie storage, and introduces using fallback cookie storage in
+  > the working directory, which works when editing marimo notebooks on windows.
+
+
+
+
 ## v0.28.2 (2024-10-24)
 
 ### Fix
