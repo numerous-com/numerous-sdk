@@ -7,18 +7,10 @@ from pathlib import Path
 from numerous.experimental.marimo._cookies.files import FileCookieStorage
 
 
-class CookieStorage(t.Protocol):
-    def set(self, c: dict[str, str]) -> None:
-        """Set cookies for the current session."""
-
-    def get(self) -> dict[str, str]:
-        """Get cookies for the current session."""
+_cookie_storage: t.Optional[FileCookieStorage] = None
 
 
-_cookie_storage: t.Optional[CookieStorage] = None
-
-
-def use_cookie_storage(cs: CookieStorage) -> None:
+def use_cookie_storage(cs: FileCookieStorage) -> None:
     global _cookie_storage  # noqa: PLW0603
     _cookie_storage = cs
 
