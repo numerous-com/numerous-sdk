@@ -1,7 +1,7 @@
 """Module for handling user-related functionality."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 from numerous.collection import NumerousCollection, collection
 
@@ -12,7 +12,7 @@ class User:
     name: str
 
     @property
-    def collection(self) -> NumerousCollection | None:
+    def collection(self) -> Optional["NumerousCollection"]:
         """
         Get the NumerousCollection associated with this user.
 

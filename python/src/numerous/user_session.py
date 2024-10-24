@@ -25,7 +25,8 @@ class Session:
             raise ValueError(msg)
         try:
             user_info_json = base64.b64decode(user_info_b64).decode("utf-8")
-            return {str(key): str(val) for key, val in json.loads(user_info_json).items()}
+            return {str(key): str(val) \
+                    for key, val in json.loads(user_info_json).items()}
         except (ValueError) as err:
             msg = "Invalid user info in cookie or cookie is missing"
             raise ValueError(msg) from err

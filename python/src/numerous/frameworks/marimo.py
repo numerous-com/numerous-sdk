@@ -9,8 +9,7 @@ from numerous.experimental import marimo
 class MarimoCookieGetter:
     def cookies(self) -> Dict[str, Any]:
         """Get the cookies associated with the current request."""
-        cookies = {key: str(val) for key, val in marimo.cookies().items()}
-        return cookies
+        return {key: str(val) for key, val in marimo.cookies().items()}
 
 
 session = user_session.Session(cg=MarimoCookieGetter())
