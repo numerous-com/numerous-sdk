@@ -1,10 +1,17 @@
+"""Module for integrating Numerous with FastAPI."""
+
 from typing import Any, Dict
-from numerous.user_session import BaseSession
+
 from fastapi import Request
 
-class FastapiSession(BaseSession):
-    
-    def _get_cookies(self) -> Dict[str, Any]:
-        return Request.cookies
-    
-session = FastapiSession()
+from numerous import user_session
+
+
+class FastapiCookieGetter:
+    def cookies(self) -> Dict[str, str]:
+        """Get the cookies associated with the current request."""
+        cookies = {str(key): str(val) for key, val in Request.cookies.items()}
+        
+        return cookies
+
+session = user_session.Session(cg=FastapiCookieGetter())

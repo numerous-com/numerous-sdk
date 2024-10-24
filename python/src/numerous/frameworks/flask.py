@@ -1,10 +1,17 @@
+"""Module for integrating Numerous with Flask."""
+
 from typing import Any, Dict
-from numerous.user_session import BaseSession
+
 from flask import request
 
-class FlaskSession(BaseSession):
-    
-    def _get_cookies(self) -> Dict[str, Any]:
-        return request.cookies
-    
-session = FlaskSession()
+from numerous import user_session
+
+
+class FlaskCookieGetter:
+    def cookies(self) -> Dict[str, str]:
+        """Get the cookies associated with the current request."""
+        cookies = cookies = {str(key): str(val) for key, val in request.cookies.items()}
+        
+        return cookies
+
+session = user_session.Session(cg=FlaskCookieGetter())

@@ -1,10 +1,17 @@
+"""Module for integrating Numerous with Streamlit."""
+
 from typing import Any, Dict
-from numerous.user_session import BaseSession
+
 import streamlit as st
 
-class StreamlitSession(BaseSession):
-    
-    def _get_cookies(self) -> Dict[str, Any]:
-        return st.context.cookies
-    
-session = StreamlitSession()
+from numerous import user_session
+
+
+class StreamlitCookieGetter:
+    def cookies(self) -> Dict[str, str]:
+        """Get the cookies associated with the current request."""
+        cookies = {key: str(val) for key, val in st.context.cookies.items()}
+        
+        return cookies
+
+session = user_session.Session(cg=StreamlitCookieGetter())

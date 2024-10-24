@@ -1,10 +1,17 @@
+"""Module for integrating Numerous with Panel."""
+
 from typing import Any, Dict
-from numerous.user_session import BaseSession
+
 import panel as pn
 
-class PanelSession(BaseSession):
-    
-    def _get_cookies(self) -> Dict[str, Any]:
-        return pn.request.cookies
-    
-session = PanelSession()
+from numerous import user_session
+
+
+class PanelCookieGetter:
+    def cookies(self) -> Dict[str, str]:
+        """Get the cookies associated with the current request."""
+        cookies = {key: str(val) for key, val in pn.request.cookies.items()}
+        
+        return cookies
+
+session = user_session.Session(cg=PanelCookieGetter())
