@@ -42,11 +42,6 @@ function build_local() {
     python -m build
 }
 
-function build_multi_dist {
-    copy_bins
-    python -m build
-}
-
 function build_dists() {
     build_platform_dist "linux_amd64"
     build_platform_dist "linux_arm64"
@@ -54,14 +49,11 @@ function build_dists() {
     build_platform_dist "windows_arm64"
     build_platform_dist "darwin_amd64"
     build_platform_dist "darwin_arm64"
-    build_multi_dist
 }
 
 mkdir $bin_dir 2>/dev/null
 if [[ -z "$1" ]]; then
     build_dists
-elif [[ "$1" = "any" ]]; then
-    build_multi_dist
 elif [[ "$1" = "local" ]]; then
     build_local
 else

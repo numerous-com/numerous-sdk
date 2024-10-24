@@ -1,17 +1,16 @@
 import json
-import tempfile
 from pathlib import Path
 from typing import Callable
 
 
-class TempFileCookieStorage:
-    def __init__(self, ident: Callable[[], str]) -> None:
+class FileCookieStorage:
+    def __init__(self, cookie_path: Path, ident: Callable[[], str]) -> None:
         self._ident = ident
-        self._tempdir = Path(tempfile.mkdtemp("_cookies"))
+        self._cookie_path = cookie_path
 
     def get(self) -> dict[str, str]:
         try:
-            with (self._tempdir / self._ident()).open("r") as f:
+            with self._cookie_file().open("r") as f:
                 c = json.load(f)
         except (json.decoder.JSONDecodeError, TypeError, FileNotFoundError):
             return {}
@@ -24,5 +23,8 @@ class TempFileCookieStorage:
         return c
 
     def set(self, c: dict[str, str]) -> None:
-        with (self._tempdir / self._ident()).open("w+") as f:
+        with self._cookie_file().open("w+") as f:
             json.dump(c, f)
+
+    def _cookie_file(self) -> Path:
+        return self._cookie_path / self._ident()

@@ -3,11 +3,11 @@ package output
 import "runtime"
 
 const (
-	hourglass    = "\u29D6"
-	errorcross   = AnsiRed + "\u2715" + AnsiReset
-	checkmark    = AnsiGreen + "\u2713" + AnsiReset
-	raiseHand    = "\U0000270B"
-	shootingStar = "\U0001F320"
+	hourglassIcon = "\u29D6"
+	errorcross    = AnsiRed + "\u2715" + AnsiReset
+	checkmarkIcon = AnsiGreen + "\u2713" + AnsiReset
+	raiseHand     = "\U0000270B"
+	shootingStar  = "\U0001F320"
 )
 
 func symbol(value string) string {

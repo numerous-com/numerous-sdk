@@ -1,6 +1,78 @@
 # CHANGELOG
 
 
+## v0.28.3 (2024-10-24)
+
+### Fix
+
+* fix(python-sdk): experimental marimo cookie patching on windows (#48) ([`3bf5112`](https://github.com/numerous-com/numerous-sdk/commit/3bf51128981a2df5e2aa5f1a00e5af85b71d1909))
+
+  > 
+  > Simplifies the cookie storage, and introduces using fallback cookie storage in
+  > the working directory, which works when editing marimo notebooks on windows.
+
+
+
+
+## v0.28.2 (2024-10-24)
+
+### Fix
+
+* fix(cli): print informative error message if app archive is too large to upload ([`aa75e1b`](https://github.com/numerous-com/numerous-sdk/commit/aa75e1b35f5e7c25cc4edc61a46a84226eee14cb))
+
+
+
+
+## v0.28.1 (2024-10-24)
+
+### Fix
+
+* fix(python-sdk): more details in app source archive upload errors ([`a4db61c`](https://github.com/numerous-com/numerous-sdk/commit/a4db61cddf957e02ea093785c13922d7614942a6))
+
+
+
+
+## v0.28.0 (2024-10-18)
+
+### Build
+
+* build: only distribute platform specific packages ([`42f7836`](https://github.com/numerous-com/numerous-sdk/commit/42f7836e27314be53fd9e172c78256f9f7ac3aea))
+
+  > 
+  > In order to save space on pypi, and since the platform specific wheels
+  > should support our users, we remove the distribution of the source archive,
+  > and the catch-all wheel.
+
+
+
+### Feature
+
+* feat(cli): `deploy` command `--follow` flag for following logs after deploy (#45) ([`9d80b58`](https://github.com/numerous-com/numerous-sdk/commit/9d80b584848ce58a56fae63868d42d53b67c5eb9))
+
+
+
+
+## v0.27.1 (2024-10-17)
+
+### Fix
+
+* fix(python-sdk): soften dependency version requirements ([`74bc2ca`](https://github.com/numerous-com/numerous-sdk/commit/74bc2ca8ab1e2d57b6633a04ccc43949ee9c3c05))
+
+
+
+
+## v0.27.0 (2024-10-17)
+
+### Feature
+
+* feat(api): streamline deployment workload status output (#44) ([`6ea372a`](https://github.com/numerous-com/numerous-sdk/commit/6ea372a4dc159367564349319565ad72a8760ffa))
+
+  > 
+  > Instead of printing repeated messages about the same workload status print dots for each deployment stage is it goes on.
+
+
+
+
 ## v0.26.0 (2024-10-11)
 
 ### Feature

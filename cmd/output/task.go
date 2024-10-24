@@ -15,10 +15,11 @@ const (
 type lineWidthFunc func() int
 
 type Task struct {
-	msg       string
-	lineAdded bool
-	lineWidth lineWidthFunc
-	w         io.Writer
+	msg          string
+	lineAdded    bool
+	lineUpdating bool
+	lineWidth    lineWidthFunc
+	w            io.Writer
 }
 
 func (t *Task) line(icon string) string {
@@ -52,32 +53,52 @@ func (t *Task) trimMessage() (int, string) {
 }
 
 func (t *Task) start() {
-	ln := t.line(hourglass)
+	ln := t.line(hourglassIcon)
 	fmt.Fprint(t.w, ln)
 }
 
 func (t *Task) AddLine(prefix string, line string) {
-	if !t.lineAdded {
+	if !t.lineAdded || t.lineUpdating {
 		fmt.Fprintln(t.w)
 	}
 	fmt.Fprintln(t.w, AnsiReset+AnsiFaint+prefix+AnsiReset, line)
+	t.lineUpdating = false
 	t.lineAdded = true
 }
 
-func (t *Task) Done() {
-	ln := t.line(checkmark)
+func (t *Task) UpdateLine(prefix string, line string) {
 	if !t.lineAdded {
-		fmt.Fprint(t.w, "\r")
+		fmt.Fprintln(t.w)
 	}
-	fmt.Fprintln(t.w, ln+AnsiGreen+"OK"+AnsiReset)
+	fmt.Fprint(t.w, "\r"+AnsiReset+AnsiFaint+prefix+AnsiReset+" "+line)
+	t.lineUpdating = true
+	t.lineAdded = true
+}
+
+func (t *Task) EndUpdateLine() {
+	if t.lineUpdating {
+		fmt.Fprintln(t.w)
+		t.lineUpdating = false
+	}
+}
+
+func (t *Task) Done() {
+	t.terminate(checkmarkIcon, AnsiGreen+"OK"+AnsiReset)
 }
 
 func (t *Task) Error() {
-	ln := t.line(errorcross)
+	t.terminate(errorcross, AnsiRed+"Error"+AnsiReset)
+}
+
+func (t *Task) terminate(icon, status string) {
+	ln := t.line(icon)
+	if t.lineUpdating {
+		fmt.Fprintln(t.w)
+	}
 	if !t.lineAdded {
 		fmt.Fprint(t.w, "\r")
 	}
-	fmt.Fprintln(t.w, ln+AnsiRed+"Error"+AnsiReset)
+	fmt.Fprintln(t.w, ln+status)
 }
 
 type terminal interface {

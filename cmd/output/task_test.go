@@ -91,7 +91,7 @@ func TestTask(t *testing.T) {
 					StartTaskWithTerminal(tc.msg, term)
 
 					actual := buf.String()
-					expected := hourglass + tc.expected
+					expected := hourglassIcon + tc.expected
 					assert.Equal(t, expected, actual)
 				})
 			}
@@ -111,7 +111,7 @@ func TestTask(t *testing.T) {
 					task.Done()
 
 					actual := buf.String()
-					expected := "\r" + checkmark + tc.expected + greenOK + "\n"
+					expected := "\r" + checkmarkIcon + tc.expected + greenOK + "\n"
 					assert.Equal(t, expected, actual)
 				})
 			}
@@ -151,13 +151,168 @@ func TestTask(t *testing.T) {
 		actual := buf.String()
 
 		expected := strings.Join([]string{
-			hourglass + " task message" + AnsiFaint + "......" + AnsiReset,
+			hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset,
 			AnsiReset + AnsiFaint + "prefix" + AnsiReset + " line 1",
 			AnsiReset + AnsiFaint + "prefix" + AnsiReset + " line 2",
 			AnsiReset + AnsiFaint + "prefix" + AnsiReset + " line 3",
-			checkmark + " task message" + AnsiFaint + "......" + AnsiReset + AnsiGreen + "OK" + AnsiReset + "\n",
+			checkmarkIcon + " task message" + AnsiFaint + "......" + AnsiReset + AnsiGreen + "OK" + AnsiReset + "\n",
 		}, "\n")
 		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("UpdateLine", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		term := &stubTerminal{buf: buf, width: 25}
+
+		t.Run("linebreak if no line is added", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line")
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("updates lines with carriage returns", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line version 1")
+			task.UpdateLine("prefix", "updating line version 2")
+			task.UpdateLine("prefix", "updating line version 3")
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line version 1",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line version 2",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line version 3",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("linebreak after preceding added line", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.AddLine("prefix", "preceding added line")
+			task.UpdateLine("prefix", "updating line")
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				AnsiReset + AnsiFaint + "prefix" + AnsiReset + " preceding added line" + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("linebreak before following added line", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line")
+			task.AddLine("prefix", "following added line")
+			task.Done()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line" + "\n",
+				AnsiReset + AnsiFaint + "prefix" + AnsiReset + " following added line" + "\n",
+				checkmarkIcon + " task message" + AnsiFaint + "......" + AnsiReset + AnsiGreen + "OK" + AnsiReset + "\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("linebreak before task done", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line")
+			task.Done()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line" + "\n",
+				checkmarkIcon + " task message" + AnsiFaint + "......" + AnsiReset + AnsiGreen + "OK" + AnsiReset + "\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("linebreak before task error", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line")
+			task.Error()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line" + "\n",
+				errorcross + " task message" + AnsiFaint + "......" + AnsiReset + AnsiRed + "Error" + AnsiReset + "\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+	})
+
+	t.Run("EndUpdateLine", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		term := &stubTerminal{buf: buf, width: 25}
+
+		t.Run("adds a single linebreak after updating line", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line that is ended")
+			task.EndUpdateLine()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line that is ended\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("is idempontent", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.UpdateLine("prefix", "updating line that is ended")
+			task.EndUpdateLine()
+			task.EndUpdateLine()
+			task.EndUpdateLine()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				"\r" + AnsiReset + AnsiFaint + "prefix" + AnsiReset + " updating line that is ended\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("does not print extra newline after adding line", func(t *testing.T) {
+			buf.Reset()
+
+			task := StartTaskWithTerminal("task message", term)
+			task.AddLine("prefix", "added line")
+			task.EndUpdateLine()
+			actual := buf.String()
+
+			expected := strings.Join([]string{
+				hourglassIcon + " task message" + AnsiFaint + "......" + AnsiReset + "\n",
+				AnsiReset + AnsiFaint + "prefix" + AnsiReset + " added line\n",
+			}, "")
+			assert.Equal(t, expected, actual)
+		})
 	})
 
 	t.Run("StartTask", func(t *testing.T) {
@@ -174,7 +329,7 @@ func TestTask(t *testing.T) {
 			assert.NoError(t, w.Close())
 			actual, err := io.ReadAll(r)
 			assert.NoError(t, err)
-			expected := hourglass + " message" + AnsiFaint + ".............................................." + AnsiReset
+			expected := hourglassIcon + " message" + AnsiFaint + ".............................................." + AnsiReset
 			assert.Equal(t, expected, string(actual))
 		})
 	})

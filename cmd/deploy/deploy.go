@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -18,6 +19,10 @@ import (
 	"numerous.com/cli/internal/links"
 	"numerous.com/cli/internal/manifest"
 )
+
+const maxUploadBytes int64 = 5368709120
+
+var ErrArchiveTooLarge = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
 
 type deployBuildError struct {
 	Message string
@@ -35,6 +40,7 @@ type AppService interface {
 	UploadAppSource(uploadURL string, archive io.Reader) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
+	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
 type DeployInput struct {
@@ -45,6 +51,7 @@ type DeployInput struct {
 	Version    string
 	Message    string
 	Verbose    bool
+	Follow     bool
 }
 
 func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
@@ -72,6 +79,30 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	}
 
 	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
+
+	if input.Follow {
+		output.Notify("Following logs of %s/%s:", "", orgSlug, appSlug)
+		if err := followLogs(ctx, apps, orgSlug, appSlug); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println()
+		fmt.Println("To read the logs from your app you can:")
+		fmt.Println("  " + output.Highlight("numerous logs --organization="+orgSlug+" --app="+appSlug))
+		fmt.Println("Or you can use the " + output.Highlight("--follow") + " flag:")
+
+		projectDirArg := ""
+		if input.ProjectDir != "" {
+			projectDirArg = " --project-dir=" + input.ProjectDir
+		}
+
+		appDirArg := ""
+		if input.AppDir != "" {
+			appDirArg = " " + input.AppDir
+		}
+
+		fmt.Println("  " + output.Highlight("numerous deploy --follow --organization="+orgSlug+" --app="+appSlug+projectDirArg+appDirArg))
+	}
 
 	return nil
 }
@@ -203,8 +234,26 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 		return err
 	}
 
+	if stat, err := archive.Stat(); err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error checking archive size", err)
+
+		return err
+	} else if stat.Size() > maxUploadBytes {
+		task.Error()
+		printAppSourceArchiveTooLarge(stat.Size())
+
+		return ErrArchiveTooLarge
+	}
+
 	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
-	if err != nil {
+	var appSourceUploadErr *app.AppSourceUploadError
+	if errors.As(err, &appSourceUploadErr) {
+		task.Error()
+		printAppSourceUploadErr(appSourceUploadErr)
+
+		return err
+	} else if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error uploading app source archive", err)
 
@@ -213,6 +262,60 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 	task.Done()
 
 	return nil
+}
+
+const appSourceArchiveTooLargeErrMsg = `App archive has size %s, but the maximum allowed size for an archived app is %s.
+
+You can exclude files in the app folder from being uploaded by adding patterns to the "exclude" field in %s, e.g.:
+  exclude = ["venv*", "*venv", "./my-test-data-folder"]
+
+Read more at:
+  https://www.numerous.com/docs/cli#exclude-certain-files-and-folders
+`
+
+func printAppSourceArchiveTooLarge(size int64) {
+	output.PrintError(
+		"App archive too large to upload",
+		appSourceArchiveTooLargeErrMsg,
+		humanizeBytes(size),
+		humanizeBytes(maxUploadBytes),
+		manifest.ManifestFileName,
+	)
+}
+
+func humanizeBytes(bytes int64) string {
+	var KB int64 = 1024
+	MB := KB * KB
+	GB := KB * KB * KB
+
+	switch {
+	case bytes > GB:
+		return fmt.Sprintf("%.2fG", float64(bytes)/float64(GB))
+	case bytes > MB:
+		return fmt.Sprintf("%.2fM", float64(bytes)/float64(MB))
+	case bytes > KB:
+		return fmt.Sprintf("%.2fK", float64(bytes)/float64(KB))
+	default:
+		return fmt.Sprintf("%dB", bytes)
+	}
+}
+
+const appSourceUploadErrMsg string = `When uploading the app source archive, the file storage server responded with an error.
+  HTTP Status %d: %q
+  Upload URL: %s
+
+--- Response body:
+%s
+`
+
+func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
+	output.PrintError("Error uploading app source archive",
+		appSourceUploadErrMsg,
+		appSourceUploadErr.HTTPStatusCode,
+		appSourceUploadErr.HTTPStatus,
+		appSourceUploadErr.UploadURL,
+		string(appSourceUploadErr.ResponseBody),
+	)
 }
 
 func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput) error {
@@ -224,6 +327,7 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 		output.PrintErrorDetails("Error deploying app", err)
 	}
 
+	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.Verbose, task: task}
 	eventsInput := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) error {
@@ -243,13 +347,8 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 
 				return &deployBuildError{Message: de.BuildError.Message}
 			case "AppDeploymentStatusEvent":
-				if input.Verbose {
-					task.AddLine("Deploy", "Status is "+de.DeploymentStatus.Status)
-				}
-				switch de.DeploymentStatus.Status {
-				case "PENDING", "RUNNING":
-				default:
-					return fmt.Errorf("got status %s while deploying", de.DeploymentStatus.Status)
+				if err := appDeploymentStatusEventUpdater.update(de.DeploymentStatus.Status); err != nil {
+					return err
 				}
 			}
 
@@ -274,7 +373,61 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 	return nil
 }
 
+type statusUpdater struct {
+	verbose               bool
+	lastStatus            *string
+	sameStatusUpdateCount uint
+	task                  *output.Task
+}
+
+func (s *statusUpdater) update(status string) error {
+	if s.verbose {
+		if s.lastStatus != nil && *s.lastStatus != status {
+			s.task.EndUpdateLine()
+		}
+
+		isDifferent := s.lastStatus == nil || *s.lastStatus != status
+		if isDifferent {
+			s.sameStatusUpdateCount = 0
+		} else {
+			s.sameStatusUpdateCount++
+		}
+
+		s.lastStatus = &status
+		s.task.UpdateLine("Deploy", "Workload is "+strings.ToLower(status)+strings.Repeat(".", int(s.sameStatusUpdateCount)))
+	}
+
+	switch status {
+	case "PENDING", "RUNNING":
+	default:
+		return fmt.Errorf("got status %s while deploying", status)
+	}
+
+	return nil
+}
+
 func loadSecretsFromEnv(appDir string) map[string]string {
 	env, _ := dotenv.Load(path.Join(appDir, manifest.EnvFileName))
 	return env
+}
+
+func followLogs(ctx context.Context, apps AppService, orgSlug, appSlug string) error {
+	ai := appident.AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
+	ch, err := apps.AppDeployLogs(ai)
+	if err != nil {
+		app.PrintAppError(err, ai)
+		return err
+	}
+
+	for {
+		select {
+		case entry, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			logs.TimestampPrinter(entry)
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }

@@ -33,13 +33,23 @@ func TestUploadAppSource(t *testing.T) {
 
 	t.Run("given non-OK http status then it returns error", func(t *testing.T) {
 		doer := test.MockDoer{}
-		resp := http.Response{Status: "Not OK", StatusCode: http.StatusBadRequest}
+		responseBody := []byte("error response body")
+		resp := http.Response{Status: "Not OK", StatusCode: http.StatusBadRequest, Body: io.NopCloser(bytes.NewBuffer(responseBody))}
 		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
 		err := s.UploadAppSource("http://some-upload-url", dummyReader())
 
-		assert.ErrorIs(t, err, ErrAppSourceUpload)
+		expected := AppSourceUploadError{
+			HTTPStatusCode: http.StatusBadRequest,
+			HTTPStatus:     "Not OK",
+			UploadURL:      "http://some-upload-url",
+			ResponseBody:   responseBody,
+		}
+		actual := &AppSourceUploadError{}
+		if assert.ErrorAs(t, err, &actual) {
+			assert.Equal(t, expected, *actual)
+		}
 	})
 
 	t.Run("given invalid upload URL then it returns error", func(t *testing.T) {
