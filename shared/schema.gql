@@ -349,6 +349,7 @@ extend type Mutation {
 ### App management
 ###############################################################################
 
+directive @userCreatedApp on FIELD_DEFINITION
 directive @canManageApp on FIELD_DEFINITION
 directive @canUseApp on FIELD_DEFINITION
 
@@ -412,6 +413,7 @@ input AppCreateInfo {
 input AppDeployInput {
   appRelativePath: String
   secrets: [AppSecret!]
+  skipMetadataUpdate: Boolean
 }
 
 type AppBuildMessageEvent {
@@ -483,7 +485,7 @@ extend type Mutation {
     @canManageApp
     @trackAppOperation(eventName: "App Version Upload URL")
   appVersionDownloadURL(appVersionID: ID!): AppVersionDownloadURL!
-    @canManageApp
+    @userCreatedApp
     @trackAppOperation(eventName: "App Version Download URL")
   appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
     @canManageApp
@@ -600,10 +602,21 @@ type OrganizationHasNoPaymentAccount {
   organizationID: ID!
 }
 
+type SubscriptionOfferInvalidMonthlyPriceUSD {
+  monthlyPriceUSD: Decimal!
+}
+
+type SubscriptionOfferInvalidTrialDays {
+  trialDays: Int!
+  maxTrialDays: Int!
+}
+
 union SubscriptionOfferCreateResult =
     SubscriptionOffer
   | InvalidEmail
   | OrganizationHasNoPaymentAccount
+  | SubscriptionOfferInvalidMonthlyPriceUSD
+  | SubscriptionOfferInvalidTrialDays
 
 union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
 
@@ -1167,7 +1180,7 @@ type PaymentAccountURL {
 }
 
 type PaymentAccountNotFound {
-  organizationSlug: String!
+  organizationID: String!
 }
 
 type PaymentAccountExists {
@@ -1175,8 +1188,21 @@ type PaymentAccountExists {
   paymentAccount: PaymentAccount!
 }
 
+type PaymentAccountHasActiveSubscriptions {
+  organizationID: ID!
+  activeSubscriptionsCount: Int!
+}
+
+type PaymentAccountDeleted {
+  organizationID: ID!
+}
+
 union PaymentAccountCreateResult = PaymentAccount | PaymentAccountExists
 union PaymentAccountURLResult = PaymentAccountURL | PaymentAccountNotFound
+union PaymentAccountDeleteResult =
+    PaymentAccountNotFound
+  | PaymentAccountHasActiveSubscriptions
+  | PaymentAccountDeleted
 
 extend type Mutation {
   paymentAccountCreate(organizationSlug: String!): PaymentAccountCreateResult!
@@ -1187,6 +1213,8 @@ extend type Mutation {
   paymentAccountUpdateURLCreate(
     organizationSlug: String!
   ): PaymentAccountURLResult! @hasRole(role: ADMIN)
+  paymentAccountDelete(organizationID: String!): PaymentAccountDeleteResult!
+    @hasRole(role: ADMIN)
 }
 
 ###############################################################################

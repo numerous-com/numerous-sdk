@@ -24,6 +24,19 @@ class CollectionDocumentReferenceTags(BaseModel):
     value: str
 
 
+class CollectionFileReference(BaseModel):
+    id: str
+    key: str
+    download_url: Optional[str] = Field(alias="downloadURL")
+    upload_url: Optional[str] = Field(alias="uploadURL")
+    tags: List["CollectionFileReferenceTags"]
+
+
+class CollectionFileReferenceTags(BaseModel):
+    key: str
+    value: str
+
+
 class CollectionNotFound(BaseModel):
     id: str
 
@@ -96,6 +109,7 @@ class TextFieldValue(BaseModel):
 
 ButtonValue.model_rebuild()
 CollectionDocumentReference.model_rebuild()
+CollectionFileReference.model_rebuild()
 CollectionNotFound.model_rebuild()
 CollectionReference.model_rebuild()
 GraphContext.model_rebuild()
