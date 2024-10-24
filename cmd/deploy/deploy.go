@@ -20,6 +20,10 @@ import (
 	"numerous.com/cli/internal/manifest"
 )
 
+const maxUploadBytes int64 = 5368709120
+
+var ErrArchiveTooLarge = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
+
 type deployBuildError struct {
 	Message string
 }
@@ -230,6 +234,18 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 		return err
 	}
 
+	if stat, err := archive.Stat(); err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error checking archive size", err)
+
+		return err
+	} else if stat.Size() > maxUploadBytes {
+		task.Error()
+		printAppSourceArchiveTooLarge(stat.Size())
+
+		return ErrArchiveTooLarge
+	}
+
 	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
 	var appSourceUploadErr *app.AppSourceUploadError
 	if errors.As(err, &appSourceUploadErr) {
@@ -248,9 +264,48 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 	return nil
 }
 
+const appSourceArchiveTooLargeErrMsg = `App archive has size %s, but the maximum allowed size for an archived app is %s.
+
+You can exclude files in the app folder from being uploaded by adding patterns to the "exclude" field in %s, e.g.:
+  exclude = ["venv*", "*venv", "./my-test-data-folder"]
+
+Read more at:
+  https://www.numerous.com/docs/cli#exclude-certain-files-and-folders
+`
+
+func printAppSourceArchiveTooLarge(size int64) {
+	output.PrintError(
+		"App archive too large to upload",
+		appSourceArchiveTooLargeErrMsg,
+		humanizeBytes(size),
+		humanizeBytes(maxUploadBytes),
+		manifest.ManifestFileName,
+	)
+}
+
+func humanizeBytes(bytes int64) string {
+	var KB int64 = 1024
+	MB := KB * KB
+	GB := KB * KB * KB
+
+	switch {
+	case bytes > GB:
+		return fmt.Sprintf("%.2fG", float64(bytes)/float64(GB))
+	case bytes > MB:
+		return fmt.Sprintf("%.2fM", float64(bytes)/float64(MB))
+	case bytes > KB:
+		return fmt.Sprintf("%.2fK", float64(bytes)/float64(KB))
+	default:
+		return fmt.Sprintf("%dB", bytes)
+	}
+}
+
 const appSourceUploadErrMsg string = `When uploading the app source archive, the file storage server responded with an error.
   HTTP Status %d: %q
   Upload URL: %s
+
+--- Response body:
+%s
 `
 
 func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
@@ -259,6 +314,7 @@ func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
 		appSourceUploadErr.HTTPStatusCode,
 		appSourceUploadErr.HTTPStatus,
 		appSourceUploadErr.UploadURL,
+		string(appSourceUploadErr.ResponseBody),
 	)
 }
 

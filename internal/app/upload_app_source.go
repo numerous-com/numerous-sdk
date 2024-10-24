@@ -11,6 +11,7 @@ type AppSourceUploadError struct {
 	HTTPStatusCode int
 	HTTPStatus     string
 	UploadURL      string
+	ResponseBody   []byte
 }
 
 func (e *AppSourceUploadError) Error() string {
@@ -34,10 +35,12 @@ func (s *Service) UploadAppSource(uploadURL string, archive io.Reader) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(resp.Body)
 		return &AppSourceUploadError{
 			HTTPStatusCode: resp.StatusCode,
 			HTTPStatus:     resp.Status,
 			UploadURL:      uploadURL,
+			ResponseBody:   responseBody,
 		}
 	}
 
