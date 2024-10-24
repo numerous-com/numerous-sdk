@@ -231,7 +231,13 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 	}
 
 	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
-	if err != nil {
+	var appSourceUploadErr *app.AppSourceUploadError
+	if errors.As(err, &appSourceUploadErr) {
+		task.Error()
+		printAppSourceUploadErr(appSourceUploadErr)
+
+		return err
+	} else if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error uploading app source archive", err)
 
@@ -240,6 +246,20 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 	task.Done()
 
 	return nil
+}
+
+const appSourceUploadErrMsg string = `When uploading the app source archive, the file storage server responded with an error.
+  HTTP Status %d: %q
+  Upload URL: %s
+`
+
+func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
+	output.PrintError("Error uploading app source archive",
+		appSourceUploadErrMsg,
+		appSourceUploadErr.HTTPStatusCode,
+		appSourceUploadErr.HTTPStatus,
+		appSourceUploadErr.UploadURL,
+	)
 }
 
 func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput) error {

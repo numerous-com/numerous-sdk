@@ -39,7 +39,15 @@ func TestUploadAppSource(t *testing.T) {
 
 		err := s.UploadAppSource("http://some-upload-url", dummyReader())
 
-		assert.ErrorIs(t, err, ErrAppSourceUpload)
+		expected := AppSourceUploadError{
+			HTTPStatusCode: http.StatusBadRequest,
+			HTTPStatus:     "Not OK",
+			UploadURL:      "http://some-upload-url",
+		}
+		actual := &AppSourceUploadError{}
+		if assert.ErrorAs(t, err, &actual) {
+			assert.Equal(t, expected, *actual)
+		}
 	})
 
 	t.Run("given invalid upload URL then it returns error", func(t *testing.T) {
