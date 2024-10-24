@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.28.1 (2024-10-24)
+
+### Fix
+
+* fix(python-sdk): more details in app source archive upload errors ([`a4db61c`](https://github.com/numerous-com/numerous-sdk/commit/a4db61cddf957e02ea093785c13922d7614942a6))
+
+
+
+
 ## v0.28.0 (2024-10-18)
 
 ### Build
