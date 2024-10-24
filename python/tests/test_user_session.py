@@ -12,9 +12,10 @@ class MockUser:
         self.id = user_info["user_id"]
         self.name = user_info["name"]
 
-    def from_user_info(self: dict[str, str]) -> "MockUser":
+    @staticmethod
+    def from_user_info(user_info: dict[str, str]) -> "MockUser":
         """Create a MockUser instance from a user info dictionary."""
-        return MockUser(self)
+        return MockUser(user_info)
 
 class MockCookieGetter:
     def __init__(self, cookies: dict[str, str]) -> None:
@@ -30,8 +31,9 @@ def test_user_property_raises_value_error_when_no_cookie() -> None:
     session = Session(cg)
     with pytest.raises(ValueError, \
                        match="Invalid user info in cookie or cookie is missing"):
-        user = session.user
-    assert user is None
+        # ruff: noqa: B018
+        session.user
+
 
 def test_user_property_returns_user_when_valid_cookie() -> None:
     user_info = {"user_id": "1", "name": "Test User"}

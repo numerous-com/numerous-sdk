@@ -8,9 +8,14 @@ from numerous import user_session
 
 
 class FastapiCookieGetter:
+
+    def __init__(self, request: Request) -> None:
+        self.request = request
+
     def cookies(self) -> Dict[str, str]:
         """Get the cookies associated with the current request."""
-        return {str(key): str(val) for key, val in Request.cookies.items()}
+        return {str(key): str(val) for key, val in self.request.cookies.items()}
 
 
-session = user_session.Session(cg=FastapiCookieGetter())
+def get_session(request: Request) -> user_session.Session:
+    return user_session.Session(cg=FastapiCookieGetter(request))
