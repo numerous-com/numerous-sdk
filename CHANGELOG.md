@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.28.2 (2024-10-24)
+
+### Fix
+
+* fix(cli): print informative error message if app archive is too large to upload ([`aa75e1b`](https://github.com/numerous-com/numerous-sdk/commit/aa75e1b35f5e7c25cc4edc61a46a84226eee14cb))
+
+
+
+
 ## v0.28.1 (2024-10-24)
 
 ### Fix
