@@ -13,9 +13,7 @@ def test_user_collection_property_uses_user_id() -> None:
 def test_from_user_info_creates_user_with_correct_attributes() -> None:
     user_info = {"user_id": "456", "name": "Jane Smith"}
     user = User.from_user_info(user_info)
-    if user is None:
-        msg = "User is None"
-        raise ValueError(msg)
+
     assert user.id == "456"
     assert user.name == "Jane Smith"
 
