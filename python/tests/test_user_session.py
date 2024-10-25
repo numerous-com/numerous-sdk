@@ -9,16 +9,16 @@ from numerous.generated.graphql.client import Client as GQLClient
 from numerous.user_session import Session
 
 
-class MockUser:
+class UserStub:
     def __init__(self, user_info: dict[str, str], client: GraphQLClient) -> None:
         self.id = user_info["user_id"]
         self.name = user_info["name"]
-        self.client = client
+        self._client = client
 
     @staticmethod
-    def from_user_info(user_info: dict[str, str], client: GraphQLClient) -> "MockUser":
+    def from_user_info(user_info: dict[str, str], _client: GraphQLClient) -> "UserStub":
         """Create a MockUser instance from a user info dictionary."""
-        return MockUser(user_info, client)
+        return UserStub(user_info, _client)
 
 
 class MockCookieGetter:
@@ -54,7 +54,7 @@ def test_user_property_raises_value_error_when_no_cookie(
     mock_graphql_client: GraphQLClient,
 ) -> None:
     cg = MockCookieGetter({})
-    session = Session(cg, client=mock_graphql_client)
+    session = Session(cg, _client=mock_graphql_client)
     with pytest.raises(
         ValueError, match="Invalid user info in cookie or cookie is missing"
     ):
@@ -71,12 +71,10 @@ def test_user_property_returns_user_when_valid_cookie(
     )
     cg = MockCookieGetter({"numerous_user_info": encoded_info})
 
-    with mock.patch("numerous.user_session.User", MockUser):
-        session = Session(cg, client=mock_graphql_client)
-        assert isinstance(session.user, MockUser)
-        if session.user is None:
-            msg = "User is None"
-            raise ValueError(msg)
+    with mock.patch("numerous.user_session.User", UserStub):
+        session = Session(cg, _client=mock_graphql_client)
+        assert isinstance(session.user, UserStub)
+        assert session.user is not None
         assert session.user.id == "1"
         assert session.user.name == "Test User"
 
@@ -89,9 +87,7 @@ def test_user_info_returns_decoded_info_for_valid_cookie(
         "utf-8"
     )
     cg = MockCookieGetter({"numerous_user_info": encoded_info})
-    session = Session(cg, client=mock_graphql_client)
-    if session.user is None:
-        msg = "User is None"
-        raise ValueError(msg)
+    session = Session(cg, _client=mock_graphql_client)
+    assert session.user is not None
     assert session.user.id == "1"
     assert session.user.name == "Test User"

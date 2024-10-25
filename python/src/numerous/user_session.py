@@ -2,14 +2,14 @@
 
 import base64
 import json
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Optional, Protocol
 
 from numerous._client._graphql_client import GraphQLClient
 from numerous.user import User
 
 
 class CookieGetter(Protocol):
-    def cookies(self) -> Dict[str, Any]:
+    def cookies(self) -> dict[str, Any]:
         """Get the cookies associated with the current session."""
         ...
 
@@ -19,19 +19,19 @@ def encode_user_info(user_id: str, name: str) -> str:
     return base64.b64encode(user_info_json.encode("utf-8")).decode("utf-8")
 
 
-def get_encoded_user_info(user: User) -> Dict[str, str]:
-    return {"numerous_user_info": encode_user_info(user.id, user.name)}
+def set_user_info_cookie(cookies: dict[str, str], user: User) -> None:
+    cookies["numerous_user_info"] = encode_user_info(user.id, user.name)
 
 
 class Session:
     def __init__(
-        self, cg: CookieGetter, client: Optional[GraphQLClient] = None
+        self, cg: CookieGetter, _client: Optional[GraphQLClient] = None
     ) -> None:
         self._cg = cg
         self._user: Optional[User] = None
-        self._client = client
+        self._client = _client
 
-    def _user_info(self) -> Dict[str, str]:
+    def _user_info(self) -> dict[str, str]:
         cookies = self._cg.cookies()
         user_info_b64 = cookies.get("numerous_user_info")
         if not user_info_b64:
@@ -55,6 +55,6 @@ class Session:
         return self._user
 
     @property
-    def cookies(self) -> Dict[str, str]:
+    def cookies(self) -> dict[str, str]:
         """Get the cookies associated with the current session."""
         return self._cg.cookies()

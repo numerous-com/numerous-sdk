@@ -11,7 +11,7 @@ from numerous.collection import NumerousCollection, collection
 class User:
     id: str
     name: str
-    client: Optional[GraphQLClient] = None
+    _client: Optional[GraphQLClient] = None
 
     @property
     def collection(self) -> Optional["NumerousCollection"]:
@@ -23,11 +23,11 @@ class User:
             or None if not found.
 
         """
-        return collection("users", self.client).collection(self.id)
+        return collection("users", self._client).collection(self.id)
 
     @staticmethod
     def from_user_info(
-        user_info: dict[str, Any], client: Optional[GraphQLClient] = None
+        user_info: dict[str, Any], _client: Optional[GraphQLClient] = None
     ) -> "User":
         """
         Create a User instance from a dictionary of user information.
@@ -40,4 +40,4 @@ class User:
             User: A new User instance created from the provided information.
 
         """
-        return User(id=user_info["user_id"], name=user_info["name"], client=client)
+        return User(id=user_info["user_id"], name=user_info["name"], _client=_client)
