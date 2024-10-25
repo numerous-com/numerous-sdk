@@ -7,4 +7,5 @@ from numerous.frameworks.flask import FlaskCookieGetter
 class DashCookieGetter(FlaskCookieGetter):
     pass
 
+
 session = user_session.Session(cg=DashCookieGetter())

@@ -8,7 +8,6 @@ from numerous import user_session
 
 
 class FastapiCookieGetter:
-
     def __init__(self, request: Request) -> None:
         self.request = request
 
