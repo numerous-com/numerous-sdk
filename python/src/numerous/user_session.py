@@ -14,6 +14,17 @@ class CookieGetter(Protocol):
         ...
 
 
+def encode_user_info(user_id: str, name: str) -> str:
+    user_info_json = json.dumps({"user_id": user_id, "name": name})
+    return base64.b64encode(user_info_json.encode("utf-8")).decode("utf-8")
+
+
+def get_encoded_user_info(
+    user_id: str = "local_user", name: str = "Local User"
+) -> Dict[str, str]:
+    return {"numerous_user_info": encode_user_info(user_id, name)}
+
+
 class Session:
     def __init__(
         self, cg: CookieGetter, client: Optional[GraphQLClient] = None
@@ -44,3 +55,8 @@ class Session:
             user_info = self._user_info()
             self._user = User.from_user_info(user_info, self._client)
         return self._user
+
+    @property
+    def cookies(self) -> Dict[str, str]:
+        """Get the cookies associated with the current session."""
+        return self._cg.cookies()

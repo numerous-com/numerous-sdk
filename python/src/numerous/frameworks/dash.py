@@ -9,3 +9,7 @@ class DashCookieGetter(FlaskCookieGetter):
 
 
 session = user_session.Session(cg=DashCookieGetter())
+
+
+def get_session() -> user_session.Session:
+    return user_session.Session(cg=DashCookieGetter())
