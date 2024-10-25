@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from numerous._client._graphql_client import GraphQLClient
 from numerous.collection import NumerousCollection, collection
 
 
@@ -10,6 +11,7 @@ from numerous.collection import NumerousCollection, collection
 class User:
     id: str
     name: str
+    client: Optional[GraphQLClient] = None
 
     @property
     def collection(self) -> Optional["NumerousCollection"]:
@@ -21,18 +23,21 @@ class User:
             or None if not found.
 
         """
-        return collection("users").collection(self.id)
+        return collection("users", self.client).collection(self.id)
 
     @staticmethod
-    def from_user_info(user_info: dict[str, Any]) -> "User":
+    def from_user_info(
+        user_info: dict[str, Any], client: Optional[GraphQLClient] = None
+    ) -> "User":
         """
         Create a User instance from a dictionary of user information.
 
         Args:
             user_info (dict[str, Any]): A dictionary containing user information.
+            client (GraphQLClient | None): A GraphQL client instance.
 
         Returns:
             User: A new User instance created from the provided information.
 
         """
-        return User(id=user_info["user_id"], name=user_info["name"])
+        return User(id=user_info["user_id"], name=user_info["name"], client=client)

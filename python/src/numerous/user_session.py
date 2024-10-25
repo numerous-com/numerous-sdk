@@ -4,6 +4,7 @@ import base64
 import json
 from typing import Any, Dict, Optional, Protocol
 
+from numerous._client._graphql_client import GraphQLClient
 from numerous.user import User
 
 
@@ -14,9 +15,12 @@ class CookieGetter(Protocol):
 
 
 class Session:
-    def __init__(self, cg: CookieGetter) -> None:
+    def __init__(
+        self, cg: CookieGetter, client: Optional[GraphQLClient] = None
+    ) -> None:
         self._cg = cg
         self._user: Optional[User] = None
+        self._client = client
 
     def _user_info(self) -> Dict[str, str]:
         cookies = self._cg.cookies()
@@ -38,5 +42,5 @@ class Session:
         """Get the User instance associated with the current session."""
         if self._user is None:
             user_info = self._user_info()
-            self._user = User.from_user_info(user_info)
+            self._user = User.from_user_info(user_info, self._client)
         return self._user

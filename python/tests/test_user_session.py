@@ -4,18 +4,21 @@ from unittest import mock
 
 import pytest
 
+from numerous._client._graphql_client import GraphQLClient
+from numerous.generated.graphql.client import Client as GQLClient
 from numerous.user_session import Session
 
 
 class MockUser:
-    def __init__(self, user_info: dict[str, str]) -> None:
+    def __init__(self, user_info: dict[str, str], client: GraphQLClient) -> None:
         self.id = user_info["user_id"]
         self.name = user_info["name"]
+        self.client = client
 
     @staticmethod
-    def from_user_info(user_info: dict[str, str]) -> "MockUser":
+    def from_user_info(user_info: dict[str, str], client: GraphQLClient) -> "MockUser":
         """Create a MockUser instance from a user info dictionary."""
-        return MockUser(user_info)
+        return MockUser(user_info, client)
 
 
 class MockCookieGetter:
@@ -27,9 +30,30 @@ class MockCookieGetter:
         return self._cookies
 
 
-def test_user_property_raises_value_error_when_no_cookie() -> None:
+ORGANIZATION_ID = "test_org"
+
+
+@pytest.fixture(autouse=True)
+def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
+    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", ORGANIZATION_ID)
+    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
+
+
+@pytest.fixture
+def mock_gql_client() -> GQLClient:
+    return mock.Mock(GQLClient)
+
+
+@pytest.fixture
+def mock_graphql_client(mock_gql_client: GQLClient) -> GraphQLClient:
+    return GraphQLClient(mock_gql_client)
+
+
+def test_user_property_raises_value_error_when_no_cookie(\
+        mock_graphql_client: GraphQLClient) -> None:
     cg = MockCookieGetter({})
-    session = Session(cg)
+    session = Session(cg, client=mock_graphql_client)
     with pytest.raises(
         ValueError, match="Invalid user info in cookie or cookie is missing"
     ):
@@ -37,7 +61,8 @@ def test_user_property_raises_value_error_when_no_cookie() -> None:
         session.user
 
 
-def test_user_property_returns_user_when_valid_cookie() -> None:
+def test_user_property_returns_user_when_valid_cookie(\
+        mock_graphql_client: GraphQLClient) -> None:
     user_info = {"user_id": "1", "name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
@@ -45,7 +70,7 @@ def test_user_property_returns_user_when_valid_cookie() -> None:
     cg = MockCookieGetter({"numerous_user_info": encoded_info})
 
     with mock.patch("numerous.user_session.User", MockUser):
-        session = Session(cg)
+        session = Session(cg, client=mock_graphql_client)
         assert isinstance(session.user, MockUser)
         if session.user is None:
             msg = "User is None"
@@ -54,13 +79,14 @@ def test_user_property_returns_user_when_valid_cookie() -> None:
         assert session.user.name == "Test User"
 
 
-def test_user_info_returns_decoded_info_for_valid_cookie() -> None:
+def test_user_info_returns_decoded_info_for_valid_cookie(\
+        mock_graphql_client: GraphQLClient) -> None:
     user_info = {"user_id": "1", "name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
     )
     cg = MockCookieGetter({"numerous_user_info": encoded_info})
-    session = Session(cg)
+    session = Session(cg, client=mock_graphql_client)
     if session.user is None:
         msg = "User is None"
         raise ValueError(msg)
