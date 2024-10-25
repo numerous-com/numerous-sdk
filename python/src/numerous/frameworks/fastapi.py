@@ -20,4 +20,11 @@ class FastapiCookieGetter:
 
 
 def get_session(request: Request) -> user_session.Session:
+    """
+    Get the session for the current user.
+
+    Returns:
+        Session: The session for the current user.
+
+    """
     return user_session.Session(cg=FastapiCookieGetter(request))

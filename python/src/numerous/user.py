@@ -34,7 +34,7 @@ class User:
 
         Args:
             user_info (dict[str, Any]): A dictionary containing user information.
-            client (GraphQLClient | None): A GraphQL client instance.
+            _client (GraphQLClient | None): A GraphQL client instance.
 
         Returns:
             User: A new User instance created from the provided information.

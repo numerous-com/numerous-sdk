@@ -24,6 +24,8 @@ def set_user_info_cookie(cookies: dict[str, str], user: User) -> None:
 
 
 class Session:
+    """A session with Numerous."""
+
     def __init__(
         self, cg: CookieGetter, _client: Optional[GraphQLClient] = None
     ) -> None:
@@ -48,7 +50,7 @@ class Session:
 
     @property
     def user(self) -> Optional[User]:
-        """Get the User instance associated with the current session."""
+        """The user associated with the current session."""
         if self._user is None:
             user_info = self._user_info()
             self._user = User.from_user_info(user_info, self._client)
@@ -56,5 +58,5 @@ class Session:
 
     @property
     def cookies(self) -> dict[str, str]:
-        """Get the cookies associated with the current session."""
+        """The cookies associated with the current session."""
         return self._cg.cookies()

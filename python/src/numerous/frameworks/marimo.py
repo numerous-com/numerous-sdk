@@ -17,4 +17,11 @@ class MarimoCookieGetter:
 
 
 def get_session() -> user_session.Session:
+    """
+    Get the session for the current user.
+
+    Returns:
+        Session: The session for the current user.
+
+    """
     return user_session.Session(cg=MarimoCookieGetter())
