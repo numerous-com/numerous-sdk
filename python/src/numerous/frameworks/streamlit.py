@@ -5,7 +5,7 @@ from typing import Dict
 import streamlit as st
 
 from numerous import user_session
-from numerous.utils import is_local_mode
+from numerous.local import is_local_mode, local_user
 
 
 class StreamlitCookieGetter:
@@ -14,7 +14,7 @@ class StreamlitCookieGetter:
         local_cookies = {}
         if is_local_mode():
             # Update the cookies on the streamlit server
-            local_cookies = user_session.get_encoded_user_info()
+            local_cookies = user_session.get_encoded_user_info(local_user)
         return {
             **local_cookies,
             **{key: str(val) for key, val in st.context.cookies.items()},

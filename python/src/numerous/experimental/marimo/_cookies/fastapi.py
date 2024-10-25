@@ -39,7 +39,7 @@ def add_marimo_cookie_middleware(
     cookies = FileCookieStorage(cookies_dir, session_ident or _ident)
     use_cookie_storage(cookies)
 
-    @app.middleware("http")
+    @app.middleware("http")  # type: ignore[misc, unused-ignore]
     async def middleware(
         request: Request,
         call_next: t.Callable[[Request], t.Awaitable[Response]],

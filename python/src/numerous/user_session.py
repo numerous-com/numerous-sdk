@@ -19,10 +19,8 @@ def encode_user_info(user_id: str, name: str) -> str:
     return base64.b64encode(user_info_json.encode("utf-8")).decode("utf-8")
 
 
-def get_encoded_user_info(
-    user_id: str = "local_user", name: str = "Local User"
-) -> Dict[str, str]:
-    return {"numerous_user_info": encode_user_info(user_id, name)}
+def get_encoded_user_info(user: User) -> Dict[str, str]:
+    return {"numerous_user_info": encode_user_info(user.id, user.name)}
 
 
 class Session:
