@@ -20,8 +20,8 @@ def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def mock_gql_client() -> GQLClient:
-
     return Mock(GQLClient)
+
 
 mock_key = "mock_key"
 mock_id = "mock_id"
@@ -45,13 +45,13 @@ def mock_graphql_client(mock_gql_client: GQLClient) -> GraphQLClient:
 def test_user_collection_property_returns_numerous_collection(
     mock_graphql_client: GraphQLClient,
 ) -> None:
-
     user = User(id=mock_id, name="John Doe", client=mock_graphql_client)
     assert isinstance(user.collection, NumerousCollection)
 
 
-def test_user_collection_property_uses_user_id(\
-        mock_graphql_client: GraphQLClient) -> None:
+def test_user_collection_property_uses_user_id(
+    mock_graphql_client: GraphQLClient,
+) -> None:
     user = User(id=mock_id, name="John Doe", client=mock_graphql_client)
     if user.collection is None:
         msg = "Collection is None"
@@ -69,8 +69,9 @@ def test_from_user_info_creates_user_with_correct_attributes(
     assert user.name == "Jane Smith"
 
 
-def test_from_user_info_returns_user_instance(\
-        mock_graphql_client: GraphQLClient) -> None:
+def test_from_user_info_returns_user_instance(
+    mock_graphql_client: GraphQLClient,
+) -> None:
     user_info = {"user_id": mock_id, "name": "Alice Johnson"}
     user = User.from_user_info(user_info, client=mock_graphql_client)
     assert isinstance(user, User)

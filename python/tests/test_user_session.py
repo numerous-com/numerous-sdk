@@ -50,8 +50,9 @@ def mock_graphql_client(mock_gql_client: GQLClient) -> GraphQLClient:
     return GraphQLClient(mock_gql_client)
 
 
-def test_user_property_raises_value_error_when_no_cookie(\
-        mock_graphql_client: GraphQLClient) -> None:
+def test_user_property_raises_value_error_when_no_cookie(
+    mock_graphql_client: GraphQLClient,
+) -> None:
     cg = MockCookieGetter({})
     session = Session(cg, client=mock_graphql_client)
     with pytest.raises(
@@ -61,8 +62,9 @@ def test_user_property_raises_value_error_when_no_cookie(\
         session.user
 
 
-def test_user_property_returns_user_when_valid_cookie(\
-        mock_graphql_client: GraphQLClient) -> None:
+def test_user_property_returns_user_when_valid_cookie(
+    mock_graphql_client: GraphQLClient,
+) -> None:
     user_info = {"user_id": "1", "name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
@@ -79,8 +81,9 @@ def test_user_property_returns_user_when_valid_cookie(\
         assert session.user.name == "Test User"
 
 
-def test_user_info_returns_decoded_info_for_valid_cookie(\
-        mock_graphql_client: GraphQLClient) -> None:
+def test_user_info_returns_decoded_info_for_valid_cookie(
+    mock_graphql_client: GraphQLClient,
+) -> None:
     user_info = {"user_id": "1", "name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
