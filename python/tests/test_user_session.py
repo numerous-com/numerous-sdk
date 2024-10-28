@@ -6,22 +6,11 @@ import pytest
 
 from numerous._client._graphql_client import GraphQLClient
 from numerous.generated.graphql.client import Client as GQLClient
+from numerous.user import User
 from numerous.user_session import Session
 
 
-class UserStub:
-    def __init__(self, user_info: dict[str, str], client: GraphQLClient) -> None:
-        self.id = user_info["user_id"]
-        self.name = user_info["name"]
-        self._client = client
-
-    @staticmethod
-    def from_user_info(user_info: dict[str, str], _client: GraphQLClient) -> "UserStub":
-        """Create a MockUser instance from a user info dictionary."""
-        return UserStub(user_info, _client)
-
-
-class MockCookieGetter:
+class CookieGetterStub:
     def __init__(self, cookies: dict[str, str]) -> None:
         self._cookies = cookies
 
@@ -53,7 +42,7 @@ def mock_graphql_client(mock_gql_client: GQLClient) -> GraphQLClient:
 def test_user_property_raises_value_error_when_no_cookie(
     mock_graphql_client: GraphQLClient,
 ) -> None:
-    cg = MockCookieGetter({})
+    cg = CookieGetterStub({})
     session = Session(cg, _client=mock_graphql_client)
     with pytest.raises(
         ValueError, match="Invalid user info in cookie or cookie is missing"
@@ -69,11 +58,11 @@ def test_user_property_returns_user_when_valid_cookie(
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
     )
-    cg = MockCookieGetter({"numerous_user_info": encoded_info})
+    cg = CookieGetterStub({"numerous_user_info": encoded_info})
 
-    with mock.patch("numerous.user_session.User", UserStub):
+    with mock.patch("numerous.user_session.User", User):
         session = Session(cg, _client=mock_graphql_client)
-        assert isinstance(session.user, UserStub)
+        assert isinstance(session.user, User)
         assert session.user is not None
         assert session.user.id == "1"
         assert session.user.name == "Test User"
@@ -86,7 +75,7 @@ def test_user_info_returns_decoded_info_for_valid_cookie(
     encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
         "utf-8"
     )
-    cg = MockCookieGetter({"numerous_user_info": encoded_info})
+    cg = CookieGetterStub({"numerous_user_info": encoded_info})
     session = Session(cg, _client=mock_graphql_client)
     assert session.user is not None
     assert session.user.id == "1"

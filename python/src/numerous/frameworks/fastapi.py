@@ -6,7 +6,7 @@ from numerous import user_session
 from numerous.local import is_local_mode, local_user
 
 
-class FastapiCookieGetter:
+class FastAPICookieGetter:
     def __init__(self, request: Request) -> None:
         self.request = request
 
@@ -27,4 +27,4 @@ def get_session(request: Request) -> user_session.Session:
         Session: The session for the current user.
 
     """
-    return user_session.Session(cg=FastapiCookieGetter(request))
+    return user_session.Session(cg=FastAPICookieGetter(request))

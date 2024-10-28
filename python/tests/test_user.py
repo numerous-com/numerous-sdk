@@ -65,11 +65,3 @@ def test_from_user_info_returns_user_with_correct_attributes(
 
     assert user.id == mock_id
     assert user.name == "Jane Smith"
-
-
-def test_from_user_info_returns_user_instance(
-    mock_graphql_client: GraphQLClient,
-) -> None:
-    user_info = {"user_id": mock_id, "name": "Alice Johnson"}
-    user = User.from_user_info(user_info, _client=mock_graphql_client)
-    assert isinstance(user, User)
