@@ -1,8 +1,9 @@
 """Class for working with numerous files."""
 
+import tempfile
 from io import BufferedReader, TextIOWrapper
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import requests
 
@@ -57,25 +58,17 @@ class NumerousFile:
     @property
     def exists(self) -> bool:
         """
-        Check if the file exists by verifying its contents.
+        Check if the file exists by verifying that the download URL is not empty.
 
         Returns
         -------
-            bool: True if the file exists and has content, False otherwise.
+            bool: True if the file exists and the download URL is not empty,
+            False otherwise.
 
         """
-        if self.is_deleted or self.download_url is None:
+        if self.download_url is None:
             return False
-        try:
-            response = requests.get(
-                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.RequestException:
-            return False
-
-        return len(response.content) > 0
+        return bool(self.download_url) and self.download_url.strip() != ""
 
     @property
     def tags(self) -> dict[str, str]:
@@ -133,7 +126,7 @@ class NumerousFile:
         with Path.open(self.local_path, "wb") as local_file:
             local_file.write(response.content)
 
-    def read_text(self) -> List[str]:
+    def read_text(self) -> str:
         """
         Read the file's content as text.
 
@@ -147,14 +140,18 @@ class NumerousFile:
             ValueError: If there is no local path for the file.
 
         """
-        if self.local_path is None:
-            msg = "No local path for this file."
+        if self.download_url is None:
+            msg = "No download URL for this file."
             raise ValueError(msg)
-        try:
-            with Path.open(self.local_path) as file:
-                return file.readlines()
-        except OSError:
-            return []
+        with tempfile.NamedTemporaryFile(mode="r+", delete=True) as temp_file:
+
+            response = requests.get(
+                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
+            response.raise_for_status()
+            temp_file.write(response.content.decode())
+            temp_file.seek(0)
+            return temp_file.read()
 
     def read_bytes(self) -> bytes:
         """
@@ -171,14 +168,19 @@ class NumerousFile:
 
 
         """
-        if self.local_path is None:
-            msg = "No local path for this file."
+        if self.download_url is None:
+            msg = "No download URL for this file."
             raise ValueError(msg)
-        try:
-            with Path.open(self.local_path, "rb") as file:
-                return file.read()
-        except OSError:
-            return b""
+
+        with tempfile.NamedTemporaryFile(mode="r+b", delete=True) as temp_file:
+
+            response = requests.get(
+                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
+            response.raise_for_status()
+            temp_file.write(response.content)
+            temp_file.seek(0)
+            return temp_file.read()
 
     def open(self) -> BufferedReader:
         """
@@ -219,7 +221,7 @@ class NumerousFile:
         if self.upload_url is None:
             msg = "No upload URL for this file."
             raise ValueError(msg)
-        response = requests.post(
+        response = requests.put(
             self.upload_url, files={"file": data}, timeout=_REQUEST_TIMEOUT_SECONDS_
         )
         response.raise_for_status()
@@ -244,7 +246,7 @@ class NumerousFile:
         if self.upload_url is None:
             msg = "No upload URL for this file."
             raise ValueError(msg)
-        response = requests.post(
+        response = requests.put(
             self.upload_url,
             files={"file": file_content},
             timeout=_REQUEST_TIMEOUT_SECONDS_,
@@ -260,22 +262,21 @@ class NumerousFile:
             ValueError: If the file does not exist or deletion failed.
 
         """
-        if self.file_id is not None:
-            deleted_file = self._client.delete_collection_file(self.file_id)
-
-            if deleted_file is not None and deleted_file.id == self.file_id:
-                self.file_id = None
-                self.download_url = None
-                self.upload_url = None
-                self.local_path = None
-                self._tags = {}
-                self.is_deleted = True
-            else:
-                msg = "Failed to delete the file."
-                raise ValueError(msg)
-        else:
+        if self.file_id is None:
             msg = "Cannot delete a non-existent file."
             raise ValueError(msg)
+
+        deleted_file = self._client.delete_collection_file(self.file_id)
+        if deleted_file is None:
+            msg = "Failed to delete the file."
+            raise ValueError(msg)
+
+        self.file_id = None
+        self.download_url = None
+        self.upload_url = None
+        self.local_path = None
+        self._tags = {}
+        self.is_deleted = True
 
     def tag(self, key: str, value: str) -> None:
         """

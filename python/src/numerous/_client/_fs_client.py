@@ -16,56 +16,34 @@ from numerous.jsonbase64 import base64_to_dict, dict_to_base64
 
 
 @dataclass
-class FileSystemCollectionDocumentTag:
+class FileSystemCollectionTag:
     key: str
     value: str
 
     @staticmethod
-    def load(tag: dict[str, Any]) -> "FileSystemCollectionDocumentTag":
+    def load(tag: dict[str, Any]) -> "FileSystemCollectionTag":
         key = tag.get("key")
         if not isinstance(key, str):
             tname = type(key).__name__
-            msg = f"FileSystemCollectionDocumentTag key must be str, found {tname}"
+            msg = f"FileSystemCollectionTag key must be str, found {tname}"
             raise TypeError(msg)
 
         value = tag.get("value")
         if not isinstance(value, str):
             tname = type(value).__name__
-            msg = f"FileSystemCollectionDocumentTag value must be str, found {tname}"
+            msg = f"FileSystemCollectionTag value must be str, found {tname}"
             raise TypeError(msg)
 
-        return FileSystemCollectionDocumentTag(key=key, value=value)
+        return FileSystemCollectionTag(key=key, value=value)
 
-    def to_reference_tag(self) -> CollectionDocumentReferenceTags:
-        return CollectionDocumentReferenceTags(
+    def to_file_reference_tag(self) -> CollectionFileReferenceTags:
+        return CollectionFileReferenceTags(
             key=self.key,
             value=self.value,
         )
 
-
-@dataclass
-class FileSystemCollectionFileTag:
-    key: str
-    value: str
-
-    @staticmethod
-    def load(tag: dict[str, Any]) -> "FileSystemCollectionFileTag":
-        key = tag.get("key")
-        if not isinstance(key, str):
-            tname = type(key).__name__
-            msg = f"FileSystemCollectionFileTag key must be str, found {tname}"
-            raise TypeError(msg)
-
-        value = tag.get("value")
-        if not isinstance(value, str):
-            tname = type(value).__name__
-            msg = f"FileSystemCollectionFileTag value must be str, found {tname}"
-            raise TypeError(msg)
-
-        return FileSystemCollectionFileTag(key=key, value=value)
-
-    def to_reference_tag(self) -> CollectionFileReferenceTags:
-        return CollectionFileReferenceTags(
+    def to_document_reference_tag(self) -> CollectionDocumentReferenceTags:
+        return CollectionDocumentReferenceTags(
             key=self.key,
             value=self.value,
         )
@@ -74,7 +52,7 @@ class FileSystemCollectionFileTag:
 @dataclass
 class FileSystemCollectionFile:
     path: Path
-    tags: list[FileSystemCollectionFileTag]
+    tags: list[FileSystemCollectionTag]
 
     def save(self, path: Path) -> None:
         def convert_to_serializable(obj: Path) -> str:
@@ -92,7 +70,7 @@ class FileSystemCollectionFile:
 
         if not isinstance(file_content, dict):
             tname = type(file_content).__name__
-            msg = f"FileSystemCollection document must be a dict, found {tname}"
+            msg = f"FileSystemCollection file must be a dict, found {tname}"
             raise TypeError(msg)
 
         tags = file_content.get("tags", [])
@@ -109,7 +87,7 @@ class FileSystemCollectionFile:
         path = Path(path)
 
         return FileSystemCollectionFile(
-            path=path, tags=[FileSystemCollectionFileTag.load(tag) for tag in tags]
+            path=path, tags=[FileSystemCollectionTag.load(tag) for tag in tags]
         )
 
     def reference_tags(self) -> list[CollectionFileReferenceTags]:
@@ -137,7 +115,7 @@ class FileSystemCollectionFile:
 @dataclass
 class FileSystemCollectionDocument:
     data: dict[str, Any]
-    tags: list[FileSystemCollectionDocumentTag]
+    tags: list[FileSystemCollectionTag]
 
     def save(self, path: Path) -> None:
         with path.open("w") as f:
@@ -166,7 +144,7 @@ class FileSystemCollectionDocument:
             raise TypeError(msg)
 
         return FileSystemCollectionDocument(
-            data=data, tags=[FileSystemCollectionDocumentTag.load(tag) for tag in tags]
+            data=data, tags=[FileSystemCollectionTag.load(tag) for tag in tags]
         )
 
     def reference_tags(self) -> list[CollectionDocumentReferenceTags]:
@@ -223,7 +201,7 @@ class FileSystemClient:
             id=doc_id,
             key=document_key,
             data=dict_to_base64(doc.data),
-            tags=[tag.to_reference_tag() for tag in doc.tags],
+            tags=[tag.to_document_reference_tag() for tag in doc.tags],
         )
 
     def set_collection_document(
@@ -272,7 +250,7 @@ class FileSystemClient:
             return None
 
         doc = FileSystemCollectionDocument.load(doc_path)
-        doc.tags.append(FileSystemCollectionDocumentTag(key=tag.key, value=tag.value))
+        doc.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
         doc.save(doc_path)
 
         return CollectionDocumentReference(
@@ -348,7 +326,7 @@ class FileSystemClient:
             key=file_key,
             downloadURL=os.fspath(file.path),
             uploadURL=os.fspath(file.path),
-            tags=[tag.to_reference_tag() for tag in file.tags],
+            tags=[tag.to_file_reference_tag() for tag in file.tags],
         )
 
     def delete_collection_file(self, file_id: str) -> Optional[CollectionFileReference]:
@@ -411,7 +389,7 @@ class FileSystemClient:
             return None
 
         file = FileSystemCollectionFile.load(file_path)
-        file.tags.append(FileSystemCollectionFileTag(key=tag.key, value=tag.value))
+        file.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
         file.save(file_path)
 
         return CollectionFileReference(
