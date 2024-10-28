@@ -1,0 +1,16 @@
+site_name: numerous-sdk docs
+nav:
+  - Home: README.md
+  - GitHub: https://github.com/numerous-com/numerous-sdk
+  - API Reference:
+    - Collections: collections.md
+    
+  
+theme: readthedocs
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: "python"
+      rendering:
+        show_source: false
+        show_root_heading: true
