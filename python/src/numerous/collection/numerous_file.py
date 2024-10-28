@@ -13,6 +13,7 @@ from numerous.generated.graphql.input_types import TagInput
 
 
 _REQUEST_TIMEOUT_SECONDS_ = 1.5
+_NO_DOWNLOAD_URL_MSG_ = "No download URL for this file."
 
 
 class NumerousFile:
@@ -51,9 +52,7 @@ class NumerousFile:
             self.download_url = numerous_file_ref.download_url
             self.upload_url = numerous_file_ref.upload_url
             self.file_id = numerous_file_ref.id
-            self._tags: dict[str, str] = (
-                dict_of_tags if dict_of_tags is not None else {}
-            )
+            self._tags: dict[str, str] = dict_of_tags if dict_of_tags else {}
 
     @property
     def exists(self) -> bool:
@@ -115,8 +114,7 @@ class NumerousFile:
 
         """
         if self.download_url is None:
-            msg = "No download URL for this file."
-            raise ValueError(msg)
+            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
         if self.local_path is None:
             msg = "No local path for this file."
             raise ValueError(msg)
@@ -141,10 +139,8 @@ class NumerousFile:
 
         """
         if self.download_url is None:
-            msg = "No download URL for this file."
-            raise ValueError(msg)
+            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
         with tempfile.NamedTemporaryFile(mode="r+", delete=True) as temp_file:
-
             response = requests.get(
                 self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
             )
@@ -169,11 +165,9 @@ class NumerousFile:
 
         """
         if self.download_url is None:
-            msg = "No download URL for this file."
-            raise ValueError(msg)
+            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
 
         with tempfile.NamedTemporaryFile(mode="r+b", delete=True) as temp_file:
-
             response = requests.get(
                 self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
             )

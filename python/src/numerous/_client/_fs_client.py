@@ -58,7 +58,7 @@ class FileSystemCollectionFile:
         def convert_to_serializable(obj: Path) -> str:
             if isinstance(obj, Path):
                 return str(obj)
-            return None
+            return ""
 
         with path.open("w") as f:
             json.dump(asdict(self), f, default=convert_to_serializable)
