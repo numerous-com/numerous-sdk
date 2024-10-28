@@ -13,3 +13,4 @@ plugins:
       default_handler: "python"
       rendering:
         show_source: false
+        show_root_heading: true

@@ -1,29 +1,62 @@
-# Collections
+# Persistence with Collections
 
-Collections in Numerous are powerful organizational structures that allow you to group and manage related documents efficiently. They provide a flexible way to structure your data and enable easy retrieval and manipulation of documents.
+With Numerous Collections, you can persist (or save) data for your application.
+Collections acts as a schemaless database, where users can store, retrieve, and search data in a simple and flexible way.
 
-## Key Features and Uses
+1. Organize data in collections, indexed with user-specified keys.
+2. Store documents with JSON data (optionally indexed with user-specified keys).
+3. Store files (optionally indexed with user-specified keys).
+4. Tag documents and files with key/value tags, and filter documents and files
+   by these tags.
 
-1. **Document Organization**: Collections help you organize your documents in a logical, hierarchical structure. This is particularly useful for categorizing data or creating relationships between different types of information.
+!!! info
+    This feature only supports apps that are deployed to Numerous.
 
-2. **Nested Collections**: You can create collections within collections, allowing for complex data structures and granular organization of your documents.
+!!! info
+    Remember to add `numerous` as a dependency in your project; most likely to
+    your `requirements.txt` file.
 
-3. **Efficient Querying**: Collections make it easy to query and retrieve specific documents or groups of documents based on their keys or tags.
+## Basic usage
 
-4. **Scalability**: As your data grows, collections help maintain performance and organization, allowing your application to scale effectively.
+Import the [Numerous SDK](http://www.pypi.org/project/numerous) in your Python
+code.
 
-5. **Access Control**: Collections can be used as a basis for implementing access control, making it easier to manage permissions for groups of related documents.
+Now, you can add code to your app that is similar to the following:
 
-6. **Metadata Management**: You can associate metadata with collections, which can be useful for categorization, versioning, or other organizational purposes.
+```python
+import numerous
 
-Common use cases for collections include:
-- Organizing user data in a multi-tenant application
-- Structuring content in a content management system
-- Managing product catalogs in e-commerce applications
-- Organizing research data in scientific applications
-- Storing and retrieving logs or time-series data
+# Refer to a collection by its key
+collection = numerous.collection("my-collection")
 
-Below is the API reference for working with collections in Numerous:
+# Refer to a collection nested inside another collection
+nested = collection.collection("nested-collection")
 
-::: numerous.collection
+# Refer to a document by its key
+document = collection.document("my-document")
 
+# Read a document's data
+data = document.get()
+
+# Update a document with new data
+data["my-value"] = "new value"
+document.set(data)
+
+# Loop over documents in a collection
+for doc in collection.documents():
+    print(doc.key)
+    print(doc.get())
+
+# Delete a document
+document.delete()
+
+# Check if a document exists
+if document.exists:
+    print("document exists")
+else:
+    print("document does not exist")
+```
+
+::: numerous.collection.collection
+::: numerous.collection.numerous_collection.NumerousCollection
+::: numerous.collection.numerous_document.NumerousDocument
