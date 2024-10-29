@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v0.29.0 (2024-10-29)
+
+### Documentation
+
+* docs(python-sdk): generate documentation and api reference with `mkdocs` (#49) ([`17fbca5`](https://github.com/numerous-com/numerous-sdk/commit/17fbca5938500e7d4343af08c3fed67b7409b087))
+
+  > 
+  > Adds basic documentation.
+
+
+
+### Feature
+
+* feat(python-sdk): user sessions for frameworks (#47) ([`4cc900a`](https://github.com/numerous-com/numerous-sdk/commit/4cc900a4985c768b93a0283294883fbccadbd039))
+
+  > 
+  > Adds framework specific functions to access a user `Session` object, which represents a session of an
+  > authenticated Numerous user accessing the app. Through the `Session` cookies, user information and
+  > a specific user collection can be accessed.
+  > 
+  > ---------
+  > 
+  > Co-authored-by: Jens Feodor Nielsen &lt;jens.nielsen@numerous.com&gt;
+
+
+
+
 ## v0.28.3 (2024-10-24)
 
 ### Fix
