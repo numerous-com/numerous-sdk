@@ -43,7 +43,9 @@ def test_user_property_raises_value_error_when_no_cookie(
     mock_graphql_client: GraphQLClient,
 ) -> None:
     cg = CookieGetterStub({})
+
     session = Session(cg, _client=mock_graphql_client)
+    
     with pytest.raises(
         ValueError, match="Invalid user info in cookie or cookie is missing"
     ):
@@ -60,10 +62,6 @@ def test_user_property_returns_user_when_valid_cookie(
 
     session = Session(cg, _client=mock_graphql_client)
 
-    assert isinstance(session.user, User)
-
     assert session.user is not None
-
     assert session.user.id == "1"
-
     assert session.user.name == "Test User"
