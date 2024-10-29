@@ -59,7 +59,11 @@ def test_user_property_returns_user_when_valid_cookie(
     cg = CookieGetterStub({"numerous_user_info": encoded_info})
 
     session = Session(cg, _client=mock_graphql_client)
+
     assert isinstance(session.user, User)
+
     assert session.user is not None
+
     assert session.user.id == "1"
+
     assert session.user.name == "Test User"
