@@ -49,7 +49,7 @@ class Session:
             raise ValueError(msg) from err
 
     @property
-    def user(self) -> Optional[User]:
+    def user(self) -> User:
         """The user associated with the current session."""
         if self._user is None:
             user_info = self._user_info()

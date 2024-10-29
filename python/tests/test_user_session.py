@@ -55,7 +55,7 @@ def test_user_property_raises_value_error_when_no_cookie(
 def test_user_property_returns_user_when_valid_cookie(
     mock_graphql_client: GraphQLClient,
 ) -> None:
-    user_info = {"user_id": "1", "name": "Test User"}
+    user_info = {"user_id": "1", "user_full_name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode()).decode()
     cg = CookieGetterStub({"numerous_user_info": encoded_info})
 

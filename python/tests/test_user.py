@@ -67,7 +67,7 @@ def test_user_collection_property_makes_expected_calls(client: Mock) -> None:
 
 
 def test_from_user_info_returns_user_with_correct_attributes(client: Mock) -> None:
-    user_info = {"user_id": TEST_USER_ID, "name": "Jane Smith"}
+    user_info = {"user_id": TEST_USER_ID, "user_full_name": "Jane Smith"}
 
     user = User.from_user_info(user_info, _client=client)
 
