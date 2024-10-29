@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.1 (2024-10-29)
+
+### Fix
+
+* fix(python-sdk): error in user information cookie parsing ([`dce59a5`](https://github.com/numerous-com/numerous-sdk/commit/dce59a56323d928ea1a91eaf3097eccbc3250460))
+
+
+
+
 ## v0.29.0 (2024-10-29)
 
 ### Documentation
