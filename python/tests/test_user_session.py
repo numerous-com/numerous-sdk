@@ -63,17 +63,3 @@ def test_user_property_returns_user_when_valid_cookie(
     assert session.user is not None
     assert session.user.id == "1"
     assert session.user.name == "Test User"
-
-
-def test_user_info_returns_decoded_info_for_valid_cookie(
-    mock_graphql_client: GraphQLClient,
-) -> None:
-    user_info = {"user_id": "1", "name": "Test User"}
-    encoded_info = base64.b64encode(json.dumps(user_info).encode("utf-8")).decode(
-        "utf-8"
-    )
-    cg = CookieGetterStub({"numerous_user_info": encoded_info})
-    session = Session(cg, _client=mock_graphql_client)
-    assert session.user is not None
-    assert session.user.id == "1"
-    assert session.user.name == "Test User"
