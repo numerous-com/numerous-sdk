@@ -6,7 +6,6 @@ import pytest
 
 from numerous._client._graphql_client import GraphQLClient
 from numerous.generated.graphql.client import Client as GQLClient
-from numerous.user import User
 from numerous.user_session import Session
 
 
@@ -45,7 +44,7 @@ def test_user_property_raises_value_error_when_no_cookie(
     cg = CookieGetterStub({})
 
     session = Session(cg, _client=mock_graphql_client)
-    
+
     with pytest.raises(
         ValueError, match="Invalid user info in cookie or cookie is missing"
     ):

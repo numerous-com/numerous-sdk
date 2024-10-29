@@ -63,7 +63,7 @@ def test_from_user_info_returns_user_with_correct_attributes(
     mock_graphql_client: GraphQLClient,
 ) -> None:
     user_info = {"user_id": mock_id, "name": "Jane Smith"}
-    
+
     user = User.from_user_info(user_info, _client=mock_graphql_client)
 
     assert user.id == mock_id
