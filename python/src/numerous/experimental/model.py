@@ -23,7 +23,7 @@ Classes:
 - Field: Class representing a field in the model.
 """
 
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Tuple, Union
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field as PydanticField
@@ -94,7 +94,7 @@ class BaseModel(_ModelInterface):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, Any]) -> None:
+    def __init__(self, **kwargs: dict[str, Any]) -> None:
         """
         Initialize a model object with the given fields.
 
@@ -195,7 +195,7 @@ class Field:
         self,
         default: Union[str, float, None] = None,
         annotation: Union[type, None] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: dict[str, Any],
     ) -> None:
         """
         Initialize a Field object.

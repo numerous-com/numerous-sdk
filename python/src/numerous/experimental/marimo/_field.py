@@ -13,7 +13,7 @@ numbers, and text fields.
 
 """
 
-from typing import Any, Dict, Type, TypeVar, Union
+from typing import Any, Type, TypeVar, Union
 
 import marimo as mo
 from marimo._runtime.state import State as MoState
@@ -50,7 +50,7 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         self,
         default: Union[str, float, None] = None,
         annotation: Union[type, None] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: dict[str, Any],
     ) -> None:
         """
         Field with a state that can be used in a Marimo app.
