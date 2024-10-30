@@ -81,8 +81,7 @@ jobs:
           path: ./dist
       - run: pip install python-semantic-release==9.6.0 twine==5.0.0
       - run: |
-          semantic-release version --commit --tag --push
-          semantic-release publish
+          semantic-release version --commit --tag --push --vcs-release
         env:
           GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
       - run: twine upload --skip-existing --non-interactive dist/*
