@@ -10,10 +10,10 @@ from numerous.local import is_local_mode, local_user
 class MarimoCookieGetter:
     def cookies(self) -> dict[str, Any]:
         """Get the cookies associated with the current request."""
+        cookies = marimo.cookies()
         if is_local_mode():
-            # Update the cookies on the marimo server
-            user_session.set_user_info_cookie(marimo.cookies(), local_user)
-        return {key: str(val) for key, val in marimo.cookies().items()}
+            user_session.set_user_info_cookie(cookies, local_user)
+        return cookies
 
 
 def get_session() -> user_session.Session:

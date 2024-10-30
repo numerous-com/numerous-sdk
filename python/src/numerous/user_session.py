@@ -15,8 +15,8 @@ class CookieGetter(Protocol):
 
 
 def encode_user_info(user_id: str, name: str) -> str:
-    user_info_json = json.dumps({"user_id": user_id, "name": name})
-    return base64.b64encode(user_info_json.encode("utf-8")).decode("utf-8")
+    user_info_json = json.dumps({"user_id": user_id, "user_full_name": name})
+    return base64.b64encode(user_info_json.encode()).decode()
 
 
 def set_user_info_cookie(cookies: dict[str, str], user: User) -> None:

@@ -29,7 +29,14 @@ dev = [
     "mkdocs==1.6.0",
     "mkdocstrings==0.26.2",
     "mkdocstrings-python==1.12.2",
-    "mkdocs_snippet_plugin==1.0.2"
+    "mkdocs_snippet_plugin==1.0.2",
+    # for testing functionality related to frameworks
+    "flask",
+    "fastapi",
+    "marimo",
+    "streamlit",
+    "dash",
+    "panel",
 ]
 
 [project.scripts]
