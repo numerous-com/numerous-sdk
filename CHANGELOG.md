@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.2 (2024-10-30)
+
+### Fix
+
+* fix(python-sdk): fixes exception raised when accessing local mode user ([`3663049`](https://github.com/numerous-com/numerous-sdk/commit/3663049ea05e8197bb44af3b5a99f863775a0a21))
+
+
+
+
 ## v0.29.1 (2024-10-29)
 
 ### Fix
