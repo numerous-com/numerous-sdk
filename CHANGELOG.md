@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.29.3 (2024-10-31)
+
+### Fix
+
+* fix(python-sdk): nested collections key collisions ([`fce992f`](https://github.com/numerous-com/numerous-sdk/commit/fce992f16d67d6ef6c0918c287dc9a88e18edbda))
+
+  > 
+  > Refer to collections by their IDs in order to guarantee unique access,
+  > fixing issues with accessing nested collections, and documents in nested
+  > collections.
+
+
+
+
 ## v0.29.2 (2024-10-30)
 
 ### Fix
