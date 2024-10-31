@@ -127,13 +127,12 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   }
 }
 
-mutation CollectionCollections(
-  $organizationID: ID!
-  $key: ID!
+query CollectionCollections(
+  $collectionID: ID!
   $after: ID
   $first: Int
 ) {
-  collectionCreate(organizationID: $organizationID, key: $key) {
+  collection(id: $collectionID) {
     __typename
     ... on Collection {
       id
@@ -155,8 +154,8 @@ mutation CollectionCollections(
   }
 }
 
-mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
-  collectionCreate(organizationID: $organizationID, key: $key) {
+query CollectionDocument($collectionID: ID!, $docKey: ID!) {
+  collection(id: $collectionID) {
     __typename
     ... on Collection {
       document(key: $docKey) {
@@ -169,7 +168,7 @@ mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
   }
 }
 
-mutation collectionDocumentSet(
+mutation CollectionDocumentSet(
   $collectionID: ID!
   $key: ID!
   $data: Base64JSON!
@@ -182,7 +181,7 @@ mutation collectionDocumentSet(
   }
 }
 
-mutation collectionDocumentDelete($id: ID!) {
+mutation CollectionDocumentDelete($id: ID!) {
   collectionDocumentDelete(id: $id) {
     __typename
     ... on CollectionDocument {
@@ -191,7 +190,7 @@ mutation collectionDocumentDelete($id: ID!) {
   }
 }
 
-mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
+mutation CollectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
   collectionDocumentTagAdd(id: $id, tag: $tag) {
     __typename
     ... on CollectionDocument {
@@ -200,7 +199,7 @@ mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
   }
 }
 
-mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
+mutation CollectionDocumentTagDelete($id: ID!, $tag_key: String!) {
   collectionDocumentTagDelete(id: $id, key: $tag_key) {
     __typename
     ... on CollectionDocument {
@@ -209,14 +208,13 @@ mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
   }
 }
 
-mutation collectionDocuments(
-  $organizationID: ID!
-  $key: ID!
+query CollectionDocuments(
+  $collectionID: ID!
   $tag: TagInput
   $after: ID
   $first: Int
 ) {
-  collectionCreate(organizationID: $organizationID, key: $key) {
+  collection(id: $collectionID) {
     __typename
     ... on Collection {
       id

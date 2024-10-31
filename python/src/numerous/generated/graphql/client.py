@@ -238,16 +238,15 @@ class Client(AsyncBaseClient):
 
     async def collection_collections(
         self,
-        organization_id: str,
-        key: str,
+        collection_id: str,
         after: Union[Optional[str], UnsetType] = UNSET,
         first: Union[Optional[int], UnsetType] = UNSET,
         **kwargs: Any
     ) -> CollectionCollections:
         query = gql(
             """
-            mutation CollectionCollections($organizationID: ID!, $key: ID!, $after: ID, $first: Int) {
-              collectionCreate(organizationID: $organizationID, key: $key) {
+            query CollectionCollections($collectionID: ID!, $after: ID, $first: Int) {
+              collection(id: $collectionID) {
                 __typename
                 ... on Collection {
                   id
@@ -276,8 +275,7 @@ class Client(AsyncBaseClient):
             """
         )
         variables: Dict[str, object] = {
-            "organizationID": organization_id,
-            "key": key,
+            "collectionID": collection_id,
             "after": after,
             "first": first,
         }
@@ -291,12 +289,12 @@ class Client(AsyncBaseClient):
         return CollectionCollections.model_validate(data)
 
     async def collection_document(
-        self, organization_id: str, key: str, doc_key: str, **kwargs: Any
+        self, collection_id: str, doc_key: str, **kwargs: Any
     ) -> CollectionDocument:
         query = gql(
             """
-            mutation CollectionDocument($organizationID: ID!, $key: ID!, $docKey: ID!) {
-              collectionCreate(organizationID: $organizationID, key: $key) {
+            query CollectionDocument($collectionID: ID!, $docKey: ID!) {
+              collection(id: $collectionID) {
                 __typename
                 ... on Collection {
                   document(key: $docKey) {
@@ -321,8 +319,7 @@ class Client(AsyncBaseClient):
             """
         )
         variables: Dict[str, object] = {
-            "organizationID": organization_id,
-            "key": key,
+            "collectionID": collection_id,
             "docKey": doc_key,
         }
         response = await self.execute(
@@ -339,7 +336,7 @@ class Client(AsyncBaseClient):
     ) -> CollectionDocumentSet:
         query = gql(
             """
-            mutation collectionDocumentSet($collectionID: ID!, $key: ID!, $data: Base64JSON!) {
+            mutation CollectionDocumentSet($collectionID: ID!, $key: ID!, $data: Base64JSON!) {
               collectionDocumentSet(collectionID: $collectionID, key: $key, data: $data) {
                 __typename
                 ... on CollectionDocument {
@@ -366,7 +363,7 @@ class Client(AsyncBaseClient):
         }
         response = await self.execute(
             query=query,
-            operation_name="collectionDocumentSet",
+            operation_name="CollectionDocumentSet",
             variables=variables,
             **kwargs
         )
@@ -378,7 +375,7 @@ class Client(AsyncBaseClient):
     ) -> CollectionDocumentDelete:
         query = gql(
             """
-            mutation collectionDocumentDelete($id: ID!) {
+            mutation CollectionDocumentDelete($id: ID!) {
               collectionDocumentDelete(id: $id) {
                 __typename
                 ... on CollectionDocument {
@@ -401,7 +398,7 @@ class Client(AsyncBaseClient):
         variables: Dict[str, object] = {"id": id}
         response = await self.execute(
             query=query,
-            operation_name="collectionDocumentDelete",
+            operation_name="CollectionDocumentDelete",
             variables=variables,
             **kwargs
         )
@@ -413,7 +410,7 @@ class Client(AsyncBaseClient):
     ) -> CollectionDocumentTagAdd:
         query = gql(
             """
-            mutation collectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
+            mutation CollectionDocumentTagAdd($id: ID!, $tag: TagInput!) {
               collectionDocumentTagAdd(id: $id, tag: $tag) {
                 __typename
                 ... on CollectionDocument {
@@ -436,7 +433,7 @@ class Client(AsyncBaseClient):
         variables: Dict[str, object] = {"id": id, "tag": tag}
         response = await self.execute(
             query=query,
-            operation_name="collectionDocumentTagAdd",
+            operation_name="CollectionDocumentTagAdd",
             variables=variables,
             **kwargs
         )
@@ -448,7 +445,7 @@ class Client(AsyncBaseClient):
     ) -> CollectionDocumentTagDelete:
         query = gql(
             """
-            mutation collectionDocumentTagDelete($id: ID!, $tag_key: String!) {
+            mutation CollectionDocumentTagDelete($id: ID!, $tag_key: String!) {
               collectionDocumentTagDelete(id: $id, key: $tag_key) {
                 __typename
                 ... on CollectionDocument {
@@ -471,7 +468,7 @@ class Client(AsyncBaseClient):
         variables: Dict[str, object] = {"id": id, "tag_key": tag_key}
         response = await self.execute(
             query=query,
-            operation_name="collectionDocumentTagDelete",
+            operation_name="CollectionDocumentTagDelete",
             variables=variables,
             **kwargs
         )
@@ -480,8 +477,7 @@ class Client(AsyncBaseClient):
 
     async def collection_documents(
         self,
-        organization_id: str,
-        key: str,
+        collection_id: str,
         tag: Union[Optional[TagInput], UnsetType] = UNSET,
         after: Union[Optional[str], UnsetType] = UNSET,
         first: Union[Optional[int], UnsetType] = UNSET,
@@ -489,8 +485,8 @@ class Client(AsyncBaseClient):
     ) -> CollectionDocuments:
         query = gql(
             """
-            mutation collectionDocuments($organizationID: ID!, $key: ID!, $tag: TagInput, $after: ID, $first: Int) {
-              collectionCreate(organizationID: $organizationID, key: $key) {
+            query CollectionDocuments($collectionID: ID!, $tag: TagInput, $after: ID, $first: Int) {
+              collection(id: $collectionID) {
                 __typename
                 ... on Collection {
                   id
@@ -525,15 +521,14 @@ class Client(AsyncBaseClient):
             """
         )
         variables: Dict[str, object] = {
-            "organizationID": organization_id,
-            "key": key,
+            "collectionID": collection_id,
             "tag": tag,
             "after": after,
             "first": first,
         }
         response = await self.execute(
             query=query,
-            operation_name="collectionDocuments",
+            operation_name="CollectionDocuments",
             variables=variables,
             **kwargs
         )

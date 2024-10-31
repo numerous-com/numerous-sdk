@@ -104,7 +104,7 @@ def _collection_document_delete_found(_id: str) -> CollectionDocumentDelete:
 def _collection_collections(_id: str) -> CollectionCollections:
     return CollectionCollections.model_validate(
         {
-            "collectionCreate": {
+            "collection": {
                 "__typename": "Collection",
                 "id": "1a9299d1-5c81-44bb-b94f-ba40afc05f3a",
                 "key": "root_collection",
@@ -145,7 +145,7 @@ def _collection_collections(_id: str) -> CollectionCollections:
 def _collection_documents_reference(key: str) -> CollectionDocuments:
     return CollectionDocuments.model_validate(
         {
-            "collectionCreate": {
+            "collection": {
                 "__typename": "Collection",
                 "id": "0d2f82fa-1546-49a4-a034-3392eefc3e4e",
                 "key": "t1",
@@ -183,7 +183,7 @@ def _collection_documents_reference(key: str) -> CollectionDocuments:
 def _collection_document_reference(key: str) -> CollectionDocument:
     return CollectionDocument.model_validate(
         {
-            "collectionCreate": {
+            "collection": {
                 "__typename": "Collection",
                 "document": {
                     "__typename": "CollectionDocument",
@@ -274,8 +274,7 @@ def test_collection_document_returns_new_document() -> None:
     document = test_collection.document(COLLECTION_DOCUMENT_KEY)
 
     gql.collection_document.assert_called_once_with(
-        ORGANIZATION_ID,
-        COLLECTION_REFERENCE_KEY,
+        COLLECTION_REFERENCE_ID,
         COLLECTION_DOCUMENT_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
@@ -297,8 +296,7 @@ def test_collection_document_returns_existing_document() -> None:
     document = test_collection.document(COLLECTION_DOCUMENT_KEY)
 
     gql.collection_document.assert_called_once_with(
-        ORGANIZATION_ID,
-        COLLECTION_REFERENCE_KEY,
+        COLLECTION_REFERENCE_ID,
         COLLECTION_DOCUMENT_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
@@ -349,14 +347,12 @@ def test_collection_document_get_returns_dict() -> None:
     gql.collection_document.assert_has_calls(
         [
             call(
-                ORGANIZATION_ID,
-                COLLECTION_REFERENCE_KEY,
+                COLLECTION_REFERENCE_ID,
                 COLLECTION_DOCUMENT_KEY,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
             call(
-                ORGANIZATION_ID,
-                COLLECTION_REFERENCE_KEY,
+                COLLECTION_REFERENCE_ID,
                 COLLECTION_DOCUMENT_KEY,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
@@ -465,8 +461,7 @@ def test_collection_documents_return_more_than_one() -> None:
 
     assert len(result) == expected_number_of_documents
     gql.collection_documents.assert_called_once_with(
-        ORGANIZATION_ID,
-        COLLECTION_REFERENCE_KEY,
+        COLLECTION_REFERENCE_ID,
         None,
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
@@ -491,8 +486,7 @@ def test_collection_documents_query_tag_specific_document() -> None:
         assert document.exists
 
     gql.collection_documents.assert_called_once_with(
-        ORGANIZATION_ID,
-        COLLECTION_REFERENCE_KEY,
+        COLLECTION_REFERENCE_ID,
         TagInput(key=tag_key, value=tag_value),
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
@@ -518,8 +512,7 @@ def test_collection_collections_return_more_than_one() -> None:
 
     assert len(result) == expected_number_of_collections
     gql.collection_collections.assert_called_once_with(
-        ORGANIZATION_ID,
-        COLLECTION_REFERENCE_KEY,
+        COLLECTION_REFERENCE_ID,
         after="",
         first=COLLECTED_OBJECTS_NUMBER,
         **HEADERS_WITH_AUTHORIZATION,

@@ -33,7 +33,7 @@ class NumerousCollection:
         key (str): The key of the document.
 
         """
-        numerous_doc_ref = self._client.get_collection_document(self.key, key)
+        numerous_doc_ref = self._client.get_collection_document(self.id, key)
         if numerous_doc_ref is not None:
             numerous_document = NumerousDocument(
                 self._client,
@@ -72,7 +72,7 @@ class NumerousCollection:
         has_next_page = True
         while has_next_page:
             result = self._client.get_collection_documents(
-                self.key, end_cursor, tag_input
+                self.id, end_cursor, tag_input
             )
             if result is None:
                 break
@@ -102,7 +102,7 @@ class NumerousCollection:
         end_cursor = ""
         has_next_page = True
         while has_next_page:
-            result = self._client.get_collection_collections(self.key, end_cursor)
+            result = self._client.get_collection_collections(self.id, end_cursor)
             if result is None:
                 break
             collection_refs, has_next_page, end_cursor = result

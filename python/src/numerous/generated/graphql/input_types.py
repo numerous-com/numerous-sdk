@@ -54,11 +54,24 @@ class AppCreateInfo(BaseModel):
 class AppDeployInput(BaseModel):
     app_relative_path: Optional[str] = Field(alias="appRelativePath", default=None)
     secrets: Optional[List["AppSecret"]] = None
+    skip_metadata_update: Optional[bool] = Field(
+        alias="skipMetadataUpdate", default=None
+    )
 
 
 class AppDeployLogsInput(BaseModel):
     organization_slug: str = Field(alias="organizationSlug")
     app_slug: str = Field(alias="appSlug")
+
+
+class AppRenameInput(BaseModel):
+    app_id: str = Field(alias="appID")
+    app_name: str = Field(alias="appName")
+
+
+class AppDescriptionUpdateInput(BaseModel):
+    app_id: str = Field(alias="appID")
+    app_description: Optional[str] = Field(alias="appDescription", default=None)
 
 
 class AppDeleteInput(BaseModel):

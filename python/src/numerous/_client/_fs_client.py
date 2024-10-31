@@ -208,11 +208,11 @@ class FileSystemClient:
 
     def get_collection_documents(
         self,
-        collection_key: str,
+        collection_id: str,
         end_cursor: str,  # noqa: ARG002
         tag_input: Optional[TagInput],
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
-        col_path = self._base_path / collection_key
+        col_path = self._base_path / collection_id
         if not col_path.exists():
             return [], False, ""
 

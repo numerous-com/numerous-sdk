@@ -7,6 +7,7 @@ directive @trackAppOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackAppUseOperation on FIELD_DEFINITION
 directive @trackToolOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackToolUseOperation on FIELD_DEFINITION
+directive @trackSubscriptionUseOperation on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
 
 ###############################################################################
@@ -132,10 +133,6 @@ type InvalidEmail {
   email: String!
 }
 
-type OrganizationMemberExists {
-  email: String!
-}
-
 input NewOrganization {
   name: String!
   slug: String
@@ -177,6 +174,10 @@ union OrganizationMemberEditRoleResult =
     OrganizationMembership
   | OrganizationNotFound
   | UserNotFound
+union OrganizationMemberRemoveResult =
+    Organization
+  | OrganizationNotFound
+  | UserNotFound
 
 extend type Query {
   organization(organizationSlug: String!): OrganizationQueryResult!
@@ -197,6 +198,10 @@ extend type Mutation {
     organizationId: ID!
     input: OrganizationMemberEditRoleInput!
   ): OrganizationMemberEditRoleResult! @hasRole(role: ADMIN)
+  organizationMemberRemove(
+    organizationId: ID!
+    memberId: ID!
+  ): OrganizationMemberRemoveResult! @hasRole(role: ADMIN)
 }
 ###############################################################################
 ### End of organization management
@@ -251,7 +256,6 @@ union OrganizationInvitationCreateResult =
     OrganizationInvitation
   | OrganizationNotFound
   | InvalidEmail
-  | OrganizationMemberExists
   | OrganizationInvitationExists
 
 union OrganizationInvitationAcceptResult = Organization | OrganizationNotFound
@@ -349,6 +353,7 @@ extend type Mutation {
 ### App management
 ###############################################################################
 
+directive @userCreatedApp on FIELD_DEFINITION
 directive @canManageApp on FIELD_DEFINITION
 directive @canUseApp on FIELD_DEFINITION
 
@@ -362,6 +367,7 @@ enum AppDeploymentStatus {
 
 type AppDeploymentVersion {
   id: ID!
+  createdAt: Time!
   status: AppDeploymentStatus!
   proxyURL: String
   appVersion: AppVersion!
@@ -373,10 +379,17 @@ type AppDeployment {
   current: AppDeploymentVersion
 }
 
+type AppVersionDocumentationFile {
+  filename: String!
+  contentBase64: String!
+}
+
 type AppVersion {
   id: ID!
   version: String!
   message: String!
+  releaseNotes: AppVersionDocumentationFile
+  userGuide: AppVersionDocumentationFile
 }
 
 input AppVersionInput {
@@ -412,6 +425,7 @@ input AppCreateInfo {
 input AppDeployInput {
   appRelativePath: String
   secrets: [AppSecret!]
+  skipMetadataUpdate: Boolean
 }
 
 type AppBuildMessageEvent {
@@ -439,6 +453,16 @@ input AppDeployLogsInput {
 type AppDeployLogEntry {
   timestamp: Time!
   text: String!
+}
+
+input AppRenameInput {
+  appID: ID!
+  appName: String!
+}
+
+input AppDescriptionUpdateInput {
+  appID: ID!
+  appDescription: String
 }
 
 type AppDeleted {
@@ -483,11 +507,17 @@ extend type Mutation {
     @canManageApp
     @trackAppOperation(eventName: "App Version Upload URL")
   appVersionDownloadURL(appVersionID: ID!): AppVersionDownloadURL!
-    @canManageApp
+    @userCreatedApp
     @trackAppOperation(eventName: "App Version Download URL")
   appDeploy(appVersionID: ID!, input: AppDeployInput): AppDeploymentVersion!
     @canManageApp
     @trackAppOperation(eventName: "App Deploy")
+  appRename(organizationSlug: String!, appData: AppRenameInput!): App
+    @hasRole(role: ADMIN)
+  appDescriptionUpdate(
+    organizationSlug: String!
+    appData: AppDescriptionUpdateInput!
+  ): App @hasRole(role: ADMIN)
   appDelete(input: AppDeleteInput!): AppDeleted! @canManageApp
   appDeployHeartbeat(deployID: ID!): AppDeploymentHeartbeat!
     @canUseApp
@@ -600,10 +630,21 @@ type OrganizationHasNoPaymentAccount {
   organizationID: ID!
 }
 
+type SubscriptionOfferInvalidMonthlyPriceUSD {
+  monthlyPriceUSD: Decimal!
+}
+
+type SubscriptionOfferInvalidTrialDays {
+  trialDays: Int!
+  maxTrialDays: Int!
+}
+
 union SubscriptionOfferCreateResult =
     SubscriptionOffer
   | InvalidEmail
   | OrganizationHasNoPaymentAccount
+  | SubscriptionOfferInvalidMonthlyPriceUSD
+  | SubscriptionOfferInvalidTrialDays
 
 union SubscriptionOfferResult = SubscriptionOffer | SubscriptionOfferNotFound
 
@@ -657,6 +698,9 @@ extend type Mutation {
     @canManageInboundSubscription
   subscriptionCancelOutbound(subscriptionId: ID!): AppSubscriptionCancelResult!
     @canManageOutboundSubscription
+  subscriptionDeployHeartbeat(subscriptionId: ID!): AppDeploymentHeartbeat!
+    @canAccessSubscription
+    @trackSubscriptionUseOperation
 }
 
 ###############################################################################
@@ -1010,7 +1054,12 @@ type CollectionNotFound {
   id: ID!
 }
 
+union CollectionResult = Collection | CollectionNotFound
 union CollectionCreateResult = Collection | CollectionNotFound
+
+extend type Query {
+  collection(id: ID!): CollectionResult
+}
 
 extend type Mutation {
   # idempotent
@@ -1167,7 +1216,7 @@ type PaymentAccountURL {
 }
 
 type PaymentAccountNotFound {
-  organizationSlug: String!
+  organizationID: ID!
 }
 
 type PaymentAccountExists {
@@ -1175,8 +1224,21 @@ type PaymentAccountExists {
   paymentAccount: PaymentAccount!
 }
 
+type PaymentAccountHasActiveSubscriptions {
+  organizationID: ID!
+  activeSubscriptionsCount: Int!
+}
+
+type PaymentAccountDeleted {
+  organizationID: ID!
+}
+
 union PaymentAccountCreateResult = PaymentAccount | PaymentAccountExists
 union PaymentAccountURLResult = PaymentAccountURL | PaymentAccountNotFound
+union PaymentAccountDeleteResult =
+    PaymentAccountNotFound
+  | PaymentAccountHasActiveSubscriptions
+  | PaymentAccountDeleted
 
 extend type Mutation {
   paymentAccountCreate(organizationSlug: String!): PaymentAccountCreateResult!
@@ -1187,6 +1249,8 @@ extend type Mutation {
   paymentAccountUpdateURLCreate(
     organizationSlug: String!
   ): PaymentAccountURLResult! @hasRole(role: ADMIN)
+  paymentAccountDelete(organizationSlug: String!): PaymentAccountDeleteResult!
+    @hasRole(role: ADMIN)
 }
 
 ###############################################################################

@@ -6,12 +6,12 @@ from typing import Optional, Union
 from numerous.collection.exceptions import ParentCollectionNotFoundError
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import (
-    CollectionCollectionsCollectionCreateCollection,
-    CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode,
+    CollectionCollectionsCollectionCollection,
+    CollectionCollectionsCollectionCollectionCollectionsEdgesNode,
 )
 from numerous.generated.graphql.collection_document import (
-    CollectionDocumentCollectionCreateCollectionDocument,
-    CollectionDocumentCollectionCreateCollectionNotFound,
+    CollectionDocumentCollectionCollectionDocument,
+    CollectionDocumentCollectionCollectionNotFound,
 )
 from numerous.generated.graphql.collection_document_delete import (
     CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
@@ -30,8 +30,8 @@ from numerous.generated.graphql.collection_document_tag_delete import (
     CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
 )
 from numerous.generated.graphql.collection_documents import (
-    CollectionDocumentsCollectionCreateCollection,
-    CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
+    CollectionDocumentsCollectionCollection,
+    CollectionDocumentsCollectionCollectionDocumentsEdgesNode,
 )
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
@@ -87,7 +87,7 @@ class GraphQLClient:
         self,
         collection_response: Union[
             CollectionReference,
-            CollectionCollectionsCollectionCreateCollectionCollectionsEdgesNode,
+            CollectionCollectionsCollectionCollectionCollectionsEdgesNode,
             CollectionNotFound,
         ],
     ) -> CollectionReference:
@@ -133,8 +133,8 @@ class GraphQLClient:
                 CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound,
                 CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
                 CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
-                CollectionDocumentCollectionCreateCollectionDocument,
-                CollectionDocumentsCollectionCreateCollectionDocumentsEdgesNode,
+                CollectionDocumentCollectionCollectionDocument,
+                CollectionDocumentsCollectionCollectionDocumentsEdgesNode,
                 CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
             ]
         ],
@@ -149,26 +149,27 @@ class GraphQLClient:
         return None
 
     async def _get_collection_document(
-        self, collection_key: str, document_key: str
+        self, collection_id: str, document_key: str
     ) -> Optional[CollectionDocumentReference]:
         response = await self._gql.collection_document(
-            self._organization_id,
-            collection_key,
+            collection_id,
             document_key,
             headers=self._headers,
         )
         if isinstance(
-            response.collection_create,
-            CollectionDocumentCollectionCreateCollectionNotFound,
+            response.collection,
+            CollectionDocumentCollectionCollectionNotFound,
         ):
             return None
-        return self._create_collection_document_ref(response.collection_create.document)
+        if response.collection is None:
+            return None
+        return self._create_collection_document_ref(response.collection.document)
 
     def get_collection_document(
-        self, collection_key: str, document_key: str
+        self, collection_id: str, document_key: str
     ) -> Optional[CollectionDocumentReference]:
         return self._threaded_event_loop.await_coro(
-            self._get_collection_document(collection_key, document_key)
+            self._get_collection_document(collection_id, document_key)
         )
 
     async def _set_collection_document(
@@ -240,21 +241,20 @@ class GraphQLClient:
 
     async def _get_collection_documents(
         self,
-        collection_key: str,
+        collection_id: str,
         end_cursor: str,
         tag_input: Optional[TagInput],
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
         response = await self._gql.collection_documents(
-            self._organization_id,
-            collection_key,
+            collection_id,
             tag_input,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
             headers=self._headers,
         )
 
-        collection = response.collection_create
-        if not isinstance(collection, CollectionDocumentsCollectionCreateCollection):
+        collection = response.collection
+        if not isinstance(collection, CollectionDocumentsCollectionCollection):
             return [], False, ""
 
         documents = collection.documents
@@ -269,25 +269,24 @@ class GraphQLClient:
         return result, has_next_page, end_cursor
 
     def get_collection_documents(
-        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
+        self, collection_id: str, end_cursor: str, tag_input: Optional[TagInput]
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
         return self._threaded_event_loop.await_coro(
-            self._get_collection_documents(collection_key, end_cursor, tag_input)
+            self._get_collection_documents(collection_id, end_cursor, tag_input)
         )
 
     async def _get_collection_collections(
-        self, collection_key: str, end_cursor: str
+        self, collection_id: str, end_cursor: str
     ) -> tuple[Optional[list[CollectionReference]], bool, str]:
         response = await self._gql.collection_collections(
-            self._organization_id,
-            collection_key,
+            collection_id,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
             headers=self._headers,
         )
 
-        collection = response.collection_create
-        if not isinstance(collection, CollectionCollectionsCollectionCreateCollection):
+        collection = response.collection
+        if not isinstance(collection, CollectionCollectionsCollectionCollection):
             return [], False, ""
 
         collections = collection.collections

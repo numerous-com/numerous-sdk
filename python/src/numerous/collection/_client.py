@@ -20,7 +20,7 @@ class Client(Protocol):
     ) -> CollectionReference: ...
 
     def get_collection_document(
-        self, collection_key: str, document_key: str
+        self, collection_id: str, document_key: str
     ) -> Optional[CollectionDocumentReference]: ...
 
     def set_collection_document(
@@ -40,7 +40,7 @@ class Client(Protocol):
     ) -> Optional[CollectionDocumentReference]: ...
 
     def get_collection_documents(
-        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
+        self, collection_id: str, end_cursor: str, tag_input: Optional[TagInput]
     ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]: ...
 
     def get_collection_collections(
