@@ -1,7 +1,10 @@
 site_name: numerous-sdk docs
 nav:
   - Home: README.md
-  - GitHub: https://github.com/numerous-com/numerous-sdk
+  - Our Website: https://numerous.com
+  - Our GitHub Page: https://github.com/numerous-com/numerous-sdk
+  - Our PyPI Page: https://pypi.org/project/numerous-sdk/
+  - Platform Docs: https://numerous.com/docs
   - API Reference:
     - Collections: collections.md
     - Sessions: sessions.md

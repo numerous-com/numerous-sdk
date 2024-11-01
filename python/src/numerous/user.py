@@ -10,12 +10,11 @@ from numerous.collection._client import Client
 @dataclass
 class User:
     """
-    A class representing a user in the Numerous system.
+    A class representing a Numerous platform user.
 
     Attributes:
         id (str): The unique identifier for the user.
         name (str): The full name of the user.
-        _client (Client|None): The client instance associated with the user.
 
     """
 
@@ -26,7 +25,11 @@ class User:
     @property
     def collection(self) -> Optional["NumerousCollection"]:
         """
-        Get the NumerousCollection associated with this user.
+        Obtain a user's collection of data.
+
+        This method returns a collection placed in
+        "users" root collection and a "user_id" collection to store user-specific data
+        in an organized way, reducing boilerplate code.
 
         Returns:
             NumerousCollection|None: The collection for this user,

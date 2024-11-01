@@ -2,6 +2,8 @@
 
 The Numerous SDK supports a number of popular Python web frameworks.
 
+The `frameworks` package provides framework-specific implementations of Numerous features. Currently, the main framework-specific function is `get_session()`, which handles user authentication by accessing session information through cookies in a way that's compatible with each framework's request handling.
+
 ## Dash
 
 Plotly Dash lets you build interactive data dashboards using Python. Common uses include:
