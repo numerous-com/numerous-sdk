@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.29.6 (2024-11-01)
+
+### Fix
+
+* fix(python-sdk): allow chaining collection access ([`88a0625`](https://github.com/numerous-com/numerous-sdk/commit/88a06250a295316b7ce5c5437b0812bf53c0643d))
+
+  > 
+  > A nested collection not being returned is an exception that should not
+  > happen, so raise an error if it happens, instead of returning `None`.
+  > This enables chaining calls to nested collections, without checking for
+  > `None`.
+
+
+
+
 ## v0.29.5 (2024-11-01)
 
 ### Fix
