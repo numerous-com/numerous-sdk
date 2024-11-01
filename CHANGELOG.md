@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.7 (2024-11-01)
+
+### Fix
+
+* fix(python-sdk): tighten user collection return type, and update docstring ([`3d34591`](https://github.com/numerous-com/numerous-sdk/commit/3d345910070a0b16019e5a6932db893ac5d3acb5))
+
+
+
+
 ## v0.29.6 (2024-11-01)
 
 ### Fix
