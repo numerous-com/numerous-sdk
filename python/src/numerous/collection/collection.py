@@ -11,7 +11,13 @@ from ._client import Client
 def collection(
     collection_key: str, _client: Optional[Client] = None
 ) -> NumerousCollection:
-    """Get or create a collection by name."""
+    """
+    Get or create a root collection by name.
+
+    Use this function as an entry point to interact with collections.
+
+    In cases where the collection doesn't exist, it will be created.
+    """
     if _client is None:
         _client = get_client()
     collection_ref = _client.get_collection_reference(collection_key)

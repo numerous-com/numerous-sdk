@@ -9,6 +9,16 @@ from numerous.collection._client import Client
 
 @dataclass
 class User:
+    """
+    A class representing a user in the Numerous system.
+
+    Attributes:
+        id (str): The unique identifier for the user.
+        name (str): The full name of the user.
+        _client (Client|None): The client instance associated with the user.
+
+    """
+
     id: str
     name: str
     _client: Optional[Client] = None

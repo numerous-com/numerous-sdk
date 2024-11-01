@@ -4,13 +4,16 @@ nav:
   - GitHub: https://github.com/numerous-com/numerous-sdk
   - API Reference:
     - Collections: collections.md
-    
-  
+    - Sessions: sessions.md
+    - Users: user.md
+    - Frameworks: frameworks.md
+
 theme: readthedocs
 plugins:
   - search
   - mkdocstrings:
       default_handler: "python"
       rendering:
-        show_source: false
+        show_source: true
+        show_full_signature: true
         show_root_heading: true
