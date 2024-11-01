@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.4 (2024-11-01)
+
+### Fix
+
+* fix(sdk): Improved documentation of user, sessions and collections ([`2cb02b3`](https://github.com/numerous-com/numerous-sdk/commit/2cb02b321a291bf7de14037fc76d6a5cbda927f8))
+
+
+
+
 ## v0.29.3 (2024-10-31)
 
 ### Fix
