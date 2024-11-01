@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.5 (2024-11-01)
+
+### Fix
+
+* fix(sdk): Update to documentation ([`5b49249`](https://github.com/numerous-com/numerous-sdk/commit/5b4924922f484812e55ae5065dfc29b3df90f901))
+
+
+
+
 ## v0.29.4 (2024-11-01)
 
 ### Fix
