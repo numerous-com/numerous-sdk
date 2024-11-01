@@ -1,5 +1,6 @@
 """Class for working with numerous collections."""
 
+from dataclasses import dataclass
 from typing import Iterator, Optional
 
 from numerous.collection._client import Client
@@ -8,21 +9,28 @@ from numerous.generated.graphql.fragments import CollectionReference
 from numerous.generated.graphql.input_types import TagInput
 
 
+@dataclass
+class CollectionNotFoundError(Exception):
+    parent_id: Optional[str]
+    key: str
+
+
 class NumerousCollection:
     def __init__(self, collection_ref: CollectionReference, _client: Client) -> None:
         self.key = collection_ref.key
         self.id = collection_ref.id
         self._client = _client
 
-    def collection(self, collection_key: str) -> Optional["NumerousCollection"]:
+    def collection(self, collection_key: str) -> "NumerousCollection":
         """Get or create a collection by name."""
         collection_ref = self._client.get_collection_reference(
             collection_key=collection_key, parent_collection_id=self.id
         )
 
-        if collection_ref is not None:
-            return NumerousCollection(collection_ref, self._client)
-        return None
+        if collection_ref is None:
+            raise CollectionNotFoundError(parent_id=self.id, key=collection_key)
+
+        return NumerousCollection(collection_ref, self._client)
 
     def document(self, key: str) -> NumerousDocument:
         """
