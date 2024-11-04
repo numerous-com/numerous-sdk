@@ -1,7 +1,7 @@
 """Class for working with numerous collections."""
 
 from dataclasses import dataclass
-from typing import Iterator, Optional
+from typing import Generator, Iterator, Optional
 
 from numerous.collection._client import Client
 from numerous.collection.numerous_document import NumerousDocument
@@ -22,7 +22,18 @@ class NumerousCollection:
         self._client = _client
 
     def collection(self, collection_key: str) -> "NumerousCollection":
-        """Get or create a collection by name."""
+        """
+        Get or create a child collection of this collection by key.
+
+        Args:
+            collection_key: Key of the nested collection. A key uniquely identifies a
+                collection within the parent collection. Keys are case sensitive, and
+                can be used as human-readable identifiers for collections
+
+        Returns:
+            NumerousCollection: The child collection identified by the given key.
+
+        """
         collection_ref = self._client.get_collection_reference(
             collection_key=collection_key, parent_collection_id=self.id
         )
@@ -36,9 +47,12 @@ class NumerousCollection:
         """
         Get or create a document by key.
 
-        Attributes
-        ----------
-        key (str): The key of the document.
+        Args:
+            key: Key of the document. A key uniquely identifies a document within its
+                collection. Keys are case sensitive.
+
+        Returns:
+            The document in the collection with the given key.
 
         """
         numerous_doc_ref = self._client.get_collection_document(self.id, key)
@@ -60,17 +74,14 @@ class NumerousCollection:
         """
         Retrieve documents from the collection, filtered by a tag key and value.
 
-        Parameters
-        ----------
-        tag_key : Optional[str]
-            The key of the tag used to filter documents (optional).
-        tag_value : Optional[str]
-            The value of the tag used to filter documents (optional).
+        Args:
+            tag_key: If this and `tag_value` is specified, filter documents with this
+                tag.
+            tag_value: If this and `tag_key` is specified, filter documents with this
+                tag.
 
-        Yields
-        ------
-        NumerousDocument
-            Yields NumerousDocument objects from the collection.
+        Yields:
+            Documents from the collection.
 
         """
         end_cursor = ""
@@ -97,14 +108,12 @@ class NumerousCollection:
                     numerous_doc_ref,
                 )
 
-    def collections(self) -> Iterator["NumerousCollection"]:
+    def collections(self) -> Generator["NumerousCollection", None, None]:
         """
         Retrieve nested collections from the collection.
 
-        Yields
-        ------
-        NumerousCollection
-            Yields NumerousCollection objects.
+        Yields:
+            Nested collections of this collection.
 
         """
         end_cursor = ""

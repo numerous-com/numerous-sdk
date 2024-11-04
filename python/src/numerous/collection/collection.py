@@ -12,11 +12,18 @@ def collection(
     collection_key: str, _client: Optional[Client] = None
 ) -> NumerousCollection:
     """
-    Get or create a root collection by name.
+    Get or create a root collection by key.
 
     Use this function as an entry point to interact with collections.
+    If the collection does not exist, it is created.
 
-    In cases where the collection doesn't exist, it will be created.
+    Args:
+        collection_key: Key of the collection. A key is a string that uniquely
+            identifies a collection.
+
+    Returns:
+        The collection identified by the given key.
+
     """
     if _client is None:
         _client = get_client()

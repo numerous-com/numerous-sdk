@@ -21,16 +21,11 @@ def add_marimo_cookie_middleware(
     """
     Add a middleware that enables accessing cookies in marimo apps.
 
-    Parameters
-    ----------
-    app : FastAPI
-        The FastAPI app to add the middleware on.
-
-    session_ident : Optional[Callable[[], str]]
-        The identity function which must return a unique value for each session.
-
-    cookies_dir : Path | None
-        Path to the directory where cookies are stored.
+    Args:
+        app: The FastAPI app to add the middleware on.
+        session_ident: The identity function which must return a unique value for each
+            session.
+        cookies_dir: Path to the directory where cookies are stored.
 
     """
     cookies_dir = cookies_dir or Path(

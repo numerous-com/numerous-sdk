@@ -26,14 +26,12 @@ def _auto_label(key: str, label: Union[str, None]) -> str:
     Automatically assigns a label to a key if the label is None.
 
     Args:
-    ----
-        key (str): The key to be labeled.
-        label (str): The label to assign to the key. If None,
-            the key will be used as the label.
+        key: The key to be labeled.
+        label: The label to assign to the key. If None, the key will be used as the
+            label.
 
     Returns:
-    -------
-        str: The assigned label.
+        The assigned label.
 
     """
     if label is None:
@@ -56,12 +54,9 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         Field with a state that can be used in a Marimo app.
 
         Args:
-        ----
-            default (str | float, optional): The default value for the field.
-            Defaults to `...`.
-            annotation (type | None, optional): The type annotation for the field.
-            Defaults to None.
-            **kwargs (dict): Additional keyword arguments for the field.
+            default: The default value for the field.
+            annotation: The type annotation for the field.
+            kwargs: Additional keyword arguments for the field.
 
         """
         BaseField.__init__(self, default=default, annotation=annotation, **kwargs)
@@ -97,14 +92,11 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         Create a slider UI element.
 
         Args:
-        ----
-            step (float, optional): The step size for the slider. Defaults to 1.
-            label (str | None, optional): The label for the slider. Defaults to None.
-            Defaults to None.
+            step: The step size for the slider.
+            label: The label for the slider.
 
         Returns:
-        -------
-            mo.ui.slider: The created slider UI element.
+            The created slider UI element.
 
         """
         return self._number_ui(mo.ui.slider, step, label)
@@ -118,15 +110,11 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         Create a number UI element.
 
         Args:
-        ----
-            step (float, optional): The step value for the number UI element.
-                Defaults to 1.
-            label (str, optional): The label for the number UI element.
-                Defaults to None.
+            step: The step value for the number UI element.
+            label: The label for the number UI element.
 
         Returns:
-        -------
-            mo.ui.number: The created number UI element.
+            The created number UI element.
 
         """
         number_ui = self._number_ui(mo.ui.number, step, label)
@@ -142,12 +130,10 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         Return a text field widget.
 
         Args:
-        ----
-            label (str, optional): The label for the text field. Defaults to None.
+            label: The label for the text field. Defaults to None.
 
         Returns:
-        -------
-            mo.ui.text: The text field widget.
+            The text field widget.
 
         """
         return mo.ui.text(
@@ -161,8 +147,7 @@ class Field(BaseField, MoState[Union[str, float, int]]):
         Set the value of the Marimo object.
 
         Args:
-        ----
-            value (int | str): The value to be set. It can be an integer or a string.
+            value: The value to be set. It can be an integer or a string.
 
         Overrides the set method to call the mo state set_value and then calls the super
         class's set method.

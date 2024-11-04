@@ -37,28 +37,12 @@ class _ModelInterface:
 
     @property
     def model_attrs(self) -> Tuple[Any, PydanticBaseModel]:
-        """
-        Return the model attributes.
-
-        Returns
-        -------
-        tuple
-            A tuple containing the model attributes.
-
-        """
+        """The model attributes."""
         raise NotImplementedError
 
     @property
     def value(self) -> PydanticBaseModel:
-        """
-        Return the model value.
-
-        Returns
-        -------
-        PydanticBaseModel
-            The model value.
-
-        """
+        """The model value."""
         raise NotImplementedError
 
 
@@ -70,27 +54,10 @@ class BaseModel(_ModelInterface):
     interfaces in the class. It leverages Pydantic's `create_model` function to handle
     validation and type enforcement.
 
-    Attributes
-    ----------
-    pydantic_model_cls : PydanticBaseModel
-        Dynamically created Pydantic model class based on the fields
-        defined in the subclass.
-    _fields : dict
-        A dictionary mapping field names to Field or _ModelInterface instances,
-        representing the attributes of the model.
-
-    Methods
-    -------
-    __init__(**kwargs)
-        Initializes the model by creating a Pydantic model and validating
-        the input fields.
-    value()
-        Returns the Pydantic model instance containing validated data.
-    model_attrs()
-        Returns attributes of the dynamically created Pydantic model class.
-    pydantic_model()
-        Returns an instance of the dynamically created Pydantic model
-        containing validated data.
+    Attributes:
+        pydantic_model_cls:
+            Dynamically created Pydantic model class based on the fields
+            defined in the subclass.
 
     """
 
@@ -99,8 +66,7 @@ class BaseModel(_ModelInterface):
         Initialize a model object with the given fields.
 
         Args:
-        ----
-            **kwargs (dict): Keyword arguments representing the field values.
+            kwargs: Keyword arguments representing the field values.
 
         """
         _attrs = {}
@@ -139,42 +105,17 @@ class BaseModel(_ModelInterface):
 
     @property
     def value(self) -> PydanticBaseModel:
-        """
-        Return the PydanticBaseModel instance associated with this object.
-
-        Returns
-        -------
-        PydanticBaseModel
-            The PydanticBaseModel instance.
-
-        """
+        """The PydanticBaseModel instance associated with this object."""
         return self.pydantic_model
 
     @property
     def model_attrs(self) -> Tuple[Any, PydanticBaseModel]:
-        """
-        Return the data required to create a Pydantic model object.
-
-        Returns
-        -------
-        tuple
-            A tuple containing the type of the Pydantic model
-            and the model object itself.
-
-        """
+        """Data required to create a Pydantic model object."""
         return (type(self.pydantic_model), self.pydantic_model)
 
     @property
     def pydantic_model(self) -> PydanticBaseModel:
-        """
-        Get a Pydantic model object representing the model.
-
-        Returns
-        -------
-        BaseModel
-            The Pydantic model object with the values from the current model.
-
-        """
+        """Get a Pydantic model object representing the model."""
         _kwargs = {}
 
         # Get the values from the fields
@@ -200,14 +141,10 @@ class Field:
         """
         Initialize a Field object.
 
-        Parameters
-        ----------
-        default : str or float or None, optional
-            The default value for the field, by default ...
-        annotation : type or None, optional
-            The type annotation for the field, by default None
-        **kwargs : dict
-            Additional properties for the field.
+        Args:
+            default: The default value for the field, by default ...
+            annotation: The type annotation for the field, by default None
+            kwargs: Additional properties for the field.
 
         """
         self._default = default
@@ -228,17 +165,11 @@ class Field:
     @property
     def name(self) -> str:
         """
-        Returns the name of the field.
+        The name of the field.
 
-        Raises
-        ------
-        ValueError
-            If the name has not been set.
-
-        Returns
-        -------
-        str
-            The name of the field.
+        Raises:
+            ValueError: If the name is accessed before it has been set, or if it is set
+                again after it has been set.
 
         """
         if self._name is None:
@@ -248,20 +179,6 @@ class Field:
 
     @name.setter
     def name(self, name: str) -> None:
-        """
-        Set the name of the field.
-
-        Parameters
-        ----------
-        name : str
-            The name of the field.
-
-        Raises
-        ------
-        ValueError
-            If the name has already been set.
-
-        """
         if self._name is not None:
             error_msg = "Name has already been set"
             raise ValueError(error_msg)
@@ -270,13 +187,10 @@ class Field:
     @property
     def field_attrs(self) -> Tuple[type, Any]:
         """
-        Get the attributes of the field.
+        The field attributes.
 
-        Returns
-        -------
-        tuple
-            A tuple containing the value and type annotation of the field,
-            along with other properties.
+        A tuple containing the value and type annotation of the field, along with other
+        properties.
 
         """
         return (self._annotation, self.field_info)
@@ -284,13 +198,9 @@ class Field:
     @property
     def field_info(self) -> Any:  # noqa: ANN401
         """
-        Get the field information.
+        Field information.
 
-        Returns
-        -------
-        tuple
-            A tuple containing the Pydantic Field object with the value and properties.
-
+        A tuple containing the Pydantic Field object with the value and properties.
         """
         # Create a Pydantic Field object with the value and properties
         self._field_info = PydanticField(self._default, **self._props)  # type: ignore[arg-type]
@@ -298,43 +208,20 @@ class Field:
 
     @property
     def value(self) -> Union[str, float]:
-        """
-        Return the value of the object.
-
-        Returns
-        -------
-        str or float
-            The value of the object.
-
-        """
+        """The value of the object."""
         return self.get()
 
     @value.setter
     def value(self, value: Union[str, float]) -> None:
-        """
-        Set the value of the object.
-
-        Parameters
-        ----------
-        value : str or float
-            The new value to be set.
-
-        """
         self.set(value)
 
     def get(self) -> Union[str, float]:
         """
         Get the value of the field.
 
-        Returns
-        -------
-        str or float
-            The value of the model.
-
-        Raises
-        ------
-        ValueError
-            If the value has not been set.
+        Raises:
+            ValueError: If the value is accessed before it has been set, or if it is set
+                again after it has been set.
 
         """
         if self._field_value is None:
@@ -346,15 +233,11 @@ class Field:
         """
         Set the value of the field.
 
-        Parameters
-        ----------
-        value : str or float
-            The new value to be set.
+        Args:
+            value: The new value to be set.
 
-        Raises
-        ------
-        Exception
-            If the parent model validation fails.
+        Raises:
+            Exception: If the parent model validation fails.
 
         """
         old_value = self._field_value

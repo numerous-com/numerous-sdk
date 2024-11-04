@@ -12,10 +12,9 @@ class NumerousDocument:
     """
     Represents a document in a Numerous collection.
 
-    Attributes
-    ----------
+    Attributes:
         key (str): The key of the document.
-        collection_info tuple[str, str]: The id
+        collection_info (tuple[str, str]): The id
             and key of collection document belongs to.
         data (Optional[dict[str, Any]]): The data of the document.
         id (Optional[str]): The unique identifier of the document.
@@ -65,11 +64,9 @@ class NumerousDocument:
         Set the data for the document.
 
         Args:
-        ----
             data (dict[str, Any]): The data to set for the document.
 
         Raises:
-        ------
             ValueError: If the document data setting fails.
 
         """
@@ -88,12 +85,10 @@ class NumerousDocument:
         """
         Get the data of the document.
 
-        Returns
-        -------
+        Returns:
             dict[str, Any]: The data of the document.
 
-        Raises
-        ------
+        Raises:
             ValueError: If the document does not exist.
 
         """
@@ -107,8 +102,7 @@ class NumerousDocument:
         """
         Delete the document.
 
-        Raises
-        ------
+        Raises:
             ValueError: If the document does not exist or deletion failed.
 
         """
@@ -131,12 +125,10 @@ class NumerousDocument:
         Add a tag to the document.
 
         Args:
-        ----
             key (str): The tag key.
             value (str): The tag value.
 
         Raises:
-        ------
             ValueError: If the document does not exist.
 
         """
@@ -156,11 +148,9 @@ class NumerousDocument:
         Delete a tag from the document.
 
         Args:
-        ----
             tag_key (str): The key of the tag to delete.
 
         Raises:
-        ------
             ValueError: If the document does not exist.
 
         """

@@ -206,14 +206,14 @@ my_deserialized_data = MyData(**data["my-data"])
 
 ## API Documentation
 
-## ::: numerous.collection.collection.collection
+## ::: numerous.collection.collection
     options:
         show_root_heading: true
 
-## ::: numerous.collection.numerous_collection.NumerousCollection
+## ::: numerous.collection.NumerousCollection
     options:
         show_root_heading: true
 
-## ::: numerous.collection.numerous_document.NumerousDocument
+## ::: numerous.collection.NumerousDocument
     options:
         show_root_heading: true
