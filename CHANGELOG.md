@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.8 (2024-11-04)
+
+### Fix
+
+* fix(python-sdk): Remove long framework intros and replace by a simple line with a link to the website of the particular framework ([`3de7dee`](https://github.com/numerous-com/numerous-sdk/commit/3de7dee522239c9776dd70fc0e8daac0e937f20f))
+
+
+
+
 ## v0.29.7 (2024-11-01)
 
 ### Fix
