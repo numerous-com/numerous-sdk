@@ -29,6 +29,11 @@ We also expect new features added to have an associated test suite, which
 should be usable as documentation to understand the expectations of the new
 code.
 
+## Documentation
+
+In the python SDK, we document modules, functions, classes, and methods using
+docstrings. We use the [Google Docstring format](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings).
+
 ## Git workflow
 
 When creating a pull request with changes, please consider the following
