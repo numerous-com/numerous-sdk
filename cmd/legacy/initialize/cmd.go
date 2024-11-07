@@ -9,6 +9,7 @@ import (
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/gql/app"
+	"numerous.com/cli/internal/manifest"
 	"numerous.com/cli/internal/wizard"
 
 	"github.com/spf13/cobra"
@@ -41,6 +42,16 @@ func run(cmd *cobra.Command, args []string) {
 		appDir = cmdinit.PathArgumentHandler(args[0], appDir)
 	}
 
+	if exists, _ := dir.AppIDExists(appDir); exists {
+		printAlreadyInitialized(appDir, fmt.Sprintf("Files %q or %q exists", dir.AppIDFileName, dir.ToolIDFileName))
+		return
+	}
+
+	if exists, _ := manifest.ManifestExists(appDir); exists {
+		printAlreadyInitialized(appDir, fmt.Sprintf("File %q exists", manifest.ManifestFileName))
+		return
+	}
+
 	params := cmdinit.InitializeParams{
 		Name:             name,
 		Desc:             desc,
@@ -60,12 +71,17 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err := m.BootstrapFiles(a.ID, appDir); err != nil {
-		output.PrintErrorDetails("Error bootstrapping files.", err)
-		return
-	}
-
 	printSuccess(a)
+}
+
+func printAlreadyInitialized(appDir, reason string) {
+	output.PrintError(
+		"An app is already initialized in \"%s\": %s",
+		"💡 You can initialize an app in another folder by specifying a\n"+
+			"   path in the command, like below:\n\n"+
+			"numerous legacy init ./my-app-folder\n\n",
+		appDir, reason,
+	)
 }
 
 func printSuccess(a app.App) {
