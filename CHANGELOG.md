@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.29.11 (2024-11-07)
+
+### Fix
+
+* fix(cli): `legacy init` and `.gitignore` bootstrap ([`e059bfe`](https://github.com/numerous-com/numerous-sdk/commit/e059bfe9861f296dd3862214a13a47cc44483c23))
+
+  > 
+  > * Properly write `.app_id.txt` file with `legacy init`
+  > * Add newline at the end of updated `.gitignore`.
+  > * Refactor logic for creating `.app_id.txt`
+
+
+
+
 ## v0.29.10 (2024-11-07)
 
 ### Fix
