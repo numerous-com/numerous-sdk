@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.29.9 (2024-11-07)
+
+### Documentation
+
+* docs(python-sdk): use google docstring format (#50) ([`2d8568c`](https://github.com/numerous-com/numerous-sdk/commit/2d8568cc33327f10e3fbca337e1d5c122fee439b))
+
+
+
+### Fix
+
+* fix(cli): legacy `push` allow pushing Dockerfile apps ([`119a260`](https://github.com/numerous-com/numerous-sdk/commit/119a260a912bb78f16b37c383dd62ad999129378))
+
+  > 
+  > Fixes an issue where apps with a docker build configuration could not be pushed.
+
+
+* fix(cli): legacy `init` handling of app directory argument ([`4b9c6b6`](https://github.com/numerous-com/numerous-sdk/commit/4b9c6b6abdd6195260cd848c598c05be0adac870))
+
+
+
+
 ## v0.29.8 (2024-11-04)
 
 ### Fix
