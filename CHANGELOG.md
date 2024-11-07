@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.29.10 (2024-11-07)
+
+### Fix
+
+* fix(cli): `legacy init` only bootstrap files once ([`36b2229`](https://github.com/numerous-com/numerous-sdk/commit/36b2229bb08549063b88478211b896cd70b0c938))
+
+
+
+
 ## v0.29.9 (2024-11-07)
 
 ### Documentation
