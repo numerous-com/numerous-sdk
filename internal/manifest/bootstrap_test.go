@@ -22,10 +22,44 @@ func assertAllFilesExist(t *testing.T, paths []string) {
 	}
 }
 
-func TestBootstrapFiles(t *testing.T) {
+func TestBootstrapLegacyApp(t *testing.T) {
 	t.Run("adds expected lines to existing .gitignore", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		toolID := "tool-id"
+		initialGitIgnoreContent := "some/ignore/pattern\nanother-ignore-pattern"
+		expectedGitIgnoreContent := initialGitIgnoreContent + "\n# added by numerous legacy init\n.app_id.txt\n"
+		gitignoreFilePath := filepath.Join(tmpDir, ".gitignore")
+		test.WriteFile(t, gitignoreFilePath, []byte(initialGitIgnoreContent))
+
+		err := BootstrapLegacyApp(tmpDir, toolID)
+
+		assert.NoError(t, err)
+		actualGitIgnoreContent, err := os.ReadFile(gitignoreFilePath)
+		if assert.NoError(t, err) {
+			assert.Equal(t, expectedGitIgnoreContent, string(actualGitIgnoreContent))
+		}
+	})
+
+	t.Run("it writes .app_id.txt", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		appID := "some app id"
+
+		err := BootstrapLegacyApp(tmpDir, appID)
+
+		appIDFilePath := filepath.Join(tmpDir, dir.AppIDFileName)
+		assert.NoError(t, err)
+		if assert.FileExists(t, appIDFilePath) {
+			data, err := os.ReadFile(appIDFilePath)
+			if assert.NoError(t, err) {
+				assert.Equal(t, appID, string(data))
+			}
+		}
+	})
+}
+
+func TestBootstrapFiles(t *testing.T) {
+	t.Run("adds expected lines to existing .gitignore", func(t *testing.T) {
+		tmpDir := t.TempDir()
 		m := Manifest{
 			App: App{
 				CoverImage: "cover_img.png",
@@ -37,11 +71,11 @@ func TestBootstrapFiles(t *testing.T) {
 			},
 		}
 		initialGitIgnoreContent := "some/ignore/pattern\nanother-ignore-pattern"
-		expectedGitIgnoreContent := initialGitIgnoreContent + "\n# added by numerous init\n\n.env\n.app_id.txt"
+		expectedGitIgnoreContent := initialGitIgnoreContent + "\n# added by numerous init\n.env\n"
 		gitignoreFilePath := filepath.Join(tmpDir, ".gitignore")
 		test.WriteFile(t, gitignoreFilePath, []byte(initialGitIgnoreContent))
 
-		err := m.BootstrapFiles(toolID, tmpDir)
+		err := m.BootstrapFiles(tmpDir)
 
 		assert.NoError(t, err)
 		actualGitIgnoreContent, err := os.ReadFile(gitignoreFilePath)
@@ -52,7 +86,6 @@ func TestBootstrapFiles(t *testing.T) {
 
 	t.Run("writes manifest with expected excludes", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		toolID := "tool-id"
 		m := Manifest{
 			App: App{
 				CoverImage: "cover_img.png",
@@ -65,7 +98,7 @@ func TestBootstrapFiles(t *testing.T) {
 			},
 		}
 
-		bootErr := m.BootstrapFiles(toolID, tmpDir)
+		bootErr := m.BootstrapFiles(tmpDir)
 		loaded, manifestErr := Load(tmpDir + "/" + ManifestFileName)
 
 		assert.NoError(t, bootErr)
@@ -74,34 +107,7 @@ func TestBootstrapFiles(t *testing.T) {
 		assert.Equal(t, expectedExclude, loaded.Exclude)
 	})
 
-	t.Run("given app id then it writes .app_id.txt", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		m := Manifest{
-			App: App{
-				CoverImage: "cover_img.png",
-				Exclude:    []string{"*venv", "venv*", ".git", ".env"},
-			},
-			Python: &Python{
-				Library:          LibraryMarimo,
-				RequirementsFile: "requirements.txt",
-				AppFile:          "app.py",
-			},
-		}
-		appID := "some app id"
-
-		bootErr := m.BootstrapFiles(appID, tmpDir)
-
-		appIDFilePath := filepath.Join(tmpDir, dir.AppIDFileName)
-		if assert.NoError(t, bootErr) {
-			assert.FileExists(t, appIDFilePath)
-			data, err := os.ReadFile(appIDFilePath)
-			if assert.NoError(t, err) {
-				assert.Equal(t, appID, string(data))
-			}
-		}
-	})
-
-	t.Run("given no app id then it does not write .app_id.txt", func(t *testing.T) {
+	t.Run(" it does not write .app_id.txt", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		m := Manifest{
 			App: App{
@@ -115,7 +121,7 @@ func TestBootstrapFiles(t *testing.T) {
 			},
 		}
 
-		err := m.BootstrapFiles("", tmpDir)
+		err := m.BootstrapFiles(tmpDir)
 
 		appIDFilePath := filepath.Join(tmpDir, dir.AppIDFileName)
 		if assert.NoError(t, err) {
@@ -142,7 +148,7 @@ func TestBootstrapFiles(t *testing.T) {
 			},
 		}
 
-		err = m.BootstrapFiles("", tmpDir)
+		err = m.BootstrapFiles(tmpDir)
 
 		assert.NoError(t, err)
 		test.AssertFileContent(t, requirementsPath, before)
@@ -200,7 +206,7 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 			filepath.Join(appDir, m.CoverImage),
 		}
 
-		err = m.BootstrapFiles("some-id", appDir)
+		err = m.BootstrapFiles(appDir)
 
 		if assert.NoError(t, err) {
 			assertAllFilesExist(t, expectedFiles)
@@ -279,7 +285,7 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 					test.WriteFile(t, requiremenstPath, []byte(tc.initialRequirements))
 				}
 
-				err := m.BootstrapFiles("some-id", appDir)
+				err := m.BootstrapFiles(appDir)
 
 				assert.NoError(t, err)
 				test.AssertFileContent(t, requiremenstPath, []byte(tc.expectedRequirements))
@@ -332,7 +338,7 @@ func TestBootstrapFilesPythonApp(t *testing.T) {
 					},
 				}
 
-				err := m.BootstrapFiles("tool id", appDir)
+				err := m.BootstrapFiles(appDir)
 
 				assert.NoError(t, err)
 				test.AssertFileContent(t, filepath.Join(appDir, "app.py"), []byte(tc.expectedAppFile))
@@ -356,7 +362,7 @@ func TestBootstrapDockerApp(t *testing.T) {
 			},
 		}
 
-		err := m.BootstrapFiles("", appDir)
+		err := m.BootstrapFiles(appDir)
 
 		assert.NoError(t, err)
 		test.AssertFileContent(t, filepath.Join(appDir, "Dockerfile"), []byte(fmt.Sprintf(dockerExampleDockerfile, port, port)))
@@ -379,7 +385,7 @@ func TestBootstrapDockerApp(t *testing.T) {
 		dockerfilePath := filepath.Join(appDir, "Dockerfile")
 		test.WriteFile(t, dockerfilePath, dockerfileContent)
 
-		err := m.BootstrapFiles("", appDir)
+		err := m.BootstrapFiles(appDir)
 
 		assert.NoError(t, err)
 		test.AssertFileContent(t, dockerfilePath, dockerfileContent)
@@ -408,7 +414,7 @@ func TestBootstrapDockerApp(t *testing.T) {
 			},
 		}
 
-		err := m.BootstrapFiles("", appDir)
+		err := m.BootstrapFiles(appDir)
 
 		assert.NoError(t, err)
 		test.AssertFileContent(t, appFilePath, appContent)

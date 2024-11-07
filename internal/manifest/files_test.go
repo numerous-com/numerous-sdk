@@ -23,7 +23,7 @@ const expectedGitIgnore string = `
 some.txt
 *.go
 another.yaml
-` + expectedAddedGitIgnorePattern
+` + expectedAddedGitIgnorePattern + "\n"
 
 func TestCreateAppIdFile(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -73,7 +73,7 @@ func TestAddToGitIgnore(t *testing.T) {
 		if assert.NoError(t, err) {
 			actualGitIgnore, err := os.ReadFile(gitignorePath)
 			if assert.NoError(t, err) {
-				assert.Equal(t, expectedAddedGitIgnorePattern, string(actualGitIgnore))
+				assert.Equal(t, expectedAddedGitIgnorePattern+"\n", string(actualGitIgnore))
 			}
 		}
 	})

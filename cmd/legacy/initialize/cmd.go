@@ -71,6 +71,10 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	if err := manifest.BootstrapLegacyApp(appDir, a.ID); err != nil {
+		output.PrintErrorDetails("Error writing legacy app ID file with app ID %q", err, a.ID)
+	}
+
 	printSuccess(a)
 }
 

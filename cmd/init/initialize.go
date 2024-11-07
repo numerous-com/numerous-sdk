@@ -75,7 +75,7 @@ func Initialize(asker wizard.Asker, params InitializeParams) (*manifest.Manifest
 		m.Python.Version = python.PythonVersion()
 	}
 
-	err = m.BootstrapFiles("", params.AppDir)
+	err = m.BootstrapFiles(params.AppDir)
 	switch {
 	case err == manifest.ErrEncodingManifest:
 		output.PrintErrorDetails("Error encoding manifest file", err)

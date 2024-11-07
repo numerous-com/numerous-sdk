@@ -16,23 +16,13 @@ var (
 	ErrNoLibraryBootstrapped = errors.New("no library bootstrapped")
 )
 
-func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
+func (m *Manifest) BootstrapFiles(basePath string) error {
 	manifestToml, err := m.ToTOML()
 	if err != nil {
 		return ErrEncodingManifest
 	}
 
-	if toolID != "" {
-		if err = createAppIDFile(basePath, toolID); err != nil {
-			return err
-		}
-	}
-
-	gitignoreLines := []string{"# added by numerous init\n", EnvFileName}
-	if toolID != "" {
-		gitignoreLines = append(gitignoreLines, dir.AppIDFileName)
-	}
-
+	gitignoreLines := []string{"# added by numerous init", EnvFileName}
 	if err := addToGitIgnore(basePath, gitignoreLines); err != nil {
 		return err
 	}
@@ -62,6 +52,20 @@ func (m *Manifest) BootstrapFiles(toolID string, basePath string) error {
 	}
 
 	if err = createAndWriteIfFileNotExist(filepath.Join(basePath, ManifestFileName), manifestToml); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func BootstrapLegacyApp(basePath, appID string) error {
+	if err := createAppIDFile(basePath, appID); err != nil {
+		return err
+	}
+
+	gitignoreLines := []string{"# added by numerous legacy init", dir.AppIDFileName}
+
+	if err := addToGitIgnore(basePath, gitignoreLines); err != nil {
 		return err
 	}
 

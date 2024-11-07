@@ -44,7 +44,7 @@ func createAndWriteIfFileNotExist(path string, content string) error {
 	path = filepath.Clean(path)
 	_, err := os.Stat(path)
 	if err == nil {
-		fmt.Printf("Skipping creation of \"%s\"; it already exists\n", path)
+		fmt.Printf("Skipping creation of %q; it already exists\n", path)
 		return nil
 	}
 
@@ -60,7 +60,7 @@ func createAndWriteIfFileNotExist(path string, content string) error {
 	defer file.Close()
 
 	if _, err = file.WriteString(content); err != nil {
-		output.PrintErrorDetails("Could not write to \"%s\"", err, path)
+		output.PrintErrorDetails("Could not write to %q", err, path)
 	}
 
 	return nil
@@ -71,14 +71,14 @@ func writeOrAppendFile(path string, content string) error {
 	path = filepath.Clean(path)
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		output.PrintErrorDetails("Could not open \"%s\"", err, path)
+		output.PrintErrorDetails("Could not open %q", err, path)
 		return err
 	}
 	defer file.Close()
 
 	fileStat, err := file.Stat()
 	if err != nil {
-		output.PrintErrorDetails("Could not determine the file size of \"%s\"", err, path)
+		output.PrintErrorDetails("Could not determine the file size of %q", err, path)
 		return err
 	} else if fileStat.Size() != 0 {
 		content = "\n" + content
@@ -86,7 +86,7 @@ func writeOrAppendFile(path string, content string) error {
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		output.PrintErrorDetails("Could not write to \"%s\"", err, path)
+		output.PrintErrorDetails("Could not write to %q", err, path)
 	}
 
 	return nil
@@ -111,5 +111,5 @@ func addToGitIgnore(path string, toIgnore []string) error {
 		return err
 	}
 
-	return writeOrAppendFile(gitignorePath, strings.Join(toIgnore, "\n"))
+	return writeOrAppendFile(gitignorePath, strings.Join(toIgnore, "\n")+"\n")
 }
