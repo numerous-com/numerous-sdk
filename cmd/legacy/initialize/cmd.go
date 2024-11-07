@@ -15,7 +15,7 @@ import (
 )
 
 var InitCmd = &cobra.Command{
-	Use:     "init [flags]",
+	Use:     "init [flags] [app directory]",
 	Aliases: []string{"initialize"},
 	Short:   "Initialize a Numerous project",
 	Long:    `Helps the user bootstrap a python project as a Numerous project.`,
@@ -47,6 +47,7 @@ func run(cmd *cobra.Command, args []string) {
 		LibraryKey:       libraryKey,
 		AppFile:          appFile,
 		RequirementsFile: requirementsFile,
+		AppDir:           appDir,
 	}
 	m, err := cmdinit.Initialize(&wizard.SurveyAsker{}, params)
 	if err != nil {
