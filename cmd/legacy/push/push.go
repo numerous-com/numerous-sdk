@@ -74,7 +74,7 @@ func push(args []string) error {
 		return err
 	}
 
-	if err := m.ValidateApp(); err != nil {
+	if err := m.ValidateApp(); err != nil && !errors.Is(err, manifest.ErrNoPythonAppConfig) {
 		if errors.Is(err, manifest.ErrValidateNumerousApp) {
 			output.PrintError("Your app file must have an app definition called 'appdef'", numerousAppEngineMsg)
 		} else {
