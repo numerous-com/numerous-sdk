@@ -45,14 +45,6 @@ A URL is generated which provides access to the tool, anyone with the URL can ac
 	},
 }
 
-var numerousAppEngineMsg string = `You can solve this by assigning your app definition to this name, for example:
-			
-@app
-class MyApp:
-	my_field: str
-
-appdef = MyApp`
-
 func push(args []string) error {
 	appDir, projectDir, appPath, err := parseArguments(args)
 	if err != nil {
@@ -70,16 +62,6 @@ func push(args []string) error {
 	if err != nil {
 		output.PrintErrorAppNotInitialized(appDir)
 		output.PrintManifestTOMLError(err)
-
-		return err
-	}
-
-	if err := m.ValidateApp(); err != nil && !errors.Is(err, manifest.ErrNoPythonAppConfig) {
-		if errors.Is(err, manifest.ErrValidateNumerousApp) {
-			output.PrintError("Your app file must have an app definition called 'appdef'", numerousAppEngineMsg)
-		} else {
-			output.PrintErrorDetails("An error occurred validating the app", err)
-		}
 
 		return err
 	}

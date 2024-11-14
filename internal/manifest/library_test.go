@@ -8,9 +8,8 @@ import (
 )
 
 func TestSupportedLibraries(t *testing.T) {
-	assert.Equal(t, []Library{
-		LibraryStreamlit, LibraryPlotlyDash, LibraryMarimo, LibraryPanel, LibraryNumerous,
-	}, SupportedLibraries, "unexpected supported libraries - remember to update tests!")
+	expected := []Library{LibraryStreamlit, LibraryPlotlyDash, LibraryMarimo, LibraryPanel}
+	assert.Equal(t, expected, SupportedLibraries, "unexpected supported libraries - remember to update tests!")
 }
 
 func TestGetLibraryByKey(t *testing.T) {
@@ -19,7 +18,6 @@ func TestGetLibraryByKey(t *testing.T) {
 		expected Library
 	}{
 		{key: "streamlit", expected: LibraryStreamlit},
-		{key: "numerous", expected: LibraryNumerous},
 		{key: "marimo", expected: LibraryMarimo},
 		{key: "plotly", expected: LibraryPlotlyDash},
 		{key: "panel", expected: LibraryPanel},
@@ -46,7 +44,6 @@ func TestGetLibraryByName(t *testing.T) {
 		expected Library
 	}{
 		{name: "Streamlit", expected: LibraryStreamlit},
-		{name: "Numerous", expected: LibraryNumerous},
 		{name: "Marimo", expected: LibraryMarimo},
 		{name: "Plotly-dash", expected: LibraryPlotlyDash},
 		{name: "Panel", expected: LibraryPanel},
@@ -72,7 +69,6 @@ func TestDefaultAppFile(t *testing.T) {
 		library  Library
 		expected string
 	}{
-		{library: LibraryNumerous, expected: numerousApp},
 		{library: LibraryPanel, expected: panelApp},
 	}
 

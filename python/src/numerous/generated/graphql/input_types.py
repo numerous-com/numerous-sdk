@@ -96,23 +96,6 @@ class SubscriptionOfferInput(BaseModel):
     payment: Optional["PaymentConfigurationInput"] = None
 
 
-class ElementInput(BaseModel):
-    element_id: str = Field(alias="elementID")
-    text_value: Optional[str] = Field(alias="textValue", default=None)
-    number_value: Optional[float] = Field(alias="numberValue", default=None)
-    html_value: Optional[str] = Field(alias="htmlValue", default=None)
-    slider_value: Optional[float] = Field(alias="sliderValue", default=None)
-
-
-class ElementSelectInput(BaseModel):
-    select_element_id: str = Field(alias="selectElementID")
-    selected_option_id: str = Field(alias="selectedOptionID")
-
-
-class ListElementInput(BaseModel):
-    list_element_id: str = Field(alias="listElementID")
-
-
 class AppSecret(BaseModel):
     name: str
     base_64_value: str = Field(alias="base64Value")

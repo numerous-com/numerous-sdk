@@ -9,7 +9,6 @@ import (
 	"numerous.com/cli/cmd/app"
 	"numerous.com/cli/cmd/deletecmd"
 	"numerous.com/cli/cmd/deploy"
-	"numerous.com/cli/cmd/dev"
 	"numerous.com/cli/cmd/download"
 	"numerous.com/cli/cmd/errorhandling"
 	cmdinit "numerous.com/cli/cmd/init"
@@ -139,7 +138,6 @@ func init() {
 		cmdinit.Cmd,
 		login.Cmd,
 		logout.Cmd,
-		dev.DevCmd,
 		organization.Cmd,
 		legacy.Cmd,
 		deletecmd.Cmd,

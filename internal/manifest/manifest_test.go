@@ -9,32 +9,6 @@ import (
 	"numerous.com/cli/internal/test"
 )
 
-var numerousAppContentAppdefAssignment string = `
-from numerous import app
-
-@app
-class MyApp:
-	field: str
-
-appdef = MyApp
-`
-
-var numerousAppContentAppdefDefinition string = `
-from numerous import app
-
-@app
-class appdef:
-	field: str
-`
-
-var numerousAppContentWithoutAppdef string = `
-from numerous import app
-
-@app
-class MyApp:
-	field: str
-`
-
 const tomlStreamlit string = `name = "Streamlit App Name"
 description = "A description"
 cover_image = "cover.png"
@@ -157,54 +131,6 @@ var manifestDockerNoDeploy Manifest = Manifest{
 	Python:     nil,
 	Docker:     &Docker{Dockerfile: "Dockerfile", Context: "."},
 	Deployment: nil,
-}
-
-func TestValidateApp(t *testing.T) {
-	testCases := []struct {
-		name           string
-		library        string
-		appfileContent string
-		expected       error
-	}{
-		{
-			name:           "numerous app with appdef definition succeeds",
-			library:        "numerous",
-			appfileContent: numerousAppContentAppdefDefinition,
-			expected:       nil,
-		},
-		{
-			name:           "numerous app with appdef assignment succeeds",
-			library:        "numerous",
-			appfileContent: numerousAppContentAppdefAssignment,
-			expected:       nil,
-		},
-		{
-			name:           "numerous app without appdef fails",
-			library:        "numerous",
-			appfileContent: numerousAppContentWithoutAppdef,
-			expected:       ErrValidateNumerousApp,
-		},
-		{
-			name:           "non-numerous app without appdef succeeds",
-			library:        "streamlit",
-			appfileContent: `the_content = "does not matter here"`,
-			expected:       nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			appfile := test.WriteTempFile(t, "appfile.py", []byte(tc.appfileContent))
-			l, err := GetLibraryByKey(tc.library)
-			require.NoError(t, err)
-
-			m := Manifest{Python: &Python{Library: l, AppFile: appfile}}
-
-			err = m.ValidateApp()
-
-			assert.ErrorIs(t, err, tc.expected)
-		})
-	}
 }
 
 func TestLoad(t *testing.T) {
