@@ -370,7 +370,6 @@ def test_get_collection_files_returns_all_files(
     result_files = {file.file_id: file for file in result if file}
 
     for file_id, expected in expected_files.items():
-
         assert file_id in result_files
         file = result_files[file_id]
         assert file.key == expected["key"]
