@@ -207,9 +207,7 @@ def test_collection_file_new_file_returns_exists_false(mock_get: MagicMock) -> N
 
 
 @patch("requests.get")
-def test_collection_file_returns_file_exists_after_load(
-    mock_get: MagicMock
-) -> None:
+def test_collection_file_returns_file_exists_after_load(mock_get: MagicMock) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -232,7 +230,6 @@ def test_collection_file_returns_file_exists_after_load(
         COLLECTION_FILE_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
-
 
     assert isinstance(fileref, NumerousFile)
     assert fileref.exists is True
@@ -309,7 +306,7 @@ def test_collection_file_returns_file_byte_content_after_load(
 
 @patch("requests.get")
 def test_collection_file_returns_file_can_be_opened_after_load(
-    mock_get: MagicMock
+    mock_get: MagicMock,
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)

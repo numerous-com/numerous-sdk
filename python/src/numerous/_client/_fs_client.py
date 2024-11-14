@@ -173,7 +173,7 @@ class FileSystemClient:
     def __init__(self, base_path: Path) -> None:
         self._base_path = base_path
         self._base_path.mkdir(exist_ok=True)
-        self.file_to_path_map:dict[str,Path] = {}
+        self.file_to_path_map: dict[str, Path] = {}
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: Optional[str] = None
@@ -312,8 +312,6 @@ class FileSystemClient:
 
         return sorted(documents, key=lambda d: d.id if d else ""), False, ""
 
-
-
     def get_collection_file(
         self, collection_id: str, file_key: str
     ) -> Optional[NumerousFile]:
@@ -327,18 +325,18 @@ class FileSystemClient:
         file_id = str(Path(collection_id) / file_key)
         self.file_to_path_map[file_id] = path
         return NumerousFile(
-            client = self,
+            client=self,
             file_id=file_id,
             key=file_key,
             exists=True,
             numerous_file_tags=[tag.to_file_reference_tag() for tag in file.tags],
         )
 
-    def _modify_id(self,file_key:str) -> str:
+    def _modify_id(self, file_key: str) -> str:
         return f"file_{file_key}"
 
     def delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
-        file_path = self._base_path / ( file_id+".json")
+        file_path = self._base_path / (file_id + ".json")
         if not file_path.exists():
             return None
 
@@ -444,8 +442,6 @@ class FileSystemClient:
 
         return sorted(collections, key=lambda c: c.id), False, ""
 
-
-
     def read_text(self, file_id: str) -> str:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
@@ -475,26 +471,24 @@ class FileSystemClient:
             raise OSError(msg) from e
 
     def save_data_file(self, file_id: str, data: bytes | str) -> None:
-
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
         try:
-                write_mode = "wb" if isinstance(data, bytes) else "w"
-                with Path.open(file.path, write_mode) as file_obj:
-                    file_obj.write(data)
+            write_mode = "wb" if isinstance(data, bytes) else "w"
+            with Path.open(file.path, write_mode) as file_obj:
+                file_obj.write(data)
         except FileNotFoundError as e:
-                msg = f"File not found at path: {file.path}"
-                raise FileNotFoundError(msg) from e
+            msg = f"File not found at path: {file.path}"
+            raise FileNotFoundError(msg) from e
         except OSError as e:
-                msg = f"An error occurred while writing to the file: {e}"
-                raise OSError(msg) from e
-
+            msg = f"An error occurred while writing to the file: {e}"
+            raise OSError(msg) from e
 
     def save_file(self, file_id: str, data: TextIOWrapper) -> None:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
         try:
-            with  Path.open(file.path, "w") as dest_file:
+            with Path.open(file.path, "w") as dest_file:
                 content = data.read()
                 dest_file.write(content)
         except FileNotFoundError as e:
@@ -506,7 +500,6 @@ class FileSystemClient:
         finally:
             if not data.closed:
                 data.close()
-
 
     def open_file(self, file_id: str) -> BinaryIO:
         path = self.file_to_path_map[file_id]

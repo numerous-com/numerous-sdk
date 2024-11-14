@@ -80,8 +80,8 @@ class NumerousCollection:
         """
         numerous_file = self._client.get_collection_file(self.id, key)
         if numerous_file is None:
-               msg = "Failed to retrieve or create the file."
-               raise ValueError(msg)
+            msg = "Failed to retrieve or create the file."
+            raise ValueError(msg)
 
         return numerous_file
 

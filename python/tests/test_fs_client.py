@@ -325,14 +325,12 @@ def test_get_file_returns_expected_existing_file_reference(
         base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=tags
     )
 
-
     file = client.get_collection_file(_TEST_COLLECTION_ID, _TEST_FILE_KEY)
     assert file
-    assert file.file_id == str(Path(_TEST_COLLECTION_KEY) /  f"file_{_TEST_FILE_KEY}")
-    assert file.key ==  f"file_{_TEST_FILE_KEY}"
+    assert file.file_id == str(Path(_TEST_COLLECTION_KEY) / f"file_{_TEST_FILE_KEY}")
+    assert file.key == f"file_{_TEST_FILE_KEY}"
     assert file.exists is True
-    assert file.tags  == {"tag-1-key":"tag-1-value","tag-2-key":"tag-2-value"}
-
+    assert file.tags == {"tag-1-key": "tag-1-value", "tag-2-key": "tag-2-value"}
 
 
 def test_get_collection_files_returns_all_files(
@@ -359,8 +357,9 @@ def test_get_collection_files_returns_all_files(
 
     expected_files = [
         {
-            "file_id": str(Path(_TEST_COLLECTION_KEY) /
-                           f"file_{test_file['file_key']}"),
+            "file_id": str(
+                Path(_TEST_COLLECTION_KEY) / f"file_{test_file['file_key']}"
+            ),
             "key": f"file_{test_file['file_key']}",
             "exists": True,
             "tags": {},
@@ -398,7 +397,6 @@ def test_delete_collection_file_removes_expected_file(
     assert file.exists is False
 
 
-
 def test_add_collection_file_tag_adds_expected_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
@@ -411,7 +409,7 @@ def test_add_collection_file_tag_adds_expected_tag(
         tags=[{"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"}],
     )
 
-    path = base_path / _TEST_COLLECTION_KEY /f"file_{_TEST_FILE_KEY}.json"
+    path = base_path / _TEST_COLLECTION_KEY / f"file_{_TEST_FILE_KEY}.json"
     file_id = str(Path(_TEST_COLLECTION_ID) / f"file_{_TEST_FILE_KEY}")
 
     client.add_collection_file_tag(

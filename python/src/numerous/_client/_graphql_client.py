@@ -71,6 +71,7 @@ from numerous.threaded_event_loop import ThreadedEventLoop
 COLLECTED_OBJECTS_NUMBER = 100
 _REQUEST_TIMEOUT_SECONDS_ = 1.5
 
+
 class APIURLMissingError(Exception):
     _msg = "NUMEROUS_API_URL environment variable is not set"
 
@@ -97,7 +98,7 @@ class GraphQLClient:
         self._gql = gql
         self._threaded_event_loop = ThreadedEventLoop()
         self._threaded_event_loop.start()
-        self._files_references:dict[str,CollectionFileReference] = {}
+        self._files_references: dict[str, CollectionFileReference] = {}
 
         organization_id = os.getenv("NUMEROUS_ORGANIZATION_ID")
         if not organization_id:
@@ -320,15 +321,17 @@ class GraphQLClient:
         ],
     ) -> Optional[NumerousFile]:
         if isinstance(collection_response, CollectionFileReference):
-            self._files_references[collection_response.id]= collection_response
+            self._files_references[collection_response.id] = collection_response
             exists = False
-            if (collection_response.download_url and
-                collection_response.download_url.strip() != ""):
+            if (
+                collection_response.download_url
+                and collection_response.download_url.strip() != ""
+            ):
                 exists = True
             return NumerousFile(
-                client = self,
-                key = collection_response.key,
-                file_id = collection_response.id,
+                client=self,
+                key=collection_response.key,
+                file_id=collection_response.id,
                 exists=exists,
                 numerous_file_tags=collection_response.tags,
             )
@@ -352,9 +355,7 @@ class GraphQLClient:
             self._get_collection_file(collection_id, file_key)
         )
 
-    async def _delete_collection_file(
-        self, file_id: str
-    ) -> Optional[NumerousFile]:
+    async def _delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
         response = await self._gql.collection_file_delete(
             file_id,
             headers=self._headers,
@@ -467,56 +468,45 @@ class GraphQLClient:
             self._get_collection_collections(collection_key, end_cursor)
         )
 
-
     def read_text(self, file_id: str) -> str:
-            download_url = self._files_references[file_id].download_url
-            if download_url is None :
-                msg = "No download URL for this file."
-                raise ValueError(msg)
-            response = requests.get(
-               download_url,
-                timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
-            response.raise_for_status()
+        download_url = self._files_references[file_id].download_url
+        if download_url is None:
+            msg = "No download URL for this file."
+            raise ValueError(msg)
+        response = requests.get(download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
+        response.raise_for_status()
 
-            return response.text
+        return response.text
 
     def read_bytes(self, file_id: str) -> bytes:
-            download_url = self._files_references[file_id].download_url
-            if download_url is None :
-                msg = "No download URL for this file."
-                raise ValueError(msg)
-            response = requests.get(
-                download_url,
-                timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
-            response.raise_for_status()
+        download_url = self._files_references[file_id].download_url
+        if download_url is None:
+            msg = "No download URL for this file."
+            raise ValueError(msg)
+        response = requests.get(download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
+        response.raise_for_status()
 
-            return response.content
-
+        return response.content
 
     def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
         upload_url = self._files_references[file_id].upload_url
-        if upload_url is None :
-                msg = "No upload URL for this file."
-                raise ValueError(msg)
+        if upload_url is None:
+            msg = "No upload URL for this file."
+            raise ValueError(msg)
 
         if isinstance(data, str):
-                data = data.encode("utf-8")  # Convert string to bytes
+            data = data.encode("utf-8")  # Convert string to bytes
 
         response = requests.put(
-                upload_url,
-                files={"file": data},
-                timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
+            upload_url, files={"file": data}, timeout=_REQUEST_TIMEOUT_SECONDS_
+        )
         response.raise_for_status()
-
 
     def save_file(self, file_id: str, data: TextIOWrapper) -> None:
         upload_url = self._files_references[file_id].upload_url
-        if upload_url is None :
-                msg = "No upload URL for this file."
-                raise ValueError(msg)
+        if upload_url is None:
+            msg = "No upload URL for this file."
+            raise ValueError(msg)
 
         data.seek(0)
         file_content = data.read().encode("utf-8")
@@ -530,13 +520,10 @@ class GraphQLClient:
 
     def open_file(self, file_id: str) -> BinaryIO:
         download_url = self._files_references[file_id].download_url
-        if download_url is None :
-                msg = "No download URL for this file."
-                raise ValueError(msg)
+        if download_url is None:
+            msg = "No download URL for this file."
+            raise ValueError(msg)
 
-        response = requests.get(
-            download_url,
-            timeout=_REQUEST_TIMEOUT_SECONDS_
-        )
+        response = requests.get(download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
         response.raise_for_status()
         return io.BytesIO(response.content)

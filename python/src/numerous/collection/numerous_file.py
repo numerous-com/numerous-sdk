@@ -1,4 +1,5 @@
 """Class for working with numerous files."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, BinaryIO
@@ -11,7 +12,6 @@ if TYPE_CHECKING:
 
     from numerous.collection._client import Client
     from numerous.generated.graphql.fragments import CollectionFileReferenceTags
-
 
 
 _NO_FILE_MSG_ = "File dont exists."
@@ -46,11 +46,11 @@ class NumerousFile:
         self.file_id = file_id
         self._client: Client = client
         self._exists = exists
-        self._tags: dict[str, str]  = {}
+        self._tags: dict[str, str] = {}
 
         if numerous_file_tags is not None:
             dict_of_tags = {tag.key: tag.value for tag in numerous_file_tags}
-            self._tags= dict_of_tags if dict_of_tags else {}
+            self._tags = dict_of_tags if dict_of_tags else {}
 
     @property
     def exists(self) -> bool:
@@ -95,7 +95,6 @@ class NumerousFile:
             raise ValueError(_NO_FILE_MSG_)
         return self._client.read_text(self.file_id)
 
-
     def read_bytes(self) -> bytes:
         """
         Read the file's content as bytes.
@@ -112,7 +111,6 @@ class NumerousFile:
         if not self.exists:
             raise ValueError(_NO_FILE_MSG_)
         return self._client.read_bytes(self.file_id)
-
 
     def open(self) -> BinaryIO:
         """
@@ -147,8 +145,7 @@ class NumerousFile:
             HTTPError: If an error occurs during the upload.
 
         """
-        return self._client.save_data_file(self.file_id,data)
-
+        return self._client.save_data_file(self.file_id, data)
 
     def save_file(self, data: TextIOWrapper) -> None:
         """
@@ -163,8 +160,7 @@ class NumerousFile:
             HTTPError: If an error occurs during the upload.
 
         """
-        return self._client.save_file(self.file_id,data)
-
+        return self._client.save_file(self.file_id, data)
 
     def delete(self) -> None:
         """
@@ -203,8 +199,8 @@ class NumerousFile:
             raise ValueError(msg)
 
         tagged_file = self._client.add_collection_file_tag(
-                self.file_id, TagInput(key=key, value=value)
-            )
+            self.file_id, TagInput(key=key, value=value)
+        )
 
         if tagged_file is not None:
             self._tags = tagged_file.tags
