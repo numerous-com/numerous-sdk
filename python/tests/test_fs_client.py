@@ -355,8 +355,8 @@ def test_get_collection_files_returns_all_files(
     assert result
     assert len(result) == len(test_files)
 
-    expected_files = [
-        {
+    expected_files = {
+        str(Path(_TEST_COLLECTION_KEY) / f"file_{test_file['file_key']}"): {
             "file_id": str(
                 Path(_TEST_COLLECTION_KEY) / f"file_{test_file['file_key']}"
             ),
@@ -365,11 +365,13 @@ def test_get_collection_files_returns_all_files(
             "tags": {},
         }
         for test_file in test_files
-    ]
+    }
 
-    for file, expected in zip(result, expected_files):
-        assert file
-        assert file.file_id == expected["file_id"]
+    result_files = {file.file_id: file for file in result}
+
+    for file_id, expected in expected_files.items():
+        assert file_id in result_files, f"File ID {file_id} not found in result files."
+        file = result_files[file_id]
         assert file.key == expected["key"]
         assert file.exists == expected["exists"]
         assert file.tags == expected["tags"]
