@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.30.0 (2024-11-14)
+
+### Feature
+
+* feat: email verification message for login (#51) ([`fa0a902`](https://github.com/numerous-com/numerous-sdk/commit/fa0a90251f2ff663a10b910eac2f3baf665c21dc))
+
+
+
+
 ## v0.29.11 (2024-11-07)
 
 ### Fix
