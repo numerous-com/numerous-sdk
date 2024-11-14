@@ -97,6 +97,12 @@ func TestWaitUntilUserLogsIn(t *testing.T) {
 			response:   "{\"access_token\": \"bad.token\"}",
 			expect:     "failed to parse token: invalid character 'b' looking for beginning of value",
 		},
+		{
+			name:       "should error if user email is not verified",
+			httpStatus: http.StatusBadRequest,
+			response:   `{"error": "access_denied", "error_description": "email not verified. UserID: \"test|user\""}`,
+			expect:     ErrEmailNotVerified.Error(),
+		},
 	}
 
 	for _, testCase := range testCases {
