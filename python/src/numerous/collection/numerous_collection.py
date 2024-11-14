@@ -78,17 +78,10 @@ class NumerousCollection:
         key (str): The key of the file.
 
         """
-        numerous_file_ref = self._client.get_collection_file(self.id, key)
-        if numerous_file_ref is not None:
-            numerous_file = NumerousFile(
-                self._client,
-                numerous_file_ref.key,
-                (self.id, self.key),
-                numerous_file_ref,
-            )
-        else:
-            msg = "Failed to retrieve or create the file."
-            raise ValueError(msg)
+        numerous_file = self._client.get_collection_file(self.id, key)
+        if numerous_file is None:
+               msg = "Failed to retrieve or create the file."
+               raise ValueError(msg)
 
         return numerous_file
 
@@ -140,18 +133,13 @@ class NumerousCollection:
             result = self._client.get_collection_files(self.key, end_cursor, tag_input)
             if result is None:
                 break
-            numerous_file_refs, has_next_page, end_cursor = result
-            if numerous_file_refs is None:
+            numerous_files, has_next_page, end_cursor = result
+            if numerous_files is None:
                 break
-            for numerous_file_ref in numerous_file_refs:
-                if numerous_file_ref is None:
+            for numerous_file in numerous_files:
+                if numerous_file is None:
                     continue
-                yield NumerousFile(
-                    self._client,
-                    numerous_file_ref.key,
-                    (self.id, self.key),
-                    numerous_file_ref,
-                )
+                yield numerous_file
 
     def documents(
         self, tag_key: Optional[str] = None, tag_value: Optional[str] = None

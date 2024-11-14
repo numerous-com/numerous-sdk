@@ -1,13 +1,13 @@
 import json
-import os
 from dataclasses import asdict, dataclass
+from io import TextIOWrapper
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, BinaryIO, Optional
 
+from numerous.collection.numerous_file import NumerousFile
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
-    CollectionFileReference,
     CollectionFileReferenceTags,
     CollectionReference,
 )
@@ -173,6 +173,7 @@ class FileSystemClient:
     def __init__(self, base_path: Path) -> None:
         self._base_path = base_path
         self._base_path.mkdir(exist_ok=True)
+        self.file_to_path_map:dict[str,Path] = {}
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: Optional[str] = None
@@ -311,9 +312,12 @@ class FileSystemClient:
 
         return sorted(documents, key=lambda d: d.id if d else ""), False, ""
 
+
+
     def get_collection_file(
         self, collection_id: str, file_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
+        file_key = self._modify_id(file_key)
         path = self._base_path / collection_id / f"{file_key}.json"
         if not path.exists():
             return None
@@ -321,16 +325,20 @@ class FileSystemClient:
         file = FileSystemCollectionFile.load(path)
 
         file_id = str(Path(collection_id) / file_key)
-        return CollectionFileReference(
-            id=file_id,
+        self.file_to_path_map[file_id] = path
+        return NumerousFile(
+            client = self,
+            file_id=file_id,
             key=file_key,
-            downloadURL=os.fspath(file.path),
-            uploadURL=os.fspath(file.path),
-            tags=[tag.to_file_reference_tag() for tag in file.tags],
+            exists=True,
+            numerous_file_tags=[tag.to_file_reference_tag() for tag in file.tags],
         )
 
-    def delete_collection_file(self, file_id: str) -> Optional[CollectionFileReference]:
-        file_path = self._base_path / (file_id + ".json")
+    def _modify_id(self,file_key:str) -> str:
+        return f"file_{file_key}"
+
+    def delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
+        file_path = self._base_path / ( file_id+".json")
         if not file_path.exists():
             return None
 
@@ -339,12 +347,12 @@ class FileSystemClient:
         file_path.unlink()
         file.path.unlink()
 
-        return CollectionFileReference(
-            id=file_id,
+        return NumerousFile(
+            client=self,
+            file_id=file_id,
             key=file_path.stem,
-            downloadURL=os.fspath(file.path),
-            uploadURL=os.fspath(file.path),
-            tags=file.reference_tags(),
+            exists=False,
+            numerous_file_tags=file.reference_tags(),
         )
 
     def get_collection_files(
@@ -352,12 +360,12 @@ class FileSystemClient:
         collection_key: str,
         end_cursor: str,  # noqa: ARG002
         tag_input: Optional[TagInput],
-    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+    ) -> tuple[Optional[list[Optional[NumerousFile]]], bool, str]:
         col_path = self._base_path / collection_key
         if not col_path.exists():
             return [], False, ""
 
-        files: list[Optional[CollectionFileReference]] = []
+        files: list[Optional[NumerousFile]] = []
         for file_path in col_path.iterdir():
             if file_path.suffix != ".json":
                 continue
@@ -370,12 +378,12 @@ class FileSystemClient:
 
             file_id = str(file_path.relative_to(self._base_path).with_suffix(""))
             files.append(
-                CollectionFileReference(
-                    id=file_id,
+                NumerousFile(
+                    client=self,
+                    file_id=file_id,
                     key=file_path.stem,
-                    downloadURL=os.fspath(file.path),
-                    uploadURL=os.fspath(file.path),
-                    tags=file.reference_tags(),
+                    exists=True,
+                    numerous_file_tags=file.reference_tags(),
                 )
             )
 
@@ -383,7 +391,7 @@ class FileSystemClient:
 
     def add_collection_file_tag(
         self, file_id: str, tag: TagInput
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         file_path = self._base_path / (file_id + ".json")
         if not file_path.exists():
             return None
@@ -392,17 +400,17 @@ class FileSystemClient:
         file.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
         file.save(file_path)
 
-        return CollectionFileReference(
-            id=file_id,
+        return NumerousFile(
+            client=self,
+            file_id=file_id,
             key=file_path.stem,
-            downloadURL=os.fspath(file.path),
-            uploadURL=os.fspath(file.path),
-            tags=file.reference_tags(),
+            exists=True,
+            numerous_file_tags=file.reference_tags(),
         )
 
     def delete_collection_file_tag(
         self, file_id: str, tag_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         file_path = self._base_path / (file_id + ".json")
         if not file_path.exists():
             return None
@@ -411,12 +419,12 @@ class FileSystemClient:
         file.tags = [tag for tag in file.tags if tag.key != tag_key]
         file.save(file_path)
 
-        return CollectionFileReference(
-            id=file_id,
+        return NumerousFile(
+            client=self,
+            file_id=file_id,
             key=file_path.stem,
-            downloadURL=os.fspath(file.path),
-            uploadURL=os.fspath(file.path),
-            tags=file.reference_tags(),
+            exists=True,
+            numerous_file_tags=file.reference_tags(),
         )
 
     def get_collection_collections(
@@ -435,3 +443,79 @@ class FileSystemClient:
                 collections.append(CollectionReference(id=col_id, key=item.name))
 
         return sorted(collections, key=lambda c: c.id), False, ""
+
+
+
+    def read_text(self, file_id: str) -> str:
+        path = self.file_to_path_map[file_id]
+        file = FileSystemCollectionFile.load(path)
+
+        try:
+            with Path.open(file.path, "r") as f:
+                return f.read()
+        except FileNotFoundError as e:
+            msg = f"File not found at path: {file.path}"
+            raise FileNotFoundError(msg) from e
+        except Exception as e:
+            msg = f"An error occurred while reading the file: {e}"
+            raise OSError(msg) from e
+
+    def read_bytes(self, file_id: str) -> bytes:
+        path = self.file_to_path_map[file_id]
+        file = FileSystemCollectionFile.load(path)
+
+        try:
+            with Path.open(file.path, "rb") as f:
+                return f.read()
+        except FileNotFoundError as e:
+            msg = f"File not found at path: {file.path}"
+            raise FileNotFoundError(msg) from e
+        except Exception as e:
+            msg = f"An error occurred while reading the file: {e}"
+            raise OSError(msg) from e
+
+    def save_data_file(self, file_id: str, data: bytes | str) -> None:
+
+        path = self.file_to_path_map[file_id]
+        file = FileSystemCollectionFile.load(path)
+        try:
+                write_mode = "wb" if isinstance(data, bytes) else "w"
+                with Path.open(file.path, write_mode) as file_obj:
+                    file_obj.write(data)
+        except FileNotFoundError as e:
+                msg = f"File not found at path: {file.path}"
+                raise FileNotFoundError(msg) from e
+        except OSError as e:
+                msg = f"An error occurred while writing to the file: {e}"
+                raise OSError(msg) from e
+
+
+    def save_file(self, file_id: str, data: TextIOWrapper) -> None:
+        path = self.file_to_path_map[file_id]
+        file = FileSystemCollectionFile.load(path)
+        try:
+            with  Path.open(file.path, "w") as dest_file:
+                content = data.read()
+                dest_file.write(content)
+        except FileNotFoundError as e:
+            msg = f"File not found at path: {file.path}"
+            raise FileNotFoundError(msg) from e
+        except OSError as e:
+            msg = f"An error occurred while saving the file: {e}"
+            raise OSError(msg) from e
+        finally:
+            if not data.closed:
+                data.close()
+
+
+    def open_file(self, file_id: str) -> BinaryIO:
+        path = self.file_to_path_map[file_id]
+        file = FileSystemCollectionFile.load(path)
+        try:
+            return Path.open(file.path, "rb")
+        except FileNotFoundError as e:
+            msg = f"File not found at path: {file.path}"
+            raise FileNotFoundError(msg) from e
+        except OSError as e:
+            msg = f"An error occurred while opening the file: {e}"
+            raise OSError(msg) from e

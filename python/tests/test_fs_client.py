@@ -9,8 +9,6 @@ from numerous._client._fs_client import FileSystemClient
 from numerous.generated.graphql.fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
-    CollectionFileReference,
-    CollectionFileReferenceTags,
     CollectionReference,
 )
 from numerous.generated.graphql.input_types import TagInput
@@ -326,62 +324,57 @@ def test_get_file_returns_expected_existing_file_reference(
     _create_test_file_system_file(
         base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=tags
     )
-    path = str(base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}")
+
 
     file = client.get_collection_file(_TEST_COLLECTION_ID, _TEST_FILE_KEY)
+    assert file
+    assert file.file_id == str(Path(_TEST_COLLECTION_KEY) /  f"file_{_TEST_FILE_KEY}")
+    assert file.key ==  f"file_{_TEST_FILE_KEY}"
+    assert file.exists is True
+    assert file.tags  == {"tag-1-key":"tag-1-value","tag-2-key":"tag-2-value"}
 
-    assert file == CollectionFileReference(
-        id=str(Path(_TEST_COLLECTION_KEY) / _TEST_FILE_KEY),
-        key=_TEST_FILE_KEY,
-        uploadURL=path,
-        downloadURL=path,
-        tags=[
-            CollectionFileReferenceTags(key="tag-1-key", value="tag-1-value"),
-            CollectionFileReferenceTags(key="tag-2-key", value="tag-2-value"),
-        ],
-    )
 
 
 def test_get_collection_files_returns_all_files(
     base_path: Path, client: FileSystemClient
 ) -> None:
-    test_data = "File content 1;2;3;4;\n1;2;3;4"
-    _create_test_file_system_file(
-        base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=test_data, tags=[]
-    )
-    path = str(base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}")
+    test_files = [
+        {"data": "File content 1;2;3;4;\n1;2;3;4", "file_key": _TEST_FILE_KEY},
+        {"data": "File content 4;5;6;7;\n4;5;6;7", "file_key": _TEST_FILE_KEY + "1"},
+    ]
 
-    test_another_data = "File content 4;5;6;7;\n4;5;6;7"
-    another_file_key = _TEST_FILE_KEY + "1"
-    _create_test_file_system_file(
-        base_path / _TEST_COLLECTION_KEY,
-        another_file_key,
-        data=test_another_data,
-        tags=[],
-    )
-    another_path = str(base_path / _TEST_COLLECTION_KEY / f"{another_file_key}")
-    expected_number_of_files = 2
+    for test_file in test_files:
+        _create_test_file_system_file(
+            base_path / _TEST_COLLECTION_KEY,
+            test_file["file_key"],
+            data=test_file["data"],
+            tags=[],
+        )
 
     result, has_next_page, end_cursor = client.get_collection_files(
         _TEST_COLLECTION_KEY, "", None
     )
-    assert result == [
-        CollectionFileReference(
-            id=str(Path(_TEST_COLLECTION_KEY) / _TEST_FILE_KEY),
-            key=_TEST_FILE_KEY,
-            uploadURL=path,
-            downloadURL=path,
-            tags=[],
-        ),
-        CollectionFileReference(
-            id=str(Path(_TEST_COLLECTION_KEY) / another_file_key),
-            key=another_file_key,
-            uploadURL=another_path,
-            downloadURL=another_path,
-            tags=[],
-        ),
+    assert result
+    assert len(result) == len(test_files)
+
+    expected_files = [
+        {
+            "file_id": str(Path(_TEST_COLLECTION_KEY) /
+                           f"file_{test_file['file_key']}"),
+            "key": f"file_{test_file['file_key']}",
+            "exists": True,
+            "tags": {},
+        }
+        for test_file in test_files
     ]
-    assert len(result) == expected_number_of_files
+
+    for file, expected in zip(result, expected_files):
+        assert file
+        assert file.file_id == expected["file_id"]
+        assert file.key == expected["key"]
+        assert file.exists == expected["exists"]
+        assert file.tags == expected["tags"]
+
     assert has_next_page is False
     assert end_cursor == ""
 
@@ -393,19 +386,17 @@ def test_delete_collection_file_removes_expected_file(
     _create_test_file_system_file(
         base_path / _TEST_COLLECTION_KEY, _TEST_FILE_KEY, data=data, tags=[]
     )
-    path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}"
+    path = base_path / _TEST_COLLECTION_KEY / f"file_{_TEST_FILE_KEY}"
 
-    file_id = str(Path(_TEST_COLLECTION_ID) / _TEST_FILE_KEY)
+    file_id = str(Path(_TEST_COLLECTION_ID) / f"file_{_TEST_FILE_KEY}")
     file = client.delete_collection_file(file_id)
 
     assert path.exists() is False
-    assert file == CollectionFileReference(
-        id=str(Path(_TEST_COLLECTION_KEY) / _TEST_FILE_KEY),
-        key=_TEST_FILE_KEY,
-        uploadURL=str(path),
-        downloadURL=str(path),
-        tags=[],
-    )
+    assert file
+    assert file.file_id == str(Path(_TEST_COLLECTION_KEY) / f"file_{_TEST_FILE_KEY}")
+    assert file.key == f"file_{_TEST_FILE_KEY}"
+    assert file.exists is False
+
 
 
 def test_add_collection_file_tag_adds_expected_tag(
@@ -420,8 +411,8 @@ def test_add_collection_file_tag_adds_expected_tag(
         tags=[{"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"}],
     )
 
-    path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}.json"
-    file_id = str(Path(_TEST_COLLECTION_ID) / _TEST_FILE_KEY)
+    path = base_path / _TEST_COLLECTION_KEY /f"file_{_TEST_FILE_KEY}.json"
+    file_id = str(Path(_TEST_COLLECTION_ID) / f"file_{_TEST_FILE_KEY}")
 
     client.add_collection_file_tag(
         file_id, TagInput(key="added-tag-key", value="added-tag-value")
@@ -447,8 +438,8 @@ def test_delete_collection_file_tag_deletes_expected_tag(
         ],
     )
 
-    path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_FILE_KEY}.json"
-    file_id = str(Path(_TEST_COLLECTION_ID) / _TEST_FILE_KEY)
+    path = base_path / _TEST_COLLECTION_KEY / f"file_{_TEST_FILE_KEY}.json"
+    file_id = str(Path(_TEST_COLLECTION_ID) / f"file_{_TEST_FILE_KEY}")
     client.delete_collection_file_tag(file_id, "tag-to-be-deleted-key")
 
     assert json.loads(path.read_text())["tags"] == [
@@ -472,8 +463,8 @@ def _create_test_file_system_file(
     collection_path: Path, file_key: str, tags: list[dict[str, str]], data: str
 ) -> None:
     collection_path.mkdir(exist_ok=True, parents=True)
-    metadata_path = collection_path / f"{file_key}.json"
-    path = collection_path / f"{file_key}"
+    metadata_path = collection_path / f"file_{file_key}.json"
+    path = collection_path / f"file_{file_key}"
     stored_file_data = json.dumps({"path": os.fspath(path), "tags": tags})
     metadata_path.write_text(stored_file_data)
     path.write_text(data)

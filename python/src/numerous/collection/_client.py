@@ -5,65 +5,79 @@ This module defines a Client protocol which specifies all required methods neede
 manage collections, documents and files.
 """
 
-from typing import Optional, Protocol
+from __future__ import annotations
 
-from numerous.generated.graphql.fragments import (
-    CollectionDocumentReference,
-    CollectionFileReference,
-    CollectionReference,
-)
-from numerous.generated.graphql.input_types import TagInput
+from typing import TYPE_CHECKING, BinaryIO, Protocol
+
+
+if TYPE_CHECKING:
+    from io import TextIOWrapper
+
+    from numerous.collection.numerous_file import NumerousFile
+    from numerous.generated.graphql.fragments import (
+        CollectionDocumentReference,
+        CollectionReference,
+    )
+    from numerous.generated.graphql.input_types import TagInput
 
 
 class Client(Protocol):
     def get_collection_reference(
-        self, collection_key: str, parent_collection_id: Optional[str] = None
+        self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionReference: ...
 
     def get_collection_document(
         self, collection_id: str, document_key: str
-    ) -> Optional[CollectionDocumentReference]: ...
+    ) -> CollectionDocumentReference | None: ...
 
     def set_collection_document(
         self, collection_id: str, document_key: str, document_data: str
-    ) -> Optional[CollectionDocumentReference]: ...
+    ) -> CollectionDocumentReference | None: ...
 
     def delete_collection_document(
         self, document_id: str
-    ) -> Optional[CollectionDocumentReference]: ...
+    ) -> CollectionDocumentReference | None: ...
 
     def add_collection_document_tag(
         self, document_id: str, tag: TagInput
-    ) -> Optional[CollectionDocumentReference]: ...
+    ) -> CollectionDocumentReference | None: ...
 
     def delete_collection_document_tag(
         self, document_id: str, tag_key: str
-    ) -> Optional[CollectionDocumentReference]: ...
+    ) -> CollectionDocumentReference | None: ...
 
     def get_collection_documents(
-        self, collection_id: str, end_cursor: str, tag_input: Optional[TagInput]
-    ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]: ...
+        self, collection_id: str, end_cursor: str, tag_input: TagInput | None
+    ) -> tuple[list[CollectionDocumentReference | None] | None, bool, str]: ...
 
     def get_collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[Optional[list[CollectionReference]], bool, str]: ...
+    ) -> tuple[list[CollectionReference] | None, bool, str]: ...
 
     def get_collection_file(
         self, collection_id: str, file_key: str
-    ) -> Optional[CollectionFileReference]: ...
+    ) -> NumerousFile | None: ...
 
-    def delete_collection_file(
-        self, file_id: str
-    ) -> Optional[CollectionFileReference]: ...
+    def delete_collection_file(self, file_id: str) -> NumerousFile | None: ...
 
     def get_collection_files(
-        self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
-    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]: ...
+        self, collection_key: str, end_cursor: str, tag_input: TagInput | None
+    ) -> tuple[list[NumerousFile | None] | None, bool, str]: ...
 
     def add_collection_file_tag(
         self, file_id: str, tag: TagInput
-    ) -> Optional[CollectionFileReference]: ...
+    ) -> NumerousFile | None: ...
 
     def delete_collection_file_tag(
         self, file_id: str, tag_key: str
-    ) -> Optional[CollectionFileReference]: ...
+    ) -> NumerousFile | None: ...
+
+    def read_text(self, file_id: str) -> str: ...
+
+    def read_bytes(self, file_id: str) -> bytes: ...
+
+    def save_data_file(self, file_id: str, data: bytes | str) -> None: ...
+
+    def save_file(self, file_id: str, data: TextIOWrapper) -> None: ...
+
+    def open_file(self, file_id: str) -> BinaryIO: ...

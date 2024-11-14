@@ -1,19 +1,20 @@
 """Class for working with numerous files."""
+from __future__ import annotations
 
-import tempfile
-from io import BufferedReader, TextIOWrapper
-from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, BinaryIO
 
-import requests
-
-from numerous.collection._client import Client
-from numerous.generated.graphql.fragments import CollectionFileReference
 from numerous.generated.graphql.input_types import TagInput
 
 
-_REQUEST_TIMEOUT_SECONDS_ = 1.5
-_NO_DOWNLOAD_URL_MSG_ = "No download URL for this file."
+if TYPE_CHECKING:
+    from io import TextIOWrapper
+
+    from numerous.collection._client import Client
+    from numerous.generated.graphql.fragments import CollectionFileReferenceTags
+
+
+
+_NO_FILE_MSG_ = "File dont exists."
 
 
 class NumerousFile:
@@ -28,46 +29,41 @@ class NumerousFile:
         data (Optional[dict[str, Any]]): The data of the file.
         id (Optional[str]): The unique identifier of the file.
         client (Client): The client to connect.
-        tags (dict[str, str]): The tags associated with the file.
+        numerous_file_tags (dict[str, str]): The tags associated with the file.
 
     """
 
     def __init__(
         self,
+        *,
         client: Client,
         key: str,
-        collection_info: tuple[str, str],
-        numerous_file_ref: Optional[CollectionFileReference] = None,
+        file_id: str,
+        exists: bool = False,
+        numerous_file_tags: list[CollectionFileReferenceTags] | None = None,
     ) -> None:
         self.key: str = key
-        self.collection_id: str = collection_info[0]
-        self.collection_key: str = collection_info[1]
+        self.file_id = file_id
         self._client: Client = client
-        self.file_id: Optional[str] = None
-        self.local_path: Optional[Path] = None
-        self.is_deleted = False
+        self._exists = exists
+        self._tags: dict[str, str]  = {}
 
-        if numerous_file_ref is not None:
-            dict_of_tags = {tag.key: tag.value for tag in numerous_file_ref.tags}
-            self.download_url = numerous_file_ref.download_url
-            self.upload_url = numerous_file_ref.upload_url
-            self.file_id = numerous_file_ref.id
-            self._tags: dict[str, str] = dict_of_tags if dict_of_tags else {}
+        if numerous_file_tags is not None:
+            dict_of_tags = {tag.key: tag.value for tag in numerous_file_tags}
+            self._tags= dict_of_tags if dict_of_tags else {}
 
     @property
     def exists(self) -> bool:
         """
-        Check if the file exists by verifying that the download URL is not empty.
+        Check if the file exists.
 
         Returns
         -------
-            bool: True if the file exists and the download URL is not empty,
+            bool: True if the file exists,
             False otherwise.
 
         """
-        if self.download_url is None:
-            return False
-        return bool(self.download_url) and self.download_url.strip() != ""
+        return self._exists
 
     @property
     def tags(self) -> dict[str, str]:
@@ -78,51 +74,8 @@ class NumerousFile:
         -------
             dict[str, str]: Dictionary of tag key-value pairs.
 
-        Raises
-        ------
-            ValueError: If the file does not exist.
-
         """
-        if self.file_id is not None:
-            return self._tags
-
-        msg = "Cannot get tags from a non-existent files."
-        raise ValueError(msg)
-
-    def download(self, local_path: str) -> None:
-        """
-        Download the file to the specified local path.
-
-        Args:
-        ----
-            local_path (str): The local path to save the downloaded file.
-
-        """
-        self.local_path = Path(local_path)
-
-        self._update_file()
-
-    def _update_file(self) -> None:
-        """
-        Update the local file by downloading it from the server.
-
-        Raises
-        ------
-            ValueError: If there is no download URL or local path for the file.
-            RequestException: If an error occurs during the request.
-            OSError: If an error occurs while saving the file locally.
-
-        """
-        if self.download_url is None:
-            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
-        if self.local_path is None:
-            msg = "No local path for this file."
-            raise ValueError(msg)
-        response = requests.get(self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
-        response.raise_for_status()
-
-        with Path.open(self.local_path, "wb") as local_file:
-            local_file.write(response.content)
+        return self._tags
 
     def read_text(self) -> str:
         """
@@ -138,16 +91,10 @@ class NumerousFile:
             ValueError: If there is no local path for the file.
 
         """
-        if self.download_url is None:
-            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
-        with tempfile.NamedTemporaryFile(mode="r+", delete=True) as temp_file:
-            response = requests.get(
-                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
-            response.raise_for_status()
-            temp_file.write(response.content.decode())
-            temp_file.seek(0)
-            return temp_file.read()
+        if not self.exists:
+            raise ValueError(_NO_FILE_MSG_)
+        return self._client.read_text(self.file_id)
+
 
     def read_bytes(self) -> bytes:
         """
@@ -159,24 +106,15 @@ class NumerousFile:
 
         Raises
         ------
-            OSError: If an error occurs while reading the file.
             ValueError: If there is no local path for the file.
 
-
         """
-        if self.download_url is None:
-            raise ValueError(_NO_DOWNLOAD_URL_MSG_)
+        if not self.exists:
+            raise ValueError(_NO_FILE_MSG_)
+        return self._client.read_bytes(self.file_id)
 
-        with tempfile.NamedTemporaryFile(mode="r+b", delete=True) as temp_file:
-            response = requests.get(
-                self.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_
-            )
-            response.raise_for_status()
-            temp_file.write(response.content)
-            temp_file.seek(0)
-            return temp_file.read()
 
-    def open(self) -> BufferedReader:
+    def open(self) -> BinaryIO:
         """
         Open the file for reading in binary mode.
 
@@ -191,13 +129,12 @@ class NumerousFile:
             OSError: If an error occurs while reading the file.
 
         """
-        if self.local_path is None:
-            msg = "No local path for this file."
-            raise ValueError(msg)
+        if not self.exists:
+            raise ValueError(_NO_FILE_MSG_)
 
-        return Path.open(self.local_path, "rb")
+        return self._client.open_file(self.file_id)
 
-    def save(self, data: Union[bytes, str]) -> None:
+    def save(self, data: bytes | str) -> None:
         """
         Upload and save the file to the server.
 
@@ -208,17 +145,10 @@ class NumerousFile:
         Raises:
         ------
             HTTPError: If an error occurs during the upload.
-            ValueError: If there is no upload URL for the file.
-
 
         """
-        if self.upload_url is None:
-            msg = "No upload URL for this file."
-            raise ValueError(msg)
-        response = requests.put(
-            self.upload_url, files={"file": data}, timeout=_REQUEST_TIMEOUT_SECONDS_
-        )
-        response.raise_for_status()
+        return self._client.save_data_file(self.file_id,data)
+
 
     def save_file(self, data: TextIOWrapper) -> None:
         """
@@ -231,21 +161,10 @@ class NumerousFile:
         Raises:
         ------
             HTTPError: If an error occurs during the upload.
-            ValueError: If there is no upload URL for the file.
-
 
         """
-        data.seek(0)
-        file_content = data.read().encode("utf-8")
-        if self.upload_url is None:
-            msg = "No upload URL for this file."
-            raise ValueError(msg)
-        response = requests.put(
-            self.upload_url,
-            files={"file": file_content},
-            timeout=_REQUEST_TIMEOUT_SECONDS_,
-        )
-        response.raise_for_status()
+        return self._client.save_file(self.file_id,data)
+
 
     def delete(self) -> None:
         """
@@ -256,21 +175,14 @@ class NumerousFile:
             ValueError: If the file does not exist or deletion failed.
 
         """
-        if self.file_id is None:
-            msg = "Cannot delete a non-existent file."
-            raise ValueError(msg)
-
         deleted_file = self._client.delete_collection_file(self.file_id)
         if deleted_file is None:
             msg = "Failed to delete the file."
             raise ValueError(msg)
 
-        self.file_id = None
-        self.download_url = None
-        self.upload_url = None
-        self.local_path = None
+        self.key = ""
         self._tags = {}
-        self.is_deleted = True
+        self._exists = False
 
     def tag(self, key: str, value: str) -> None:
         """
@@ -286,16 +198,16 @@ class NumerousFile:
             ValueError: If the file does not exist.
 
         """
-        if self.file_id is not None:
-            tagged_file = self._client.add_collection_file_tag(
-                self.file_id, TagInput(key=key, value=value)
-            )
-        else:
+        if not self.exists:
             msg = "Cannot tag a non-existent file."
             raise ValueError(msg)
 
+        tagged_file = self._client.add_collection_file_tag(
+                self.file_id, TagInput(key=key, value=value)
+            )
+
         if tagged_file is not None:
-            self.tags.update({tag.key: tag.value for tag in tagged_file.tags})
+            self._tags = tagged_file.tags
 
     def tag_delete(self, tag_key: str) -> None:
         """
@@ -310,11 +222,11 @@ class NumerousFile:
             ValueError: If the file does not exist.
 
         """
-        if self.file_id is not None:
-            tagged_file = self._client.delete_collection_file_tag(self.file_id, tag_key)
-        else:
+        if not self.exists:
             msg = "Cannot delete tag from a non-existent file."
             raise ValueError(msg)
 
+        tagged_file = self._client.delete_collection_file_tag(self.file_id, tag_key)
+
         if tagged_file is not None:
-            self._tags = {tag.key: tag.value for tag in tagged_file.tags}
+            self._tags = tagged_file.tags

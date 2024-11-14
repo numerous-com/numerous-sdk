@@ -208,7 +208,7 @@ def test_collection_file_new_file_returns_exists_false(mock_get: MagicMock) -> N
 
 @patch("requests.get")
 def test_collection_file_returns_file_exists_after_load(
-    mock_get: MagicMock, base_path: Path
+    mock_get: MagicMock
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -226,7 +226,6 @@ def test_collection_file_returns_file_exists_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(str(base_path / COLLECTION_FILE_KEY))
 
     gql.collection_file.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -234,9 +233,7 @@ def test_collection_file_returns_file_exists_after_load(
         **HEADERS_WITH_AUTHORIZATION,
     )
 
-    mock_get.assert_called_once_with(
-        _TEST_DOWNLOAD_URL_, timeout=_REQUEST_TIMEOUT_SECONDS_
-    )
+
     assert isinstance(fileref, NumerousFile)
     assert fileref.exists is True
 
@@ -254,6 +251,7 @@ def test_collection_file_returns_file_text_content_after_load(
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.content = _TEST_FILE_CONTENT_TEXT_BYTE_
+    mock_response.text = _TEST_FILE_CONTENT_TEXT_
     mock_get.return_value = mock_response
 
     test_collection = collection(COLLECTION_NAME, _client)
@@ -311,7 +309,7 @@ def test_collection_file_returns_file_byte_content_after_load(
 
 @patch("requests.get")
 def test_collection_file_returns_file_can_be_opened_after_load(
-    mock_get: MagicMock, base_path: Path
+    mock_get: MagicMock
 ) -> None:
     gql = Mock(GQLClient)
     _client = GraphQLClient(gql)
@@ -327,7 +325,6 @@ def test_collection_file_returns_file_can_be_opened_after_load(
     test_collection = collection(COLLECTION_NAME, _client)
 
     fileref = test_collection.file(COLLECTION_FILE_KEY)
-    fileref.download(str(base_path / COLLECTION_FILE_KEY))
 
     with fileref.open() as file:
         bytes_data = file.read()
@@ -413,7 +410,7 @@ def test_collection_textfile_can_be_uploaded_on_save(
 
     mock_put.assert_called_once_with(
         _TEST_UPLOAD_URL_,
-        files={"file": _TEST_FILE_CONTENT_TEXT_},
+        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
         timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(
@@ -451,7 +448,7 @@ def test_collection_file_can_be_save_from_collection(
 
     mock_put.assert_called_once_with(
         _TEST_UPLOAD_URL_,
-        files={"file": _TEST_FILE_CONTENT_TEXT_},
+        files={"file": _TEST_FILE_CONTENT_TEXT_BYTE_},
         timeout=_REQUEST_TIMEOUT_SECONDS_,
     )
     gql.collection_file.assert_called_once_with(

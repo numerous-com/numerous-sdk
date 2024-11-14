@@ -1,9 +1,14 @@
 """GraphQL client wrapper for numerous."""
 
+import io
 import os
-from typing import Optional, Union
+from io import TextIOWrapper
+from typing import BinaryIO, Optional, Union
+
+import requests
 
 from numerous.collection.exceptions import ParentCollectionNotFoundError
+from numerous.collection.numerous_file import NumerousFile
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import (
     CollectionCollectionsCollectionCollection,
@@ -64,7 +69,7 @@ from numerous.threaded_event_loop import ThreadedEventLoop
 
 
 COLLECTED_OBJECTS_NUMBER = 100
-
+_REQUEST_TIMEOUT_SECONDS_ = 1.5
 
 class APIURLMissingError(Exception):
     _msg = "NUMEROUS_API_URL environment variable is not set"
@@ -92,6 +97,7 @@ class GraphQLClient:
         self._gql = gql
         self._threaded_event_loop = ThreadedEventLoop()
         self._threaded_event_loop.start()
+        self._files_references:dict[str,CollectionFileReference] = {}
 
         organization_id = os.getenv("NUMEROUS_ORGANIZATION_ID")
         if not organization_id:
@@ -312,20 +318,26 @@ class GraphQLClient:
                 CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
             ]
         ],
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         if isinstance(collection_response, CollectionFileReference):
-            return CollectionFileReference(
-                id=collection_response.id,
-                key=collection_response.key,
-                downloadURL=collection_response.download_url,
-                uploadURL=collection_response.upload_url,
-                tags=collection_response.tags,
+            self._files_references[collection_response.id]= collection_response
+            exists = False
+            if (collection_response.download_url and
+                collection_response.download_url.strip() != ""):
+                exists = True
+            return NumerousFile(
+                client = self,
+                key = collection_response.key,
+                file_id = collection_response.id,
+                exists=exists,
+                numerous_file_tags=collection_response.tags,
             )
+
         return None
 
     async def _get_collection_file(
         self, collection_id: str, file_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         response = await self._gql.collection_file(
             collection_id,
             file_key,
@@ -335,21 +347,21 @@ class GraphQLClient:
 
     def get_collection_file(
         self, collection_id: str, file_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         return self._threaded_event_loop.await_coro(
             self._get_collection_file(collection_id, file_key)
         )
 
     async def _delete_collection_file(
         self, file_id: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         response = await self._gql.collection_file_delete(
             file_id,
             headers=self._headers,
         )
         return self._create_collection_files_ref(response.collection_file_delete)
 
-    def delete_collection_file(self, file_id: str) -> Optional[CollectionFileReference]:
+    def delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
         return self._threaded_event_loop.await_coro(
             self._delete_collection_file(file_id)
         )
@@ -359,7 +371,7 @@ class GraphQLClient:
         collection_key: str,
         end_cursor: str,
         tag_input: Optional[TagInput],
-    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+    ) -> tuple[Optional[list[Optional[NumerousFile]]], bool, str]:
         response = await self._gql.collection_files(
             self._organization_id,
             collection_key,
@@ -386,14 +398,14 @@ class GraphQLClient:
 
     def get_collection_files(
         self, collection_key: str, end_cursor: str, tag_input: Optional[TagInput]
-    ) -> tuple[Optional[list[Optional[CollectionFileReference]]], bool, str]:
+    ) -> tuple[Optional[list[Optional[NumerousFile]]], bool, str]:
         return self._threaded_event_loop.await_coro(
             self._get_collection_files(collection_key, end_cursor, tag_input)
         )
 
     async def _add_collection_file_tag(
         self, file_id: str, tag: TagInput
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         response = await self._gql.collection_file_tag_add(
             file_id, tag, headers=self._headers
         )
@@ -401,14 +413,14 @@ class GraphQLClient:
 
     def add_collection_file_tag(
         self, file_id: str, tag: TagInput
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         return self._threaded_event_loop.await_coro(
             self._add_collection_file_tag(file_id, tag)
         )
 
     async def _delete_collection_file_tag(
         self, file_id: str, tag_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         response = await self._gql.collection_file_tag_delete(
             file_id, tag_key, headers=self._headers
         )
@@ -416,7 +428,7 @@ class GraphQLClient:
 
     def delete_collection_file_tag(
         self, file_id: str, tag_key: str
-    ) -> Optional[CollectionFileReference]:
+    ) -> Optional[NumerousFile]:
         return self._threaded_event_loop.await_coro(
             self._delete_collection_file_tag(file_id, tag_key)
         )
@@ -454,3 +466,77 @@ class GraphQLClient:
         return self._threaded_event_loop.await_coro(
             self._get_collection_collections(collection_key, end_cursor)
         )
+
+
+    def read_text(self, file_id: str) -> str:
+            download_url = self._files_references[file_id].download_url
+            if download_url is None :
+                msg = "No download URL for this file."
+                raise ValueError(msg)
+            response = requests.get(
+               download_url,
+                timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
+            response.raise_for_status()
+
+            return response.text
+
+    def read_bytes(self, file_id: str) -> bytes:
+            download_url = self._files_references[file_id].download_url
+            if download_url is None :
+                msg = "No download URL for this file."
+                raise ValueError(msg)
+            response = requests.get(
+                download_url,
+                timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
+            response.raise_for_status()
+
+            return response.content
+
+
+    def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
+        upload_url = self._files_references[file_id].upload_url
+        if upload_url is None :
+                msg = "No upload URL for this file."
+                raise ValueError(msg)
+
+        if isinstance(data, str):
+                data = data.encode("utf-8")  # Convert string to bytes
+
+        response = requests.put(
+                upload_url,
+                files={"file": data},
+                timeout=_REQUEST_TIMEOUT_SECONDS_
+            )
+        response.raise_for_status()
+
+
+    def save_file(self, file_id: str, data: TextIOWrapper) -> None:
+        upload_url = self._files_references[file_id].upload_url
+        if upload_url is None :
+                msg = "No upload URL for this file."
+                raise ValueError(msg)
+
+        data.seek(0)
+        file_content = data.read().encode("utf-8")
+
+        response = requests.put(
+            upload_url,
+            files={"file": file_content},
+            timeout=_REQUEST_TIMEOUT_SECONDS_,
+        )
+        response.raise_for_status()
+
+    def open_file(self, file_id: str) -> BinaryIO:
+        download_url = self._files_references[file_id].download_url
+        if download_url is None :
+                msg = "No download URL for this file."
+                raise ValueError(msg)
+
+        response = requests.get(
+            download_url,
+            timeout=_REQUEST_TIMEOUT_SECONDS_
+        )
+        response.raise_for_status()
+        return io.BytesIO(response.content)
