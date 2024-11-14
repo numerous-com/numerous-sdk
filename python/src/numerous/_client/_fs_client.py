@@ -2,7 +2,7 @@ import json
 from dataclasses import asdict, dataclass
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Any, BinaryIO, Optional
+from typing import Any, BinaryIO, Optional, Union
 
 from numerous.collection.numerous_file import NumerousFile
 from numerous.generated.graphql.fragments import (
@@ -470,7 +470,7 @@ class FileSystemClient:
             msg = f"An error occurred while reading the file: {e}"
             raise OSError(msg) from e
 
-    def save_data_file(self, file_id: str, data: bytes | str) -> None:
+    def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
         try:
