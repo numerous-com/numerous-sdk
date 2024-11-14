@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -43,6 +44,12 @@ Verification code: %s
 Press Enter to continue...
 `
 
+const emailNotVerifiedErrorMessage = `
+Email verification is required to log in.
+Please log in to the website to receive a verification email:
+  https://www.numerous.com/app/verify
+`
+
 func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 	state, err := a.GetDeviceCode(ctx, http.DefaultClient)
 	if err != nil {
@@ -65,7 +72,10 @@ func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 	}
 
 	result, err := a.WaitUntilUserLogsIn(ctx, http.DefaultClient, state)
-	if err != nil {
+	if errors.Is(err, auth.ErrEmailNotVerified) {
+		output.PrintError("Email not verified", emailNotVerifiedErrorMessage)
+		return nil, err
+	} else if err != nil {
 		output.PrintErrorDetails("Error waiting for login", err)
 		return nil, err
 	}

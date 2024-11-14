@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/lestrrat-go/jwx/jwt"
 )
+
+var ErrEmailNotVerified = errors.New("email not verified")
 
 type Result struct {
 	IDToken      string
@@ -58,6 +61,9 @@ func waitUntilUserLogsIn(ctx context.Context, httpClient *http.Client, t *time.T
 			if res.Error != nil {
 				if *res.Error == "authorization_pending" {
 					continue
+				}
+				if *res.Error == "access_denied" && strings.Contains(res.ErrorDescription, "email not verified.") {
+					return Result{}, ErrEmailNotVerified
 				}
 
 				return Result{}, errors.New(res.ErrorDescription)
