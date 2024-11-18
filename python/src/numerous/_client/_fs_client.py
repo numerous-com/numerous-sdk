@@ -333,7 +333,7 @@ class FileSystemClient:
         )
 
     def _fs_file_name(self, file_key: str) -> str:
-        return f"file_{file_key}.json"
+        return f"file_{file_key}"
 
     def delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
         file_path = self._base_path / (file_id + ".json")
@@ -447,14 +447,13 @@ class FileSystemClient:
         file = FileSystemCollectionFile.load(path)
 
         with Path.open(file.path, "r") as f:
-                return f.read()
-
+            return f.read()
 
     def read_bytes(self, file_id: str) -> bytes:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
         with Path.open(file.path, "rb") as f:
-                return f.read()
+            return f.read()
 
     def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
         path = self.file_to_path_map[file_id]
@@ -462,7 +461,7 @@ class FileSystemClient:
 
         write_mode = "wb" if isinstance(data, bytes) else "w"
         with Path.open(file.path, write_mode) as file_obj:
-                file_obj.write(data)
+            file_obj.write(data)
 
     def save_file(self, file_id: str, data: TextIOWrapper) -> None:
         path = self.file_to_path_map[file_id]

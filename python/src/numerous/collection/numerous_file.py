@@ -1,4 +1,5 @@
 """Class for working with numerous files."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, BinaryIO
@@ -181,9 +182,8 @@ class NumerousFile:
 
         """
         if not self.exists:
-
-                  msg = "Cannot tag a non-existent file."
-                  raise ValueError(msg)
+            msg = "Cannot tag a non-existent file."
+            raise ValueError(msg)
 
         tagged_file = self._client.add_collection_file_tag(
             self.file_id, TagInput(key=key, value=value)
@@ -204,8 +204,8 @@ class NumerousFile:
 
         """
         if not self.exists:
-                  msg = "Cannot delete tag from a non-existent file."
-                  raise ValueError(msg)
+            msg = "Cannot delete tag from a non-existent file."
+            raise ValueError(msg)
 
         tagged_file = self._client.delete_collection_file_tag(self.file_id, tag_key)
 
