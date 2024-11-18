@@ -170,10 +170,14 @@ class FileSystemCollectionDocument:
 
 
 class FileSystemClient:
+    FILE_INDEX_DIR = "__file_index__"
+
     def __init__(self, base_path: Path) -> None:
         self._base_path = base_path
         self._base_path.mkdir(exist_ok=True)
-        self.file_to_path_map: dict[str, Path] = {}
+    
+    def _file_path(self, file_id: str) -> Path:
+        return self._base_path / (self._base_path / self.FILE_INDEX_DIR / file_id).read_text()
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: Optional[str] = None
@@ -323,7 +327,6 @@ class FileSystemClient:
         file = FileSystemCollectionFile.load(path)
 
         file_id = str(Path(collection_id) / file_key)
-        self.file_to_path_map[file_id] = path
         return NumerousFile(
             client=self,
             file_id=file_id,
@@ -443,20 +446,20 @@ class FileSystemClient:
         return sorted(collections, key=lambda c: c.id), False, ""
 
     def read_text(self, file_id: str) -> str:
-        path = self.file_to_path_map[file_id]
+        path = self._file_path(file_id)
         file = FileSystemCollectionFile.load(path)
 
         with Path.open(file.path, "r") as f:
             return f.read()
 
     def read_bytes(self, file_id: str) -> bytes:
-        path = self.file_to_path_map[file_id]
+        path = self._file_path(file_id)
         file = FileSystemCollectionFile.load(path)
         with Path.open(file.path, "rb") as f:
             return f.read()
 
     def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
-        path = self.file_to_path_map[file_id]
+        path = self._file_path(file_id)
         file = FileSystemCollectionFile.load(path)
 
         write_mode = "wb" if isinstance(data, bytes) else "w"
@@ -464,7 +467,7 @@ class FileSystemClient:
             file_obj.write(data)
 
     def save_file(self, file_id: str, data: TextIOWrapper) -> None:
-        path = self.file_to_path_map[file_id]
+        path = self._file_path(file_id)
         file = FileSystemCollectionFile.load(path)
         try:
             with Path.open(file.path, "w") as dest_file:
@@ -475,6 +478,6 @@ class FileSystemClient:
                 data.close()
 
     def open_file(self, file_id: str) -> BinaryIO:
-        path = self.file_to_path_map[file_id]
+        path = self._file_path(file_id)
         file = FileSystemCollectionFile.load(path)
         return Path.open(file.path, "rb")
