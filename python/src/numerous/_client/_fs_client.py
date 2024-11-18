@@ -315,7 +315,7 @@ class FileSystemClient:
     def get_collection_file(
         self, collection_id: str, file_key: str
     ) -> Optional[NumerousFile]:
-        file_key = self._modify_id(file_key)
+        file_key = self._fs_file_name(file_key)
         path = self._base_path / collection_id / f"{file_key}.json"
         if not path.exists():
             return None
@@ -332,8 +332,8 @@ class FileSystemClient:
             numerous_file_tags=[tag.to_file_reference_tag() for tag in file.tags],
         )
 
-    def _modify_id(self, file_key: str) -> str:
-        return f"file_{file_key}"
+    def _fs_file_name(self, file_key: str) -> str:
+        return f"file_{file_key}.json"
 
     def delete_collection_file(self, file_id: str) -> Optional[NumerousFile]:
         file_path = self._base_path / (file_id + ".json")
@@ -446,43 +446,23 @@ class FileSystemClient:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
 
-        try:
-            with Path.open(file.path, "r") as f:
+        with Path.open(file.path, "r") as f:
                 return f.read()
-        except FileNotFoundError as e:
-            msg = f"File not found at path: {file.path}"
-            raise FileNotFoundError(msg) from e
-        except Exception as e:
-            msg = f"An error occurred while reading the file: {e}"
-            raise OSError(msg) from e
+
 
     def read_bytes(self, file_id: str) -> bytes:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
-
-        try:
-            with Path.open(file.path, "rb") as f:
+        with Path.open(file.path, "rb") as f:
                 return f.read()
-        except FileNotFoundError as e:
-            msg = f"File not found at path: {file.path}"
-            raise FileNotFoundError(msg) from e
-        except Exception as e:
-            msg = f"An error occurred while reading the file: {e}"
-            raise OSError(msg) from e
 
     def save_data_file(self, file_id: str, data: Union[bytes, str]) -> None:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
-        try:
-            write_mode = "wb" if isinstance(data, bytes) else "w"
-            with Path.open(file.path, write_mode) as file_obj:
+
+        write_mode = "wb" if isinstance(data, bytes) else "w"
+        with Path.open(file.path, write_mode) as file_obj:
                 file_obj.write(data)
-        except FileNotFoundError as e:
-            msg = f"File not found at path: {file.path}"
-            raise FileNotFoundError(msg) from e
-        except OSError as e:
-            msg = f"An error occurred while writing to the file: {e}"
-            raise OSError(msg) from e
 
     def save_file(self, file_id: str, data: TextIOWrapper) -> None:
         path = self.file_to_path_map[file_id]
@@ -491,12 +471,6 @@ class FileSystemClient:
             with Path.open(file.path, "w") as dest_file:
                 content = data.read()
                 dest_file.write(content)
-        except FileNotFoundError as e:
-            msg = f"File not found at path: {file.path}"
-            raise FileNotFoundError(msg) from e
-        except OSError as e:
-            msg = f"An error occurred while saving the file: {e}"
-            raise OSError(msg) from e
         finally:
             if not data.closed:
                 data.close()
@@ -504,11 +478,4 @@ class FileSystemClient:
     def open_file(self, file_id: str) -> BinaryIO:
         path = self.file_to_path_map[file_id]
         file = FileSystemCollectionFile.load(path)
-        try:
-            return Path.open(file.path, "rb")
-        except FileNotFoundError as e:
-            msg = f"File not found at path: {file.path}"
-            raise FileNotFoundError(msg) from e
-        except OSError as e:
-            msg = f"An error occurred while opening the file: {e}"
-            raise OSError(msg) from e
+        return Path.open(file.path, "rb")
