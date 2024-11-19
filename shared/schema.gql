@@ -7,6 +7,7 @@ directive @trackAppOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackAppUseOperation on FIELD_DEFINITION
 directive @trackToolOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackToolUseOperation on FIELD_DEFINITION
+directive @trackSubscriptionOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackSubscriptionUseOperation on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
 
@@ -38,6 +39,13 @@ enum Role {
   USER
 }
 
+type UserOnboardingStepsCompleted {
+  CreatedApp: Boolean
+  UploadedCode: Boolean
+  InvitedUser: Boolean
+  CreatedSubscriptionOffer: Boolean
+}
+
 type OrganizationMembership {
   id: ID!
   organization: Organization!
@@ -51,6 +59,7 @@ type User {
   memberships: [OrganizationMembership!]! @isMe
   email: String!
   personalAccessTokens: [PersonalAccessTokenEntry!]! @isMe
+  onboardingStepsCompleted: UserOnboardingStepsCompleted! @isMe
 }
 
 type UserNotFound {
@@ -93,14 +102,22 @@ union PersonalAccessTokenCreateResult =
   | PersonalAccessTokenAlreadyExists
   | PersonalAccessTokenInvalidName
 
+type ResendEmailVerificationSuccess {
+  userId: ID!
+}
+
+union ResendEmailVerificationResult =
+    ResendEmailVerificationSuccess
+  | UserNotFound
+
 type Mutation {
+  resendEmailVerification(userId: ID!): ResendEmailVerificationResult!
   personalAccessTokenCreate(
     input: PersonalAccessTokenCreateInput!
   ): PersonalAccessTokenCreateResult! @hasRole(role: AUTHENTICATED)
   personalAccessTokenRevoke(id: ID!): PersonalAccessTokenEntry!
     @ownsPersonalAccessToken
 }
-
 ###############################################################################
 ### End of user management
 ###############################################################################
@@ -377,6 +394,7 @@ type AppDeployment {
   id: ID!
   name: String!
   current: AppDeploymentVersion
+  sharedURL: String
 }
 
 type AppVersionDocumentationFile {
@@ -528,6 +546,7 @@ extend type Mutation {
   ): AppVersionCreateGitHubResult
     @canManageApp
     @trackAppOperation(eventName: "App Version Create from GitHub")
+  appDeployShare(deployID: ID!): AppDeployment! @canManageApp
 }
 
 extend type Subscription {
@@ -684,20 +703,28 @@ extend type Mutation {
   subscriptionOfferCreate(
     input: SubscriptionOfferInput!
     organizationId: ID!
-  ): SubscriptionOfferCreateResult! @hasRole(role: ADMIN)
+  ): SubscriptionOfferCreateResult!
+    @hasRole(role: ADMIN)
+    @trackSubscriptionOperation(eventName: "Subscription Offer Create")
   subscriptionOfferAccept(
     subscriptionOfferId: ID!
     organizationId: ID!
-  ): SubscriptionOfferAcceptResult! @canAccessSubscriptionOffer
+  ): SubscriptionOfferAcceptResult!
+    @canAccessSubscriptionOffer
+    @trackSubscriptionOperation(eventName: "Subscription Offer Accept")
   subscriptionOfferReject(subscriptionOfferId: ID!): SubscriptionOfferResult!
     @canAccessSubscriptionOffer
   subscriptionOfferWithdraw(
     subscriptionOfferId: ID!
-  ): SubscriptionOfferWithdraw! @canAccessSubscriptionOffer
+  ): SubscriptionOfferWithdraw!
+    @canAccessSubscriptionOffer
+    @trackSubscriptionOperation(eventName: "Subscription Offer Withdraw")
   subscriptionCancelInbound(subscriptionId: ID!): AppSubscriptionCancelResult!
     @canManageInboundSubscription
+    @trackSubscriptionOperation(eventName: "Subscription Cancel Inbound")
   subscriptionCancelOutbound(subscriptionId: ID!): AppSubscriptionCancelResult!
     @canManageOutboundSubscription
+    @trackSubscriptionOperation(eventName: "Subscription Cancel Outbound")
   subscriptionDeployHeartbeat(subscriptionId: ID!): AppDeploymentHeartbeat!
     @canAccessSubscription
     @trackSubscriptionUseOperation
@@ -777,171 +804,6 @@ extend type Mutation {
 
 ###############################################################################
 ### End of job management
-###############################################################################
-
-###############################################################################
-### Custom tool development
-###############################################################################
-
-interface ElementGraphParent {
-  id: ID!
-}
-
-type ElementGraphContext {
-  parent: ElementGraphParent
-  affectedBy: [Element]!
-  affects: [Element]!
-}
-
-interface Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-}
-
-type Container implements Element & ElementGraphParent {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-}
-
-type SliderElement implements Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  value: Float!
-  minValue: Float!
-  maxValue: Float!
-}
-
-type HTMLElement implements Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  html: String!
-}
-
-type Button implements Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  value: String!
-}
-
-type TextField implements Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  value: String!
-}
-
-type NumberField implements Element {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  value: Float!
-}
-
-type ElementList implements Element & ElementGraphParent {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-}
-
-type ElementSelect implements Element & ElementGraphParent {
-  id: ID!
-  name: String!
-  label: String!
-  graphContext: ElementGraphContext!
-  selectedOption: Element!
-}
-
-type ToolSession {
-  id: ID!
-  name: String!
-  allElements: [Element!]!
-  isActive: Boolean!
-  clientID: String!
-  title: String!
-}
-
-input ElementInput {
-  elementID: ID!
-  textValue: String
-  numberValue: Float
-  htmlValue: String
-  sliderValue: Float
-}
-
-input ElementSelectInput {
-  selectElementID: ID!
-  selectedOptionID: ID!
-}
-
-input ListElementInput {
-  listElementID: ID!
-}
-
-extend type Query {
-  toolSession(id: ID!): ToolSession!
-}
-
-extend type Mutation {
-  toolSessionCreate: ToolSession!
-  elementUpdate(
-    toolSessionId: ID!
-    clientId: ID!
-    element: ElementInput!
-  ): Element!
-  elementTrigger(
-    toolSessionId: ID!
-    clientId: ID!
-    actionElementId: ID!
-  ): Element!
-  elementSelectionUpdate(
-    clientId: ID!
-    elementSelection: ElementSelectInput!
-  ): Element!
-  listElementAdd(clientId: ID!, listElement: ListElementInput): Element!
-  listElementRemove(clientId: ID!, listItemID: ID!): Element!
-}
-
-type ToolSessionElementAdded {
-  element: Element!
-}
-
-type ToolSessionElementRemoved {
-  element: Element!
-}
-
-type ToolSessionElementUpdated {
-  element: Element!
-}
-
-type ToolSessionActionTriggered {
-  element: Button!
-}
-
-union ToolSessionEvent =
-    ToolSessionElementAdded
-  | ToolSessionElementRemoved
-  | ToolSessionElementUpdated
-  | ToolSessionActionTriggered
-
-type Subscription {
-  toolSessionEvent(toolSessionId: ID!, clientId: ID!): ToolSessionEvent!
-}
-
-###############################################################################
-### End of custom tool development
 ###############################################################################
 
 ###############################################################################
