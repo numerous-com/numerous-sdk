@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 from numerous.collection.file_reference import FileReference
 from numerous.generated.graphql.fragments import (
@@ -10,8 +12,11 @@ from numerous.generated.graphql.fragments import (
     CollectionFileReferenceTags,
     CollectionReference,
 )
-from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import base64_to_dict, dict_to_base64
+
+
+if TYPE_CHECKING:
+    from numerous.generated.graphql.input_types import TagInput
 
 
 @dataclass
@@ -20,7 +25,7 @@ class FileSystemCollectionTag:
     value: str
 
     @staticmethod
-    def load(tag: dict[str, Any]) -> "FileSystemCollectionTag":
+    def load(tag: dict[str, Any]) -> FileSystemCollectionTag:
         key = tag.get("key")
         if not isinstance(key, str):
             tname = type(key).__name__
@@ -64,7 +69,7 @@ class FileSystemFileMetadata:
             json.dump(asdict(self), f, default=convert_to_serializable)
 
     @staticmethod
-    def load(file_path: Path) -> "FileSystemFileMetadata":
+    def load(file_path: Path) -> FileSystemFileMetadata:
         with file_path.open("r") as f:
             file_content = json.load(f)
 
@@ -126,7 +131,7 @@ class FileSystemCollectionDocument:
             json.dump(asdict(self), f)
 
     @staticmethod
-    def load(path: Path) -> "FileSystemCollectionDocument":
+    def load(path: Path) -> FileSystemCollectionDocument:
         with path.open("r") as f:
             file_content = json.load(f)
 
@@ -180,7 +185,7 @@ class FileIndexEntry:
     _path: Path | None = None
 
     @staticmethod
-    def load(path: Path) -> "FileIndexEntry":
+    def load(path: Path) -> FileIndexEntry:
         return FileIndexEntry(**json.loads(path.read_text()), _path=path)
 
     def remove(self) -> None:
@@ -221,7 +226,7 @@ class FileSystemClient:
         return self._base_path / (document_id + ".doc.json")
 
     def get_collection_reference(
-        self, collection_key: str, parent_collection_id: Optional[str] = None
+        self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionReference:
         collection_relpath = (
             Path(parent_collection_id) / collection_key
@@ -235,7 +240,7 @@ class FileSystemClient:
 
     def get_collection_document(
         self, collection_id: str, document_key: str
-    ) -> Optional[CollectionDocumentReference]:
+    ) -> CollectionDocumentReference | None:
         path = self._document_path(collection_id, document_key)
         if not path.exists():
             return None
@@ -252,7 +257,7 @@ class FileSystemClient:
 
     def set_collection_document(
         self, collection_id: str, document_key: str, encoded_data: str
-    ) -> Optional[CollectionDocumentReference]:
+    ) -> CollectionDocumentReference | None:
         path = self._document_path(collection_id, document_key)
         data = base64_to_dict(encoded_data)
         if path.exists():
@@ -272,7 +277,7 @@ class FileSystemClient:
 
     def delete_collection_document(
         self, document_id: str
-    ) -> Optional[CollectionDocumentReference]:
+    ) -> CollectionDocumentReference | None:
         doc_path = self._document_path_from_id(document_id)
         if not doc_path.exists():
             return None
@@ -290,7 +295,7 @@ class FileSystemClient:
 
     def add_collection_document_tag(
         self, document_id: str, tag: TagInput
-    ) -> Optional[CollectionDocumentReference]:
+    ) -> CollectionDocumentReference | None:
         doc_path = self._document_path_from_id(document_id)
         if not doc_path.exists():
             return None
@@ -308,7 +313,7 @@ class FileSystemClient:
 
     def delete_collection_document_tag(
         self, document_id: str, tag_key: str
-    ) -> Optional[CollectionDocumentReference]:
+    ) -> CollectionDocumentReference | None:
         doc_path = self._document_path_from_id(document_id)
         if not doc_path.exists():
             return None
@@ -328,13 +333,13 @@ class FileSystemClient:
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: Optional[TagInput],
-    ) -> tuple[Optional[list[Optional[CollectionDocumentReference]]], bool, str]:
+        tag_input: TagInput | None,
+    ) -> tuple[list[CollectionDocumentReference | None], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
             return [], False, ""
 
-        documents: list[Optional[CollectionDocumentReference]] = []
+        documents: list[CollectionDocumentReference | None] = []
         for doc_path in col_path.iterdir():
             if not doc_path.name.endswith(".doc.json"):
                 continue
@@ -363,7 +368,7 @@ class FileSystemClient:
 
     def create_collection_file_reference(
         self, collection_id: str, file_key: str
-    ) -> Optional[FileReference]:
+    ) -> FileReference | None:
         meta_path = self._file_metadata_path(collection_id, file_key)
         if meta_path.exists():
             meta = FileSystemFileMetadata.load(meta_path)
@@ -384,7 +389,7 @@ class FileSystemClient:
         try:
             index_entry = self._file_index_entry(file_id)
         except FileNotFoundError:
-            return
+            return None
 
         meta_path = self._file_metadata_path(
             index_entry.collection_id, index_entry.file_key
@@ -415,7 +420,7 @@ class FileSystemClient:
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: Optional[TagInput],
+        tag_input: TagInput | None,
     ) -> tuple[list[FileReference], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
@@ -467,7 +472,7 @@ class FileSystemClient:
         self,
         collection_key: str,
         end_cursor: str,  # noqa: ARG002
-    ) -> tuple[Optional[list[CollectionReference]], bool, str]:
+    ) -> tuple[list[CollectionReference | None], bool, str]:
         col_path = self._base_path / collection_key
         if not col_path.exists():
             return [], False, ""
@@ -494,7 +499,7 @@ class FileSystemClient:
         )
         return data_path.read_bytes()
 
-    def save_file(self, file_id: str, data: Union[bytes, str]) -> None:
+    def save_file(self, file_id: str, data: bytes | str) -> None:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key
