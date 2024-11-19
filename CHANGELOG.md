@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.31.0 (2024-11-19)
+
+### Feature
+
+* feat(cli, python-sdk): remove numerous app engine functionality (#52) ([`d9680e1`](https://github.com/numerous-com/numerous-sdk/commit/d9680e1ecd6972ad229f28c84220197d69e4637a))
+
+  > 
+  > Removes all functionality related to the Numerous App engine, as development and support for it
+  > has been suspended.
+
+
+
+
 ## v0.30.0 (2024-11-14)
 
 ### Feature
