@@ -1,5 +1,6 @@
-from pathlib import Path
-from typing import Any, Generator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Generator
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -19,6 +20,10 @@ from numerous.generated.graphql.collection_file_tag_delete import (
 from numerous.generated.graphql.collection_files import CollectionFiles
 from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import dict_to_base64
+
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 ORGANIZATION_ID = "test-org-id"

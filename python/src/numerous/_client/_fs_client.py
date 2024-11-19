@@ -472,7 +472,7 @@ class FileSystemClient:
         self,
         collection_key: str,
         end_cursor: str,  # noqa: ARG002
-    ) -> tuple[list[CollectionReference | None], bool, str]:
+    ) -> tuple[list[CollectionReference], bool, str]:
         col_path = self._base_path / collection_key
         if not col_path.exists():
             return [], False, ""
