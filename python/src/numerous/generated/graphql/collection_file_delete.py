@@ -6,7 +6,7 @@ from typing import Literal, Union
 from pydantic import Field
 
 from .base_model import BaseModel
-from .fragments import CollectionFileReference
+from .fragments import CollectionFileNotFound, CollectionFileReference
 
 
 class CollectionFileDelete(BaseModel):
@@ -20,7 +20,9 @@ class CollectionFileDeleteCollectionFileDeleteCollectionFile(CollectionFileRefer
     typename__: Literal["CollectionFile"] = Field(alias="__typename")
 
 
-class CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound(BaseModel):
+class CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound(
+    CollectionFileNotFound
+):
     typename__: Literal["CollectionFileNotFound"] = Field(alias="__typename")
 
 

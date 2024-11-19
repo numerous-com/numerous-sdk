@@ -4,7 +4,7 @@ import pytest
 
 from numerous import collection
 from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
-from numerous.collection.numerous_document import NumerousDocument
+from numerous.collection.document_reference import DocumentReference
 from numerous.generated.graphql.client import Client as GQLClient
 from numerous.generated.graphql.collection_collections import CollectionCollections
 from numerous.generated.graphql.collection_create import CollectionCreate
@@ -221,7 +221,7 @@ def test_collection_document_returns_new_document() -> None:
         COLLECTION_DOCUMENT_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
-    assert isinstance(document, NumerousDocument)
+    assert isinstance(document, DocumentReference)
     assert document.exists is False
 
 
@@ -243,7 +243,7 @@ def test_collection_document_returns_existing_document() -> None:
         COLLECTION_DOCUMENT_KEY,
         **HEADERS_WITH_AUTHORIZATION,
     )
-    assert isinstance(document, NumerousDocument)
+    assert isinstance(document, DocumentReference)
     assert document.exists
 
 
@@ -258,7 +258,7 @@ def test_collection_document_set_data_uploads_document() -> None:
     )
     test_collection = collection(COLLECTION_NAME, _client)
     document = test_collection.document(COLLECTION_DOCUMENT_KEY)
-    assert isinstance(document, NumerousDocument)
+    assert isinstance(document, DocumentReference)
     assert document.exists is False
 
     document.set({"test": "test"})
@@ -286,7 +286,7 @@ def test_collection_document_get_returns_dict() -> None:
 
     data = document.get()
 
-    assert isinstance(document, NumerousDocument)
+    assert isinstance(document, DocumentReference)
     gql.collection_document.assert_has_calls(
         [
             call(

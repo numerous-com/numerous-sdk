@@ -20,6 +20,10 @@ class CollectionDocumentReferenceTags(BaseModel):
     value: str
 
 
+class CollectionFileNotFound(BaseModel):
+    id: str
+
+
 class CollectionFileReference(BaseModel):
     id: str
     key: str
@@ -43,6 +47,7 @@ class CollectionReference(BaseModel):
 
 
 CollectionDocumentReference.model_rebuild()
+CollectionFileNotFound.model_rebuild()
 CollectionFileReference.model_rebuild()
 CollectionNotFound.model_rebuild()
 CollectionReference.model_rebuild()

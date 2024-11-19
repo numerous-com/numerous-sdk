@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from numerous.collection import NumerousCollection, collection
+from numerous.collection import CollectionReference, collection
 from numerous.collection._client import Client
 
 
@@ -23,7 +23,7 @@ class User:
     _client: Optional[Client] = None
 
     @property
-    def collection(self) -> NumerousCollection:
+    def collection(self) -> CollectionReference:
         """
         A user's collection.
 

@@ -54,8 +54,13 @@ from .collection_documents import (
 )
 from .collection_file import (
     CollectionFile,
-    CollectionFileCollectionFileCreateCollectionFile,
-    CollectionFileCollectionFileCreateCollectionNotFound,
+    CollectionFileCollectionFileCollectionFile,
+    CollectionFileCollectionFileCollectionFileNotFound,
+)
+from .collection_file_create import (
+    CollectionFileCreate,
+    CollectionFileCreateCollectionFileCreateCollectionFile,
+    CollectionFileCreateCollectionFileCreateCollectionNotFound,
 )
 from .collection_file_delete import (
     CollectionFileDelete,
@@ -74,12 +79,12 @@ from .collection_file_tag_delete import (
 )
 from .collection_files import (
     CollectionFiles,
-    CollectionFilesCollectionCreateCollection,
-    CollectionFilesCollectionCreateCollectionFiles,
-    CollectionFilesCollectionCreateCollectionFilesEdges,
-    CollectionFilesCollectionCreateCollectionFilesEdgesNode,
-    CollectionFilesCollectionCreateCollectionFilesPageInfo,
-    CollectionFilesCollectionCreateCollectionNotFound,
+    CollectionFilesCollectionCollection,
+    CollectionFilesCollectionCollectionFiles,
+    CollectionFilesCollectionCollectionFilesEdges,
+    CollectionFilesCollectionCollectionFilesEdgesNode,
+    CollectionFilesCollectionCollectionFilesPageInfo,
+    CollectionFilesCollectionCollectionNotFound,
 )
 from .enums import (
     AppDeploymentStatus,
@@ -100,6 +105,7 @@ from .exceptions import (
 from .fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
+    CollectionFileNotFound,
     CollectionFileReference,
     CollectionFileReferenceTags,
     CollectionNotFound,
@@ -181,11 +187,15 @@ __all__ = [
     "CollectionDocumentsCollectionCollectionDocumentsPageInfo",
     "CollectionDocumentsCollectionCollectionNotFound",
     "CollectionFile",
-    "CollectionFileCollectionFileCreateCollectionFile",
-    "CollectionFileCollectionFileCreateCollectionNotFound",
+    "CollectionFileCollectionFileCollectionFile",
+    "CollectionFileCollectionFileCollectionFileNotFound",
+    "CollectionFileCreate",
+    "CollectionFileCreateCollectionFileCreateCollectionFile",
+    "CollectionFileCreateCollectionFileCreateCollectionNotFound",
     "CollectionFileDelete",
     "CollectionFileDeleteCollectionFileDeleteCollectionFile",
     "CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound",
+    "CollectionFileNotFound",
     "CollectionFileReference",
     "CollectionFileReferenceTags",
     "CollectionFileTagAdd",
@@ -195,12 +205,12 @@ __all__ = [
     "CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile",
     "CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound",
     "CollectionFiles",
-    "CollectionFilesCollectionCreateCollection",
-    "CollectionFilesCollectionCreateCollectionFiles",
-    "CollectionFilesCollectionCreateCollectionFilesEdges",
-    "CollectionFilesCollectionCreateCollectionFilesEdgesNode",
-    "CollectionFilesCollectionCreateCollectionFilesPageInfo",
-    "CollectionFilesCollectionCreateCollectionNotFound",
+    "CollectionFilesCollectionCollection",
+    "CollectionFilesCollectionCollectionFiles",
+    "CollectionFilesCollectionCollectionFilesEdges",
+    "CollectionFilesCollectionCollectionFilesEdgesNode",
+    "CollectionFilesCollectionCollectionFilesPageInfo",
+    "CollectionFilesCollectionCollectionNotFound",
     "CollectionNotFound",
     "CollectionReference",
     "GraphQLClientError",
