@@ -17,6 +17,7 @@ repos:
         entry: "mypy --strict ./python"
         pass_filenames: false
         additional_dependencies:
+          - "types-requests"
           - "pytest-asyncio"
           - "pydantic"
           - "marimo"

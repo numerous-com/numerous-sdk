@@ -364,8 +364,12 @@ def test_save_with_bytes_makes_put_request(mock_put: MagicMock) -> None:
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        files={"file": TEST_FILE_BYTES_CONTENT},
         timeout=_REQUEST_TIMEOUT_SECONDS,
+        headers={
+            "Content-Type": "application/octet-stream",
+            "Content-Length": str(len(TEST_FILE_BYTES_CONTENT)),
+        },
+        data=TEST_FILE_BYTES_CONTENT,
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -376,9 +380,7 @@ def test_save_with_bytes_makes_put_request(mock_put: MagicMock) -> None:
     assert isinstance(file, FileReference)
 
 
-def test_save_makes_expected_put_request(
-    mock_get: MagicMock, mock_put: MagicMock
-) -> None:
+def test_save_makes_expected_put_request(mock_put: MagicMock) -> None:
     gql = Mock(GQLClient)
     client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
@@ -388,20 +390,20 @@ def test_save_makes_expected_put_request(
         COLLECTION_FILE_KEY
     )
     gql.collection_file.return_value = _collection_file_reference(COLLECTION_FILE_KEY)
-
     mock_put.return_value.status_code = 200
-    mock_get.return_value.status_code = 200
-    mock_get.return_value.content = TEST_FILE_TEXT_CONTENT
 
     col = collection(COLLECTION_KEY, client)
-
     file = col.file(COLLECTION_FILE_KEY)
     file.save(TEST_FILE_TEXT_CONTENT)
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        files={"file": TEST_FILE_BYTES_CONTENT},
         timeout=_REQUEST_TIMEOUT_SECONDS,
+        headers={
+            "Content-Type": "text/plain",
+            "Content-Length": str(len(TEST_FILE_TEXT_CONTENT)),
+        },
+        data=TEST_FILE_BYTES_CONTENT,
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_REFERENCE_ID,
@@ -427,8 +429,12 @@ def test_save_file_makes_expected_put_request(mock_put: MagicMock) -> None:
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        files={"file": TEST_FILE_BYTES_CONTENT},
         timeout=_REQUEST_TIMEOUT_SECONDS,
+        headers={
+            "Content-Type": "text/plain",
+            "Content-Length": str(len(TEST_FILE_TEXT_CONTENT)),
+        },
+        data=TEST_FILE_BYTES_CONTENT,
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_REFERENCE_ID,

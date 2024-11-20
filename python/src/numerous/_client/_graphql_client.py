@@ -340,7 +340,7 @@ class GraphQLClient:
         )
 
     def collection_file_tags(self, file_id: str) -> dict[str, str] | None:
-        file = self._loop.await_coro(self._gql.collection_file(file_id)).collection_file
+        file = self._collection_file(file_id)
 
         if not isinstance(file, CollectionFileCollectionFileCollectionFile):
             return None
@@ -441,7 +441,7 @@ class GraphQLClient:
         )
 
     def save_file(self, file_id: str, data: bytes | str) -> None:
-        file = self._loop.await_coro(self._gql.collection_file(file_id)).collection_file
+        file = self._collection_file(file_id)
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound
         ):
@@ -451,11 +451,16 @@ class GraphQLClient:
             msg = "No upload URL for this file."
             raise ValueError(msg)
 
+        content_type = "application/octet-stream"
         if isinstance(data, str):
+            content_type = "text/plain"
             data = data.encode()  # Convert string to bytes
 
         response = requests.put(
-            file.upload_url, files={"file": data}, timeout=_REQUEST_TIMEOUT_SECONDS_
+            file.upload_url,
+            timeout=_REQUEST_TIMEOUT_SECONDS_,
+            headers={"Content-Type": content_type, "Content-Length": str(len(data))},
+            data=data,
         )
         response.raise_for_status()
 
@@ -468,8 +473,19 @@ class GraphQLClient:
     def open_file(self, file_id: str) -> BinaryIO:
         return io.BytesIO(self._request_file(file_id).content)
 
+    def _collection_file(
+        self, file_id: str
+    ) -> (
+        CollectionFileCollectionFileCollectionFileNotFound
+        | CollectionFileCollectionFileCollectionFile
+        | None
+    ):
+        return self._loop.await_coro(
+            self._gql.collection_file(file_id, headers=self._headers)
+        ).collection_file
+
     def _request_file(self, file_id: str) -> requests.Response:
-        file = self._loop.await_coro(self._gql.collection_file(file_id)).collection_file
+        file = self._collection_file(file_id)
 
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound
@@ -487,7 +503,7 @@ class GraphQLClient:
         return response
 
     def file_exists(self, file_id: str) -> bool:
-        file = self._loop.await_coro(self._gql.collection_file(file_id)).collection_file
+        file = self._collection_file(file_id)
 
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound
