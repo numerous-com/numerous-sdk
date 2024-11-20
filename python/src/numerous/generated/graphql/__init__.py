@@ -52,6 +52,40 @@ from .collection_documents import (
     CollectionDocumentsCollectionCollectionDocumentsPageInfo,
     CollectionDocumentsCollectionCollectionNotFound,
 )
+from .collection_file import (
+    CollectionFile,
+    CollectionFileCollectionFileCollectionFile,
+    CollectionFileCollectionFileCollectionFileNotFound,
+)
+from .collection_file_create import (
+    CollectionFileCreate,
+    CollectionFileCreateCollectionFileCreateCollectionFile,
+    CollectionFileCreateCollectionFileCreateCollectionNotFound,
+)
+from .collection_file_delete import (
+    CollectionFileDelete,
+    CollectionFileDeleteCollectionFileDeleteCollectionFile,
+    CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound,
+)
+from .collection_file_tag_add import (
+    CollectionFileTagAdd,
+    CollectionFileTagAddCollectionFileTagAddCollectionFile,
+    CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound,
+)
+from .collection_file_tag_delete import (
+    CollectionFileTagDelete,
+    CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile,
+    CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
+)
+from .collection_files import (
+    CollectionFiles,
+    CollectionFilesCollectionCollection,
+    CollectionFilesCollectionCollectionFiles,
+    CollectionFilesCollectionCollectionFilesEdges,
+    CollectionFilesCollectionCollectionFilesEdgesNode,
+    CollectionFilesCollectionCollectionFilesPageInfo,
+    CollectionFilesCollectionCollectionNotFound,
+)
 from .enums import (
     AppDeploymentStatus,
     AppSubscriptionStatus,
@@ -71,6 +105,9 @@ from .exceptions import (
 from .fragments import (
     CollectionDocumentReference,
     CollectionDocumentReferenceTags,
+    CollectionFileNotFound,
+    CollectionFileReference,
+    CollectionFileReferenceTags,
     CollectionNotFound,
     CollectionReference,
 )
@@ -149,6 +186,31 @@ __all__ = [
     "CollectionDocumentsCollectionCollectionDocumentsEdgesNode",
     "CollectionDocumentsCollectionCollectionDocumentsPageInfo",
     "CollectionDocumentsCollectionCollectionNotFound",
+    "CollectionFile",
+    "CollectionFileCollectionFileCollectionFile",
+    "CollectionFileCollectionFileCollectionFileNotFound",
+    "CollectionFileCreate",
+    "CollectionFileCreateCollectionFileCreateCollectionFile",
+    "CollectionFileCreateCollectionFileCreateCollectionNotFound",
+    "CollectionFileDelete",
+    "CollectionFileDeleteCollectionFileDeleteCollectionFile",
+    "CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound",
+    "CollectionFileNotFound",
+    "CollectionFileReference",
+    "CollectionFileReferenceTags",
+    "CollectionFileTagAdd",
+    "CollectionFileTagAddCollectionFileTagAddCollectionFile",
+    "CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound",
+    "CollectionFileTagDelete",
+    "CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile",
+    "CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound",
+    "CollectionFiles",
+    "CollectionFilesCollectionCollection",
+    "CollectionFilesCollectionCollectionFiles",
+    "CollectionFilesCollectionCollectionFilesEdges",
+    "CollectionFilesCollectionCollectionFilesEdgesNode",
+    "CollectionFilesCollectionCollectionFilesPageInfo",
+    "CollectionFilesCollectionCollectionNotFound",
     "CollectionNotFound",
     "CollectionReference",
     "GraphQLClientError",

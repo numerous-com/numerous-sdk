@@ -1022,6 +1022,10 @@ union CollectionFileResult = CollectionFile | CollectionFileNotFound
 union CollectionFileCreateResult = CollectionFile | CollectionNotFound
 union CollectionFileDeleteResult = CollectionFile | CollectionFileNotFound
 
+extend type Query {
+  collectionFile(id: ID!): CollectionFileResult @canAccessCollectionFile
+}
+
 extend type Mutation {
   # idempotent
   collectionFileCreate(

@@ -1,7 +1,7 @@
 """The Python SDK for numerous collections."""
 
-__all__ = ["collection", "NumerousCollection", "NumerousDocument"]
+__all__ = ["collection", "CollectionReference", "DocumentReference"]
 
 from .collection import collection
-from .numerous_collection import NumerousCollection
-from .numerous_document import NumerousDocument
+from .collection_reference import CollectionReference
+from .document_reference import DocumentReference

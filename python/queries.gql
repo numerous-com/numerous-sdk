@@ -17,6 +17,21 @@ fragment CollectionNotFound on CollectionNotFound {
   id
 }
 
+fragment CollectionFileReference on CollectionFile {
+  id
+  key
+  downloadURL
+  uploadURL
+  tags {
+    key
+    value
+  }
+}
+
+fragment CollectionFileNotFound on CollectionFileNotFound {
+  id
+}
+
 mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   collectionCreate(
     organizationID: $organizationID
@@ -139,6 +154,83 @@ query CollectionDocuments(
           endCursor
         }
       }
+    }
+  }
+}
+
+mutation CollectionFileCreate($collectionID: ID!, $key: ID!) {
+  collectionFileCreate(collectionID: $collectionID, key: $key) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+mutation CollectionFileDelete($id: ID!) {
+  collectionFileDelete(id: $id) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+    ... on CollectionFileNotFound {
+      ...CollectionFileNotFound
+    }
+  }
+}
+
+query CollectionFiles(
+  $collectionID: ID!
+  $tag: TagInput
+  $after: ID
+  $first: Int
+) {
+  collection(id: $collectionID) {
+    __typename
+    ... on Collection {
+      id
+      key
+      files(after: $after, first: $first, tag: $tag) {
+        edges {
+          node {
+            __typename
+            ... on CollectionFile {
+              ...CollectionFileReference
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
+
+mutation CollectionFileTagAdd($id: ID!, $tag: TagInput!) {
+  collectionFileTagAdd(id: $id, tag: $tag) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+mutation CollectionFileTagDelete($id: ID!, $tag_key: String!) {
+  collectionFileTagDelete(id: $id, key: $tag_key) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
+    }
+  }
+}
+
+query CollectionFile($id: ID!) {
+  collectionFile(id: $id) {
+    __typename
+    ... on CollectionFile {
+      ...CollectionFileReference
     }
   }
 }

@@ -8,7 +8,7 @@ from numerous.generated.graphql.input_types import TagInput
 from numerous.jsonbase64 import base64_to_dict, dict_to_base64
 
 
-class NumerousDocument:
+class DocumentReference:
     """
     Represents a document in a Numerous collection.
 

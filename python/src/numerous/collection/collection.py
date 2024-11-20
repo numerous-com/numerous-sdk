@@ -3,14 +3,14 @@
 from typing import Optional
 
 from numerous._client._get_client import get_client
-from numerous.collection.numerous_collection import NumerousCollection
+from numerous.collection.collection_reference import CollectionReference
 
 from ._client import Client
 
 
 def collection(
     collection_key: str, _client: Optional[Client] = None
-) -> NumerousCollection:
+) -> CollectionReference:
     """
     Get or create a root collection by key.
 
@@ -28,4 +28,4 @@ def collection(
     if _client is None:
         _client = get_client()
     collection_ref = _client.get_collection_reference(collection_key)
-    return NumerousCollection(collection_ref, _client)
+    return CollectionReference(collection_ref.id, collection_ref.key, _client)
