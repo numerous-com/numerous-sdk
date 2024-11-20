@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "numerous"
 readme = "README.md"
-version = "0.31.0"
+version = "0.32.0"
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
     "typing-extensions>=4.12.2",

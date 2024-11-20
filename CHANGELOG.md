@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.32.0 (2024-11-20)
+
+### Feature
+
+* feat(python-sdk): collection files (#46) ([`3c625d8`](https://github.com/numerous-com/numerous-sdk/commit/3c625d88844063d4880a1d7987a7cea004669ec1))
+
+  > 
+  > Save, load, delete, tag, list and filter files in collections.
+
+
+
+
 ## v0.31.0 (2024-11-19)
 
 ### Feature
