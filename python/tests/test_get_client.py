@@ -1,7 +1,7 @@
 import pytest
 
-from numerous._client._get_client import get_client
-from numerous._client._graphql_client import GraphQLClient
+from numerous._client.get_client import get_client
+from numerous._client.graphql_client import GraphQLClient
 
 
 def test_open_client_with_graphql_environment_returns_graphql_client(

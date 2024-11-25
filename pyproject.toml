@@ -50,7 +50,7 @@ where = ["python/src"]
 [tool.ruff]
 src = ["python/src"]
 exclude = [
-    "./python/src/numerous/generated/",
+    "./python/src/numerous/_client/graphql",
     "./setup.py",
     "./python/docs",
     "./examples",
@@ -90,7 +90,7 @@ mark-parentheses = false
 schema_path = "../shared/schema.gql"
 queries_path = "queries.gql"
 target_package_name = "graphql"
-target_package_path = "src/numerous/generated"
+target_package_path = "src/numerous/_client"
 
 [tool.mypy]
 ignore_missing_imports = true

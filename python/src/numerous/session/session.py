@@ -1,11 +1,16 @@
 """Module for managing user sessions and cookie-based authentication."""
 
+from __future__ import annotations
+
 import base64
 import json
-from typing import Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-from numerous._client._graphql_client import GraphQLClient
-from numerous.user import User
+
+if TYPE_CHECKING:
+    from numerous._client.graphql_client import GraphQLClient
+
+from .user import User
 
 
 class CookieGetter(Protocol):
@@ -26,11 +31,9 @@ def set_user_info_cookie(cookies: dict[str, str], user: User) -> None:
 class Session:
     """A session with Numerous."""
 
-    def __init__(
-        self, cg: CookieGetter, _client: Optional[GraphQLClient] = None
-    ) -> None:
+    def __init__(self, cg: CookieGetter, _client: GraphQLClient | None = None) -> None:
         self._cg = cg
-        self._user: Optional[User] = None
+        self._user: User | None = None
         self._client = _client
 
     def _user_info(self) -> dict[str, str]:

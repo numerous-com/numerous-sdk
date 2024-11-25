@@ -1,11 +1,15 @@
 """Class for working with numerous documents."""
 
-from typing import Any, Optional
+from __future__ import annotations
 
-from numerous.collection._client import Client
-from numerous.generated.graphql.fragments import CollectionDocumentReference
-from numerous.generated.graphql.input_types import TagInput
-from numerous.jsonbase64 import base64_to_dict, dict_to_base64
+from typing import TYPE_CHECKING, Any
+
+from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
+from numerous.collections._client import Tag
+
+
+if TYPE_CHECKING:
+    from numerous.collections._client import Client, CollectionDocumentReference
 
 
 class DocumentReference:
@@ -16,8 +20,8 @@ class DocumentReference:
         key (str): The key of the document.
         collection_info (tuple[str, str]): The id
             and key of collection document belongs to.
-        data (Optional[dict[str, Any]]): The data of the document.
-        id (Optional[str]): The unique identifier of the document.
+        data (dict[str, Any] | None): The data of the document.
+        id (str | None): The unique identifier of the document.
         client (Client): The client to connect.
         tags (dict[str, str]): The tags associated with the document.
 
@@ -28,19 +32,19 @@ class DocumentReference:
         client: Client,
         key: str,
         collection_info: tuple[str, str],
-        numerous_doc_ref: Optional[CollectionDocumentReference] = None,
+        doc_ref: CollectionDocumentReference | None = None,
     ) -> None:
         self.key: str = key
         self.collection_id: str = collection_info[0]
         self.collection_key: str = collection_info[1]
         self._client: Client = client
-        self.document_id: Optional[str] = None
-        self.data: Optional[dict[str, Any]] = None
+        self.document_id: str | None = None
+        self.data: dict[str, Any] | None = None
 
-        if numerous_doc_ref is not None:
-            dict_of_tags = {tag.key: tag.value for tag in numerous_doc_ref.tags}
-            self.data = base64_to_dict(numerous_doc_ref.data)
-            self.document_id = numerous_doc_ref.id
+        if doc_ref is not None:
+            dict_of_tags = {tag.key: tag.value for tag in doc_ref.tags}
+            self.data = base64_to_dict(doc_ref.data) if doc_ref.data else None
+            self.document_id = doc_ref.id
             self._tags: dict[str, str] = (
                 dict_of_tags if dict_of_tags is not None else {}
             )
@@ -81,7 +85,7 @@ class DocumentReference:
             raise ValueError(msg)
         self.data = data
 
-    def get(self) -> Optional[dict[str, Any]]:
+    def get(self) -> dict[str, Any] | None:
         """
         Get the data of the document.
 
@@ -134,7 +138,7 @@ class DocumentReference:
         """
         if self.document_id is not None:
             tagged_document = self._client.add_collection_document_tag(
-                self.document_id, TagInput(key=key, value=value)
+                self.document_id, Tag(key=key, value=value)
             )
         else:
             msg = "Cannot tag a non-existent document."
@@ -176,4 +180,4 @@ class DocumentReference:
             raise ValueError(msg)
 
         if document is not None:
-            self.data = base64_to_dict(document.data)
+            self.data = base64_to_dict(document.data) if document.data else None

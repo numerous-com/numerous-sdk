@@ -6,14 +6,13 @@ from typing import Any
 
 import pytest
 
-from numerous._client._fs_client import FileSystemClient
-from numerous.generated.graphql.fragments import (
+from numerous._client.fs_client import FileSystemClient
+from numerous._utils.jsonbase64 import dict_to_base64
+from numerous.collections._client import (
     CollectionDocumentReference,
-    CollectionDocumentReferenceTags,
-    CollectionReference,
+    CollectionIdentifier,
+    Tag,
 )
-from numerous.generated.graphql.input_types import TagInput
-from numerous.jsonbase64 import dict_to_base64
 
 
 _TEST_COLLECTION_KEY = "collection_key"
@@ -68,8 +67,8 @@ def test_get_document_returns_expected_existing_document_reference(
         key=_TEST_DOCUMENT_KEY,
         data=dict_to_base64(data),
         tags=[
-            CollectionDocumentReferenceTags(key="tag-1-key", value="tag-1-value"),
-            CollectionDocumentReferenceTags(key="tag-2-key", value="tag-2-value"),
+            Tag(key="tag-1-key", value="tag-1-value"),
+            Tag(key="tag-2-key", value="tag-2-value"),
         ],
     )
 
@@ -96,8 +95,8 @@ def test_get_document_returns_expected_nested_existing_document_reference(
         key=_TEST_DOCUMENT_KEY,
         data=dict_to_base64(data),
         tags=[
-            CollectionDocumentReferenceTags(key="tag-1-key", value="tag-1-value"),
-            CollectionDocumentReferenceTags(key="tag-2-key", value="tag-2-value"),
+            Tag(key="tag-1-key", value="tag-1-value"),
+            Tag(key="tag-2-key", value="tag-2-value"),
         ],
     )
 
@@ -175,7 +174,7 @@ def test_add_collection_document_tag_adds_expected_tag(
 
     doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
     client.add_collection_document_tag(
-        doc_id, TagInput(key="added-tag-key", value="added-tag-value")
+        doc_id, Tag(key="added-tag-key", value="added-tag-value")
     )
 
     doc_path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_DOCUMENT_KEY}.doc.json"
@@ -272,7 +271,7 @@ def test_get_collection_documents_returns_documents_with_tag(
     result, has_next_page, end_cursor = client.get_collection_documents(
         _TEST_COLLECTION_KEY,
         "",
-        TagInput(key="tag-key", value="tag-value"),
+        Tag(key="tag-key", value="tag-value"),
     )
 
     assert result == [
@@ -280,7 +279,7 @@ def test_get_collection_documents_returns_documents_with_tag(
             id=str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
             key=_TEST_DOCUMENT_KEY,
             data=dict_to_base64(test_tagged_data),
-            tags=[CollectionDocumentReferenceTags(key="tag-key", value="tag-value")],
+            tags=[Tag(key="tag-key", value="tag-value")],
         ),
     ]
     assert has_next_page is False
@@ -302,13 +301,13 @@ def test_get_collection_collections_returns_expected_collections(
     assert has_next_page is False
     assert end_cursor == ""
     assert (
-        CollectionReference(
+        CollectionIdentifier(
             id=_TEST_NESTED_COLLECTION_ID, key=_TEST_NESTED_COLLECTION_KEY
         )
         in collections
     )
     assert (
-        CollectionReference(
+        CollectionIdentifier(
             id=_TEST_ANOTHER_NESTED_COLLECTION_ID,
             key=_TEST_ANOTHER_NESTED_COLLECTION_KEY,
         )
@@ -321,19 +320,13 @@ def test_get_collection_file_returns_expected_existing_file_reference(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = "File content 1;2;3;4;\n1;2;3;4"
-    tags = [
-        {"key": "tag-1-key", "value": "tag-1-value"},
-        {"key": "tag-2-key", "value": "tag-2-value"},
-    ]
-    _create_test_file(base_path, data=data, tags=tags)
+    _create_test_file(base_path, data=data)
 
     file = client.create_collection_file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
 
     assert file is not None
-    assert file.file_id == TEST_FILE_ID
+    assert file.id == TEST_FILE_ID
     assert file.key == TEST_FILE_KEY
-    assert file.exists is True
-    assert file.tags == {"tag-1-key": "tag-1-value", "tag-2-key": "tag-2-value"}
 
 
 def test_get_collection_file_returns_expected_nonexisting_file_reference(
@@ -345,28 +338,26 @@ def test_get_collection_file_returns_expected_nonexisting_file_reference(
 
     assert file is not None
     assert file.key == TEST_FILE_KEY
-    assert file.exists is False
-    assert file.tags == {}
 
 
 def test_get_collection_files_returns_all_files(
     base_path: Path, client: FileSystemClient
 ) -> None:
     test_files = {
-        TEST_FILE_ID + "_1": (TEST_FILE_KEY + "_1", "File content 1;2;3;4;\n1;2;3;4"),
-        TEST_FILE_ID + "_2": (TEST_FILE_KEY + "_2", "File content 4;5;6;7;\n4;5;6;7"),
+        TEST_FILE_ID + "_1": (TEST_FILE_KEY + "_1"),
+        TEST_FILE_ID + "_2": (TEST_FILE_KEY + "_2"),
     }
-    for file_id, (file_key, data) in test_files.items():
-        _create_test_file(base_path, TEST_COLLECTION_ID, file_key, file_id, data)
+    for file_id, file_key in test_files.items():
+        _create_test_file(
+            base_path, TEST_COLLECTION_ID, file_key, file_id, "file content"
+        )
 
     result, has_next_page, end_cursor = client.get_collection_files(
         TEST_COLLECTION_ID, "", None
     )
 
     assert result is not None
-    result_files = {
-        file.file_id: (file.key, file.read_text()) for file in result if file
-    }
+    result_files = {file.id: file.key for file in result if file}
     assert result_files == test_files
     assert has_next_page is False
     assert end_cursor == ""
@@ -397,7 +388,7 @@ def test_add_collection_file_tag_adds_expected_tag(
     meta_path = base_path / _TEST_COLLECTION_KEY / f"{TEST_FILE_KEY}.file.meta.json"
 
     client.add_collection_file_tag(
-        TEST_FILE_ID, TagInput(key="added-tag-key", value="added-tag-value")
+        TEST_FILE_ID, Tag(key="added-tag-key", value="added-tag-value")
     )
 
     assert json.loads(meta_path.read_text())["tags"] == [
@@ -446,7 +437,7 @@ def test_file_exists_returns_false_for_nonexisting_referenced_file(
     f = client.create_collection_file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
 
     assert f is not None
-    assert client.file_exists(f.file_id) is False
+    assert client.file_exists(f.id) is False
 
 
 def test_collection_file_tags_returns_expected_tags(

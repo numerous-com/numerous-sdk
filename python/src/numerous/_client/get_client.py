@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 import os
+import typing
 from pathlib import Path
-from typing import Optional
 
-from numerous.collection._client import Client
-from numerous.generated.graphql.client import Client as GQLClient
-
-from ._fs_client import FileSystemClient
-from ._graphql_client import GraphQLClient
+from .fs_client import FileSystemClient
+from .graphql.client import Client as GQLClient
+from .graphql_client import GraphQLClient
 
 
-_client: Optional[Client] = None
+if typing.TYPE_CHECKING:
+    from numerous.collections._client import Client
+
+_client: Client | None = None
 
 
 def get_client() -> Client:

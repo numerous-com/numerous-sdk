@@ -1,11 +1,12 @@
-from typing import Optional
+from __future__ import annotations
+
 from unittest.mock import Mock, call
 
 import pytest
 
-from numerous.collection._client import Client
-from numerous.generated.graphql.fragments import CollectionReference
-from numerous.user import User
+from numerous._client.graphql.fragments import CollectionReference
+from numerous.collections._client import Client
+from numerous.session.user import User
 
 
 TEST_ORGANIZATION_ID = "test-organization-id"
@@ -25,7 +26,7 @@ def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def client() -> Mock:
     def mock_get_collection_reference(
-        collection_key: str, parent_collection_id: Optional[str] = None
+        collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionReference:
         ref = (collection_key, parent_collection_id)
         if ref == (TEST_USER_COLLECTION_KEY, None):

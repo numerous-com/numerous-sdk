@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, BinaryIO
 
-from numerous.generated.graphql.input_types import TagInput
+from numerous.collections._client import Tag
 
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
 
-    from numerous.collection._client import Client
+    from numerous.collections._client import Client
 
 NO_FILE_ERROR_MSG = "File does not exist."
 
@@ -134,9 +134,7 @@ class FileReference:
             value: The tag value.
 
         """
-        self._client.add_collection_file_tag(
-            self.file_id, TagInput(key=key, value=value)
-        )
+        self._client.add_collection_file_tag(self.file_id, Tag(key=key, value=value))
 
     def tag_delete(self, tag_key: str) -> None:
         """

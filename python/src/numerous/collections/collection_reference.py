@@ -1,17 +1,24 @@
 """Class for working with numerous collections."""
 
-from dataclasses import dataclass
-from typing import Generator, Iterator, Optional
+from __future__ import annotations
 
-from numerous.collection._client import Client
-from numerous.collection.document_reference import DocumentReference
-from numerous.collection.file_reference import FileReference
-from numerous.generated.graphql.input_types import TagInput
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Generator
+
+import numerous._client.exceptions
+from numerous.collections._client import Tag
+from numerous.collections.document_reference import DocumentReference
+from numerous.collections.exceptions import ParentCollectionNotFoundError
+from numerous.collections.file_reference import FileReference
+
+
+if TYPE_CHECKING:
+    from numerous.collections._client import Client, CollectionFileIdentifier
 
 
 @dataclass
 class CollectionNotFoundError(Exception):
-    parent_id: Optional[str]
+    parent_id: str | None
     key: str
 
 
@@ -23,7 +30,7 @@ class CollectionReference:
         self.id = collection_id
         self._client = _client
 
-    def collection(self, collection_key: str) -> "CollectionReference":
+    def collection(self, collection_key: str) -> CollectionReference:
         """
         Get or create a child collection of this collection by key.
 
@@ -36,9 +43,12 @@ class CollectionReference:
             NumerousCollection: The child collection identified by the given key.
 
         """
-        ref = self._client.get_collection_reference(
-            collection_key=collection_key, parent_collection_id=self.id
-        )
+        try:
+            ref = self._client.get_collection_reference(
+                collection_key=collection_key, parent_collection_id=self.id
+            )
+        except numerous._client.exceptions.ParentCollectionNotFoundError as error:  # noqa: SLF001
+            raise ParentCollectionNotFoundError(error.collection_id) from error
 
         if ref is None:
             raise CollectionNotFoundError(parent_id=self.id, key=collection_key)
@@ -57,20 +67,16 @@ class CollectionReference:
             The document in the collection with the given key.
 
         """
-        numerous_doc_ref = self._client.get_collection_document(self.id, key)
-        if numerous_doc_ref is not None:
-            numerous_document = DocumentReference(
-                self._client,
-                numerous_doc_ref.key,
-                (self.id, self.key),
-                numerous_doc_ref,
-            )
-        else:
-            numerous_document = DocumentReference(
-                self._client, key, (self.id, self.key)
-            )
+        col_doc_ref = self._client.get_collection_document(self.id, key)
+        if col_doc_ref is None:
+            return DocumentReference(self._client, key, (self.id, self.key))
 
-        return numerous_document
+        return DocumentReference(
+            self._client,
+            col_doc_ref.key,
+            (self.id, self.key),
+            col_doc_ref,
+        )
 
     def file(self, key: str) -> FileReference:
         """
@@ -80,12 +86,12 @@ class CollectionReference:
             key: The key of the file.
 
         """
-        file = self._client.create_collection_file_reference(self.id, key)
-        if file is None:
+        file_identifier = self._client.create_collection_file_reference(self.id, key)
+        if file_identifier is None:
             msg = "Failed to retrieve or create the file."
             raise ValueError(msg)
 
-        return file
+        return _file_reference_from_identifier(self._client, file_identifier)
 
     def save_file(self, file_key: str, file_data: str) -> None:
         """
@@ -106,8 +112,8 @@ class CollectionReference:
         file.save(file_data)
 
     def files(
-        self, tag_key: Optional[str] = None, tag_value: Optional[str] = None
-    ) -> Iterator[FileReference]:
+        self, tag_key: str | None = None, tag_value: str | None = None
+    ) -> Generator[FileReference, None, None]:
         """
         Retrieve files from the collection, filtered by a tag key and value.
 
@@ -120,25 +126,23 @@ class CollectionReference:
 
         """
         end_cursor = ""
-        tag_input = None
+        tag = None
         if tag_key is not None and tag_value is not None:
-            tag_input = TagInput(key=tag_key, value=tag_value)
+            tag = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.get_collection_files(self.id, end_cursor, tag_input)
+            result = self._client.get_collection_files(self.id, end_cursor, tag)
             if result is None:
                 break
-            numerous_files, has_next_page, end_cursor = result
-            if numerous_files is None:
-                break
-            for numerous_file in numerous_files:
-                if numerous_file is None:
+            file_identifiers, has_next_page, end_cursor = result
+            for file_identifier in file_identifiers:
+                if file_identifier is None:
                     continue
-                yield numerous_file
+                yield _file_reference_from_identifier(self._client, file_identifier)
 
     def documents(
-        self, tag_key: Optional[str] = None, tag_value: Optional[str] = None
-    ) -> Iterator[DocumentReference]:
+        self, tag_key: str | None = None, tag_value: str | None = None
+    ) -> Generator[DocumentReference, None, None]:
         """
         Retrieve documents from the collection, filtered by a tag key and value.
 
@@ -155,28 +159,26 @@ class CollectionReference:
         end_cursor = ""
         tag_input = None
         if tag_key is not None and tag_value is not None:
-            tag_input = TagInput(key=tag_key, value=tag_value)
+            tag_input = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
             result = self._client.get_collection_documents(
                 self.id, end_cursor, tag_input
             )
-            if result is None:
+            doc_refs, has_next_page, end_cursor = result
+            if doc_refs is None:
                 break
-            numerous_doc_refs, has_next_page, end_cursor = result
-            if numerous_doc_refs is None:
-                break
-            for numerous_doc_ref in numerous_doc_refs:
-                if numerous_doc_ref is None:
+            for doc_ref in doc_refs:
+                if doc_ref is None:
                     continue
                 yield DocumentReference(
-                    self._client,
-                    numerous_doc_ref.key,
-                    (self.id, self.key),
-                    numerous_doc_ref,
+                    client=self._client,
+                    key=doc_ref.key,
+                    collection_info=(self.id, self.key),
+                    doc_ref=doc_ref,
                 )
 
-    def collections(self) -> Generator["CollectionReference", None, None]:
+    def collections(self) -> Generator[CollectionReference, None, None]:
         """
         Retrieve nested collections from the collection.
 
@@ -195,3 +197,9 @@ class CollectionReference:
                 break
             for ref in refs:
                 yield CollectionReference(ref.id, ref.key, self._client)
+
+
+def _file_reference_from_identifier(
+    client: Client, identifier: CollectionFileIdentifier
+) -> FileReference:
+    return FileReference(client=client, file_id=identifier.id, key=identifier.key)
