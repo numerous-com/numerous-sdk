@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.33.1 (2024-11-25)
+
+### Fix
+
+* fix(cli): deploy apps within project directories (#54) ([`41ea8ff`](https://github.com/numerous-com/numerous-sdk/commit/41ea8ffc008280633dd7335659b16288e3c7f181))
+
+  > 
+  > Properly handles the `deploy` command `--project-dir` flag to allow deploying an app that exists within
+  > a project directory.
+  > 
+  > Also:
+  > * Fixes some linter issues related to format printing
+  > * Adds improved traceability to the requests sent to the server by adding operation names
+
+
+
+
 ## v0.33.0 (2024-11-25)
 
 ### Feature
