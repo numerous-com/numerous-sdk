@@ -5,21 +5,21 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from numerous import collection
-from numerous._client._graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
-from numerous.collection.file_reference import FileReference
-from numerous.generated.graphql.client import Client as GQLClient
-from numerous.generated.graphql.collection_create import CollectionCreate
-from numerous.generated.graphql.collection_file import CollectionFile
-from numerous.generated.graphql.collection_file_create import CollectionFileCreate
-from numerous.generated.graphql.collection_file_delete import CollectionFileDelete
-from numerous.generated.graphql.collection_file_tag_add import CollectionFileTagAdd
-from numerous.generated.graphql.collection_file_tag_delete import (
+from numerous._client.graphql.client import Client as GQLClient
+from numerous._client.graphql.collection_create import CollectionCreate
+from numerous._client.graphql.collection_file import CollectionFile
+from numerous._client.graphql.collection_file_create import CollectionFileCreate
+from numerous._client.graphql.collection_file_delete import CollectionFileDelete
+from numerous._client.graphql.collection_file_tag_add import CollectionFileTagAdd
+from numerous._client.graphql.collection_file_tag_delete import (
     CollectionFileTagDelete,
 )
-from numerous.generated.graphql.collection_files import CollectionFiles
-from numerous.generated.graphql.input_types import TagInput
-from numerous.jsonbase64 import dict_to_base64
+from numerous._client.graphql.collection_files import CollectionFiles
+from numerous._client.graphql.input_types import TagInput
+from numerous._client.graphql_client import COLLECTED_OBJECTS_NUMBER, GraphQLClient
+from numerous._utils.jsonbase64 import dict_to_base64
+from numerous.collections import collection
+from numerous.collections.file_reference import FileReference
 
 
 if TYPE_CHECKING:

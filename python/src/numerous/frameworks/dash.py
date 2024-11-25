@@ -1,14 +1,14 @@
 """Module for integrating Numerous with Dash."""
 
-from numerous import user_session
 from numerous.frameworks.flask import FlaskCookieGetter
+from numerous.session import Session
 
 
 class DashCookieGetter(FlaskCookieGetter):
     pass
 
 
-def get_session() -> user_session.Session:
+def get_session() -> Session:
     """
     Get the session for the current user.
 
@@ -16,4 +16,4 @@ def get_session() -> user_session.Session:
         Session: The session for the current user.
 
     """
-    return user_session.Session(cg=DashCookieGetter())
+    return Session(cg=DashCookieGetter())

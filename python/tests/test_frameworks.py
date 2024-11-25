@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from numerous import local
+from numerous._utils import local
 
 
 @pytest.fixture(autouse=True)

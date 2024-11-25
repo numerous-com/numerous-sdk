@@ -4,9 +4,9 @@ from unittest import mock
 
 import pytest
 
-from numerous._client._graphql_client import GraphQLClient
-from numerous.generated.graphql.client import Client as GQLClient
-from numerous.user_session import Session
+from numerous._client.graphql.client import Client as GQLClient
+from numerous._client.graphql_client import GraphQLClient
+from numerous.session import Session
 
 
 class CookieGetterStub:

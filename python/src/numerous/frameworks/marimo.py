@@ -2,9 +2,9 @@
 
 from typing import Any
 
-from numerous import user_session
+from numerous._utils.local import is_local_mode, local_user
 from numerous.experimental import marimo
-from numerous.local import is_local_mode, local_user
+from numerous.session import Session, session
 
 
 class MarimoCookieGetter:
@@ -12,16 +12,16 @@ class MarimoCookieGetter:
         """Get the cookies associated with the current request."""
         cookies = marimo.cookies()
         if is_local_mode():
-            user_session.set_user_info_cookie(cookies, local_user)
+            session.set_user_info_cookie(cookies, local_user)
         return cookies
 
 
-def get_session() -> user_session.Session:
+def get_session() -> Session:
     """
     Get the session for the current user.
 
     Returns:
-        Session: The session for the current user.
+        The session for the current user.
 
     """
-    return user_session.Session(cg=MarimoCookieGetter())
+    return Session(cg=MarimoCookieGetter())

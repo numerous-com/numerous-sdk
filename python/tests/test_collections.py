@@ -2,11 +2,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from numerous import collection
-from numerous._client._graphql_client import GraphQLClient
-from numerous.collection.exceptions import ParentCollectionNotFoundError
-from numerous.generated.graphql.client import Client as GQLClient
-from numerous.generated.graphql.collection_create import CollectionCreate
+from numerous._client.graphql.client import Client as GQLClient
+from numerous._client.graphql.collection_create import CollectionCreate
+from numerous._client.graphql_client import GraphQLClient
+from numerous.collections import collection
+from numerous.collections.exceptions import ParentCollectionNotFoundError
 
 
 ORGANIZATION_ID = "test_org"

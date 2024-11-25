@@ -8,72 +8,74 @@ from typing import TYPE_CHECKING, BinaryIO
 
 import requests
 
-from numerous.collection.exceptions import ParentCollectionNotFoundError
-from numerous.collection.file_reference import FileReference
-from numerous.generated.graphql.collection_collections import (
+from numerous.collections._client import (
+    CollectionDocumentReference,
+    CollectionFileIdentifier,
+    CollectionIdentifier,
+    Tag,
+)
+
+from .exceptions import ParentCollectionNotFoundError
+from .graphql import fragments
+from .graphql.collection_collections import (
     CollectionCollectionsCollectionCollection,
     CollectionCollectionsCollectionCollectionCollectionsEdgesNode,
 )
-from numerous.generated.graphql.collection_document import (
+from .graphql.collection_document import (
     CollectionDocumentCollectionCollectionDocument,
     CollectionDocumentCollectionCollectionNotFound,
 )
-from numerous.generated.graphql.collection_documents import (
+from .graphql.collection_documents import (
     CollectionDocumentsCollectionCollection,
     CollectionDocumentsCollectionCollectionDocumentsEdgesNode,
 )
-from numerous.generated.graphql.collection_file import (
+from .graphql.collection_file import (
     CollectionFileCollectionFileCollectionFile,
     CollectionFileCollectionFileCollectionFileNotFound,
 )
-from numerous.generated.graphql.collection_files import (
+from .graphql.collection_files import (
     CollectionFilesCollectionCollection,
     CollectionFilesCollectionCollectionFilesEdgesNode,
 )
-from numerous.generated.graphql.fragments import (
-    CollectionDocumentReference,
-    CollectionFileReference,
-    CollectionNotFound,
-    CollectionReference,
-)
-from numerous.threaded_event_loop import ThreadedEventLoop
+from .graphql.input_types import TagInput
+from .threaded_event_loop import ThreadedEventLoop
 
 
 if TYPE_CHECKING:
-    from numerous.generated.graphql.client import Client as GQLClient
-    from numerous.generated.graphql.collection_document_delete import (
+    from .graphql.client import Client as GQLClient
+    from .graphql.collection_document_delete import (
         CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
         CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
     )
-    from numerous.generated.graphql.collection_document_set import (
+    from .graphql.collection_document_set import (
         CollectionDocumentSetCollectionDocumentSetCollectionDocument,
         CollectionDocumentSetCollectionDocumentSetCollectionNotFound,
     )
-    from numerous.generated.graphql.collection_document_tag_add import (
+    from .graphql.collection_document_tag_add import (
         CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument,
         CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound,
     )
-    from numerous.generated.graphql.collection_document_tag_delete import (
+    from .graphql.collection_document_tag_delete import (
         CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument,
         CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound,
     )
-    from numerous.generated.graphql.collection_file_create import (
+    from .graphql.collection_file_create import (
         CollectionFileCreateCollectionFileCreateCollectionFile,
         CollectionFileCreateCollectionFileCreateCollectionNotFound,
     )
-    from numerous.generated.graphql.collection_file_delete import (
+    from .graphql.collection_file_delete import (
         CollectionFileDeleteCollectionFileDeleteCollectionFile,
         CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound,
     )
-    from numerous.generated.graphql.collection_file_tag_add import (
+    from .graphql.collection_file_tag_add import (
         CollectionFileTagAddCollectionFileTagAddCollectionFile,
         CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound,
     )
-    from numerous.generated.graphql.collection_file_tag_delete import (
+    from .graphql.collection_file_tag_delete import (
         CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile,
         CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
     )
-    from numerous.generated.graphql.input_types import TagInput
+
 
 COLLECTED_OBJECTS_NUMBER = 100
 _REQUEST_TIMEOUT_SECONDS_ = 1.5
@@ -119,20 +121,20 @@ class GraphQLClient:
 
     def _create_collection_ref(
         self,
-        collection_response: CollectionReference
+        collection_response: fragments.CollectionReference
         | CollectionCollectionsCollectionCollectionCollectionsEdgesNode
-        | CollectionNotFound,
-    ) -> CollectionReference:
-        if isinstance(collection_response, CollectionNotFound):
+        | fragments.CollectionNotFound,
+    ) -> CollectionIdentifier:
+        if isinstance(collection_response, fragments.CollectionNotFound):
             raise ParentCollectionNotFoundError(collection_id=collection_response.id)
 
-        return CollectionReference(
+        return CollectionIdentifier(
             id=collection_response.id, key=collection_response.key
         )
 
     async def _create_collection(
         self, collection_key: str, parent_collection_id: str | None = None
-    ) -> CollectionReference:
+    ) -> CollectionIdentifier:
         response = await self._gql.collection_create(
             self._organization_id,
             collection_key,
@@ -143,13 +145,7 @@ class GraphQLClient:
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
-    ) -> CollectionReference:
-        """
-        Retrieve a collection by its key and parent key.
-
-        This method retrieves a collection based on its key and parent key,
-        or creates it if it doesn't exist.
-        """
+    ) -> CollectionIdentifier:
         return self._loop.await_coro(
             self._create_collection(collection_key, parent_collection_id)
         )
@@ -168,12 +164,12 @@ class GraphQLClient:
         | CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound  # noqa: E501
         | None,
     ) -> CollectionDocumentReference | None:
-        if isinstance(resp, CollectionDocumentReference):
+        if isinstance(resp, fragments.CollectionDocumentReference):
             return CollectionDocumentReference(
                 id=resp.id,
                 key=resp.key,
                 data=resp.data,
-                tags=resp.tags,
+                tags=[Tag(key=tag.key, value=tag.value) for tag in resp.tags],
             )
         return None
 
@@ -243,10 +239,10 @@ class GraphQLClient:
         )
 
     def add_collection_document_tag(
-        self, document_id: str, tag: TagInput
+        self, document_id: str, tag: Tag
     ) -> CollectionDocumentReference | None:
         return self._loop.await_coro(
-            self._add_collection_document_tag(document_id, tag)
+            self._add_collection_document_tag(document_id, _tag_input_strict(tag))
         )
 
     async def _delete_collection_document_tag(
@@ -296,10 +292,10 @@ class GraphQLClient:
         return result, has_next_page, end_cursor
 
     def get_collection_documents(
-        self, collection_id: str, end_cursor: str, tag_input: TagInput | None
+        self, collection_id: str, end_cursor: str, tag: Tag | None
     ) -> tuple[list[CollectionDocumentReference | None] | None, bool, str]:
         return self._loop.await_coro(
-            self._get_collection_documents(collection_id, end_cursor, tag_input)
+            self._get_collection_documents(collection_id, end_cursor, _tag_input(tag))
         )
 
     def _create_collection_files_ref(
@@ -316,15 +312,15 @@ class GraphQLClient:
             | CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound
             | None
         ),
-    ) -> FileReference | None:
-        if not isinstance(resp, CollectionFileReference):
+    ) -> CollectionFileIdentifier | None:
+        if not isinstance(resp, fragments.CollectionFileReference):
             return None
 
-        return FileReference(client=self, key=resp.key, file_id=resp.id)
+        return CollectionFileIdentifier(key=resp.key, id=resp.id)
 
     async def _create_collection_file_reference(
         self, collection_id: str, file_key: str
-    ) -> FileReference | None:
+    ) -> CollectionFileIdentifier | None:
         response = await self._gql.collection_file_create(
             collection_id,
             file_key,
@@ -334,7 +330,7 @@ class GraphQLClient:
 
     def create_collection_file_reference(
         self, collection_id: str, file_key: str
-    ) -> FileReference | None:
+    ) -> CollectionFileIdentifier | None:
         return self._loop.await_coro(
             self._create_collection_file_reference(collection_id, file_key)
         )
@@ -357,11 +353,11 @@ class GraphQLClient:
         self,
         collection_id: str,
         end_cursor: str,
-        tag_input: TagInput | None,
-    ) -> tuple[list[FileReference], bool, str]:
+        tag: TagInput | None,
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
         response = await self._gql.collection_files(
             collection_id,
-            tag_input,
+            tag,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
             headers=self._headers,
@@ -375,7 +371,7 @@ class GraphQLClient:
         edges = files.edges
         page_info = files.page_info
 
-        result: list[FileReference] = []
+        result: list[CollectionFileIdentifier] = []
         for edge in edges:
             if ref := self._create_collection_files_ref(edge.node):
                 result.append(ref)  # noqa: PERF401
@@ -386,17 +382,19 @@ class GraphQLClient:
         return result, has_next_page, end_cursor
 
     def get_collection_files(
-        self, collection_id: str, end_cursor: str, tag_input: TagInput | None
-    ) -> tuple[list[FileReference], bool, str]:
+        self, collection_id: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
         return self._loop.await_coro(
-            self._get_collection_files(collection_id, end_cursor, tag_input)
+            self._get_collection_files(collection_id, end_cursor, _tag_input(tag))
         )
 
     async def _add_collection_file_tag(self, file_id: str, tag: TagInput) -> None:
         await self._gql.collection_file_tag_add(file_id, tag, headers=self._headers)
 
-    def add_collection_file_tag(self, file_id: str, tag: TagInput) -> None:
-        self._loop.await_coro(self._add_collection_file_tag(file_id, tag))
+    def add_collection_file_tag(self, file_id: str, tag: Tag) -> None:
+        self._loop.await_coro(
+            self._add_collection_file_tag(file_id, _tag_input_strict(tag))
+        )
 
     async def _delete_collection_file_tag(self, file_id: str, tag_key: str) -> None:
         await self._gql.collection_file_tag_delete(
@@ -408,7 +406,7 @@ class GraphQLClient:
 
     async def _get_collection_collections(
         self, collection_id: str, end_cursor: str
-    ) -> tuple[list[CollectionReference] | None, bool, str]:
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
         response = await self._gql.collection_collections(
             collection_id,
             after=end_cursor,
@@ -425,7 +423,7 @@ class GraphQLClient:
         page_info = collections.page_info
 
         result = [
-            CollectionReference(id=edge.node.id, key=edge.node.key) for edge in edges
+            CollectionIdentifier(id=edge.node.id, key=edge.node.key) for edge in edges
         ]
 
         end_cursor = page_info.end_cursor or ""
@@ -435,7 +433,7 @@ class GraphQLClient:
 
     def get_collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionReference] | None, bool, str]:
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
         return self._loop.await_coro(
             self._get_collection_collections(collection_key, end_cursor)
         )
@@ -511,3 +509,11 @@ class GraphQLClient:
             return False
 
         return file.download_url is not None and file.download_url.strip() != ""
+
+
+def _tag_input_strict(tag: Tag) -> TagInput:
+    return TagInput(key=tag.key, value=tag.value)
+
+
+def _tag_input(tag: Tag | None) -> TagInput | None:
+    return _tag_input_strict(tag) if tag else None

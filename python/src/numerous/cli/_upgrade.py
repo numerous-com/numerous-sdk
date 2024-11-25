@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import json
 import urllib.request
@@ -5,7 +7,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from importlib.metadata import version as metadata_version
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from packaging import version
 
@@ -18,8 +20,8 @@ SECONDS_IN_5_MIN = 300
 
 @dataclass
 class VersionState:
-    latest_version: Optional[str] = None
-    last_checked_at: Optional[str] = None
+    latest_version: str | None = None
+    last_checked_at: str | None = None
 
 
 def _fetch_data_from_pipy() -> dict[str, Any]:
@@ -36,7 +38,7 @@ def _fetch_data_from_pipy() -> dict[str, Any]:
         )
 
 
-def get_version_from_pipy() -> Optional[str]:
+def get_version_from_pipy() -> str | None:
     try:
         response = _fetch_data_from_pipy()
         return response["info"]["version"]  # type: ignore[no-any-return]

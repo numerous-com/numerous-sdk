@@ -2,7 +2,7 @@
 
 from os import getenv
 
-from numerous.user import User
+from numerous.session.user import User
 
 
 local_user = User(id="local_user", name="Local User")

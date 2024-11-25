@@ -1,10 +1,15 @@
 """Module for handling user-related functionality."""
 
-from dataclasses import dataclass
-from typing import Any, Optional
+from __future__ import annotations
 
-from numerous.collection import CollectionReference, collection
-from numerous.collection._client import Client
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+from numerous.collections import CollectionReference, collection
+
+
+if TYPE_CHECKING:
+    from numerous.collections._client import Client
 
 
 @dataclass
@@ -20,7 +25,7 @@ class User:
 
     id: str
     name: str
-    _client: Optional[Client] = None
+    _client: Client | None = None
 
     @property
     def collection(self) -> CollectionReference:
@@ -41,8 +46,8 @@ class User:
 
     @staticmethod
     def from_user_info(
-        user_info: dict[str, Any], _client: Optional[Client] = None
-    ) -> "User":
+        user_info: dict[str, Any], _client: Client | None = None
+    ) -> User:
         """
         Create a User instance from a dictionary of user information.
 

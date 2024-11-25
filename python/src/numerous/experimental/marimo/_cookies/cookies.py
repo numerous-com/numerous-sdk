@@ -1,13 +1,14 @@
 """Access cookies in a marimo notebook."""
 
-import typing as t
+from __future__ import annotations
+
 import warnings
 from pathlib import Path
 
 from numerous.experimental.marimo._cookies.files import FileCookieStorage
 
 
-_cookie_storage: t.Optional[FileCookieStorage] = None
+_cookie_storage: FileCookieStorage | None = None
 
 
 def use_cookie_storage(cs: FileCookieStorage) -> None:

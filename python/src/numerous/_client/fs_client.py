@@ -3,61 +3,38 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, BinaryIO
+from typing import Any, BinaryIO
 
-from numerous.collection.file_reference import FileReference
-from numerous.generated.graphql.fragments import (
+from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
+from numerous.collections._client import (
     CollectionDocumentReference,
-    CollectionDocumentReferenceTags,
-    CollectionFileReferenceTags,
-    CollectionReference,
+    CollectionFileIdentifier,
+    CollectionIdentifier,
+    Tag,
 )
-from numerous.jsonbase64 import base64_to_dict, dict_to_base64
 
 
-if TYPE_CHECKING:
-    from numerous.generated.graphql.input_types import TagInput
+def _parse_tag(tag: dict[str, Any]) -> Tag:
+    key = tag.get("key")
+    if not isinstance(key, str):
+        tname = type(key).__name__
+        msg = f"FileSystemCollectionTag key must be str, found {tname}"
+        raise TypeError(msg)
 
+    value = tag.get("value")
+    if not isinstance(value, str):
+        tname = type(value).__name__
+        msg = f"FileSystemCollectionTag value must be str, found {tname}"
+        raise TypeError(msg)
 
-@dataclass
-class FileSystemCollectionTag:
-    key: str
-    value: str
-
-    @staticmethod
-    def load(tag: dict[str, Any]) -> FileSystemCollectionTag:
-        key = tag.get("key")
-        if not isinstance(key, str):
-            tname = type(key).__name__
-            msg = f"FileSystemCollectionTag key must be str, found {tname}"
-            raise TypeError(msg)
-
-        value = tag.get("value")
-        if not isinstance(value, str):
-            tname = type(value).__name__
-            msg = f"FileSystemCollectionTag value must be str, found {tname}"
-            raise TypeError(msg)
-
-        return FileSystemCollectionTag(key=key, value=value)
-
-    def to_file_reference_tag(self) -> CollectionFileReferenceTags:
-        return CollectionFileReferenceTags(
-            key=self.key,
-            value=self.value,
-        )
-
-    def to_document_reference_tag(self) -> CollectionDocumentReferenceTags:
-        return CollectionDocumentReferenceTags(
-            key=self.key,
-            value=self.value,
-        )
+    return Tag(key=key, value=value)
 
 
 @dataclass
 class FileSystemFileMetadata:
     file_id: str
     file_key: str
-    tags: list[FileSystemCollectionTag]
+    tags: list[Tag]
 
     def save(self, path: Path) -> None:
         def convert_to_serializable(obj: Path) -> str:
@@ -99,16 +76,13 @@ class FileSystemFileMetadata:
         return FileSystemFileMetadata(
             file_id=file_id,
             file_key=file_key,
-            tags=[FileSystemCollectionTag.load(tag) for tag in tags],
+            tags=[_parse_tag(tag) for tag in tags],
         )
 
-    def reference_tags(self) -> list[CollectionFileReferenceTags]:
-        return [
-            CollectionFileReferenceTags(key=tag.key, value=tag.value)
-            for tag in self.tags
-        ]
+    def reference_tags(self) -> list[Tag]:
+        return [Tag(key=tag.key, value=tag.value) for tag in self.tags]
 
-    def tag_matches(self, tag_input: TagInput) -> bool:
+    def tag_matches(self, tag_input: Tag) -> bool:
         matching_tag = next(
             (
                 tag
@@ -124,7 +98,7 @@ class FileSystemFileMetadata:
 @dataclass
 class FileSystemCollectionDocument:
     data: dict[str, Any]
-    tags: list[FileSystemCollectionTag]
+    tags: list[Tag]
 
     def save(self, path: Path) -> None:
         with path.open("w") as f:
@@ -153,19 +127,13 @@ class FileSystemCollectionDocument:
             raise TypeError(msg)
 
         return FileSystemCollectionDocument(
-            data=data, tags=[FileSystemCollectionTag.load(tag) for tag in tags]
+            data=data, tags=[_parse_tag(tag) for tag in tags]
         )
 
-    def reference_tags(self) -> list[CollectionDocumentReferenceTags]:
-        return [
-            CollectionDocumentReferenceTags(
-                key=tag.key,
-                value=tag.value,
-            )
-            for tag in self.tags
-        ]
+    def reference_tags(self) -> list[Tag]:
+        return [Tag(key=tag.key, value=tag.value) for tag in self.tags]
 
-    def tag_matches(self, tag_input: TagInput) -> bool:
+    def tag_matches(self, tag_input: Tag) -> bool:
         matching_tag = next(
             (
                 tag
@@ -227,7 +195,7 @@ class FileSystemClient:
 
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
-    ) -> CollectionReference:
+    ) -> CollectionIdentifier:
         collection_relpath = (
             Path(parent_collection_id) / collection_key
             if parent_collection_id is not None
@@ -236,7 +204,7 @@ class FileSystemClient:
         collection_id = str(collection_relpath)
         collection_path = self._base_path / collection_relpath
         collection_path.mkdir(parents=True, exist_ok=True)
-        return CollectionReference(id=collection_id, key=collection_key)
+        return CollectionIdentifier(id=collection_id, key=collection_key)
 
     def get_collection_document(
         self, collection_id: str, document_key: str
@@ -252,7 +220,7 @@ class FileSystemClient:
             id=doc_id,
             key=document_key,
             data=dict_to_base64(doc.data),
-            tags=[tag.to_document_reference_tag() for tag in doc.tags],
+            tags=doc.tags,
         )
 
     def set_collection_document(
@@ -294,14 +262,14 @@ class FileSystemClient:
         )
 
     def add_collection_document_tag(
-        self, document_id: str, tag: TagInput
+        self, document_id: str, tag: Tag
     ) -> CollectionDocumentReference | None:
         doc_path = self._document_path_from_id(document_id)
         if not doc_path.exists():
             return None
 
         doc = FileSystemCollectionDocument.load(doc_path)
-        doc.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
+        doc.tags.append(Tag(key=tag.key, value=tag.value))
         doc.save(doc_path)
 
         return CollectionDocumentReference(
@@ -333,7 +301,7 @@ class FileSystemClient:
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: TagInput | None,
+        tag_input: Tag | None,
     ) -> tuple[list[CollectionDocumentReference | None], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
@@ -368,7 +336,7 @@ class FileSystemClient:
 
     def create_collection_file_reference(
         self, collection_id: str, file_key: str
-    ) -> FileReference | None:
+    ) -> CollectionFileIdentifier | None:
         meta_path = self._file_metadata_path(collection_id, file_key)
         if meta_path.exists():
             meta = FileSystemFileMetadata.load(meta_path)
@@ -379,11 +347,7 @@ class FileSystemClient:
             meta = FileSystemFileMetadata(file_id=file_id, file_key=file_key, tags=[])
             meta.save(self._file_metadata_path(collection_id, file_key))
 
-        return FileReference(
-            client=self,
-            file_id=meta.file_id,
-            key=file_key,
-        )
+        return CollectionFileIdentifier(id=meta.file_id, key=file_key)
 
     def collection_file_tags(self, file_id: str) -> dict[str, str] | None:
         try:
@@ -420,13 +384,13 @@ class FileSystemClient:
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: TagInput | None,
-    ) -> tuple[list[FileReference], bool, str]:
+        tag_input: Tag | None,
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
             return [], False, ""
 
-        files: list[FileReference] = []
+        files: list[CollectionFileIdentifier] = []
         for file_path in col_path.iterdir():
             if not file_path.name.endswith(".file.meta.json"):
                 continue
@@ -437,13 +401,11 @@ class FileSystemClient:
                 # skips files that do not match tag input, if it is given
                 continue
 
-            files.append(
-                FileReference(client=self, file_id=meta.file_id, key=meta.file_key)
-            )
+            files.append(CollectionFileIdentifier(id=meta.file_id, key=meta.file_key))
 
         return files, False, ""
 
-    def add_collection_file_tag(self, file_id: str, tag: TagInput) -> None:
+    def add_collection_file_tag(self, file_id: str, tag: Tag) -> None:
         index_entry = self._file_index_entry(file_id)
         meta_path = self._file_metadata_path(
             index_entry.collection_id, index_entry.file_key
@@ -453,7 +415,7 @@ class FileSystemClient:
 
         meta = FileSystemFileMetadata.load(meta_path)
         if not meta.tag_matches(tag):
-            meta.tags.append(FileSystemCollectionTag(key=tag.key, value=tag.value))
+            meta.tags.append(Tag(key=tag.key, value=tag.value))
         meta.save(meta_path)
 
     def delete_collection_file_tag(self, file_id: str, tag_key: str) -> None:
@@ -472,16 +434,16 @@ class FileSystemClient:
         self,
         collection_key: str,
         end_cursor: str,  # noqa: ARG002
-    ) -> tuple[list[CollectionReference], bool, str]:
+    ) -> tuple[list[CollectionIdentifier], bool, str]:
         col_path = self._base_path / collection_key
         if not col_path.exists():
             return [], False, ""
 
-        collections: list[CollectionReference] = []
+        collections: list[CollectionIdentifier] = []
         for item in col_path.iterdir():
             if item.is_dir():
                 col_id = str(item.relative_to(self._base_path))
-                collections.append(CollectionReference(id=col_id, key=item.name))
+                collections.append(CollectionIdentifier(id=col_id, key=item.name))
 
         return sorted(collections, key=lambda c: c.id), False, ""
 

@@ -7,22 +7,40 @@ manage collections, documents and files.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO, Protocol
+from dataclasses import dataclass
+from typing import BinaryIO, Protocol
 
 
-if TYPE_CHECKING:
-    from numerous.collection.file_reference import FileReference
-    from numerous.generated.graphql.fragments import (
-        CollectionDocumentReference,
-        CollectionReference,
-    )
-    from numerous.generated.graphql.input_types import TagInput
+@dataclass
+class Tag:
+    key: str
+    value: str
+
+
+@dataclass
+class CollectionDocumentReference:
+    id: str
+    key: str
+    data: str | None
+    tags: list[Tag]
+
+
+@dataclass
+class CollectionIdentifier:
+    id: str
+    key: str
+
+
+@dataclass
+class CollectionFileIdentifier:
+    id: str
+    key: str
 
 
 class Client(Protocol):
     def get_collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
-    ) -> CollectionReference: ...
+    ) -> CollectionIdentifier: ...
 
     def get_collection_document(
         self, collection_id: str, document_key: str
@@ -37,7 +55,7 @@ class Client(Protocol):
     ) -> CollectionDocumentReference | None: ...
 
     def add_collection_document_tag(
-        self, document_id: str, tag: TagInput
+        self, document_id: str, tag: Tag
     ) -> CollectionDocumentReference | None: ...
 
     def delete_collection_document_tag(
@@ -45,26 +63,26 @@ class Client(Protocol):
     ) -> CollectionDocumentReference | None: ...
 
     def get_collection_documents(
-        self, collection_id: str, end_cursor: str, tag_input: TagInput | None
+        self, collection_id: str, end_cursor: str, tag: Tag | None
     ) -> tuple[list[CollectionDocumentReference | None] | None, bool, str]: ...
 
     def get_collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionReference] | None, bool, str]: ...
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
 
     def get_collection_files(
-        self, collection_id: str, end_cursor: str, tag_input: TagInput | None
-    ) -> tuple[list[FileReference], bool, str]: ...
+        self, collection_id: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]: ...
 
     def create_collection_file_reference(
         self, collection_id: str, file_key: str
-    ) -> FileReference | None: ...
+    ) -> CollectionFileIdentifier | None: ...
 
     def collection_file_tags(self, file_id: str) -> dict[str, str] | None: ...
 
     def delete_collection_file(self, file_id: str) -> None: ...
 
-    def add_collection_file_tag(self, file_id: str, tag: TagInput) -> None: ...
+    def add_collection_file_tag(self, file_id: str, tag: Tag) -> None: ...
 
     def delete_collection_file_tag(self, file_id: str, tag_key: str) -> None: ...
 
