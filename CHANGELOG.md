@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.33.0 (2024-11-25)
+
+### Feature
+
+* feat(python-sdk): restructure packages and modules (#53) ([`19f0b12`](https://github.com/numerous-com/numerous-sdk/commit/19f0b12993cc63f249178eda246c6617cabe91e3))
+
+  > 
+  > * Rename package `numerous.collection` to `numerous.collections`.
+  > * Remove export of the collection function from the `numerous` package.
+  >   Now users must `from numerous.collections import collection`.
+  > * Move user session logic into `numerous.session` package.
+  > * Update internal interfaces to avoid cyclical dependencies.
+  > * Move generated graphql client code to `numerous/_client/graphql`
+
+
+
+
 ## v0.32.0 (2024-11-20)
 
 ### Feature
