@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 type ListApp struct {
@@ -62,7 +64,7 @@ var (
 
 func (s *Service) List(ctx context.Context, organizationSlug string) ([]ListApp, error) {
 	var q QueryOrganizationApps
-	if err := s.client.Query(ctx, &q, map[string]interface{}{"organizationSlug": organizationSlug}); err != nil {
+	if err := s.client.Query(ctx, &q, map[string]interface{}{"organizationSlug": organizationSlug}, graphql.OperationName("CLIAppList")); err != nil {
 		return nil, convertErrors(err)
 	}
 

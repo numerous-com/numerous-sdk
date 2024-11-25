@@ -65,7 +65,7 @@ func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 	}
 
 	if err := a.OpenURL(state.VerificationURI); err != nil {
-		fmt.Printf(
+		fmt.Println(
 			"The browser could not be opened automatically, please go to this site to continue\n" +
 				"the log-in: " + state.VerificationURI,
 		)

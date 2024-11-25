@@ -55,6 +55,12 @@ type DeployInput struct {
 }
 
 func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
+	appRelativePath, err := findAppRelativePath(input)
+	if err != nil {
+		output.PrintError("Project directory %q must be a parent of app directory %q", "", input.ProjectDir, input.AppDir)
+		return err
+	}
+
 	manifest, secrets, err := loadAppConfiguration(input)
 	if err != nil {
 		return err
@@ -69,12 +75,13 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	if err != nil {
 		return err
 	}
+	defer os.Remove(archive.Name())
 
 	if err := uploadAppArchive(ctx, apps, archive, appVersionOutput.AppVersionID); err != nil {
 		return err
 	}
 
-	if err := deployApp(ctx, appVersionOutput, secrets, apps, input); err != nil {
+	if err := deployApp(ctx, appVersionOutput, secrets, apps, input, appRelativePath); err != nil {
 		return err
 	}
 
@@ -107,6 +114,29 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	return nil
 }
 
+func findAppRelativePath(input DeployInput) (string, error) {
+	if input.ProjectDir == "" {
+		return "", nil
+	}
+
+	absProjectDir, err := filepath.Abs(input.ProjectDir)
+	if err != nil {
+		return "", err
+	}
+
+	absAppDir, err := filepath.Abs(input.AppDir)
+	if err != nil {
+		return "", err
+	}
+
+	rel, err := filepath.Rel(absProjectDir, absAppDir)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", err
+	}
+
+	return filepath.ToSlash(rel), nil
+}
+
 func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
 	m, err := manifest.Load(filepath.Join(input.AppDir, manifest.ManifestFileName))
@@ -135,25 +165,26 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 }
 
 func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File, error) {
-	task := output.StartTask("Creating app archive")
-	tarSrcDir := input.AppDir
+	srcPath := input.AppDir
 	if input.ProjectDir != "" {
-		tarSrcDir = input.ProjectDir
+		srcPath = input.ProjectDir
 	}
-	tarPath := path.Join(tarSrcDir, ".tmp_app_archive.tar")
 
-	if err := archive.TarCreate(tarSrcDir, tarPath, manifest.Exclude); err != nil {
+	task := output.StartTask("Creating app archive")
+	archivePath := path.Join(srcPath, ".tmp_app_archive.tar")
+
+	if err := archive.TarCreate(srcPath, archivePath, manifest.Exclude); err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error archiving app source", err)
 
 		return nil, err
 	}
-	defer os.Remove(tarPath)
 
-	archive, err := os.Open(tarPath)
+	archive, err := os.Open(archivePath)
 	if err != nil {
 		task.Error()
-		output.PrintErrorDetails("Error archiving app source", err)
+		output.PrintErrorDetails("Error creating app source archive", err)
+		os.Remove(archivePath) // nolint: errcheck
 
 		return nil, err
 	}
@@ -318,13 +349,16 @@ func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
 	)
 }
 
-func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput) error {
+func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput, appRelativePath string) error {
 	task := output.StartTask("Deploying app")
-	deployAppInput := app.DeployAppInput{AppVersionID: appVersionOutput.AppVersionID, Secrets: secrets}
+
+	deployAppInput := app.DeployAppInput{AppVersionID: appVersionOutput.AppVersionID, Secrets: secrets, AppRelativePath: appRelativePath}
 	deployAppOutput, err := apps.DeployApp(ctx, deployAppInput)
 	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error deploying app", err)
+
+		return err
 	}
 
 	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.Verbose, task: task}

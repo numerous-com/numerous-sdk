@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 type ReadAppInput struct {
@@ -14,7 +16,7 @@ type ReadAppOutput struct {
 }
 
 const queryAppText = `
-query App($orgSlug: String!, $appSlug: String!) {
+query CLIAppRead($orgSlug: String!, $appSlug: String!) {
 	app(organizationSlug: $orgSlug, appSlug: $appSlug) {
 		id
 	}
@@ -31,7 +33,7 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 	var resp appResponse
 
 	variables := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
-	err := s.client.Exec(ctx, queryAppText, &resp, variables)
+	err := s.client.Exec(ctx, queryAppText, &resp, variables, graphql.OperationName("CLIAppRead"))
 	if err == nil {
 		return ReadAppOutput{AppID: resp.App.ID}, nil
 	}

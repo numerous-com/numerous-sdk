@@ -5,6 +5,7 @@ import (
 
 	"numerous.com/cli/internal/appident"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/hasura/go-graphql-client/pkg/jsonutil"
 )
 
@@ -40,7 +41,7 @@ func (s *Service) AppDeployLogs(ai appident.AppIdentifier) (chan AppDeployLogEnt
 	vars := make(map[string]any)
 	vars["orgSlug"] = ai.OrganizationSlug
 	vars["appSlug"] = ai.AppSlug
-	_, err := s.subscription.Subscribe(&AppDeployLogsSubscription{}, vars, handler)
+	_, err := s.subscription.Subscribe(&AppDeployLogsSubscription{}, vars, handler, graphql.OperationName("CLIAppDeployLogs"))
 	if err != nil {
 		return nil, err
 	}

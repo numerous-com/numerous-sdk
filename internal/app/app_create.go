@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 type CreateAppInput struct {
@@ -16,7 +18,7 @@ type CreateAppOutput struct {
 }
 
 const appCreateText = `
-mutation AppCreate($orgSlug: String!, $appSlug: String!, $displayName: String!, $description: String!) {
+mutation CLIAppCreate($orgSlug: String!, $appSlug: String!, $displayName: String!, $description: String!) {
 	appCreate(organizationSlug: $orgSlug, appData: {appSlug: $appSlug, displayName: $displayName, description: $description}) {
 		id
 	}
@@ -38,7 +40,7 @@ func (s *Service) Create(ctx context.Context, input CreateAppInput) (CreateAppOu
 		"displayName": input.DisplayName,
 		"description": input.Description,
 	}
-	err := s.client.Exec(ctx, appCreateText, &resp, variables)
+	err := s.client.Exec(ctx, appCreateText, &resp, variables, graphql.OperationName("CLIAppCreate"))
 	if err != nil {
 		return CreateAppOutput{}, convertErrors(err)
 	}

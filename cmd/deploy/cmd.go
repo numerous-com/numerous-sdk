@@ -44,7 +44,7 @@ var (
 	appSlug    string
 	verbose    bool
 	appDir     string = "."
-	projectDir string = "."
+	projectDir string = ""
 	message    string
 	version    string
 	follow     bool

@@ -85,7 +85,7 @@ func buildEventSubscription(client subscriptionClient, w io.Writer, buildID stri
 		}
 
 		if sub.BuildEvents.Typename == "BuildEventFailure" {
-			fmt.Fprintf(w, sub.BuildEvents.Failure.Result)
+			fmt.Fprint(w, sub.BuildEvents.Failure.Result)
 			return errors.New(sub.BuildEvents.Failure.Result)
 		}
 

@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 type AppVersionUploadURLInput struct {
@@ -13,7 +15,7 @@ type AppVersionUploadURLOutput struct {
 }
 
 const appVersionUploadURLText = `
-mutation AppVersionUploadURL($appVersionID: ID!) {
+mutation CLIAppVersionUploadURL($appVersionID: ID!) {
 	appVersionUploadURL(appVersionID: $appVersionID) {
 		url
 	}
@@ -32,7 +34,7 @@ func (s *Service) AppVersionUploadURL(ctx context.Context, input AppVersionUploa
 	variables := map[string]any{
 		"appVersionID": input.AppVersionID,
 	}
-	err := s.client.Exec(ctx, appVersionUploadURLText, &resp, variables)
+	err := s.client.Exec(ctx, appVersionUploadURLText, &resp, variables, graphql.OperationName("CLIAppVersionUploadURL"))
 	if err != nil {
 		return AppVersionUploadURLOutput{}, err
 	}
