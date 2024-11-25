@@ -1,41 +1,46 @@
 Numerous Software Development Kit
 =================================
 
-Welcome to the Numerous SDK documentation!
-
-This is the documentation for the SDK, if you are looking an overview of the Numerous platform, please visit the [Numerous platform documentation](https://numerous.com/docs).
-
-📥 To begin, simply install the SDK into your python environment with:
-
-    pip install numerous
-
-🛠 The installation includes two main components; the CLI and the numerous Python package.
-
-**Command Line Interface (CLI)** - A tool for managing Numerous apps on the platform:
-
-   Use the CLI to deploy and manage apps on the Numerous platform:
-
-   - `numerous init` - Create a new Numerous app
-
-   - `numerous deploy` - Deploy your app to production
-
-**The numerous Python package** - A Python package for integrating Numerous features in Python-based web apps:
-
-   The SDK enables you to interact with Numerous services programmatically in your Python web applications, such as collections for storing data, sessions for managing user interactions, and users for identifying and managing users.
-
-
-**Bagdes:**
-
 [![pypi badge](https://img.shields.io/pypi/v/numerous)](https://pypi.python.org/pypi/numerous)
 [![Validate workflow badge](https://github.com/numerous-com/numerous-sdk/actions/workflows/validate.yml/badge.svg)](https://github.com/numerous-com/numerous-sdk/actions/workflows/validate.yml) 
 [![Release workflow badge](https://github.com/numerous-com/numerous-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/numerous-com/numerous-sdk/actions/workflows/release.yml) 
 ![cli coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/cli-coverage.json)
 ![sdk coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/sdk-coverage.json)
 
+Welcome to the Numerous SDK documentation!
+
+This is the documentation for the SDK, if you are looking an overview of the
+Numerous platform, please visit the
+[Numerous platform documentation](https://numerous.com/docs).
+
+📥 To begin, install the SDK into your Python environment with:
+
+    pip install numerous
+
+🛠 The installation includes two main components; the CLI and the numerous
+Python package.
+
+## Command Line Interface (CLI) - a tool for managing your apps
+
+   Use the CLI to deploy and manage apps on the Numerous platform:
+
+   - `numerous init` - Create a new Numerous app
+   - `numerous deploy` - Deploy your app to production
+
+## Python SDK package - integrate Numerous features into Python-based web apps
+
+  The SDK enables you to interact with Numerous services programmatically in
+  your Python web applications.
+  
+  * Store and organize data (JSON documents, and files) with collections.
+  * Access information about users and manage user interaction with sessions.
+
+
 SDK Development
 ===============
 
-This section contains information about how to develop the SDK itself for developers interested in contributing to the SDK.
+This section contains information about how to develop the SDK itself for
+developers interested in contributing to the SDK.
 
 Most common tasks are defined in the `Makefile`. Use `make help` to get an
 overview.
@@ -75,14 +80,7 @@ And the linters
 Development of go CLI 🐹
 ------------------------
 
-The numerous CLI enables app development.
-
-### Building and running
-
-To build simply run `make cli-build`, and the executable is stored
-as `build/numerous`
-
-### Development
+To build run `make cli-build`, and the executable is stored as `build/numerous`
 
 While developing you can run the CLI like below.
 
