@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 const deleteMutation string = `
-	mutation DeleteApp($orgSlug: String!, $appSlug: String!) {
+	mutation CLIAppDelete($orgSlug: String!, $appSlug: String!) {
 		appDelete(input: {organizationSlug: $orgSlug, appSlug: $appSlug}) {
 			__typename
 		}
@@ -27,7 +29,7 @@ func (s *Service) Delete(ctx context.Context, input DeleteAppInput) error {
 	resp := deleteAppResponse{}
 	vars := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
 
-	err := s.client.Exec(ctx, deleteMutation, &resp, vars)
+	err := s.client.Exec(ctx, deleteMutation, &resp, vars, graphql.OperationName("CLIAppDelete"))
 	if err != nil {
 		return convertErrors(err)
 	}

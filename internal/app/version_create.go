@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 type CreateAppVersionInput struct {
@@ -17,7 +19,7 @@ type CreateAppVersionOutput struct {
 }
 
 const appVersionCreateText = `
-mutation AppVersionCreate($appID: ID!, $version: String, $message: String!) {
+mutation CLIAppVersionCreate($appID: ID!, $version: String, $message: String!) {
 	appVersionCreate(appID: $appID, input: {version: $version, message: $message}) {
 		id
 	}
@@ -42,12 +44,10 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateAppVersionInput
 		variables["version"] = input.Version
 	}
 
-	err := s.client.Exec(ctx, appVersionCreateText, &resp, variables)
+	err := s.client.Exec(ctx, appVersionCreateText, &resp, variables, graphql.OperationName("CLIAppVersionCreate"))
 	if err != nil {
 		return CreateAppVersionOutput{}, err
 	}
 
-	return CreateAppVersionOutput{
-		AppVersionID: resp.AppVersionCreate.ID,
-	}, nil
+	return CreateAppVersionOutput{AppVersionID: resp.AppVersionCreate.ID}, nil
 }

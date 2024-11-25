@@ -81,9 +81,9 @@ func (s *Service) DeployEvents(ctx context.Context, input DeployEventsInput) err
 		return nil
 	}
 
-	_, err := s.subscription.Subscribe(&DeployEventsSubscription{}, variables, handler)
+	_, err := s.subscription.Subscribe(&DeployEventsSubscription{}, variables, handler, graphql.OperationName("CLIAppDeployEvents"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	err = s.subscription.Run()

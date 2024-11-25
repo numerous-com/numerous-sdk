@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+
+	"github.com/hasura/go-graphql-client"
 )
 
 var ErrNotDeployed = errors.New("app is not deployed")
@@ -17,7 +19,7 @@ type CurrentAppVersionOutput struct {
 }
 
 const queryCurrentAppVersionText = `
-query App($orgSlug: String!, $appSlug: String!) {
+query CLIReadCurrentAppVersion($orgSlug: String!, $appSlug: String!) {
 	app(organizationSlug: $orgSlug, appSlug: $appSlug) {
 		defaultDeployment {
 			current {
@@ -46,7 +48,7 @@ func (s *Service) CurrentAppVersion(ctx context.Context, input CurrentAppVersion
 	var resp currentAppVersionResponse
 
 	variables := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
-	err := s.client.Exec(ctx, queryCurrentAppVersionText, &resp, variables)
+	err := s.client.Exec(ctx, queryCurrentAppVersionText, &resp, variables, graphql.OperationName("CLIReadCurrentAppVersion"))
 	if err != nil {
 		return CurrentAppVersionOutput{}, convertErrors(err)
 	}
