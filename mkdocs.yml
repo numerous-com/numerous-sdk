@@ -1,9 +1,9 @@
-site_name: numerous-sdk docs
+site_name: Numerous SDK documentation
 nav:
   - Home: README.md
-  - Our Website: https://numerous.com
-  - Our GitHub Page: https://github.com/numerous-com/numerous-sdk
-  - Our PyPI Page: https://pypi.org/project/numerous-sdk/
+  - Website: https://numerous.com
+  - GitHub Page: https://github.com/numerous-com/numerous-sdk
+  - PyPI Page: https://pypi.org/project/numerous/
   - Platform Docs: https://numerous.com/docs
   - API Reference:
     - Collections: collections.md

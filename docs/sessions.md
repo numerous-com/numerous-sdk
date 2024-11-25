@@ -4,6 +4,6 @@ The `Session` object represents a session of a user interacting with an app. Fro
 
 Due to each framework having a slightly different way to access the session through cookies, the `Session` object is framework-specific. Make sure to use the correct import for the framework you are using.
 
-## ::: numerous.user_session.Session
+## ::: numerous.session.Session
     options:
         show_root_heading: true

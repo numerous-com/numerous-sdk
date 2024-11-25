@@ -41,7 +41,7 @@ create_version_txt_cmd=grep '^version = ".\+"' pyproject.toml | tr -d '\n' | sed
 # RULES
 .DEFAULT_GOAL := help
 
-.PHONY: clean packages test lint dep sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local version $(PACKAGE_TARGETS)
+.PHONY: clean packages test lint dep sdk-test sdk-lint sdk-dep cli-test cli-lint cli-dep cli-all cli-build cli-local docs version $(PACKAGE_TARGETS)
 
 clean:
 	rm -rf $(CLI_BUILD_DIR)
@@ -133,6 +133,9 @@ cli-dep:
 gqlgen:
 	@echo "-- Generating GraphQL code"
 	cd python && ariadne-codegen
+
+docs:
+	mkdocs build
 
 version:
 	$(create_version_txt_cmd)
