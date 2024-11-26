@@ -50,6 +50,7 @@ clean:
 	rm -f .lint-ruff.txt
 	rm -f .lint-mypy.txt
 	rm -f $(VERSION_TXT)
+	rm -rf docs/reference
 
 packages: $(PACKAGE_TARGETS)
 

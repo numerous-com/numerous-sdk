@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bin_dir=python/src/numerous/cli/bin
+bin_dir=python/src/numerous/_cli/bin
 
 function python_platforms() {
     case "$1" in

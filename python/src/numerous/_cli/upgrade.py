@@ -11,7 +11,7 @@ from typing import Any
 
 from packaging import version
 
-from ._color import blue, green
+from .color import blue, green
 
 
 RESPONSE_STATUS_OK = 200
