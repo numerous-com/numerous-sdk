@@ -1,6 +1,36 @@
 # CHANGELOG
 
 
+## v0.33.2 (2024-11-26)
+
+### Documentation
+
+* docs(python-sdk): update for new structure, collection files documents ([`d88b68b`](https://github.com/numerous-com/numerous-sdk/commit/d88b68b8552f79523edadd46f0239fe6d4a7a119))
+
+
+* docs: README.md formatting and minor phrasing changes ([`c2afbcf`](https://github.com/numerous-com/numerous-sdk/commit/c2afbcfdff9335d3f0fe5508c5d77de21d3c432c))
+
+  > 
+  > * Badges up top
+  > * Use markdown headings for sections
+  > * Do not tell users to &#34;simply&#34; do something :)
+  > * Respect 80 character line length where possible
+  > * Simplify go CLI development section
+
+
+
+### Fix
+
+* fix(python-sdk): add `FileReference` export ([`69b350f`](https://github.com/numerous-com/numerous-sdk/commit/69b350fc5b4b2159fd4fefe6b9f98ea67f62417a))
+
+  > 
+  > * Exports `FileReference` from package `numerous.collections`.
+  > * Updates collections documentation API reference to just list the
+  >   `numerous.collections` package
+
+
+
+
 ## v0.33.1 (2024-11-25)
 
 ### Fix
