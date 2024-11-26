@@ -73,12 +73,15 @@ Collections are automatically created the first time they are accessed.
 collection = numerous.collections.collection("my-collection")
 ```
 
-<Callout type="info">
-  Collection keys are scoped to an organization, meaning that if multiple apps
-  use the same Collection keys, they will access the same data.
+!!! note
+    Collection keys are scoped to an organization, meaning that if multiple apps
+    use the same Collection keys, they will access the same data.
+     
+    For nested collections, they are scoped to their parent collection.
 
-  For nested collections, they are scoped to their parent collection.
-</Callout>
+See below for the detailed reference of the `collection` function.
+
+#### ::: numerous.collections.collection
 
 ### Creating and accessing nested collections
 
@@ -273,6 +276,4 @@ file_ref.delete()
 
 ## API Documentation
 
-## ::: numerous.collections
-    options:
-        show_root_heading: true
+### ::: numerous.collections

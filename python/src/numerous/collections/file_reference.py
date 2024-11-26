@@ -39,7 +39,6 @@ class FileReference:
             client: The client used to interact with the Numerous collection.
             key: The key of the file.
             file_id: The unique identifier of the file.
-            tags: An optional list of tags associated with the file.
 
         """
         self.key: str = key

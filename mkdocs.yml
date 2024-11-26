@@ -10,13 +10,17 @@ nav:
     - Sessions: sessions.md
     - Users: user.md
     - Frameworks: frameworks.md
-
 theme: readthedocs
 plugins:
   - search
   - mkdocstrings:
       default_handler: "python"
-      rendering:
-        show_source: true
-        show_full_signature: true
-        show_root_heading: true
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: false
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences

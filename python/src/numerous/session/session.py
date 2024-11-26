@@ -16,7 +16,6 @@ from .user import User
 class CookieGetter(Protocol):
     def cookies(self) -> dict[str, Any]:
         """Get the cookies associated with the current session."""
-        ...
 
 
 def encode_user_info(user_id: str, name: str) -> str:

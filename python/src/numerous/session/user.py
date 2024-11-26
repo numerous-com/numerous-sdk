@@ -39,7 +39,7 @@ class User:
         >>> collection("users").collection(user.id)
 
         Returns:
-            NumerousCollection: The collection for this user.
+            The collection for this user.
 
         """
         return collection("users", self._client).collection(self.id)
@@ -52,10 +52,10 @@ class User:
         Create a User instance from a dictionary of user information.
 
         Args:
-            user_info (dict[str, Any]): A dictionary containing user information.
+            user_info: A dictionary containing user information.
 
         Returns:
-            User: A new User instance created from the provided information.
+            A new User instance created from the provided information.
 
         """
         return User(
