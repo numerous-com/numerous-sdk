@@ -273,18 +273,6 @@ file_ref.delete()
 
 ## API Documentation
 
-## ::: numerous.collections.collection
-    options:
-        show_root_heading: true
-
-## ::: numerous.collections.CollectionReference
-    options:
-        show_root_heading: true
-
-## ::: numerous.collections.DocumentReference
-    options:
-        show_root_heading: true
-
-## ::: numerous.collections.file_reference.FileReference
+## ::: numerous.collections
     options:
         show_root_heading: true
