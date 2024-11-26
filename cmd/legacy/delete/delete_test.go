@@ -20,7 +20,7 @@ func TestAppDelete(t *testing.T) {
 			PublicURL: "https://test.com/public/another-hash",
 		}
 		appQueryResponse := test.AppToQueryResult("tool", app)
-		c, transportMock := test.CreateMockGqlClient(appQueryResponse, response)
+		c, transportMock := test.CreateMockGQLClient(appQueryResponse, response)
 		err := deleteApp(c, []string{})
 		assert.NoError(t, err)
 		transportMock.AssertExpectations(t)
@@ -29,7 +29,7 @@ func TestAppDelete(t *testing.T) {
 		test.ChdirToTmpDirWithAppIDDocument(t, dir.AppIDFileName, "id")
 		appNotFoundResponse := `"record not found"`
 		response, _ := test.DeleteFailureQueryResult(appNotFoundResponse)
-		c, transportMock := test.CreateMockGqlClient(response)
+		c, transportMock := test.CreateMockGQLClient(response)
 
 		err := deleteApp(c, []string{})
 
@@ -38,7 +38,7 @@ func TestAppDelete(t *testing.T) {
 	})
 
 	t.Run("returns error if app id document does not exists in the current directory", func(t *testing.T) {
-		c, transportMock := test.CreateMockGqlClient()
+		c, transportMock := test.CreateMockGQLClient()
 		err := deleteApp(c, []string{})
 
 		assert.Error(t, err)

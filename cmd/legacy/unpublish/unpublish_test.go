@@ -23,7 +23,7 @@ func TestAppPublish(t *testing.T) {
 		app.PublicURL = ""
 		appUnpublishResponse := test.AppToQueryResult("toolUnpublish", app)
 
-		c, transportMock := test.CreateMockGqlClient(appQueryResponse, appUnpublishResponse)
+		c, transportMock := test.CreateMockGQLClient(appQueryResponse, appUnpublishResponse)
 		err := unpublish(c)
 		assert.NoError(t, err)
 		transportMock.AssertExpectations(t)
@@ -32,7 +32,7 @@ func TestAppPublish(t *testing.T) {
 	t.Run("returns error if app does not exist", func(t *testing.T) {
 		test.ChdirToTmpDirWithAppIDDocument(t, dir.AppIDFileName, "id")
 		appNotFoundResponse := `{"errors":[{"message":"record not found","path":["tool"]}],"data":null}`
-		c, transportMock := test.CreateMockGqlClient(appNotFoundResponse)
+		c, transportMock := test.CreateMockGQLClient(appNotFoundResponse)
 
 		err := unpublish(c)
 
@@ -41,7 +41,7 @@ func TestAppPublish(t *testing.T) {
 	})
 
 	t.Run("returns error if app id document does not exists in the current directory", func(t *testing.T) {
-		c, transportMock := test.CreateMockGqlClient()
+		c, transportMock := test.CreateMockGQLClient()
 		err := unpublish(c)
 
 		assert.Error(t, err)
@@ -56,7 +56,7 @@ func TestAppPublish(t *testing.T) {
 		}
 		appQueryResponse := test.AppToQueryResult("tool", app)
 
-		c, transportMock := test.CreateMockGqlClient(appQueryResponse)
+		c, transportMock := test.CreateMockGQLClient(appQueryResponse)
 		err := unpublish(c)
 
 		assert.NoError(t, err)

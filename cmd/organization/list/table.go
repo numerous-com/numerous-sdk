@@ -19,13 +19,14 @@ var (
 )
 
 func setupTable(organizations []organization.OrganizationMembership) *table.Table {
-	columns := []string{"Name", "Slug", "Role"}
+	columns := []string{"Name", "Slug", "Role", "ID"}
 	var rows [][]string
 	for _, o := range organizations {
 		rows = append(rows, []string{
 			o.Organization.Name,
 			o.Organization.Slug,
 			string(o.Role),
+			o.Organization.ID,
 		})
 	}
 
