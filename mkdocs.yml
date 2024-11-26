@@ -1,18 +1,33 @@
 site_name: Numerous SDK documentation
+
 nav:
   - Home: README.md
   - Website: https://numerous.com
-  - GitHub Page: https://github.com/numerous-com/numerous-sdk
-  - PyPI Page: https://pypi.org/project/numerous/
-  - Platform Docs: https://numerous.com/docs
-  - API Reference:
+  - GitHub page: https://github.com/numerous-com/numerous-sdk
+  - PyPI page: https://pypi.org/project/numerous/
+  - Platform docs: https://numerous.com/docs
+  - Usage:
     - Collections: collections.md
+    - Collection documents: collection_documents.md
+    - Collection files: collection_files.md
     - Sessions: sessions.md
     - Users: user.md
     - Frameworks: frameworks.md
-theme: readthedocs
+  - API reference: reference/
+
+theme:
+  name: material
+  features:
+      - content.code.copy
+
 plugins:
   - search
+  - gen-files:
+      scripts:
+        - scripts/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
   - mkdocstrings:
       default_handler: "python"
       handlers:
@@ -20,6 +35,7 @@ plugins:
           options:
             show_source: false
             show_root_heading: false
+
 markdown_extensions:
   - admonition
   - pymdownx.details

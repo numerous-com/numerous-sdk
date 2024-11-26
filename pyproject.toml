@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numerous"
-readme = "README.md"
+readme = "docs/README.md"
 version = "0.34.0"
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
@@ -28,10 +28,14 @@ dev = [
     "pydantic==2.9",
     "types-setuptools>=74.1.0",
     "build==1.2.2",
+    # for docs
     "mkdocs==1.6.0",
     "mkdocstrings==0.26.2",
     "mkdocstrings-python==1.12.2",
     "mkdocs_snippet_plugin==1.0.2",
+    "mkdocs-material==9.5.46",
+    "mkdocs-gen-files==0.5.0",
+    "mkdocs-section-index==0.3.9",
     # for testing functionality related to frameworks
     "flask",
     "fastapi",
@@ -42,7 +46,7 @@ dev = [
 ]
 
 [project.scripts]
-numerous = "numerous.cli:main"
+numerous = "numerous._cli:main"
 
 [tool.setuptools.packages.find]
 where = ["python/src"]

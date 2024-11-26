@@ -1,2 +1,2 @@
 global-include py.typed
-include python/src/numerous/cli/bin/*
+include python/src/numerous/_cli/bin/*

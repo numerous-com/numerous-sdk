@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from numerous.cli._upgrade import check_for_updates
+from .upgrade import check_for_updates
 
 
 def get_executable_os_name() -> str:
@@ -36,17 +36,16 @@ def get_executable_arch_name() -> str:
     sys.exit(1)
 
 
-def get_generic_executable_name() -> str:
+def get_platform_executable_name() -> str:
     return f"{get_executable_os_name()}_{get_executable_arch_name()}"
 
 
 def main() -> int:
     check_for_updates()
     bin_dir = Path(__file__).parent / "bin"
-    if (bin_dir / "cli").exists():
-        exe_path = bin_dir / "cli"
-    else:
-        exe_name = get_generic_executable_name()
+    exe_path = bin_dir / "cli"
+    if not exe_path.exists():
+        exe_name = get_platform_executable_name()
         exe_path = bin_dir / exe_name
 
     if not exe_path.exists():
