@@ -36,6 +36,7 @@ dev = [
     "mkdocs-material==9.5.46",
     "mkdocs-gen-files==0.5.0",
     "mkdocs-section-index==0.3.9",
+    "mkdocs-literate-nav==0.6.1",
     # for testing functionality related to frameworks
     "flask",
     "fastapi",
