@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v0.34.1 (2024-11-26)
+
+### Documentation
+
+* docs: fix build error, warnings, show source and root headings ([`bb19881`](https://github.com/numerous-com/numerous-sdk/commit/bb19881626ab6b10111faa2c9c67e7fdfc35fdd0))
+
+
+* docs: theme, reorganization, autogen API reference (#56) ([`1b4f9a0`](https://github.com/numerous-com/numerous-sdk/commit/1b4f9a058a18f346f6d5b412e2d4f0bba941e66a))
+
+  > 
+  > * Use material theme
+  > * Split pages for collections, documents and files
+  > * Put guides under &#34;Usage&#34; section, and remove API reference
+  > * Add autogeneration of API reference
+  > * Unexport CLI bootstrap package
+
+
+
+### Fix
+
+* fix(cli): reduce package size by removing unused assets ([`451969f`](https://github.com/numerous-com/numerous-sdk/commit/451969f48ab0dc5e0f8075846b18c90061c2de77))
+
+
+
+
 ## v0.34.0 (2024-11-26)
 
 ### Documentation
