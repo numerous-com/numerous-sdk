@@ -15,7 +15,7 @@ func TestOrganizationCreate(t *testing.T) {
 		m := new(auth.MockAuthenticator)
 		m.On("GetLoggedInUserFromKeyring").Return(u)
 
-		c, transportMock := test.CreateMockGqlClient()
+		c, transportMock := test.CreateMockGQLClient()
 
 		err := organizationCreate(m, c)
 

@@ -36,7 +36,7 @@ func CreateTestGqlClient(t *testing.T, response string) *gqlclient.Client {
 	return gqlclient.New("http://localhost:8080", &http.Client{Transport: &ts})
 }
 
-func CreateMockGqlClient(responses ...string) (*gqlclient.Client, *MockTransport) {
+func CreateMockGQLClient(responses ...string) (*gqlclient.Client, *MockTransport) {
 	ts := MockTransport{}
 
 	for _, response := range responses {

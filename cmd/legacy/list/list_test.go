@@ -42,7 +42,7 @@ func TestList(t *testing.T) {
 				"tools": [` + strings.Join(appsAsStrings, ", ") + `]
 			}
 		}`
-		c, transportMock := test.CreateMockGqlClient(response)
+		c, transportMock := test.CreateMockGQLClient(response)
 
 		err := list(m, c)
 
@@ -56,7 +56,7 @@ func TestList(t *testing.T) {
 		m := new(auth.MockAuthenticator)
 		m.On("GetLoggedInUserFromKeyring").Return(u)
 
-		c, transportMock := test.CreateMockGqlClient()
+		c, transportMock := test.CreateMockGQLClient()
 
 		err := list(m, c)
 
