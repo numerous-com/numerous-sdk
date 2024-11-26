@@ -131,4 +131,4 @@ apps.
 
 ## API reference
 
-See the [API reference](../reference/numerous/collections) for details.
+See the [API reference](reference/numerous/collections/index.md) for details.
