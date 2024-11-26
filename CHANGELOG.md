@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.34.0 (2024-11-26)
+
+### Documentation
+
+* docs(python-sdk): mkdocs config, and minor improvements ([`5910f78`](https://github.com/numerous-com/numerous-sdk/commit/5910f783188fde5f340844830b8f5c2cd3d679df))
+
+
+
+### Feature
+
+* feat(cli): include id in `organization list` output (#55) ([`2704008`](https://github.com/numerous-com/numerous-sdk/commit/2704008aaad7baea56ee60bf5ac3f52fbae96be4))
+
+  > 
+  > * Adds an ID column in the table output of the `organization list` command.
+  > * Renames `test.CreateMockGqlClient`  to `test.CreateMockGQLClient` to follow
+  >   conventions of keepthe abbreviation.
+
+
+
+
 ## v0.33.2 (2024-11-26)
 
 ### Documentation
