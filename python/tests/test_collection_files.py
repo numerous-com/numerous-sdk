@@ -197,21 +197,24 @@ def mock_put() -> Generator[MagicMock, None, None]:
         yield m
 
 
-@pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
-    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", ORGANIZATION_ID)
-    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
-
-
 @pytest.fixture
 def base_path(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_exists_is_true_when_file_exists_and_has_download_url() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+@pytest.fixture
+def gql() -> Mock:
+    return Mock(GQLClient)
+
+
+@pytest.fixture
+def client(gql: Mock) -> GraphQLClient:
+    return GraphQLClient(gql, "test-organization-id", "token")
+
+
+def test_exists_is_true_when_file_exists_and_has_download_url(
+    gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -231,9 +234,9 @@ def test_exists_is_true_when_file_exists_and_has_download_url() -> None:
     assert file.exists is True
 
 
-def test_file_returns_file_exists_after_load(mock_get: MagicMock) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_file_returns_file_exists_after_load(
+    mock_get: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -255,10 +258,8 @@ def test_file_returns_file_exists_after_load(mock_get: MagicMock) -> None:
 
 
 def test_read_file_returns_expected_text(
-    mock_get: MagicMock,
+    mock_get: MagicMock, gql: Mock, client: GraphQLClient
 ) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -285,9 +286,9 @@ def test_read_file_returns_expected_text(
     assert text == TEST_FILE_TEXT_CONTENT
 
 
-def test_read_bytes_returns_expected_bytes(mock_get: MagicMock) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_read_bytes_returns_expected_bytes(
+    mock_get: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -315,10 +316,8 @@ def test_read_bytes_returns_expected_bytes(mock_get: MagicMock) -> None:
 
 
 def test_open_read_returns_expected_file_content(
-    mock_get: MagicMock,
+    mock_get: MagicMock, gql: Mock, client: GraphQLClient
 ) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -346,9 +345,9 @@ def test_open_read_returns_expected_file_content(
     assert bytes_data == TEST_FILE_BYTES_CONTENT
 
 
-def test_save_with_bytes_makes_put_request(mock_put: MagicMock) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_save_with_bytes_makes_put_request(
+    mock_put: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -380,9 +379,9 @@ def test_save_with_bytes_makes_put_request(mock_put: MagicMock) -> None:
     assert isinstance(file, FileReference)
 
 
-def test_save_makes_expected_put_request(mock_put: MagicMock) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_save_makes_expected_put_request(
+    mock_put: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -412,9 +411,9 @@ def test_save_makes_expected_put_request(mock_put: MagicMock) -> None:
     )
 
 
-def test_save_file_makes_expected_put_request(mock_put: MagicMock) -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_save_file_makes_expected_put_request(
+    mock_put: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -443,9 +442,7 @@ def test_save_file_makes_expected_put_request(mock_put: MagicMock) -> None:
     )
 
 
-def test_delete_calls_expected_mutation() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_delete_calls_expected_mutation(gql: Mock, client: GraphQLClient) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -465,11 +462,10 @@ def test_delete_calls_expected_mutation() -> None:
     )
 
 
-def test_collection_files_makes_expected_query_and_returns_expected_file_count() -> (
-    None
-):
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_collection_files_makes_expected_query_and_returns_expected_file_count(
+    gql: Mock,
+    client: GraphQLClient,
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -489,9 +485,7 @@ def test_collection_files_makes_expected_query_and_returns_expected_file_count()
     )
 
 
-def test_tag_add_makes_expected_mutation() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_tag_add_makes_expected_mutation(gql: Mock, client: GraphQLClient) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -511,9 +505,7 @@ def test_tag_add_makes_expected_mutation() -> None:
     )
 
 
-def test_tag_delete_makes_expected_mutation() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_tag_delete_makes_expected_mutation(gql: Mock, client: GraphQLClient) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -534,9 +526,9 @@ def test_tag_delete_makes_expected_mutation() -> None:
     )
 
 
-def test_collection_files_passes_tag_filter_on_to_client() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_collection_files_passes_tag_filter_on_to_client(
+    gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
@@ -556,9 +548,9 @@ def test_collection_files_passes_tag_filter_on_to_client() -> None:
     )
 
 
-def test_tags_property_queries_and_returns_expected_tags() -> None:
-    gql = Mock(GQLClient)
-    client = GraphQLClient(gql)
+def test_tags_property_queries_and_returns_expected_tags(
+    gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )

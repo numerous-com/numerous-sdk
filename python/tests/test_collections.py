@@ -31,23 +31,24 @@ def _collection_create_collection_not_found(ref_id: str) -> CollectionCreate:
     )
 
 
-@pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
-    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", ORGANIZATION_ID)
-    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
+@pytest.fixture
+def gql() -> Mock:
+    return Mock(GQLClient)
 
 
-def test_collection_returns_new_collection() -> None:
-    gql = Mock(GQLClient)
-    _client = GraphQLClient(gql)
+@pytest.fixture
+def client(gql: Mock) -> GraphQLClient:
+    return GraphQLClient(gql, ORGANIZATION_ID, "token")
+
+
+def test_collection_returns_new_collection(gql: Mock, client: GraphQLClient) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
 
     parent_key = None
 
-    result = collection(COLLECTION_NAME, _client)
+    result = collection(COLLECTION_NAME, client)
 
     gql.collection_create.assert_called_once()
     gql.collection_create.assert_called_once_with(
@@ -57,14 +58,14 @@ def test_collection_returns_new_collection() -> None:
     assert result.id == COLLECTION_REFERENCE_ID
 
 
-def test_collection_returns_new_nested_collection() -> None:
-    gql = Mock(GQLClient)
-    _client = GraphQLClient(gql)
+def test_collection_returns_new_nested_collection(
+    gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         NESTED_COLLECTION_REFERENCE_KEY,
         NESTED_COLLECTION_REFERENCE_ID,
     )
-    result = collection(COLLECTION_NAME, _client)
+    result = collection(COLLECTION_NAME, client)
 
     nested_result = result.collection(NESTED_COLLECTION_ID)
 
@@ -73,14 +74,14 @@ def test_collection_returns_new_nested_collection() -> None:
     assert nested_result.id == NESTED_COLLECTION_REFERENCE_ID
 
 
-def test_nested_collection_not_found_raises_parent_not_found_error() -> None:
-    gql = Mock(GQLClient)
-    _client = GraphQLClient(gql)
+def test_nested_collection_not_found_raises_parent_not_found_error(
+    gql: Mock, client: GraphQLClient
+) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_REFERENCE_KEY, COLLECTION_REFERENCE_ID
     )
 
-    result = collection(COLLECTION_NAME, _client)
+    result = collection(COLLECTION_NAME, client)
     gql.collection_create.return_value = _collection_create_collection_not_found(
         COLLECTION_REFERENCE_ID
     )

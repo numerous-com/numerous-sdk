@@ -4,10 +4,29 @@ from numerous._client.get_client import get_client
 from numerous._client.graphql_client import GraphQLClient
 
 
-def test_open_client_with_graphql_environment_returns_graphql_client(
+@pytest.fixture(autouse=True)
+def _clear_client() -> None:
+    import numerous._client.get_client
+
+    numerous._client.get_client._client = None  # noqa: SLF001
+
+
+def test_given_graphql_environment_variables_returns_graphql_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
+    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
+    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", "organization-id")
+
+    client = get_client()
+
+    assert isinstance(client, GraphQLClient)
+
+
+def test_given_graphql_environment_variables_without_url_returns_graphql_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NUMEROUS_API_URL", raising=False)
     monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
     monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", "organization-id")
 

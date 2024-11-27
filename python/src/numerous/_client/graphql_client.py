@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import os
 from typing import TYPE_CHECKING, BinaryIO
 
 import requests
@@ -103,21 +102,12 @@ class OrganizationIDMissingError(Exception):
 
 
 class GraphQLClient:
-    def __init__(self, gql: GQLClient) -> None:
+    def __init__(self, gql: GQLClient, organization_id: str, access_token: str) -> None:
         self._gql = gql
         self._loop = ThreadedEventLoop()
         self._loop.start()
-
-        organization_id = os.getenv("NUMEROUS_ORGANIZATION_ID")
-        if not organization_id:
-            raise OrganizationIDMissingError
         self._organization_id = organization_id
-
-        auth_token = os.getenv("NUMEROUS_API_ACCESS_TOKEN")
-        if not auth_token:
-            raise APIAccessTokenMissingError
-
-        self._headers = {"Authorization": f"Bearer {auth_token}"}
+        self._headers = {"Authorization": f"Bearer {access_token}"}
 
     def _create_collection_ref(
         self,
