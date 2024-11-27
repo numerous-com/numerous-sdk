@@ -2,6 +2,7 @@ package app
 
 import (
 	"numerous.com/cli/cmd/app/list"
+	"numerous.com/cli/cmd/app/share"
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/group"
 
@@ -17,4 +18,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(list.Cmd)
+	Cmd.AddCommand(share.Cmd)
 }

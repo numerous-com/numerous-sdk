@@ -1,6 +1,7 @@
 package appident
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -12,6 +13,10 @@ import (
 type AppIdentifier struct {
 	OrganizationSlug string
 	AppSlug          string
+}
+
+func (ai AppIdentifier) String() string {
+	return fmt.Sprintf("%s/%s", ai.OrganizationSlug, ai.AppSlug)
 }
 
 // Uses the given slug and appName, or loads from manifest, and validates.
