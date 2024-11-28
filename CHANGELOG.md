@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.35.0 (2024-11-28)
+
+### Documentation
+
+* docs: fix collection document code snippet variable names ([`61dcd95`](https://github.com/numerous-com/numerous-sdk/commit/61dcd9530c4963e55829bd29a494acf1cfd91efd))
+
+
+* docs: add favicon to documentation site ([`65279f2`](https://github.com/numerous-com/numerous-sdk/commit/65279f25ce5f03e3e003f66caf44c86849cb0d12))
+
+
+* docs: automatic and manual toggling of light/dark modes ([`a692640`](https://github.com/numerous-com/numerous-sdk/commit/a692640a8d8a72d8cd87b9129749aa4fb3d3add8))
+
+
+* docs: add logo to documentation site ([`928e63e`](https://github.com/numerous-com/numerous-sdk/commit/928e63eb06c651f08f268e99bd49b5edabc914ee))
+
+
+
+### Feature
+
+* feat(cli): command `app share` (#58) ([`b9c4ef3`](https://github.com/numerous-com/numerous-sdk/commit/b9c4ef32f4d9d07b3eb0e47c42a0bee87596933d))
+
+
+
+
 ## v0.34.1 (2024-11-26)
 
 ### Documentation
