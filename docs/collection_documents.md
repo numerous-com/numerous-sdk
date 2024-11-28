@@ -15,7 +15,7 @@ the document object.
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
-doc_ref = collection.document("my-document")
+doc_ref = col_ref.document("my-document")
 ```
 
 ## Loading document data
@@ -25,7 +25,7 @@ in the document, or `None` if the document does not exist.
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
-doc_ref = collection.document("my-document")
+doc_ref = col_ref.document("my-document")
 data = doc_ref.get()
 
 if data is None:
@@ -40,7 +40,7 @@ any existing data in that document. If you wish to modify the data, load it with
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
-doc_ref = collection.document("my-document")
+doc_ref = col_ref.document("my-document")
 doc_ref.set({"field1": "my field 1 value", "field2": 2})
 ```
 
@@ -70,7 +70,7 @@ my_datetime = datetime.now()
 my_data = MyData(field1="my field 1 value", field2=2)
 
 col_ref = numerous.collections.collection("my-collection")
-doc_ref = collection.document("my-document")
+doc_ref = col_ref.document("my-document")
 doc_ref.set({
     "my-data": asdict(my_data),
     "my-datetime": my_datetime.isoformat(),
