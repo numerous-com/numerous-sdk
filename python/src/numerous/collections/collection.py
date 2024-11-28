@@ -33,6 +33,7 @@ def collection(
     """
     if _client is None:
         _client = get_client()
+
     try:
         collection_ref = _client.get_collection_reference(collection_key)
     except numerous._client.exceptions.ParentCollectionNotFoundError as error:  # noqa: SLF001

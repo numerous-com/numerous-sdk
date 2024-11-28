@@ -199,13 +199,6 @@ def _collection_create_collection_not_found(ref_id: str) -> CollectionCreate:
     )
 
 
-@pytest.fixture(autouse=True)
-def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NUMEROUS_API_URL", "url_value")
-    monkeypatch.setenv("NUMEROUS_ORGANIZATION_ID", ORGANIZATION_ID)
-    monkeypatch.setenv("NUMEROUS_API_ACCESS_TOKEN", "token")
-
-
 @pytest.fixture
 def gql() -> Mock:
     return Mock(GQLClient)
@@ -215,7 +208,7 @@ def gql() -> Mock:
 def client(gql: Mock) -> Client:
     from numerous._client.graphql_client import GraphQLClient
 
-    return GraphQLClient(gql)
+    return GraphQLClient(gql, ORGANIZATION_ID, "token")
 
 
 def test_collection_document_returns_new_document(gql: Mock, client: Client) -> None:
