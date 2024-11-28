@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.36.0 (2024-11-28)
+
+### Feature
+
+* feat(python-sdk): use default API url (#57) ([`d115f8d`](https://github.com/numerous-com/numerous-sdk/commit/d115f8d0197096b462541aa6138798f69580dcd2))
+
+  > 
+  > Default to API URL to `https://api.numerous.com/query` to enable more easily using the SDK locally.
+  > 
+  > Furthermore, the file system backend for collections is now used if no organization identifier
+  > (`NUMEROUS_ORGANIZATION_ID`) or access token (`NUMEROUS_API_ACCESS_TOKEN`)
+  > environment variables are provided.
+
+
+
+
 ## v0.35.0 (2024-11-28)
 
 ### Documentation
