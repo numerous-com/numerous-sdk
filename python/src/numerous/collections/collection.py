@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numerous._client.exceptions
+from numerous._client.get_client import get_client
 from numerous.collections.collection_reference import CollectionReference
 from numerous.collections.exceptions import ParentCollectionNotFoundError
 
@@ -31,8 +32,6 @@ def collection(
 
     """
     if _client is None:
-        from numerous._client.get_client import get_client
-
         _client = get_client()
 
     try:
