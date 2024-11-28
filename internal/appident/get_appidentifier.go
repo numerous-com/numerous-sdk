@@ -19,6 +19,26 @@ func (ai AppIdentifier) String() string {
 	return fmt.Sprintf("%s/%s", ai.OrganizationSlug, ai.AppSlug)
 }
 
+func (ai AppIdentifier) validate() error {
+	if ai.OrganizationSlug == "" {
+		return ErrMissingOrganizationSlug
+	}
+
+	if !validate.IsValidIdentifier(ai.OrganizationSlug) {
+		return ErrInvalidOrganizationSlug
+	}
+
+	if ai.AppSlug == "" {
+		return ErrMissingAppSlug
+	}
+
+	if !validate.IsValidIdentifier(ai.AppSlug) {
+		return ErrInvalidAppSlug
+	}
+
+	return nil
+}
+
 // Uses the given slug and appName, or loads from manifest, and validates.
 func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSlug string) (AppIdentifier, error) {
 	if orgSlug == "" || appSlug == "" {
@@ -36,23 +56,7 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 
 	ai := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
 
-	if ai.OrganizationSlug == "" {
-		return AppIdentifier{}, ErrMissingOrganizationSlug
-	}
-
-	if !validate.IsValidIdentifier(ai.OrganizationSlug) {
-		return ai, ErrInvalidOrganizationSlug
-	}
-
-	if ai.AppSlug == "" {
-		return AppIdentifier{}, ErrMissingAppSlug
-	}
-
-	if !validate.IsValidIdentifier(ai.AppSlug) {
-		return ai, ErrInvalidAppSlug
-	}
-
-	return ai, nil
+	return ai, ai.validate()
 }
 
 var (

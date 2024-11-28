@@ -18,7 +18,7 @@ func TestCreate(t *testing.T) {
 	sharedURL := "https://test-numerous.com/share/123"
 	testErr := errors.New("test error")
 
-	t.Run("it calls app lister with expected arguments", func(t *testing.T) {
+	t.Run("it calls app service with expected arguments", func(t *testing.T) {
 		m := mockAppService{}
 		m.On("ShareApp", ctx, ai).Once().Return(app.ShareAppOutput{SharedURL: &sharedURL}, nil)
 
@@ -28,7 +28,7 @@ func TestCreate(t *testing.T) {
 		m.AssertExpectations(t)
 	})
 
-	t.Run("returns error if empty shared URL returned", func(t *testing.T) {
+	t.Run("returns error if nil shared URL returned", func(t *testing.T) {
 		m := mockAppService{}
 		m.On("ShareApp", ctx, ai).Once().Return(app.ShareAppOutput{SharedURL: nil}, nil)
 
