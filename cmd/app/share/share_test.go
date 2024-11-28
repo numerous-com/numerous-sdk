@@ -15,7 +15,7 @@ func TestCreate(t *testing.T) {
 	appSlug := "app-slug"
 	organizationSlug := "organization-slug"
 	ai := appident.AppIdentifier{OrganizationSlug: organizationSlug, AppSlug: appSlug}
-	sharedURL := "https://test-numerous.com/shared/123"
+	sharedURL := "https://test-numerous.com/share/123"
 	testErr := errors.New("test error")
 
 	t.Run("it calls app lister with expected arguments", func(t *testing.T) {

@@ -35,7 +35,7 @@ func TestAppShare(t *testing.T) {
 			{
 				"data": {
 					"appDeployShare": {
-						"sharedURL": "https://test-numerous.com/shared/123"
+						"sharedURL": "https://test-numerous.com/share/123"
 					}
 				}
 			}
@@ -49,9 +49,8 @@ func TestAppShare(t *testing.T) {
 		}
 		output, err := s.ShareApp(context.TODO(), input)
 
-		expectedURL := "https://test-numerous.com/shared/123"
 		expected := ShareAppOutput{
-			SharedURL: &expectedURL,
+			SharedURL: ref("https://test-numerous.com/share/123"),
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expected, output)
