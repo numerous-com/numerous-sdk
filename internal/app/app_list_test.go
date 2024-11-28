@@ -31,7 +31,8 @@ func TestList(t *testing.T) {
 							"defaultDeployment": {
 								"current": {
 									"status": "RUNNING"
-								}
+								},
+								"sharedURL": "https://test-numerous.com/share/123"
 							}
 						},
 						{
@@ -49,7 +50,8 @@ func TestList(t *testing.T) {
 							"createdBy": {"fullName": "User Name"},
 							"createdAt": "2024-05-11T13:15:17.000Z",
 							"defaultDeployment": {
-								"current": null
+								"current": null,
+								"sharedURL": null
 							}
 						}
 					]
@@ -63,9 +65,9 @@ func TestList(t *testing.T) {
 		apps, err := s.List(context.TODO(), "organization-slug")
 
 		expected := []ListApp{
-			{Name: "App 1", Slug: "app-1", Description: "App 1 description", Status: "RUNNING", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.June, 12, 14, 16, 17, 0, time.UTC)},
-			{Name: "App 2", Slug: "app-2", Description: "App 2 description", Status: "NOT DEPLOYED", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.May, 10, 12, 14, 16, 0, time.UTC)},
-			{Name: "App 3", Slug: "app-3", Description: "App 3 description", Status: "NOT DEPLOYED", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.May, 11, 13, 15, 17, 0, time.UTC)},
+			{Name: "App 1", Slug: "app-1", Description: "App 1 description", Status: "RUNNING", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.June, 12, 14, 16, 17, 0, time.UTC), SharedURL: ref("https://test-numerous.com/share/123")},
+			{Name: "App 2", Slug: "app-2", Description: "App 2 description", Status: "NOT DEPLOYED", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.May, 10, 12, 14, 16, 0, time.UTC), SharedURL: nil},
+			{Name: "App 3", Slug: "app-3", Description: "App 3 description", Status: "NOT DEPLOYED", CreatedBy: "User Name", CreatedAt: time.Date(2024, time.May, 11, 13, 15, 17, 0, time.UTC), SharedURL: nil},
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expected, apps)

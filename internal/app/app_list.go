@@ -15,6 +15,7 @@ type ListApp struct {
 	Status      string
 	CreatedBy   string
 	CreatedAt   time.Time
+	SharedURL   *string
 }
 
 type QueryApp struct {
@@ -29,6 +30,7 @@ type QueryApp struct {
 		Current *struct {
 			Status string
 		}
+		SharedURL *string `graphql:"sharedURL"`
 	}
 }
 
@@ -38,6 +40,11 @@ func (qa QueryApp) ToListApp() ListApp {
 		status = qa.DefaultDeployment.Current.Status
 	}
 
+	var sharedURL *string = nil
+	if qa.DefaultDeployment != nil {
+		sharedURL = qa.DefaultDeployment.SharedURL
+	}
+
 	return ListApp{
 		Name:        qa.DisplayName,
 		Slug:        qa.Slug,
@@ -45,6 +52,7 @@ func (qa QueryApp) ToListApp() ListApp {
 		Status:      status,
 		CreatedBy:   qa.CreatedBy.FullName,
 		CreatedAt:   qa.CreatedAt,
+		SharedURL:   sharedURL,
 	}
 }
 

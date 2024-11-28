@@ -37,7 +37,7 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 		output.PrintErrorMissingAppSlug()
 		return err
 	} else if err != nil {
-		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
 		return err
 	}
 

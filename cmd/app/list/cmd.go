@@ -31,5 +31,5 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.Flags().StringVarP(&argOrganizationSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
+	Cmd.Flags().StringVarP(&argOrganizationSlug, "organization", "o", "", "The organization slug identifier to list app from.")
 }

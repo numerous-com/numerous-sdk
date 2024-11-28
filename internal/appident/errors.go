@@ -14,7 +14,7 @@ var (
 	ErrAppNotInitialized       = errors.New("app not initialized")
 )
 
-func PrintGetAppIdentiferError(err error, appDir string, ai AppIdentifier) {
+func PrintGetAppIdentifierError(err error, appDir string, ai AppIdentifier) {
 	switch {
 	case errors.Is(err, ErrAppNotInitialized):
 		output.PrintErrorAppNotInitialized(appDir)

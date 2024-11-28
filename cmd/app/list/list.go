@@ -55,4 +55,7 @@ func printApp(app app.ListApp) {
 	println("Created at:  " + app.CreatedAt.Format(time.RFC3339))
 	println("Description: " + app.Description)
 	println("Status:      " + app.Status)
+	if app.SharedURL != nil {
+		println("Shared URL:  " + *app.SharedURL)
+	}
 }
