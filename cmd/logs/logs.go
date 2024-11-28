@@ -17,7 +17,7 @@ type AppService interface {
 func Logs(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string, printer func(app.AppDeployLogEntry)) error {
 	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
-		appident.PrintGetAppIdentiferError(err, appDir, ai)
+		appident.PrintGetAppIdentifierError(err, appDir, ai)
 		return err
 	}
 

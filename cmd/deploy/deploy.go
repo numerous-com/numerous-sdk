@@ -154,7 +154,7 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
 	if err != nil {
 		task.Error()
-		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
 
 		return nil, nil, err
 	}
@@ -196,7 +196,7 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
 	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
 	if err != nil {
-		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 

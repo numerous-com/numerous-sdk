@@ -24,7 +24,7 @@ type AppService interface {
 func shareApp(ctx context.Context, apps AppService, input Input) error {
 	ai, err := appident.GetAppIdentifier(input.AppDir, nil, input.OrgSlug, input.AppSlug)
 	if err != nil {
-		appident.PrintGetAppIdentiferError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
 		return err
 	}
 
