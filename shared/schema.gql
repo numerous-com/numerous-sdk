@@ -547,6 +547,7 @@ extend type Mutation {
     @canManageApp
     @trackAppOperation(eventName: "App Version Create from GitHub")
   appDeployShare(deployID: ID!): AppDeployment! @canManageApp
+  appDeployUnshare(deployID: ID!): AppDeployment! @canManageApp
 }
 
 extend type Subscription {
