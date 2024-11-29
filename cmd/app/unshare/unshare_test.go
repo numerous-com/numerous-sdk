@@ -1,4 +1,4 @@
-package share
+package unshare
 
 import (
 	"context"
@@ -10,31 +10,21 @@ import (
 	"numerous.com/cli/internal/appident"
 )
 
-func TestShare(t *testing.T) {
+func TestUnshare(t *testing.T) {
 	ctx := context.TODO()
 	appSlug := "app-slug"
 	organizationSlug := "organization-slug"
 	ai := appident.AppIdentifier{OrganizationSlug: organizationSlug, AppSlug: appSlug}
-	sharedURL := "https://test-numerous.com/share/123"
 	testErr := errors.New("test error")
 
 	t.Run("it calls app service with expected arguments", func(t *testing.T) {
 		m := mockAppService{}
-		m.On("ShareApp", ctx, ai).Once().Return(app.ShareAppOutput{SharedURL: &sharedURL}, nil)
+		m.On("UnshareApp", ctx, ai).Once().Return(nil)
 
-		err := shareApp(ctx, &m, Input{AppDir: "", AppSlug: appSlug, OrgSlug: organizationSlug})
+		err := unshareApp(ctx, &m, Input{AppDir: "", AppSlug: appSlug, OrgSlug: organizationSlug})
 
 		assert.NoError(t, err)
 		m.AssertExpectations(t)
-	})
-
-	t.Run("returns error if nil shared URL returned", func(t *testing.T) {
-		m := mockAppService{}
-		m.On("ShareApp", ctx, ai).Once().Return(app.ShareAppOutput{SharedURL: nil}, nil)
-
-		err := shareApp(ctx, &m, Input{AppDir: "", AppSlug: appSlug, OrgSlug: organizationSlug})
-
-		assert.ErrorIs(t, err, ErrEmptySharedURL)
 	})
 
 	t.Run("passes on error", func(t *testing.T) {
@@ -45,9 +35,9 @@ func TestShare(t *testing.T) {
 		} {
 			t.Run(expectedError.Error(), func(t *testing.T) {
 				m := mockAppService{}
-				m.On("ShareApp", ctx, ai).Once().Return(app.ShareAppOutput{}, expectedError)
+				m.On("UnshareApp", ctx, ai).Once().Return(expectedError)
 
-				err := shareApp(ctx, &m, Input{AppDir: "", AppSlug: appSlug, OrgSlug: organizationSlug})
+				err := unshareApp(ctx, &m, Input{AppDir: "", AppSlug: appSlug, OrgSlug: organizationSlug})
 
 				assert.ErrorIs(t, err, expectedError)
 			})
