@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.37.0 (2024-11-29)
+
+### Feature
+
+* feat(cli): `app unshare` command (#59) ([`f4ac04f`](https://github.com/numerous-com/numerous-sdk/commit/f4ac04f25b4a086fdffd89bdfa68403cf71d4f55))
+
+
+
+
 ## v0.36.0 (2024-11-28)
 
 ### Feature
