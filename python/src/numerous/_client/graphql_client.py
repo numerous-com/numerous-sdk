@@ -7,22 +7,25 @@ from typing import TYPE_CHECKING, BinaryIO
 
 import requests
 
+from numerous._client.graphql.collection_document import (
+    CollectionDocumentCollectionDocumentCollectionDocument,
+    CollectionDocumentCollectionDocumentCollectionDocumentNotFound,
+)
 from numerous.collections._client import (
-    CollectionDocumentReference,
+    CollectionDocumentIdentifier,
     CollectionFileIdentifier,
     CollectionIdentifier,
     Tag,
 )
+from numerous.collections.exceptions import ParentCollectionNotFoundError
 
-from .exceptions import ParentCollectionNotFoundError
 from .graphql import fragments
 from .graphql.collection_collections import (
     CollectionCollectionsCollectionCollection,
-    CollectionCollectionsCollectionCollectionCollectionsEdgesNode,
 )
-from .graphql.collection_document import (
-    CollectionDocumentCollectionCollectionDocument,
-    CollectionDocumentCollectionCollectionNotFound,
+from .graphql.collection_document_in_collection import (
+    CollectionDocumentInCollectionCollectionCollectionDocument,
+    CollectionDocumentInCollectionCollectionCollectionNotFound,
 )
 from .graphql.collection_documents import (
     CollectionDocumentsCollectionCollection,
@@ -109,20 +112,7 @@ class GraphQLClient:
         self._organization_id = organization_id
         self._headers = {"Authorization": f"Bearer {access_token}"}
 
-    def _create_collection_ref(
-        self,
-        collection_response: fragments.CollectionReference
-        | CollectionCollectionsCollectionCollectionCollectionsEdgesNode
-        | fragments.CollectionNotFound,
-    ) -> CollectionIdentifier:
-        if isinstance(collection_response, fragments.CollectionNotFound):
-            raise ParentCollectionNotFoundError(collection_id=collection_response.id)
-
-        return CollectionIdentifier(
-            id=collection_response.id, key=collection_response.key
-        )
-
-    async def _create_collection(
+    async def _collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionIdentifier:
         response = await self._gql.collection_create(
@@ -131,270 +121,30 @@ class GraphQLClient:
             parent_collection_id,
             headers=self._headers,
         )
-        return self._create_collection_ref(response.collection_create)
+        if isinstance(response.collection_create, fragments.CollectionNotFound):
+            raise ParentCollectionNotFoundError(
+                collection_id=response.collection_create.id
+            )
 
-    def get_collection_reference(
+        return CollectionIdentifier(
+            id=response.collection_create.id, key=response.collection_create.key
+        )
+
+    def collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionIdentifier:
         return self._loop.await_coro(
-            self._create_collection(collection_key, parent_collection_id)
+            self._collection_reference(collection_key, parent_collection_id)
         )
 
-    def _create_collection_document_ref(
-        self,
-        resp: CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument
-        | CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument
-        | CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument
-        | CollectionDocumentSetCollectionDocumentSetCollectionDocument
-        | CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound
-        | CollectionDocumentSetCollectionDocumentSetCollectionNotFound
-        | CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound
-        | CollectionDocumentCollectionCollectionDocument
-        | CollectionDocumentsCollectionCollectionDocumentsEdgesNode
-        | CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound  # noqa: E501
-        | None,
-    ) -> CollectionDocumentReference | None:
-        if isinstance(resp, fragments.CollectionDocumentReference):
-            return CollectionDocumentReference(
-                id=resp.id,
-                key=resp.key,
-                data=resp.data,
-                tags=[Tag(key=tag.key, value=tag.value) for tag in resp.tags],
-            )
-        return None
-
-    async def _get_collection_document(
-        self, collection_id: str, document_key: str
-    ) -> CollectionDocumentReference | None:
-        response = await self._gql.collection_document(
-            collection_id,
-            document_key,
-            headers=self._headers,
-        )
-        if isinstance(
-            response.collection,
-            CollectionDocumentCollectionCollectionNotFound,
-        ):
-            return None
-        if response.collection is None:
-            return None
-        return self._create_collection_document_ref(response.collection.document)
-
-    def get_collection_document(
-        self, collection_id: str, document_key: str
-    ) -> CollectionDocumentReference | None:
+    def collection_collections(
+        self, collection_key: str, end_cursor: str
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
         return self._loop.await_coro(
-            self._get_collection_document(collection_id, document_key)
+            self._collection_collections(collection_key, end_cursor)
         )
 
-    async def _set_collection_document(
-        self, collection_id: str, document_key: str, document_data: str
-    ) -> CollectionDocumentReference | None:
-        response = await self._gql.collection_document_set(
-            collection_id,
-            document_key,
-            document_data,
-            headers=self._headers,
-        )
-        return self._create_collection_document_ref(response.collection_document_set)
-
-    def set_collection_document(
-        self, collection_id: str, document_key: str, document_data: str
-    ) -> CollectionDocumentReference | None:
-        return self._loop.await_coro(
-            self._set_collection_document(collection_id, document_key, document_data)
-        )
-
-    async def _delete_collection_document(
-        self, document_id: str
-    ) -> CollectionDocumentReference | None:
-        response = await self._gql.collection_document_delete(
-            document_id, headers=self._headers
-        )
-        return self._create_collection_document_ref(response.collection_document_delete)
-
-    def delete_collection_document(
-        self, document_id: str
-    ) -> CollectionDocumentReference | None:
-        return self._loop.await_coro(self._delete_collection_document(document_id))
-
-    async def _add_collection_document_tag(
-        self, document_id: str, tag: TagInput
-    ) -> CollectionDocumentReference | None:
-        response = await self._gql.collection_document_tag_add(
-            document_id, tag, headers=self._headers
-        )
-        return self._create_collection_document_ref(
-            response.collection_document_tag_add
-        )
-
-    def add_collection_document_tag(
-        self, document_id: str, tag: Tag
-    ) -> CollectionDocumentReference | None:
-        return self._loop.await_coro(
-            self._add_collection_document_tag(document_id, _tag_input_strict(tag))
-        )
-
-    async def _delete_collection_document_tag(
-        self, document_id: str, tag_key: str
-    ) -> CollectionDocumentReference | None:
-        response = await self._gql.collection_document_tag_delete(
-            document_id, tag_key, headers=self._headers
-        )
-        return self._create_collection_document_ref(
-            response.collection_document_tag_delete
-        )
-
-    def delete_collection_document_tag(
-        self, document_id: str, tag_key: str
-    ) -> CollectionDocumentReference | None:
-        return self._loop.await_coro(
-            self._delete_collection_document_tag(document_id, tag_key)
-        )
-
-    async def _get_collection_documents(
-        self,
-        collection_id: str,
-        end_cursor: str,
-        tag_input: TagInput | None,
-    ) -> tuple[list[CollectionDocumentReference | None] | None, bool, str]:
-        response = await self._gql.collection_documents(
-            collection_id,
-            tag_input,
-            after=end_cursor,
-            first=COLLECTED_OBJECTS_NUMBER,
-            headers=self._headers,
-        )
-
-        collection = response.collection
-        if not isinstance(collection, CollectionDocumentsCollectionCollection):
-            return [], False, ""
-
-        documents = collection.documents
-        edges = documents.edges
-        page_info = documents.page_info
-
-        result = [self._create_collection_document_ref(edge.node) for edge in edges]
-
-        end_cursor = page_info.end_cursor or ""
-        has_next_page = page_info.has_next_page
-
-        return result, has_next_page, end_cursor
-
-    def get_collection_documents(
-        self, collection_id: str, end_cursor: str, tag: Tag | None
-    ) -> tuple[list[CollectionDocumentReference | None] | None, bool, str]:
-        return self._loop.await_coro(
-            self._get_collection_documents(collection_id, end_cursor, _tag_input(tag))
-        )
-
-    def _create_collection_files_ref(
-        self,
-        resp: (
-            CollectionFileCreateCollectionFileCreateCollectionFile
-            | CollectionFileCreateCollectionFileCreateCollectionNotFound
-            | CollectionFileDeleteCollectionFileDeleteCollectionFile
-            | CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound
-            | CollectionFilesCollectionCollectionFilesEdgesNode
-            | CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile
-            | CollectionFileTagAddCollectionFileTagAddCollectionFile
-            | CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound
-            | CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound
-            | None
-        ),
-    ) -> CollectionFileIdentifier | None:
-        if not isinstance(resp, fragments.CollectionFileReference):
-            return None
-
-        return CollectionFileIdentifier(key=resp.key, id=resp.id)
-
-    async def _create_collection_file_reference(
-        self, collection_id: str, file_key: str
-    ) -> CollectionFileIdentifier | None:
-        response = await self._gql.collection_file_create(
-            collection_id,
-            file_key,
-            headers=self._headers,
-        )
-        return self._create_collection_files_ref(response.collection_file_create)
-
-    def create_collection_file_reference(
-        self, collection_id: str, file_key: str
-    ) -> CollectionFileIdentifier | None:
-        return self._loop.await_coro(
-            self._create_collection_file_reference(collection_id, file_key)
-        )
-
-    def collection_file_tags(self, file_id: str) -> dict[str, str] | None:
-        file = self._collection_file(file_id)
-
-        if not isinstance(file, CollectionFileCollectionFileCollectionFile):
-            return None
-
-        return {tag.key: tag.value for tag in file.tags}
-
-    async def _delete_collection_file(self, file_id: str) -> None:
-        await self._gql.collection_file_delete(file_id, headers=self._headers)
-
-    def delete_collection_file(self, file_id: str) -> None:
-        self._loop.await_coro(self._delete_collection_file(file_id))
-
-    async def _get_collection_files(
-        self,
-        collection_id: str,
-        end_cursor: str,
-        tag: TagInput | None,
-    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
-        response = await self._gql.collection_files(
-            collection_id,
-            tag,
-            after=end_cursor,
-            first=COLLECTED_OBJECTS_NUMBER,
-            headers=self._headers,
-        )
-
-        collection = response.collection
-        if not isinstance(collection, CollectionFilesCollectionCollection):
-            return [], False, ""
-
-        files = collection.files
-        edges = files.edges
-        page_info = files.page_info
-
-        result: list[CollectionFileIdentifier] = []
-        for edge in edges:
-            if ref := self._create_collection_files_ref(edge.node):
-                result.append(ref)  # noqa: PERF401
-
-        end_cursor = page_info.end_cursor or ""
-        has_next_page = page_info.has_next_page
-
-        return result, has_next_page, end_cursor
-
-    def get_collection_files(
-        self, collection_id: str, end_cursor: str, tag: Tag | None
-    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
-        return self._loop.await_coro(
-            self._get_collection_files(collection_id, end_cursor, _tag_input(tag))
-        )
-
-    async def _add_collection_file_tag(self, file_id: str, tag: TagInput) -> None:
-        await self._gql.collection_file_tag_add(file_id, tag, headers=self._headers)
-
-    def add_collection_file_tag(self, file_id: str, tag: Tag) -> None:
-        self._loop.await_coro(
-            self._add_collection_file_tag(file_id, _tag_input_strict(tag))
-        )
-
-    async def _delete_collection_file_tag(self, file_id: str, tag_key: str) -> None:
-        await self._gql.collection_file_tag_delete(
-            file_id, tag_key, headers=self._headers
-        )
-
-    def delete_collection_file_tag(self, file_id: str, tag_key: str) -> None:
-        return self._loop.await_coro(self._delete_collection_file_tag(file_id, tag_key))
-
-    async def _get_collection_collections(
+    async def _collection_collections(
         self, collection_id: str, end_cursor: str
     ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
         response = await self._gql.collection_collections(
@@ -421,15 +171,253 @@ class GraphQLClient:
 
         return result, has_next_page, end_cursor
 
-    def get_collection_collections(
-        self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
+    def collection_documents(
+        self, collection_id: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]:
         return self._loop.await_coro(
-            self._get_collection_collections(collection_key, end_cursor)
+            self._collection_documents(collection_id, end_cursor, _tag_input(tag))
         )
 
-    def save_file(self, file_id: str, data: bytes | str) -> None:
-        file = self._collection_file(file_id)
+    async def _collection_documents(
+        self,
+        collection_id: str,
+        end_cursor: str,
+        tag_input: TagInput | None,
+    ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]:
+        response = await self._gql.collection_documents(
+            collection_id,
+            tag_input,
+            after=end_cursor,
+            first=COLLECTED_OBJECTS_NUMBER,
+            headers=self._headers,
+        )
+
+        collection = response.collection
+        if not isinstance(collection, CollectionDocumentsCollectionCollection):
+            return [], False, ""
+
+        documents = collection.documents
+        edges = documents.edges
+        page_info = documents.page_info
+
+        results: list[CollectionDocumentIdentifier] = []
+        for edge in edges:
+            result = self._document_identifier(edge.node)
+            if result is not None:
+                results.append(result)
+
+        end_cursor = page_info.end_cursor or ""
+        has_next_page = page_info.has_next_page
+
+        return results, has_next_page, end_cursor
+
+    def collection_files(
+        self, collection_id: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
+        return self._loop.await_coro(
+            self._collection_files(collection_id, end_cursor, _tag_input(tag))
+        )
+
+    async def _collection_files(
+        self,
+        collection_id: str,
+        end_cursor: str,
+        tag: TagInput | None,
+    ) -> tuple[list[CollectionFileIdentifier], bool, str]:
+        response = await self._gql.collection_files(
+            collection_id,
+            tag,
+            after=end_cursor,
+            first=COLLECTED_OBJECTS_NUMBER,
+            headers=self._headers,
+        )
+
+        collection = response.collection
+        if not isinstance(collection, CollectionFilesCollectionCollection):
+            return [], False, ""
+
+        files = collection.files
+        edges = files.edges
+        page_info = files.page_info
+
+        result: list[CollectionFileIdentifier] = []
+        for edge in edges:
+            if ref := self._file_identifier(edge.node):
+                result.append(ref)  # noqa: PERF401
+
+        end_cursor = page_info.end_cursor or ""
+        has_next_page = page_info.has_next_page
+
+        return result, has_next_page, end_cursor
+
+    def _document_identifier(
+        self,
+        resp: CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument
+        | CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocument
+        | CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument
+        | CollectionDocumentSetCollectionDocumentSetCollectionDocument
+        | CollectionDocumentTagAddCollectionDocumentTagAddCollectionDocumentNotFound
+        | CollectionDocumentSetCollectionDocumentSetCollectionNotFound
+        | CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound
+        | CollectionDocumentInCollectionCollectionCollectionDocument
+        | CollectionDocumentsCollectionCollectionDocumentsEdgesNode
+        | CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound  # noqa: E501
+        | None,
+    ) -> CollectionDocumentIdentifier | None:
+        if isinstance(resp, fragments.CollectionDocumentReference):
+            return CollectionDocumentIdentifier(id=resp.id, key=resp.key)
+        return None
+
+    def document_reference(
+        self, collection_id: str, document_key: str
+    ) -> CollectionDocumentIdentifier | None:
+        return self._loop.await_coro(
+            self._document_reference_create(collection_id, document_key)
+        )
+
+    async def _document_reference_create(
+        self, collection_id: str, document_key: str
+    ) -> CollectionDocumentIdentifier | None:
+        response = await self._gql.collection_document_in_collection(
+            collection_id,
+            document_key,
+            headers=self._headers,
+        )
+        if isinstance(
+            response.collection,
+            CollectionDocumentInCollectionCollectionCollectionNotFound,
+        ):
+            return None
+        if response.collection is None:
+            return None
+        return self._document_identifier(response.collection.document)
+
+    def document_exists(self, document_id: str) -> bool:
+        return self._document_query(document_id) is not None
+
+    def document_tags(self, document_id: str) -> dict[str, str] | None:
+        doc = self._document_query(document_id)
+        if doc is None:
+            return None
+
+        return {tag.key: tag.value for tag in doc.tags}
+
+    def _document_query(
+        self, document_id: str
+    ) -> CollectionDocumentCollectionDocumentCollectionDocument | None:
+        doc = self._loop.await_coro(
+            self._gql.collection_document(document_id, headers=self._headers)
+        )
+        if isinstance(
+            doc.collection_document,
+            CollectionDocumentCollectionDocumentCollectionDocumentNotFound,
+        ):
+            return None
+
+        return doc.collection_document
+
+    def document_set(
+        self, collection_id: str, document_key: str, document_data: str
+    ) -> None:
+        self._loop.await_coro(
+            self._gql.collection_document_set(
+                collection_id,
+                document_key,
+                document_data,
+                headers=self._headers,
+            )
+        )
+
+    def document_get(self, document_id: str) -> str | None:
+        doc = self._document_query(document_id)
+        return None if doc is None else doc.data
+
+    def document_delete(self, document_id: str) -> None:
+        self._loop.await_coro(
+            self._gql.collection_document_delete(document_id, headers=self._headers)
+        )
+
+    def document_tag_add(self, document_id: str, tag: Tag) -> None:
+        self._loop.await_coro(
+            self._gql.collection_document_tag_add(
+                document_id, _tag_input_strict(tag), headers=self._headers
+            )
+        )
+
+    def document_tag_delete(self, document_id: str, tag_key: str) -> None:
+        self._loop.await_coro(
+            self._gql.collection_document_tag_delete(
+                document_id, tag_key, headers=self._headers
+            )
+        )
+
+    def file_reference(
+        self, collection_id: str, file_key: str
+    ) -> CollectionFileIdentifier | None:
+        return self._loop.await_coro(
+            self._file_reference_create(collection_id, file_key)
+        )
+
+    async def _file_reference_create(
+        self, collection_id: str, file_key: str
+    ) -> CollectionFileIdentifier | None:
+        response = await self._gql.collection_file_create(
+            collection_id,
+            file_key,
+            headers=self._headers,
+        )
+        return self._file_identifier(response.collection_file_create)
+
+    def _file_identifier(
+        self,
+        resp: (
+            CollectionFileCreateCollectionFileCreateCollectionFile
+            | CollectionFileCreateCollectionFileCreateCollectionNotFound
+            | CollectionFileDeleteCollectionFileDeleteCollectionFile
+            | CollectionFileDeleteCollectionFileDeleteCollectionFileNotFound
+            | CollectionFilesCollectionCollectionFilesEdgesNode
+            | CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile
+            | CollectionFileTagAddCollectionFileTagAddCollectionFile
+            | CollectionFileTagAddCollectionFileTagAddCollectionFileNotFound
+            | CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound
+            | None
+        ),
+    ) -> CollectionFileIdentifier | None:
+        if not isinstance(resp, fragments.CollectionFileReference):
+            return None
+
+        return CollectionFileIdentifier(key=resp.key, id=resp.id)
+
+    def file_tags(self, file_id: str) -> dict[str, str] | None:
+        file = self._file_query(file_id)
+
+        if not isinstance(file, CollectionFileCollectionFileCollectionFile):
+            return None
+
+        return {tag.key: tag.value for tag in file.tags}
+
+    async def _file_delete(self, file_id: str) -> None:
+        await self._gql.collection_file_delete(file_id, headers=self._headers)
+
+    def file_delete(self, file_id: str) -> None:
+        self._loop.await_coro(self._file_delete(file_id))
+
+    async def _file_tag_add(self, file_id: str, tag: TagInput) -> None:
+        await self._gql.collection_file_tag_add(file_id, tag, headers=self._headers)
+
+    def file_tag_add(self, file_id: str, tag: Tag) -> None:
+        self._loop.await_coro(self._file_tag_add(file_id, _tag_input_strict(tag)))
+
+    async def _file_delete_tag(self, file_id: str, tag_key: str) -> None:
+        await self._gql.collection_file_tag_delete(
+            file_id, tag_key, headers=self._headers
+        )
+
+    def file_delete_tag(self, file_id: str, tag_key: str) -> None:
+        return self._loop.await_coro(self._file_delete_tag(file_id, tag_key))
+
+    def file_save(self, file_id: str, data: bytes | str) -> None:
+        file = self._file_query(file_id)
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound
         ):
@@ -452,16 +440,16 @@ class GraphQLClient:
         )
         response.raise_for_status()
 
-    def read_text(self, file_id: str) -> str:
-        return self._request_file(file_id).text
+    def file_read_text(self, file_id: str) -> str:
+        return self._file_download(file_id).text
 
-    def read_bytes(self, file_id: str) -> bytes:
-        return self._request_file(file_id).content
+    def file_read_bytes(self, file_id: str) -> bytes:
+        return self._file_download(file_id).content
 
-    def open_file(self, file_id: str) -> BinaryIO:
-        return io.BytesIO(self._request_file(file_id).content)
+    def file_open(self, file_id: str) -> BinaryIO:
+        return io.BytesIO(self._file_download(file_id).content)
 
-    def _collection_file(
+    def _file_query(
         self, file_id: str
     ) -> (
         CollectionFileCollectionFileCollectionFileNotFound
@@ -472,8 +460,8 @@ class GraphQLClient:
             self._gql.collection_file(file_id, headers=self._headers)
         ).collection_file
 
-    def _request_file(self, file_id: str) -> requests.Response:
-        file = self._collection_file(file_id)
+    def _file_download(self, file_id: str) -> requests.Response:
+        file = self._file_query(file_id)
 
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound
@@ -491,7 +479,7 @@ class GraphQLClient:
         return response
 
     def file_exists(self, file_id: str) -> bool:
-        file = self._collection_file(file_id)
+        file = self._file_query(file_id)
 
         if file is None or isinstance(
             file, CollectionFileCollectionFileCollectionFileNotFound

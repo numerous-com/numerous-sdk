@@ -11,11 +11,16 @@ from .base_model import BaseModel
 class CollectionDocumentReference(BaseModel):
     id: str
     key: str
+
+
+class CollectionDocumentWithData(BaseModel):
+    id: str
+    key: str
     data: Any
-    tags: List["CollectionDocumentReferenceTags"]
+    tags: List["CollectionDocumentWithDataTags"]
 
 
-class CollectionDocumentReferenceTags(BaseModel):
+class CollectionDocumentWithDataTags(BaseModel):
     key: str
     value: str
 
@@ -47,6 +52,7 @@ class CollectionReference(BaseModel):
 
 
 CollectionDocumentReference.model_rebuild()
+CollectionDocumentWithData.model_rebuild()
 CollectionFileNotFound.model_rebuild()
 CollectionFileReference.model_rebuild()
 CollectionNotFound.model_rebuild()

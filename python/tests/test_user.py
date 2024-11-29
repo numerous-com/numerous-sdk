@@ -4,8 +4,7 @@ from unittest.mock import Mock, call
 
 import pytest
 
-from numerous._client.graphql.fragments import CollectionReference
-from numerous.collections._client import Client
+from numerous.collections._client import Client, CollectionIdentifier
 from numerous.session.user import User
 
 
@@ -25,20 +24,20 @@ def _set_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def client() -> Mock:
-    def mock_get_collection_reference(
+    def mock_collection_reference(
         collection_key: str, parent_collection_id: str | None = None
-    ) -> CollectionReference:
+    ) -> CollectionIdentifier:
         ref = (collection_key, parent_collection_id)
         if ref == (TEST_USER_COLLECTION_KEY, None):
-            return CollectionReference(
+            return CollectionIdentifier(
                 id=TEST_USER_COLLECTION_ID, key=TEST_USER_COLLECTION_KEY
             )
         if ref == (TEST_USER_ID, TEST_USER_COLLECTION_ID):
-            return CollectionReference(id=TEST_USER_ID, key=TEST_COLLECTION_KEY)
+            return CollectionIdentifier(id=TEST_USER_ID, key=TEST_COLLECTION_KEY)
         pytest.fail("unexpected mock call")
 
     client = Mock(Client)
-    client.get_collection_reference.side_effect = mock_get_collection_reference
+    client.collection_reference.side_effect = mock_collection_reference
 
     return client
 
@@ -56,7 +55,7 @@ def test_user_collection_property_makes_expected_calls(client: Mock) -> None:
 
     user.collection  # noqa: B018
 
-    client.get_collection_reference.assert_has_calls(
+    client.collection_reference.assert_has_calls(
         [
             call("users"),
             call(

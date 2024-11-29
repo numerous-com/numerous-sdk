@@ -1,14 +1,14 @@
 import pytest
 
-from numerous._client.get_client import get_client
 from numerous._client.graphql_client import GraphQLClient
+from numerous.collections._get_client import get_client
 
 
 @pytest.fixture(autouse=True)
 def _clear_client() -> None:
-    import numerous._client.get_client
+    import numerous.collections._get_client
 
-    numerous._client.get_client._client = None  # noqa: SLF001
+    numerous.collections._get_client._client = None  # noqa: SLF001
 
 
 def test_given_graphql_environment_variables_returns_graphql_client(
