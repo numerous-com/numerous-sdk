@@ -271,25 +271,25 @@ class GraphQLClient:
     def document_reference(
         self, collection_id: str, document_key: str
     ) -> CollectionDocumentIdentifier | None:
-        return self._loop.await_coro(
-            self._document_reference_create(collection_id, document_key)
-        )
-
-    async def _document_reference_create(
-        self, collection_id: str, document_key: str
-    ) -> CollectionDocumentIdentifier | None:
-        response = await self._gql.collection_document_in_collection(
-            collection_id,
-            document_key,
-            headers=self._headers,
+        response = self._loop.await_coro(
+            self._gql.collection_document_in_collection(
+                collection_id,
+                document_key,
+                headers=self._headers,
+            )
         )
         if isinstance(
             response.collection,
             CollectionDocumentInCollectionCollectionCollectionNotFound,
         ):
-            return None
+            raise ParentCollectionNotFoundError(collection_id=response.collection.id)
+
         if response.collection is None:
+            raise ParentCollectionNotFoundError(collection_id=collection_id)
+
+        if response.collection.document is None:
             return None
+
         return self._document_identifier(response.collection.document)
 
     def document_exists(self, document_id: str) -> bool:

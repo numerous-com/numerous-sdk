@@ -19,6 +19,7 @@ from numerous._client.graphql.input_types import TagInput
 from numerous._utils.jsonbase64 import dict_to_base64
 from numerous.collections import collection
 from numerous.collections._client import Client
+from numerous.collections.document_reference import DocumentDoesNotExistError
 
 
 ORGANIZATION_ID = "test-organization-id"
@@ -92,6 +93,17 @@ def _collection_document_in_collection(
                     "id": doc_id,
                     "key": key,
                 },
+            }
+        }
+    )
+
+
+def _collection_document_in_collection_missing() -> CollectionDocumentInCollection:
+    return CollectionDocumentInCollection.model_validate(
+        {
+            "collection": {
+                "__typename": "Collection",
+                "document": None,
             }
         }
     )
@@ -186,6 +198,25 @@ def test_set_calls_client(gql: Mock, client: Client) -> None:
     )
 
 
+def test_get_returns_none_for_nonexisting_document(gql: Mock, client: Client) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection_missing()
+    )
+    gql.collection_document.return_value = _collection_document(
+        DOCUMENT_ID, DOCUMENT_KEY, DOCUMENT_DATA_ENCODED, []
+    )
+    col = collection(COLLECTION_KEY, client)
+    doc = col.document(DOCUMENT_KEY)
+
+    result = doc.get()
+
+    assert result is None
+    gql.collection_document.assert_not_called()
+
+
 def test_get_makes_expected_calls(gql: Mock, client: Client) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_KEY, COLLECTION_ID
@@ -243,6 +274,24 @@ def test_delete_calls_client(gql: Mock, client: Client) -> None:
     )
 
 
+def test_delete_for_nonexisting_raises_document_does_not_exist(
+    gql: Mock, client: Client
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection_missing()
+    )
+    col = collection(COLLECTION_KEY, client)
+    document = col.document(DOCUMENT_KEY)
+
+    with pytest.raises(DocumentDoesNotExistError):
+        document.delete()
+
+    gql.collection_document_delete.assert_not_called()
+
+
 def test_tag_add_calls_client(gql: Mock, client: Client) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_KEY, COLLECTION_ID
@@ -251,19 +300,40 @@ def test_tag_add_calls_client(gql: Mock, client: Client) -> None:
         _collection_document_in_collection(DOCUMENT_ID, DOCUMENT_KEY)
     )
     col = collection(COLLECTION_KEY, client)
-    document = col.document(DOCUMENT_KEY)
+    doc = col.document(DOCUMENT_KEY)
     gql.collection_document_tag_add.return_value = _collection_document_tag_add_found(
-        document.id
+        DOCUMENT_ID
     )
 
-    document.tag("key", "test")
+    doc.tag("key", "test")
 
     gql.collection_document_tag_add.assert_called_once_with(
         DOCUMENT_ID, TagInput(key="key", value="test"), **HEADERS_WITH_AUTHORIZATION
     )
 
 
-def test_tag_delete(gql: Mock, client: Client) -> None:
+def test_tag_add_for_nonexisting_raises_document_does_not_exist(
+    gql: Mock, client: Client
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection_missing()
+    )
+    col = collection(COLLECTION_KEY, client)
+    doc = col.document(DOCUMENT_KEY)
+    gql.collection_document_tag_add.return_value = _collection_document_tag_add_found(
+        DOCUMENT_ID
+    )
+
+    with pytest.raises(DocumentDoesNotExistError):
+        doc.tag("key", "test")
+
+    gql.collection_document_tag_add.assert_not_called()
+
+
+def test_tag_delete_calls_client(gql: Mock, client: Client) -> None:
     gql.collection_create.return_value = _collection_create_collection_reference(
         COLLECTION_KEY, COLLECTION_ID
     )
@@ -279,7 +349,67 @@ def test_tag_delete(gql: Mock, client: Client) -> None:
 
     document.tag_delete("key")
 
-    assert document.tags == {}
     gql.collection_document_tag_delete.assert_called_once_with(
         DOCUMENT_ID, "key", **HEADERS_WITH_AUTHORIZATION
     )
+
+
+def test_tag_delete_for_nonexisting_raises_document_does_not_exist(
+    gql: Mock, client: Client
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection_missing()
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    doc = col.document(DOCUMENT_KEY)
+
+    with pytest.raises(DocumentDoesNotExistError):
+        doc.tag_delete("key")
+
+    gql.collection_document_tag_delete.assert_not_called()
+
+
+def test_tags_returns_expected_tags(gql: Mock, client: Client) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection(DOCUMENT_ID, DOCUMENT_KEY)
+    )
+    gql.collection_document.return_value = _collection_document(
+        DOCUMENT_ID,
+        DOCUMENT_KEY,
+        DOCUMENT_DATA_ENCODED,
+        [{"key": "tag-1", "value": "value-1"}, {"key": "tag-2", "value": "value-2"}],
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    document = col.document(DOCUMENT_KEY)
+
+    tags = document.tags
+
+    assert tags == {"tag-1": "value-1", "tag-2": "value-2"}
+    gql.collection_document.assert_called_once_with(
+        DOCUMENT_ID, **HEADERS_WITH_AUTHORIZATION
+    )
+
+
+def test_tags_for_nonexisting_document_returns_empty_dict(
+    gql: Mock, client: Client
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_document_in_collection.return_value = (
+        _collection_document_in_collection_missing()
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    doc = col.document(DOCUMENT_KEY)
+
+    assert doc.tags == {}
+    gql.collection_document.assert_not_called()

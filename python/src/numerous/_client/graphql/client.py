@@ -178,6 +178,9 @@ class Client(AsyncBaseClient):
                     }
                   }
                 }
+                ... on CollectionNotFound {
+                  id
+                }
               }
             }
 

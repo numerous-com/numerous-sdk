@@ -34,6 +34,7 @@ class CollectionDocumentInCollectionCollectionCollectionDocument(
 
 class CollectionDocumentInCollectionCollectionCollectionNotFound(BaseModel):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+    id: str
 
 
 CollectionDocumentInCollection.model_rebuild()

@@ -14,8 +14,14 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class DocumentDoesNotExistError(Exception):
+    collection_id: str
+    key: str
+
+
+@dataclass
 class DocumentReference:
-    id: str
+    id: str | None
     key: str
     collection_id: str
     collection_key: str
@@ -24,12 +30,28 @@ class DocumentReference:
     @property
     def exists(self) -> bool:
         """True if the document exists, False otherwise."""
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return False
+
         return self._client.document_exists(self.id)
+
+    def _set_id_if_reference_exists(self) -> None:
+        if self.id is not None:
+            return
+
+        ref = self._client.document_reference(self.collection_id, self.key)
+        if ref is not None:
+            self.id = ref.id
 
     @property
     def tags(self) -> dict[str, str]:
         """Get the tags for the document."""
-        return self._client.file_tags(self.id) or {}
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return {}
+
+        return self._client.document_tags(self.id) or {}
 
     def set(self, data: dict[str, Any]) -> None:
         """
@@ -53,13 +75,24 @@ class DocumentReference:
             dict[str, Any] | None: The data of the document if it is set.
 
         """
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return None
+
         data = self._client.document_get(self.id)
         if data is None:
             return None
+
         return base64_to_dict(data)
 
     def delete(self) -> None:
         """Delete the referenced document."""
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
+            )
+
         self._client.document_delete(self.id)
 
     def tag(self, key: str, value: str) -> None:
@@ -71,6 +104,12 @@ class DocumentReference:
             value (str): The tag value.
 
         """
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
+            )
+
         self._client.document_tag_add(self.id, Tag(key=key, value=value))
 
     def tag_delete(self, tag_key: str) -> None:
@@ -81,4 +120,10 @@ class DocumentReference:
             tag_key (str): The key of the tag to delete.
 
         """
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
+            )
+
         self._client.document_tag_delete(self.id, tag_key)

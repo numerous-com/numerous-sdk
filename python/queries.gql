@@ -98,7 +98,13 @@ query CollectionDocumentInCollection($collectionID: ID!, $docKey: ID!) {
         ... on CollectionDocument {
           ...CollectionDocumentReference
         }
+        ... on CollectionDocumentNotFound {
+          ...CollectionDocumentNotFound
+        }
       }
+    }
+    ... on CollectionNotFound {
+      id
     }
   }
 }

@@ -322,7 +322,7 @@ def test_collection_documents_returns_expected_documents(
     col = collection(COLLECTION_KEY, client)
 
     result = list(col.documents())
-    actual_doc_refs = [(d.id, d.key) for d in sorted(result, key=lambda d: d.id)]
+    actual_doc_refs = [(d.id, d.key) for d in sorted(result, key=lambda d: d.key)]
 
     assert expected_doc_refs == actual_doc_refs
     gql.collection_documents.assert_called_once_with(

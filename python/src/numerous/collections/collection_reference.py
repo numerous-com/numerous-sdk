@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Generator
 
 from numerous.collections._client import CollectionDocumentIdentifier, Tag
 from numerous.collections.document_reference import DocumentReference
-from numerous.collections.exceptions import ParentCollectionNotFoundError
 from numerous.collections.file_reference import FileReference
 
 
@@ -58,16 +57,22 @@ class CollectionReference:
         """
         doc_ref = self._client.document_reference(self.id, key)
         if doc_ref is None:
-            raise ParentCollectionNotFoundError(self.id)
+            return self._document_reference(doc_id=None, doc_key=key)
+        return self._document_reference_from_identifier(doc_ref)
 
-        return self._document_reference(doc_ref)
+    def _document_reference_from_identifier(
+        self, doc_ref: CollectionDocumentIdentifier
+    ) -> DocumentReference:
+        return self._document_reference(doc_ref.id, doc_ref.key)
 
     def _document_reference(
-        self, col_doc_ref: CollectionDocumentIdentifier
+        self,
+        doc_id: str | None,
+        doc_key: str,
     ) -> DocumentReference:
         return DocumentReference(
-            id=col_doc_ref.id,
-            key=col_doc_ref.key,
+            id=doc_id,
+            key=doc_key,
             collection_id=self.id,
             collection_key=self.key,
             _client=self._client,
@@ -164,7 +169,7 @@ class CollectionReference:
             for doc_ref in doc_refs:
                 if doc_ref is None:
                     continue
-                yield self._document_reference(doc_ref)
+                yield self._document_reference_from_identifier(doc_ref)
 
     def collections(self) -> Generator[CollectionReference, None, None]:
         """
