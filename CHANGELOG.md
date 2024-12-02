@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.37.1 (2024-12-02)
+
+### Fix
+
+* fix(python-sdk): stateless document references (#60) ([`77c635e`](https://github.com/numerous-com/numerous-sdk/commit/77c635eb4b5f54e84367e643fc73eeb4357d2042))
+
+  > 
+  > Document references are now stateless, and `exists`, `get`, and `tags` return values relevant at the time of the property access or method call rather than at the time of the reference being created.
+
+
+
+
 ## v0.37.0 (2024-11-29)
 
 ### Feature
