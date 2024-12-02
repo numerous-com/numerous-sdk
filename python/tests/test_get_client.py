@@ -1,5 +1,6 @@
 import pytest
 
+from numerous._client.fs_client import FileSystemClient
 from numerous._client.graphql_client import GraphQLClient
 from numerous.collections._get_client import get_client
 
@@ -33,3 +34,15 @@ def test_given_graphql_environment_variables_without_url_returns_graphql_client(
     client = get_client()
 
     assert isinstance(client, GraphQLClient)
+
+
+def test_given_no_graphql_environment_variables_returns_filesystem_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NUMEROUS_API_URL", raising=False)
+    monkeypatch.delenv("NUMEROUS_API_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("NUMEROUS_ORGANIZATION_ID", raising=False)
+
+    client = get_client()
+
+    assert isinstance(client, FileSystemClient)
