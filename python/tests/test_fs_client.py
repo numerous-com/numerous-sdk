@@ -9,7 +9,7 @@ import pytest
 from numerous._client.fs_client import FileSystemClient
 from numerous._utils.jsonbase64 import dict_to_base64
 from numerous.collections._client import (
-    CollectionDocumentReference,
+    CollectionDocumentIdentifier,
     CollectionIdentifier,
     Tag,
 )
@@ -48,7 +48,7 @@ def client(base_path: Path) -> FileSystemClient:
     return FileSystemClient(base_path)
 
 
-def test_get_document_returns_expected_existing_document_reference(
+def test_document_reference_returns_expected_existing_document_reference(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = {"field1": 123, "field2": "text"}
@@ -60,20 +60,15 @@ def test_get_document_returns_expected_existing_document_reference(
         base_path / _TEST_COLLECTION_KEY, _TEST_DOCUMENT_KEY, data=data, tags=tags
     )
 
-    doc = client.get_collection_document(TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY)
+    doc = client.document_reference(TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY)
 
-    assert doc == CollectionDocumentReference(
+    assert doc == CollectionDocumentIdentifier(
         id=str(Path(_TEST_COLLECTION_KEY) / _TEST_DOCUMENT_KEY),
         key=_TEST_DOCUMENT_KEY,
-        data=dict_to_base64(data),
-        tags=[
-            Tag(key="tag-1-key", value="tag-1-value"),
-            Tag(key="tag-2-key", value="tag-2-value"),
-        ],
     )
 
 
-def test_get_document_returns_expected_nested_existing_document_reference(
+def test_document_reference_returns_expected_nested_document_reference(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = {"field1": 123, "field2": "text"}
@@ -88,25 +83,20 @@ def test_get_document_returns_expected_nested_existing_document_reference(
         tags=tags,
     )
 
-    doc = client.get_collection_document(_TEST_NESTED_COLLECTION_ID, _TEST_DOCUMENT_KEY)
+    doc = client.document_reference(_TEST_NESTED_COLLECTION_ID, _TEST_DOCUMENT_KEY)
 
-    assert doc == CollectionDocumentReference(
+    assert doc == CollectionDocumentIdentifier(
         id=str(Path(_TEST_NESTED_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
         key=_TEST_DOCUMENT_KEY,
-        data=dict_to_base64(data),
-        tags=[
-            Tag(key="tag-1-key", value="tag-1-value"),
-            Tag(key="tag-2-key", value="tag-2-value"),
-        ],
     )
 
 
-def test_get_document_returns_expected_none_for_nonexisting_document(
+def test_document_reference_returns_none_for_nonexisting_document(
     client: FileSystemClient, base_path: Path
 ) -> None:
     (base_path / _TEST_COLLECTION_KEY).mkdir()
 
-    doc = client.get_collection_document(TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY)
+    doc = client.document_reference(TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY)
 
     assert doc is None
 
@@ -118,12 +108,8 @@ def test_set_document_creates_expected_file(
     (base_path / _TEST_COLLECTION_KEY).mkdir()
 
     encoded_data = dict_to_base64(data)
-    doc = client.set_collection_document(
-        TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY, encoded_data
-    )
+    client.document_set(TEST_COLLECTION_ID, _TEST_DOCUMENT_KEY, encoded_data)
 
-    assert doc is not None
-    assert doc.data == dict_to_base64(data)
     stored_doc_path = (
         base_path / _TEST_COLLECTION_KEY / f"{_TEST_DOCUMENT_KEY}.doc.json"
     )
@@ -131,7 +117,27 @@ def test_set_document_creates_expected_file(
     assert stored_doc_path.read_text() == json.dumps({"data": data, "tags": []})
 
 
-def test_delete_collection_document_removes_expected_file(
+def test_document_get_returns_none_for_nonexisting_file(
+    client: FileSystemClient,
+) -> None:
+    assert client.document_get("nonexisting-doc-id") is None
+
+
+def test_document_get_returns_expected_data_for_existing_file(
+    client: FileSystemClient, base_path: Path
+) -> None:
+    data = {"field1": 123, "field2": "text"}
+    _create_test_document(
+        base_path / _TEST_COLLECTION_KEY, _TEST_DOCUMENT_KEY, data=data, tags=[]
+    )
+    doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
+
+    actual = client.document_get(doc_id)
+
+    assert actual == dict_to_base64(data)
+
+
+def test_document_delete_removes_expected_file(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = {"field1": 123, "field2": "text"}
@@ -140,28 +146,20 @@ def test_delete_collection_document_removes_expected_file(
     )
 
     doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
-    doc = client.delete_collection_document(doc_id)
+    client.document_delete(doc_id)
 
     doc_path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_DOCUMENT_KEY}.doc.json"
     assert doc_path.exists() is False
-    assert doc == CollectionDocumentReference(
-        id=doc_id,
-        data=dict_to_base64(data),
-        key=_TEST_DOCUMENT_KEY,
-        tags=[],
-    )
 
 
-def test_delete_collection_document_for_nonexisting_returns_none(
+def test_document_delete_for_nonexisting_succeeds(
     client: FileSystemClient,
 ) -> None:
     doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
-    doc = client.delete_collection_document(doc_id)
-
-    assert doc is None
+    client.document_delete(doc_id)
 
 
-def test_add_collection_document_tag_adds_expected_tag(
+def test_document_tag_add_adds_expected_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
     data = {"field1": 123, "field2": "text"}
@@ -173,9 +171,7 @@ def test_add_collection_document_tag_adds_expected_tag(
     )
 
     doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
-    client.add_collection_document_tag(
-        doc_id, Tag(key="added-tag-key", value="added-tag-value")
-    )
+    client.document_tag_add(doc_id, Tag(key="added-tag-key", value="added-tag-value"))
 
     doc_path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_DOCUMENT_KEY}.doc.json"
     assert json.loads(doc_path.read_text())["tags"] == [
@@ -184,7 +180,7 @@ def test_add_collection_document_tag_adds_expected_tag(
     ]
 
 
-def test_delete_collection_document_tag_deletes_expected_tag(
+def test_document_tag_delete_deletes_expected_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
     data = {"field1": 123, "field2": "text"}
@@ -199,7 +195,7 @@ def test_delete_collection_document_tag_deletes_expected_tag(
     )
 
     doc_id = str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY)
-    client.delete_collection_document_tag(doc_id, "tag-to-be-deleted-key")
+    client.document_tag_delete(doc_id, "tag-to-be-deleted-key")
 
     doc_path = base_path / _TEST_COLLECTION_KEY / f"{_TEST_DOCUMENT_KEY}.doc.json"
     assert json.loads(doc_path.read_text())["tags"] == [
@@ -207,7 +203,7 @@ def test_delete_collection_document_tag_deletes_expected_tag(
     ]
 
 
-def test_get_collection_documents_returns_all_documents(
+def test_collection_documents_returns_all_documents(
     base_path: Path, client: FileSystemClient
 ) -> None:
     test_data = {"name": "test document"}
@@ -221,36 +217,27 @@ def test_get_collection_documents_returns_all_documents(
         data=test_another_data,
         tags=[],
     )
-    expected_number_of_files = 2
 
-    result, has_next_page, end_cursor = client.get_collection_documents(
+    result, has_next_page, end_cursor = client.collection_documents(
         _TEST_COLLECTION_KEY, "", None
     )
 
-    assert (
-        CollectionDocumentReference(
+    expected = [
+        CollectionDocumentIdentifier(
             id=str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
             key=_TEST_DOCUMENT_KEY,
-            data=dict_to_base64(test_data),
-            tags=[],
-        )
-        in result
-    )
-    assert (
-        CollectionDocumentReference(
+        ),
+        CollectionDocumentIdentifier(
             id=str(Path(TEST_COLLECTION_ID) / _TEST_ANOTHER_DOCUMENT_KEY),
             key=_TEST_ANOTHER_DOCUMENT_KEY,
-            data=dict_to_base64(test_another_data),
-            tags=[],
-        )
-        in result
-    )
-    assert len(result) == expected_number_of_files
+        ),
+    ]
+    assert sorted(result, key=lambda d: d.key, reverse=True) == expected
     assert has_next_page is False
     assert end_cursor == ""
 
 
-def test_get_collection_documents_returns_documents_with_tag(
+def test_collection_documents_returns_documents_with_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
     test_tagged_data = {"name": "test document"}
@@ -268,32 +255,30 @@ def test_get_collection_documents_returns_documents_with_tag(
         tags=[],
     )
 
-    result, has_next_page, end_cursor = client.get_collection_documents(
+    result, has_next_page, end_cursor = client.collection_documents(
         _TEST_COLLECTION_KEY,
         "",
         Tag(key="tag-key", value="tag-value"),
     )
 
     assert result == [
-        CollectionDocumentReference(
+        CollectionDocumentIdentifier(
             id=str(Path(TEST_COLLECTION_ID) / _TEST_DOCUMENT_KEY),
             key=_TEST_DOCUMENT_KEY,
-            data=dict_to_base64(test_tagged_data),
-            tags=[Tag(key="tag-key", value="tag-value")],
         ),
     ]
     assert has_next_page is False
     assert end_cursor == ""
 
 
-def test_get_collection_collections_returns_expected_collections(
+def test_collection_collections_returns_expected_collections(
     base_path: Path, client: FileSystemClient
 ) -> None:
     (base_path / TEST_COLLECTION_ID).mkdir()
     (base_path / _TEST_NESTED_COLLECTION_ID).mkdir()
     (base_path / _TEST_ANOTHER_NESTED_COLLECTION_ID).mkdir()
 
-    collections, has_next_page, end_cursor = client.get_collection_collections(
+    collections, has_next_page, end_cursor = client.collection_collections(
         _TEST_COLLECTION_KEY, ""
     )
     expected_number_of_files = 2
@@ -322,7 +307,7 @@ def test_get_collection_file_returns_expected_existing_file_reference(
     data = "File content 1;2;3;4;\n1;2;3;4"
     _create_test_file(base_path, data=data)
 
-    file = client.create_collection_file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
+    file = client.file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
 
     assert file is not None
     assert file.id == TEST_FILE_ID
@@ -334,13 +319,13 @@ def test_get_collection_file_returns_expected_nonexisting_file_reference(
 ) -> None:
     (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
 
-    file = client.create_collection_file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
+    file = client.file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
 
     assert file is not None
     assert file.key == TEST_FILE_KEY
 
 
-def test_get_collection_files_returns_all_files(
+def test_collection_files_returns_all_files(
     base_path: Path, client: FileSystemClient
 ) -> None:
     test_files = {
@@ -352,7 +337,7 @@ def test_get_collection_files_returns_all_files(
             base_path, TEST_COLLECTION_ID, file_key, file_id, "file content"
         )
 
-    result, has_next_page, end_cursor = client.get_collection_files(
+    result, has_next_page, end_cursor = client.collection_files(
         TEST_COLLECTION_ID, "", None
     )
 
@@ -363,7 +348,7 @@ def test_get_collection_files_returns_all_files(
     assert end_cursor == ""
 
 
-def test_delete_collection_file_removes_expected_file(
+def test_file_delete_removes_expected_file(
     client: FileSystemClient, base_path: Path
 ) -> None:
     data = "File content 1;2;3;4;\n1;2;3;4"
@@ -371,33 +356,29 @@ def test_delete_collection_file_removes_expected_file(
     data_path = base_path / _TEST_COLLECTION_KEY / f"{TEST_FILE_KEY}.file.data"
     meta_path = base_path / _TEST_COLLECTION_KEY / f"{TEST_FILE_KEY}.file.meta.json"
 
-    client.delete_collection_file(TEST_FILE_ID)
+    client.file_delete(TEST_FILE_ID)
 
     assert meta_path.exists() is False
     assert data_path.exists() is False
 
 
-def test_add_collection_file_tag_adds_expected_tag(
+def test_file_tag_add_adds_expected_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
     data = "File content 1;2;3;4;\n1;2;3;4"
     tags = [{"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"}]
-
     _create_test_file(base_path, data=data, tags=tags)
 
+    client.file_tag_add(TEST_FILE_ID, Tag(key="added-tag-key", value="added-tag-value"))
+
     meta_path = base_path / _TEST_COLLECTION_KEY / f"{TEST_FILE_KEY}.file.meta.json"
-
-    client.add_collection_file_tag(
-        TEST_FILE_ID, Tag(key="added-tag-key", value="added-tag-value")
-    )
-
     assert json.loads(meta_path.read_text())["tags"] == [
         {"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"},
         {"key": "added-tag-key", "value": "added-tag-value"},
     ]
 
 
-def test_delete_collection_file_tag_deletes_expected_tag(
+def test_file_delete_tag_deletes_expected_tag(
     base_path: Path, client: FileSystemClient
 ) -> None:
     data = "File content 1;2;3;4;\n1;2;3;4"
@@ -407,7 +388,7 @@ def test_delete_collection_file_tag_deletes_expected_tag(
     ]
     _create_test_file(base_path, data=data, tags=tags)
 
-    client.delete_collection_file_tag(TEST_FILE_ID, "tag-to-be-deleted-key")
+    client.file_delete_tag(TEST_FILE_ID, "tag-to-be-deleted-key")
 
     meta_path = base_path / TEST_COLLECTION_ID / f"{TEST_FILE_KEY}.file.meta.json"
     assert json.loads(meta_path.read_text())["tags"] == [
@@ -434,13 +415,13 @@ def test_file_exists_returns_false_for_nonexisting_referenced_file(
     client: FileSystemClient,
 ) -> None:
     (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
-    f = client.create_collection_file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
+    f = client.file_reference(TEST_COLLECTION_ID, TEST_FILE_KEY)
 
     assert f is not None
     assert client.file_exists(f.id) is False
 
 
-def test_collection_file_tags_returns_expected_tags(
+def test_file_tags_returns_expected_tags(
     base_path: Path, client: FileSystemClient
 ) -> None:
     _create_test_file(
@@ -451,15 +432,15 @@ def test_collection_file_tags_returns_expected_tags(
         ],
     )
 
-    tags = client.collection_file_tags(TEST_FILE_ID)
+    tags = client.file_tags(TEST_FILE_ID)
 
     assert tags == {"tag-1": "value-1", "tag-2": "value-2"}
 
 
-def test_collection_file_tags_returns_non_for_nonexisting_file(
+def test_file_tags_returns_non_for_nonexisting_file(
     client: FileSystemClient,
 ) -> None:
-    assert client.collection_file_tags(TEST_FILE_ID) is None
+    assert client.file_tags(TEST_FILE_ID) is None
 
 
 def _create_test_document(

@@ -6,6 +6,11 @@ fragment CollectionReference on Collection {
 fragment CollectionDocumentReference on CollectionDocument {
   id
   key
+}
+
+fragment CollectionDocumentWithData on CollectionDocument {
+  id
+  key
   data
   tags {
     key
@@ -75,7 +80,16 @@ query CollectionCollections(
   }
 }
 
-query CollectionDocument($collectionID: ID!, $docKey: ID!) {
+query CollectionDocument($id: ID!) {
+  collectionDocument(id: $id) {
+    __typename
+    ... on CollectionDocument {
+      ...CollectionDocumentWithData
+    }
+  }
+}
+
+query CollectionDocumentInCollection($collectionID: ID!, $docKey: ID!) {
   collection(id: $collectionID) {
     __typename
     ... on Collection {
@@ -84,7 +98,13 @@ query CollectionDocument($collectionID: ID!, $docKey: ID!) {
         ... on CollectionDocument {
           ...CollectionDocumentReference
         }
+        ... on CollectionDocumentNotFound {
+          ...CollectionDocumentNotFound
+        }
       }
+    }
+    ... on CollectionNotFound {
+      id
     }
   }
 }

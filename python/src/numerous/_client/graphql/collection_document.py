@@ -6,33 +6,29 @@ from typing import Annotated, Literal, Optional, Union
 from pydantic import Field
 
 from .base_model import BaseModel
-from .fragments import CollectionDocumentReference
+from .fragments import CollectionDocumentWithData
 
 
 class CollectionDocument(BaseModel):
-    collection: Optional[
+    collection_document: Optional[
         Annotated[
             Union[
-                "CollectionDocumentCollectionCollection",
-                "CollectionDocumentCollectionCollectionNotFound",
+                "CollectionDocumentCollectionDocumentCollectionDocument",
+                "CollectionDocumentCollectionDocumentCollectionDocumentNotFound",
             ],
             Field(discriminator="typename__"),
         ]
-    ]
+    ] = Field(alias="collectionDocument")
 
 
-class CollectionDocumentCollectionCollection(BaseModel):
-    typename__: Literal["Collection"] = Field(alias="__typename")
-    document: Optional["CollectionDocumentCollectionCollectionDocument"]
-
-
-class CollectionDocumentCollectionCollectionDocument(CollectionDocumentReference):
+class CollectionDocumentCollectionDocumentCollectionDocument(
+    CollectionDocumentWithData
+):
     typename__: Literal["CollectionDocument"] = Field(alias="__typename")
 
 
-class CollectionDocumentCollectionCollectionNotFound(BaseModel):
-    typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+class CollectionDocumentCollectionDocumentCollectionDocumentNotFound(BaseModel):
+    typename__: Literal["CollectionDocumentNotFound"] = Field(alias="__typename")
 
 
 CollectionDocument.model_rebuild()
-CollectionDocumentCollectionCollection.model_rebuild()

@@ -19,14 +19,19 @@ from .collection_create import (
 )
 from .collection_document import (
     CollectionDocument,
-    CollectionDocumentCollectionCollection,
-    CollectionDocumentCollectionCollectionDocument,
-    CollectionDocumentCollectionCollectionNotFound,
+    CollectionDocumentCollectionDocumentCollectionDocument,
+    CollectionDocumentCollectionDocumentCollectionDocumentNotFound,
 )
 from .collection_document_delete import (
     CollectionDocumentDelete,
     CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument,
     CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound,
+)
+from .collection_document_in_collection import (
+    CollectionDocumentInCollection,
+    CollectionDocumentInCollectionCollectionCollection,
+    CollectionDocumentInCollectionCollectionCollectionDocument,
+    CollectionDocumentInCollectionCollectionCollectionNotFound,
 )
 from .collection_document_set import (
     CollectionDocumentSet,
@@ -104,7 +109,8 @@ from .exceptions import (
 )
 from .fragments import (
     CollectionDocumentReference,
-    CollectionDocumentReferenceTags,
+    CollectionDocumentWithData,
+    CollectionDocumentWithDataTags,
     CollectionFileNotFound,
     CollectionFileReference,
     CollectionFileReferenceTags,
@@ -162,14 +168,16 @@ __all__ = [
     "CollectionCreateCollectionCreateCollection",
     "CollectionCreateCollectionCreateCollectionNotFound",
     "CollectionDocument",
-    "CollectionDocumentCollectionCollection",
-    "CollectionDocumentCollectionCollectionDocument",
-    "CollectionDocumentCollectionCollectionNotFound",
+    "CollectionDocumentCollectionDocumentCollectionDocument",
+    "CollectionDocumentCollectionDocumentCollectionDocumentNotFound",
     "CollectionDocumentDelete",
     "CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocument",
     "CollectionDocumentDeleteCollectionDocumentDeleteCollectionDocumentNotFound",
+    "CollectionDocumentInCollection",
+    "CollectionDocumentInCollectionCollectionCollection",
+    "CollectionDocumentInCollectionCollectionCollectionDocument",
+    "CollectionDocumentInCollectionCollectionCollectionNotFound",
     "CollectionDocumentReference",
-    "CollectionDocumentReferenceTags",
     "CollectionDocumentSet",
     "CollectionDocumentSetCollectionDocumentSetCollectionDocument",
     "CollectionDocumentSetCollectionDocumentSetCollectionNotFound",
@@ -179,6 +187,8 @@ __all__ = [
     "CollectionDocumentTagDelete",
     "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocument",
     "CollectionDocumentTagDeleteCollectionDocumentTagDeleteCollectionDocumentNotFound",
+    "CollectionDocumentWithData",
+    "CollectionDocumentWithDataTags",
     "CollectionDocuments",
     "CollectionDocumentsCollectionCollection",
     "CollectionDocumentsCollectionCollectionDocuments",

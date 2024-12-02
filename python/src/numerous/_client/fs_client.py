@@ -7,7 +7,7 @@ from typing import Any, BinaryIO
 
 from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
 from numerous.collections._client import (
-    CollectionDocumentReference,
+    CollectionDocumentIdentifier,
     CollectionFileIdentifier,
     CollectionIdentifier,
     Tag,
@@ -87,7 +87,7 @@ class FileSystemFileMetadata:
             (
                 tag
                 for tag in self.tags
-                if tag.key == tag_input.key and tag.value == tag_input.value
+                if tag_input.key == tag.key and tag_input.value == tag.value
             ),
             None,
         )
@@ -193,7 +193,7 @@ class FileSystemClient:
     def _document_path_from_id(self, document_id: str) -> Path:
         return self._base_path / (document_id + ".doc.json")
 
-    def get_collection_reference(
+    def collection_reference(
         self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionIdentifier:
         collection_relpath = (
@@ -206,108 +206,17 @@ class FileSystemClient:
         collection_path.mkdir(parents=True, exist_ok=True)
         return CollectionIdentifier(id=collection_id, key=collection_key)
 
-    def get_collection_document(
-        self, collection_id: str, document_key: str
-    ) -> CollectionDocumentReference | None:
-        path = self._document_path(collection_id, document_key)
-        if not path.exists():
-            return None
-
-        doc = FileSystemCollectionDocument.load(path)
-
-        doc_id = str(Path(collection_id) / document_key)
-        return CollectionDocumentReference(
-            id=doc_id,
-            key=document_key,
-            data=dict_to_base64(doc.data),
-            tags=doc.tags,
-        )
-
-    def set_collection_document(
-        self, collection_id: str, document_key: str, encoded_data: str
-    ) -> CollectionDocumentReference | None:
-        path = self._document_path(collection_id, document_key)
-        data = base64_to_dict(encoded_data)
-        if path.exists():
-            doc = FileSystemCollectionDocument.load(path)
-            doc.data = data
-        else:
-            doc = FileSystemCollectionDocument(data, [])
-        doc.save(path)
-
-        doc_id = str(Path(collection_id) / document_key)
-        return CollectionDocumentReference(
-            id=doc_id,
-            key=document_key,
-            data=encoded_data,
-            tags=[],
-        )
-
-    def delete_collection_document(
-        self, document_id: str
-    ) -> CollectionDocumentReference | None:
-        doc_path = self._document_path_from_id(document_id)
-        if not doc_path.exists():
-            return None
-
-        doc = FileSystemCollectionDocument.load(doc_path)
-
-        doc_path.unlink()
-
-        return CollectionDocumentReference(
-            id=document_id,
-            key=doc_path.name.removesuffix(".doc.json"),
-            data=dict_to_base64(doc.data),
-            tags=doc.reference_tags(),
-        )
-
-    def add_collection_document_tag(
-        self, document_id: str, tag: Tag
-    ) -> CollectionDocumentReference | None:
-        doc_path = self._document_path_from_id(document_id)
-        if not doc_path.exists():
-            return None
-
-        doc = FileSystemCollectionDocument.load(doc_path)
-        doc.tags.append(Tag(key=tag.key, value=tag.value))
-        doc.save(doc_path)
-
-        return CollectionDocumentReference(
-            id=document_id,
-            key=doc_path.stem,
-            data=dict_to_base64(doc.data),
-            tags=doc.reference_tags(),
-        )
-
-    def delete_collection_document_tag(
-        self, document_id: str, tag_key: str
-    ) -> CollectionDocumentReference | None:
-        doc_path = self._document_path_from_id(document_id)
-        if not doc_path.exists():
-            return None
-
-        doc = FileSystemCollectionDocument.load(doc_path)
-        doc.tags = [tag for tag in doc.tags if tag.key != tag_key]
-        doc.save(doc_path)
-
-        return CollectionDocumentReference(
-            id=document_id,
-            key=doc_path.stem,
-            data=dict_to_base64(doc.data),
-            tags=doc.reference_tags(),
-        )
-
-    def get_collection_documents(
+    def collection_documents(
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
         tag_input: Tag | None,
-    ) -> tuple[list[CollectionDocumentReference | None], bool, str]:
+    ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
             return [], False, ""
 
-        documents: list[CollectionDocumentReference | None] = []
+        results: list[CollectionDocumentIdentifier] = []
         for doc_path in col_path.iterdir():
             if not doc_path.name.endswith(".doc.json"):
                 continue
@@ -323,64 +232,12 @@ class FileSystemClient:
                     doc_path.name.removesuffix(".doc.json")
                 )
             )
-            documents.append(
-                CollectionDocumentReference(
-                    id=doc_id,
-                    key=doc_path.name.removesuffix(".doc.json"),
-                    data=dict_to_base64(doc.data),
-                    tags=doc.reference_tags(),
-                )
-            )
+            doc_key = doc_path.name.removesuffix(".doc.json")
+            results.append(CollectionDocumentIdentifier(id=doc_id, key=doc_key))
 
-        return sorted(documents, key=lambda d: d.id if d else ""), False, ""
+        return sorted(results, key=lambda d: d.id if d else ""), False, ""
 
-    def create_collection_file_reference(
-        self, collection_id: str, file_key: str
-    ) -> CollectionFileIdentifier | None:
-        meta_path = self._file_metadata_path(collection_id, file_key)
-        if meta_path.exists():
-            meta = FileSystemFileMetadata.load(meta_path)
-        else:
-            file_id = _escape(collection_id + "_" + file_key)
-            index_entry = FileIndexEntry(collection_id=collection_id, file_key=file_key)
-            index_entry.save(self._base_path / self.FILE_INDEX_DIR / file_id)
-            meta = FileSystemFileMetadata(file_id=file_id, file_key=file_key, tags=[])
-            meta.save(self._file_metadata_path(collection_id, file_key))
-
-        return CollectionFileIdentifier(id=meta.file_id, key=file_key)
-
-    def collection_file_tags(self, file_id: str) -> dict[str, str] | None:
-        try:
-            index_entry = self._file_index_entry(file_id)
-        except FileNotFoundError:
-            return None
-
-        meta_path = self._file_metadata_path(
-            index_entry.collection_id, index_entry.file_key
-        )
-
-        if not meta_path.exists():
-            return None
-
-        meta = FileSystemFileMetadata.load(meta_path)
-        return {tag.key: tag.value for tag in meta.tags}
-
-    def delete_collection_file(self, file_id: str) -> None:
-        index_entry = self._file_index_entry(file_id)
-        meta_path = self._file_metadata_path(
-            index_entry.collection_id, index_entry.file_key
-        )
-        data_path = self._file_data_path(
-            index_entry.collection_id, index_entry.file_key
-        )
-
-        if not meta_path.exists():
-            return
-
-        meta_path.unlink()
-        data_path.unlink()
-
-    def get_collection_files(
+    def collection_files(
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
@@ -405,32 +262,7 @@ class FileSystemClient:
 
         return files, False, ""
 
-    def add_collection_file_tag(self, file_id: str, tag: Tag) -> None:
-        index_entry = self._file_index_entry(file_id)
-        meta_path = self._file_metadata_path(
-            index_entry.collection_id, index_entry.file_key
-        )
-        if not meta_path.exists():
-            return
-
-        meta = FileSystemFileMetadata.load(meta_path)
-        if not meta.tag_matches(tag):
-            meta.tags.append(Tag(key=tag.key, value=tag.value))
-        meta.save(meta_path)
-
-    def delete_collection_file_tag(self, file_id: str, tag_key: str) -> None:
-        index_entry = self._file_index_entry(file_id)
-        meta_path = self._file_metadata_path(
-            index_entry.collection_id, index_entry.file_key
-        )
-        if not meta_path.exists():
-            return
-
-        meta = FileSystemFileMetadata.load(meta_path)
-        meta.tags = [tag for tag in meta.tags if tag.key != tag_key]
-        meta.save(meta_path)
-
-    def get_collection_collections(
+    def collection_collections(
         self,
         collection_key: str,
         end_cursor: str,  # noqa: ARG002
@@ -447,21 +279,158 @@ class FileSystemClient:
 
         return sorted(collections, key=lambda c: c.id), False, ""
 
-    def read_text(self, file_id: str) -> str:
+    def document_reference(
+        self, collection_id: str, document_key: str
+    ) -> CollectionDocumentIdentifier | None:
+        path = self._document_path(collection_id, document_key)
+        if not path.exists():
+            return None
+
+        doc_id = str(Path(collection_id) / document_key)
+        return CollectionDocumentIdentifier(id=doc_id, key=document_key)
+
+    def document_get(self, document_id: str) -> str | None:
+        path = self._document_path_from_id(document_id)
+        if not path.exists():
+            return None
+
+        doc = FileSystemCollectionDocument.load(path)
+        return dict_to_base64(doc.data)
+
+    def document_exists(self, document_id: str) -> bool:
+        return self._document_path_from_id(document_id).exists()
+
+    def document_tags(self, document_id: str) -> dict[str, str] | None:
+        path = self._document_path_from_id(document_id)
+        if not path.exists():
+            return None
+
+        doc = FileSystemCollectionDocument.load(path)
+        return {tag.key: tag.value for tag in doc.tags}
+
+    def document_set(
+        self, collection_id: str, document_key: str, encoded_data: str
+    ) -> None:
+        path = self._document_path(collection_id, document_key)
+        data = base64_to_dict(encoded_data)
+        if path.exists():
+            doc = FileSystemCollectionDocument.load(path)
+            doc.data = data
+        else:
+            doc = FileSystemCollectionDocument(data, [])
+        doc.save(path)
+
+    def document_delete(self, document_id: str) -> None:
+        doc_path = self._document_path_from_id(document_id)
+        if not doc_path.exists():
+            return
+
+        doc_path.unlink()
+
+    def document_tag_add(self, document_id: str, tag: Tag) -> None:
+        doc_path = self._document_path_from_id(document_id)
+        if not doc_path.exists():
+            return
+
+        doc = FileSystemCollectionDocument.load(doc_path)
+        doc.tags.append(Tag(key=tag.key, value=tag.value))
+        doc.save(doc_path)
+
+    def document_tag_delete(self, document_id: str, tag_key: str) -> None:
+        doc_path = self._document_path_from_id(document_id)
+        if not doc_path.exists():
+            return
+
+        doc = FileSystemCollectionDocument.load(doc_path)
+        doc.tags = [tag for tag in doc.tags if tag.key != tag_key]
+        doc.save(doc_path)
+
+    def file_reference(
+        self, collection_id: str, file_key: str
+    ) -> CollectionFileIdentifier | None:
+        meta_path = self._file_metadata_path(collection_id, file_key)
+        if meta_path.exists():
+            meta = FileSystemFileMetadata.load(meta_path)
+        else:
+            file_id = _escape(collection_id + "_" + file_key)
+            index_entry = FileIndexEntry(collection_id=collection_id, file_key=file_key)
+            index_entry.save(self._base_path / self.FILE_INDEX_DIR / file_id)
+            meta = FileSystemFileMetadata(file_id=file_id, file_key=file_key, tags=[])
+            meta.save(self._file_metadata_path(collection_id, file_key))
+
+        return CollectionFileIdentifier(id=meta.file_id, key=file_key)
+
+    def file_tags(self, file_id: str) -> dict[str, str] | None:
+        try:
+            index_entry = self._file_index_entry(file_id)
+        except FileNotFoundError:
+            return None
+
+        meta_path = self._file_metadata_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+
+        if not meta_path.exists():
+            return None
+
+        meta = FileSystemFileMetadata.load(meta_path)
+        return {tag.key: tag.value for tag in meta.tags}
+
+    def file_delete(self, file_id: str) -> None:
+        index_entry = self._file_index_entry(file_id)
+        meta_path = self._file_metadata_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+        data_path = self._file_data_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+
+        if not meta_path.exists():
+            return
+
+        meta_path.unlink()
+        data_path.unlink()
+
+    def file_tag_add(self, file_id: str, tag: Tag) -> None:
+        index_entry = self._file_index_entry(file_id)
+        meta_path = self._file_metadata_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+        if not meta_path.exists():
+            return
+
+        meta = FileSystemFileMetadata.load(meta_path)
+        if not meta.tag_matches(tag):
+            meta.tags.append(Tag(key=tag.key, value=tag.value))
+        meta.save(meta_path)
+
+    def file_delete_tag(self, file_id: str, tag_key: str) -> None:
+        index_entry = self._file_index_entry(file_id)
+        meta_path = self._file_metadata_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+        if not meta_path.exists():
+            return
+
+        meta = FileSystemFileMetadata.load(meta_path)
+        meta.tags = [tag for tag in meta.tags if tag.key != tag_key]
+        meta.save(meta_path)
+
+    def file_read_text(self, file_id: str) -> str:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key
         )
         return data_path.read_text()
 
-    def read_bytes(self, file_id: str) -> bytes:
+    def file_read_bytes(self, file_id: str) -> bytes:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key
         )
         return data_path.read_bytes()
 
-    def save_file(self, file_id: str, data: bytes | str) -> None:
+    def file_save(self, file_id: str, data: bytes | str) -> None:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key
@@ -471,7 +440,7 @@ class FileSystemClient:
         else:
             data_path.write_text(data)
 
-    def open_file(self, file_id: str) -> BinaryIO:
+    def file_open(self, file_id: str) -> BinaryIO:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key

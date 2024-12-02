@@ -9,6 +9,7 @@ from .collection_collections import CollectionCollections
 from .collection_create import CollectionCreate
 from .collection_document import CollectionDocument
 from .collection_document_delete import CollectionDocumentDelete
+from .collection_document_in_collection import CollectionDocumentInCollection
 from .collection_document_set import CollectionDocumentSet
 from .collection_document_tag_add import CollectionDocumentTagAdd
 from .collection_document_tag_delete import CollectionDocumentTagDelete
@@ -128,26 +129,19 @@ class Client(AsyncBaseClient):
         data = self.get_data(response)
         return CollectionCollections.model_validate(data)
 
-    async def collection_document(
-        self, collection_id: str, doc_key: str, **kwargs: Any
-    ) -> CollectionDocument:
+    async def collection_document(self, id: str, **kwargs: Any) -> CollectionDocument:
         query = gql(
             """
-            query CollectionDocument($collectionID: ID!, $docKey: ID!) {
-              collection(id: $collectionID) {
+            query CollectionDocument($id: ID!) {
+              collectionDocument(id: $id) {
                 __typename
-                ... on Collection {
-                  document(key: $docKey) {
-                    __typename
-                    ... on CollectionDocument {
-                      ...CollectionDocumentReference
-                    }
-                  }
+                ... on CollectionDocument {
+                  ...CollectionDocumentWithData
                 }
               }
             }
 
-            fragment CollectionDocumentReference on CollectionDocument {
+            fragment CollectionDocumentWithData on CollectionDocument {
               id
               key
               data
@@ -158,10 +152,7 @@ class Client(AsyncBaseClient):
             }
             """
         )
-        variables: Dict[str, object] = {
-            "collectionID": collection_id,
-            "docKey": doc_key,
-        }
+        variables: Dict[str, object] = {"id": id}
         response = await self.execute(
             query=query,
             operation_name="CollectionDocument",
@@ -170,6 +161,47 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionDocument.model_validate(data)
+
+    async def collection_document_in_collection(
+        self, collection_id: str, doc_key: str, **kwargs: Any
+    ) -> CollectionDocumentInCollection:
+        query = gql(
+            """
+            query CollectionDocumentInCollection($collectionID: ID!, $docKey: ID!) {
+              collection(id: $collectionID) {
+                __typename
+                ... on Collection {
+                  document(key: $docKey) {
+                    __typename
+                    ... on CollectionDocument {
+                      ...CollectionDocumentReference
+                    }
+                  }
+                }
+                ... on CollectionNotFound {
+                  id
+                }
+              }
+            }
+
+            fragment CollectionDocumentReference on CollectionDocument {
+              id
+              key
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "collectionID": collection_id,
+            "docKey": doc_key,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="CollectionDocumentInCollection",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionDocumentInCollection.model_validate(data)
 
     async def collection_document_set(
         self, collection_id: str, key: str, data: Any, **kwargs: Any
@@ -188,11 +220,6 @@ class Client(AsyncBaseClient):
             fragment CollectionDocumentReference on CollectionDocument {
               id
               key
-              data
-              tags {
-                key
-                value
-              }
             }
             """
         )
@@ -227,11 +254,6 @@ class Client(AsyncBaseClient):
             fragment CollectionDocumentReference on CollectionDocument {
               id
               key
-              data
-              tags {
-                key
-                value
-              }
             }
             """
         )
@@ -262,11 +284,6 @@ class Client(AsyncBaseClient):
             fragment CollectionDocumentReference on CollectionDocument {
               id
               key
-              data
-              tags {
-                key
-                value
-              }
             }
             """
         )
@@ -297,11 +314,6 @@ class Client(AsyncBaseClient):
             fragment CollectionDocumentReference on CollectionDocument {
               id
               key
-              data
-              tags {
-                key
-                value
-              }
             }
             """
         )
@@ -352,11 +364,6 @@ class Client(AsyncBaseClient):
             fragment CollectionDocumentReference on CollectionDocument {
               id
               key
-              data
-              tags {
-                key
-                value
-              }
             }
             """
         )

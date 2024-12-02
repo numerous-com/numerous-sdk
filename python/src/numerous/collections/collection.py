@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import typing
 
-import numerous._client.exceptions
-from numerous._client.get_client import get_client
-from numerous.collections.collection_reference import CollectionReference
-from numerous.collections.exceptions import ParentCollectionNotFoundError
+from ._get_client import get_client
+from .collection_reference import CollectionReference
 
 
 if typing.TYPE_CHECKING:
@@ -34,9 +32,6 @@ def collection(
     if _client is None:
         _client = get_client()
 
-    try:
-        collection_ref = _client.get_collection_reference(collection_key)
-    except numerous._client.exceptions.ParentCollectionNotFoundError as error:  # noqa: SLF001
-        raise ParentCollectionNotFoundError(error.collection_id) from error
+    collection_ref = _client.collection_reference(collection_key)
 
     return CollectionReference(collection_ref.id, collection_ref.key, _client)

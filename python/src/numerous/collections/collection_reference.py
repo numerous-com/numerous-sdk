@@ -5,10 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generator
 
-import numerous._client.exceptions
-from numerous.collections._client import Tag
+from numerous.collections._client import CollectionDocumentIdentifier, Tag
 from numerous.collections.document_reference import DocumentReference
-from numerous.collections.exceptions import ParentCollectionNotFoundError
 from numerous.collections.file_reference import FileReference
 
 
@@ -17,18 +15,10 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class CollectionNotFoundError(Exception):
-    parent_id: str | None
-    key: str
-
-
 class CollectionReference:
-    def __init__(
-        self, collection_id: str, collection_key: str, _client: Client
-    ) -> None:
-        self.key = collection_key
-        self.id = collection_id
-        self._client = _client
+    id: str
+    key: str
+    _client: Client
 
     def collection(self, collection_key: str) -> CollectionReference:
         """
@@ -43,15 +33,9 @@ class CollectionReference:
             NumerousCollection: The child collection identified by the given key.
 
         """
-        try:
-            ref = self._client.get_collection_reference(
-                collection_key=collection_key, parent_collection_id=self.id
-            )
-        except numerous._client.exceptions.ParentCollectionNotFoundError as error:  # noqa: SLF001
-            raise ParentCollectionNotFoundError(error.collection_id) from error
-
-        if ref is None:
-            raise CollectionNotFoundError(parent_id=self.id, key=collection_key)
+        ref = self._client.collection_reference(
+            collection_key=collection_key, parent_collection_id=self.id
+        )
 
         return CollectionReference(ref.id, ref.key, self._client)
 
@@ -66,16 +50,32 @@ class CollectionReference:
         Returns:
             The document in the collection with the given key.
 
-        """
-        col_doc_ref = self._client.get_collection_document(self.id, key)
-        if col_doc_ref is None:
-            return DocumentReference(self._client, key, (self.id, self.key))
+        Raises:
+            ParentCollectionNotFoundError: If the collection does not exist, for example
+                if it was deleted.
 
+        """
+        doc_ref = self._client.document_reference(self.id, key)
+        if doc_ref is None:
+            return self._document_reference(doc_id=None, doc_key=key)
+        return self._document_reference_from_identifier(doc_ref)
+
+    def _document_reference_from_identifier(
+        self, doc_ref: CollectionDocumentIdentifier
+    ) -> DocumentReference:
+        return self._document_reference(doc_ref.id, doc_ref.key)
+
+    def _document_reference(
+        self,
+        doc_id: str | None,
+        doc_key: str,
+    ) -> DocumentReference:
         return DocumentReference(
-            self._client,
-            col_doc_ref.key,
-            (self.id, self.key),
-            col_doc_ref,
+            id=doc_id,
+            key=doc_key,
+            collection_id=self.id,
+            collection_key=self.key,
+            _client=self._client,
         )
 
     def file(self, key: str) -> FileReference:
@@ -86,12 +86,12 @@ class CollectionReference:
             key: The key of the file.
 
         """
-        file_identifier = self._client.create_collection_file_reference(self.id, key)
+        file_identifier = self._client.file_reference(self.id, key)
         if file_identifier is None:
             msg = "Failed to retrieve or create the file."
             raise ValueError(msg)
 
-        return _file_reference_from_identifier(self._client, file_identifier)
+        return self._file_reference_from_identifier(file_identifier)
 
     def save_file(self, file_key: str, file_data: str) -> None:
         """
@@ -131,14 +131,14 @@ class CollectionReference:
             tag = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.get_collection_files(self.id, end_cursor, tag)
+            result = self._client.collection_files(self.id, end_cursor, tag)
             if result is None:
                 break
             file_identifiers, has_next_page, end_cursor = result
             for file_identifier in file_identifiers:
                 if file_identifier is None:
                     continue
-                yield _file_reference_from_identifier(self._client, file_identifier)
+                yield self._file_reference_from_identifier(file_identifier)
 
     def documents(
         self, tag_key: str | None = None, tag_value: str | None = None
@@ -162,21 +162,14 @@ class CollectionReference:
             tag_input = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.get_collection_documents(
-                self.id, end_cursor, tag_input
-            )
+            result = self._client.collection_documents(self.id, end_cursor, tag_input)
             doc_refs, has_next_page, end_cursor = result
             if doc_refs is None:
                 break
             for doc_ref in doc_refs:
                 if doc_ref is None:
                     continue
-                yield DocumentReference(
-                    client=self._client,
-                    key=doc_ref.key,
-                    collection_info=(self.id, self.key),
-                    doc_ref=doc_ref,
-                )
+                yield self._document_reference_from_identifier(doc_ref)
 
     def collections(self) -> Generator[CollectionReference, None, None]:
         """
@@ -189,7 +182,7 @@ class CollectionReference:
         end_cursor = ""
         has_next_page = True
         while has_next_page:
-            result = self._client.get_collection_collections(self.id, end_cursor)
+            result = self._client.collection_collections(self.id, end_cursor)
             if result is None:
                 break
             refs, has_next_page, end_cursor = result
@@ -198,8 +191,7 @@ class CollectionReference:
             for ref in refs:
                 yield CollectionReference(ref.id, ref.key, self._client)
 
-
-def _file_reference_from_identifier(
-    client: Client, identifier: CollectionFileIdentifier
-) -> FileReference:
-    return FileReference(client=client, file_id=identifier.id, key=identifier.key)
+    def _file_reference_from_identifier(
+        self, identifier: CollectionFileIdentifier
+    ) -> FileReference:
+        return FileReference(id=identifier.id, key=identifier.key, _client=self._client)

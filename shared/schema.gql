@@ -972,6 +972,10 @@ union CollectionDocumentDeleteResult =
     CollectionDocument
   | CollectionDocumentNotFound
 
+extend type Query {
+  collectionDocument(id: ID!): CollectionDocumentResult @canAccessCollectionDocument
+}
+
 extend type Mutation {
   collectionDocumentSet(
     collectionID: ID!

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
@@ -9,59 +10,48 @@ from numerous.collections._client import Tag
 
 
 if TYPE_CHECKING:
-    from numerous.collections._client import Client, CollectionDocumentReference
+    from numerous.collections._client import Client
 
 
+@dataclass
+class DocumentDoesNotExistError(Exception):
+    collection_id: str
+    key: str
+
+
+@dataclass
 class DocumentReference:
-    """
-    Represents a document in a Numerous collection.
-
-    Attributes:
-        key (str): The key of the document.
-        collection_info (tuple[str, str]): The id
-            and key of collection document belongs to.
-        data (dict[str, Any] | None): The data of the document.
-        id (str | None): The unique identifier of the document.
-        client (Client): The client to connect.
-        tags (dict[str, str]): The tags associated with the document.
-
-    """
-
-    def __init__(
-        self,
-        client: Client,
-        key: str,
-        collection_info: tuple[str, str],
-        doc_ref: CollectionDocumentReference | None = None,
-    ) -> None:
-        self.key: str = key
-        self.collection_id: str = collection_info[0]
-        self.collection_key: str = collection_info[1]
-        self._client: Client = client
-        self.document_id: str | None = None
-        self.data: dict[str, Any] | None = None
-
-        if doc_ref is not None:
-            dict_of_tags = {tag.key: tag.value for tag in doc_ref.tags}
-            self.data = base64_to_dict(doc_ref.data) if doc_ref.data else None
-            self.document_id = doc_ref.id
-            self._tags: dict[str, str] = (
-                dict_of_tags if dict_of_tags is not None else {}
-            )
+    id: str | None
+    key: str
+    collection_id: str
+    collection_key: str
+    _client: Client
 
     @property
     def exists(self) -> bool:
-        """Check if the document exists."""
-        return self.document_id is not None
+        """True if the document exists, False otherwise."""
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return False
+
+        return self._client.document_exists(self.id)
+
+    def _set_id_if_reference_exists(self) -> None:
+        if self.id is not None:
+            return
+
+        ref = self._client.document_reference(self.collection_id, self.key)
+        if ref is not None:
+            self.id = ref.id
 
     @property
     def tags(self) -> dict[str, str]:
         """Get the tags for the document."""
-        if self.document_id is not None:
-            return self._tags
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return {}
 
-        msg = "Cannot get tags from a non-existent document."
-        raise ValueError(msg)
+        return self._client.document_tags(self.id) or {}
 
     def set(self, data: dict[str, Any]) -> None:
         """
@@ -71,58 +61,39 @@ class DocumentReference:
             data (dict[str, Any]): The data to set for the document.
 
         Raises:
-            ValueError: If the document data setting fails.
+            TypeError: If the data is not JSON serializable.
 
         """
         base64_data = dict_to_base64(data)
-        document = self._client.set_collection_document(
-            self.collection_id, self.key, base64_data
-        )
-        if document is not None:
-            self.document_id = document.id
-        else:
-            msg = "Failed to delete the document."
-            raise ValueError(msg)
-        self.data = data
+        self._client.document_set(self.collection_id, self.key, base64_data)
 
     def get(self) -> dict[str, Any] | None:
         """
         Get the data of the document.
 
         Returns:
-            dict[str, Any]: The data of the document.
-
-        Raises:
-            ValueError: If the document does not exist.
+            dict[str, Any] | None: The data of the document if it is set.
 
         """
-        if not self.exists:
-            msg = "Document does not exist."
-            raise ValueError(msg)
-        self._fetch_data(self.key)
-        return self.data
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            return None
+
+        data = self._client.document_get(self.id)
+        if data is None:
+            return None
+
+        return base64_to_dict(data)
 
     def delete(self) -> None:
-        """
-        Delete the document.
+        """Delete the referenced document."""
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
+            )
 
-        Raises:
-            ValueError: If the document does not exist or deletion failed.
-
-        """
-        if self.document_id is not None:
-            deleted_document = self._client.delete_collection_document(self.document_id)
-
-            if deleted_document is not None and deleted_document.id == self.document_id:
-                self.document_id = None
-                self.data = None
-                self._tags = {}
-            else:
-                msg = "Failed to delete the document."
-                raise ValueError(msg)
-        else:
-            msg = "Cannot delete a non-existent document."
-            raise ValueError(msg)
+        self._client.document_delete(self.id)
 
     def tag(self, key: str, value: str) -> None:
         """
@@ -132,20 +103,14 @@ class DocumentReference:
             key (str): The tag key.
             value (str): The tag value.
 
-        Raises:
-            ValueError: If the document does not exist.
-
         """
-        if self.document_id is not None:
-            tagged_document = self._client.add_collection_document_tag(
-                self.document_id, Tag(key=key, value=value)
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
             )
-        else:
-            msg = "Cannot tag a non-existent document."
-            raise ValueError(msg)
 
-        if tagged_document is not None:
-            self.tags.update({tag.key: tag.value for tag in tagged_document.tags})
+        self._client.document_tag_add(self.id, Tag(key=key, value=value))
 
     def tag_delete(self, tag_key: str) -> None:
         """
@@ -154,30 +119,11 @@ class DocumentReference:
         Args:
             tag_key (str): The key of the tag to delete.
 
-        Raises:
-            ValueError: If the document does not exist.
-
         """
-        if self.document_id is not None:
-            tagged_document = self._client.delete_collection_document_tag(
-                self.document_id, tag_key
+        self._set_id_if_reference_exists()
+        if self.id is None:
+            raise DocumentDoesNotExistError(
+                collection_id=self.collection_id, key=self.key
             )
-        else:
-            msg = "Cannot delete tag from a non-existent document."
-            raise ValueError(msg)
 
-        if tagged_document is not None:
-            self._tags = {tag.key: tag.value for tag in tagged_document.tags}
-
-    def _fetch_data(self, document_key: str) -> None:
-        """Fetch the data from the server."""
-        if self.document_id is not None:
-            document = self._client.get_collection_document(
-                self.collection_id, document_key
-            )
-        else:
-            msg = "Cannot fetch data from a non-existent document."
-            raise ValueError(msg)
-
-        if document is not None:
-            self.data = base64_to_dict(document.data) if document.data else None
+        self._client.document_tag_delete(self.id, tag_key)
