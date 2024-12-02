@@ -1,8 +1,6 @@
 package list
 
 import (
-	"fmt"
-
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
@@ -13,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var displayMode DisplayMode = DisplayModeList
+
 var OrganizationListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all your organizations (login required)",
@@ -20,6 +20,10 @@ var OrganizationListCmd = &cobra.Command{
 		err := list(auth.NumerousTenantAuthenticator, gql.GetClient())
 		return errorhandling.ErrorAlreadyPrinted(err)
 	},
+}
+
+func init() {
+	OrganizationListCmd.Flags().VarP(&displayMode, "display-mode", "d", "Display mode. Display organizations as a list or as a table. (\"list\", \"table\")")
 }
 
 func list(a auth.Authenticator, g *gqlclient.Client) error {
@@ -31,14 +35,20 @@ func list(a auth.Authenticator, g *gqlclient.Client) error {
 
 	userResp, err := user.QueryUser(g)
 	if err != nil {
-		if err != nil {
-			output.PrintErrorDetails("Error occurred querying user organization memberships", err)
-		}
+		output.PrintErrorDetails("Error occurred querying user organization memberships", err)
 
 		return err
 	}
 
-	fmt.Println(setupTable(userResp.Memberships))
+	switch displayMode {
+	case DisplayModeList:
+		displayList(userResp.Memberships)
+	case DisplayModeTable:
+		displayTable(userResp.Memberships)
+	default:
+		output.PrintError("Unexpected display mode %q", "", displayMode)
+		return errInvalidDisplayMode
+	}
 
 	return nil
 }

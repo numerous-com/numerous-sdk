@@ -1,6 +1,8 @@
 package list
 
 import (
+	"fmt"
+
 	"numerous.com/cli/internal/gql/organization"
 
 	"github.com/charmbracelet/lipgloss"
@@ -48,4 +50,8 @@ func setupTable(organizations []organization.OrganizationMembership) *table.Tabl
 		})
 
 	return t
+}
+
+func displayTable(organizations []organization.OrganizationMembership) {
+	fmt.Println(setupTable(organizations))
 }
