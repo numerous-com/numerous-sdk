@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.38.0 (2024-12-02)
+
+### Documentation
+
+* docs: add guide about using sdk locally ([`412e246`](https://github.com/numerous-com/numerous-sdk/commit/412e246959802dcfc47ea75ea67a8ff2c417dc55))
+
+
+
+### Feature
+
+* feat(python-sdk): `organization list` list view ([`5edbf08`](https://github.com/numerous-com/numerous-sdk/commit/5edbf08002b5b8827133e2d1a6083f7a7d0d1483))
+
+  > 
+  >  * List organization memberships by default, instead of displaying a table.
+  >  * Add `--display-mode` argument with possible values &#34;list&#34; and &#34;table&#34;. For &#34;table&#34; use the original tabular display mode.
+
+
+
+
 ## v0.37.1 (2024-12-02)
 
 ### Fix
