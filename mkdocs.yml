@@ -13,6 +13,7 @@ nav:
     - Sessions: sessions.md
     - Users: user.md
     - Frameworks: frameworks.md
+    - Using the SDK locally: using_the_sdk_locally.md
   - API reference: reference/
 
 theme:
