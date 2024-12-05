@@ -11,6 +11,7 @@ import (
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -101,7 +102,12 @@ func TestDeploy(t *testing.T) {
 		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
 
-	t.Run("given no slug argument and no manifest deployment then it returns error", func(t *testing.T) {
+	t.Run("given no slug argument, no manifest deployment and no config then it returns error", func(t *testing.T) {
+		oldConfigBaseDir := config.OverrideConfigBaseDir(t.TempDir())
+		t.Cleanup(func() {
+			config.OverrideConfigBaseDir(oldConfigBaseDir)
+		})
+
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 

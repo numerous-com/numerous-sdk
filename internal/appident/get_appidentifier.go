@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"numerous.com/cli/cmd/validate"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/manifest"
 )
 
@@ -52,6 +53,10 @@ func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSl
 
 		orgSlug = GetOrgSlug(m, orgSlug)
 		appSlug = GetAppSlug(m, appSlug)
+	}
+
+	if orgSlug == "" {
+		orgSlug = config.OrganizationSlug()
 	}
 
 	ai := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
