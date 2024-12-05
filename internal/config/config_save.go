@@ -14,7 +14,7 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	w, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, configPerm)
+	w, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, configPerm)
 	if err != nil {
 		return err
 	}
