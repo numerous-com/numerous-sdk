@@ -42,19 +42,28 @@ func (ai AppIdentifier) validate() error {
 
 // Uses the given slug and appName, or loads from manifest, and validates.
 func GetAppIdentifier(appDir string, m *manifest.Manifest, orgSlug string, appSlug string) (AppIdentifier, error) {
-	if orgSlug == "" || appSlug == "" {
-		if m == nil {
-			loaded, err := manifest.Load(filepath.Join(appDir, manifest.ManifestFileName))
-			if err != nil {
-				return AppIdentifier{}, ErrAppNotInitialized
-			}
-			m = loaded
-		}
-
-		orgSlug = GetOrgSlug(m, orgSlug)
-		appSlug = GetAppSlug(m, appSlug)
+	// if a full identifier is provided, just return it
+	if orgSlug != "" && appSlug != "" {
+		ai := AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
+		return ai, ai.validate()
 	}
 
+	// try to load the manifest, if none was given
+	var manifestLoadErr error
+	if m == nil {
+		m, manifestLoadErr = manifest.Load(filepath.Join(appDir, manifest.ManifestFileName))
+	}
+
+	// if loading manifest succeeded, get values if arguments are not given
+	if manifestLoadErr == nil {
+		orgSlug = GetOrgSlug(m, orgSlug)
+		appSlug = GetAppSlug(m, appSlug)
+	} else if appSlug == "" {
+		return AppIdentifier{}, ErrAppNotInitialized
+	}
+
+	// if organization slug is not given in either argument or manifest, try
+	// to get it from the config.
 	if orgSlug == "" {
 		orgSlug = config.OrganizationSlug()
 	}
