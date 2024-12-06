@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,5 +40,15 @@ func TestSave(t *testing.T) {
 			expected := "organization = \"test-shorter-org-slug\"\n"
 			assert.Equal(t, expected, string(actual))
 		}
+	})
+
+	t.Run("returns error if it cannot create config file", func(t *testing.T) {
+		configBaseDir = t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(configBaseDir, "numerous"), []byte{}, configPerm))
+
+		cfg := Config{OrganizationSlug: "test-organization-slug"}
+		err := cfg.Save()
+
+		assert.EqualError(t, err, fmt.Sprintf("mkdir %s: not a directory", filepath.Join(configBaseDir, "numerous")))
 	})
 }

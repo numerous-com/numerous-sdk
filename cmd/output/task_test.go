@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"numerous.com/cli/internal/test"
 )
 
 var errTest = errors.New("test error")
@@ -317,17 +316,12 @@ func TestTask(t *testing.T) {
 
 	t.Run("StartTask", func(t *testing.T) {
 		t.Run("writes expected output to stdout", func(t *testing.T) {
-			// replace stdout with a pipe that we can read
-			stdout := os.Stdout
-			defer func() { os.Stdout = stdout }() // restore stdout afterwards
-			r, w, err := os.Pipe()
-			require.NoError(t, err)
-			os.Stdout = w
+			stdoutR, stdoutW := test.PatchStdout(t)
 
 			StartTask("message")
 
-			assert.NoError(t, w.Close())
-			actual, err := io.ReadAll(r)
+			assert.NoError(t, stdoutW.Close())
+			actual, err := io.ReadAll(stdoutR)
 			assert.NoError(t, err)
 			expected := hourglassIcon + " message" + AnsiFaint + ".............................................." + AnsiReset
 			assert.Equal(t, expected, string(actual))
