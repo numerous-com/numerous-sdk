@@ -58,7 +58,7 @@ class DocumentReference:
         Set the data for the document.
 
         Args:
-            data (dict[str, Any]): The data to set for the document.
+            data: The data to set for the document.
 
         Raises:
             TypeError: If the data is not JSON serializable.
@@ -72,7 +72,7 @@ class DocumentReference:
         Get the data of the document.
 
         Returns:
-            dict[str, Any] | None: The data of the document if it is set.
+            The data of the document if it is set.
 
         """
         self._set_id_if_reference_exists()
@@ -100,8 +100,8 @@ class DocumentReference:
         Add a tag to the document.
 
         Args:
-            key (str): The tag key.
-            value (str): The tag value.
+            key: The tag key.
+            value: The tag value.
 
         """
         self._set_id_if_reference_exists()
@@ -117,7 +117,7 @@ class DocumentReference:
         Delete a tag from the document.
 
         Args:
-            tag_key (str): The key of the tag to delete.
+            tag_key: The key of the tag to delete.
 
         """
         self._set_id_if_reference_exists()

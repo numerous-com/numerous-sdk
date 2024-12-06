@@ -18,6 +18,22 @@ col_ref = numerous.collections.collection("my-collection")
 doc_ref = col_ref.document("my-document")
 ```
 
+## Listing and filtering documents
+
+You can list all documents in a collection, and also filter by specific tags.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+
+# iterate over all documents in the collection
+for doc_ref in col_ref.documents():
+    print(doc_ref.key, doc_ref.get())
+
+# iterate over all documents in the collection with the given tag
+for doc_ref in col_ref.documents(tag_key="my-tag-key", tag_value="my-tag-value"):
+    print(doc_ref.key, doc_ref.get())
+```
+
 ## Loading document data
 
 In order to load the data in a document, use the `get`command. This command returns any data stored
@@ -42,6 +58,32 @@ any existing data in that document. If you wish to modify the data, load it with
 col_ref = numerous.collections.collection("my-collection")
 doc_ref = col_ref.document("my-document")
 doc_ref.set({"field1": "my field 1 value", "field2": 2})
+```
+
+## Deleting documents
+
+Documents can be deleted with the `delete` method.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+doc = col_ref.document("my-document.txt")
+
+doc.delete()
+```
+
+## Tagging documents
+
+Documents can be tagged. Tags are used to filter documents, and to store
+metadata about the documents.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+doc_ref = col_ref.document("my-document")
+
+doc_ref.tag("tag-key", "tag-value")
+
+for key, value in doc_ref.tags.items():
+    print(key, value)
 ```
 
 ## Serializing and deserializing custom types

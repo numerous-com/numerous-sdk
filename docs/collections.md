@@ -79,9 +79,8 @@ collection = numerous.collections.collection("my-collection")
      
     For nested collections, they are scoped to their parent collection.
 
-See below for the detailed reference of the `collection` function.
 
-#### ::: numerous.collections.collection
+See the [reference](/reference/numerous/collections/collection#numerous.collections.collection.collection) for more information.
 
 ### Creating and accessing nested collections
 
@@ -95,29 +94,24 @@ parent = numerous.collections.collection("parent-collection")
 nested = parent.collection("nested-collection")
 ```
 
-### Accessing documents inside collections
+### Accessing documents and files in collections
 
-Documents can be accessed by their key or can otherwise be iterated over.
+Documents and files can be accessed by their key or can otherwise be iterated
+over.
 
-In order to access a specific document, use the `document` method:
+See more on the user guides for [collection documents](collection_documents.md),
+and [collection files](collection_files.md).
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
+
 doc_ref = col_ref.document("my-document")
-```
-
-To iterate over the documents in a collection, use the `documents`
-method. You can filter documents by tags by providing `tag_key` and `tag_value`
-keyword arguments.
-
-```py
-col_ref = numerous.collections.collection("my-collection")
-
 for document in col_ref.documents():
     print(document.get())
 
-for document in col_ref.documents(tag_key="my-tag-key", tag_value="my-tag-value"):
-    print(document.get())
+file_ref = col_ref.file("my-file")
+for file in col_ref.files():
+    print(file.get())
 ```
 
 ### Collections in subscription apps
