@@ -231,7 +231,7 @@ func TestDeploy(t *testing.T) {
 		})
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true}
-		stdoutR, err := test.RunWithPatchedStdout(t, func() error {
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
 			return Deploy(context.TODO(), apps, input)
 		})
 
@@ -280,7 +280,7 @@ func TestDeploy(t *testing.T) {
 		apps.On("AppDeployLogs", appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}).Once().Return(ch, nil)
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true, Follow: true}
-		stdoutR, err := test.RunWithPatchedStdout(t, func() error {
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
 			return Deploy(context.TODO(), apps, input)
 		})
 

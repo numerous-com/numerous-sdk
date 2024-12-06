@@ -316,11 +316,10 @@ func TestTask(t *testing.T) {
 
 	t.Run("StartTask", func(t *testing.T) {
 		t.Run("writes expected output to stdout", func(t *testing.T) {
-			stdoutR, stdoutW := test.PatchStdout(t)
+			stdoutR := test.RunWithPatchedStdout(t, func() {
+				StartTask("message")
+			})
 
-			StartTask("message")
-
-			assert.NoError(t, stdoutW.Close())
 			actual, err := io.ReadAll(stdoutR)
 			assert.NoError(t, err)
 			expected := hourglassIcon + " message" + AnsiFaint + ".............................................." + AnsiReset
