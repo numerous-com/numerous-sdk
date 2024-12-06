@@ -38,7 +38,7 @@ func configSet(args []string) error {
 		return err
 	}
 
-	output.PrintlnOK("Set %s=%s", property, value)
+	output.PrintlnOK("Set %s=%q", property, value)
 
 	return nil
 }

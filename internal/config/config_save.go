@@ -18,6 +18,7 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
+	defer w.Close()
 
 	return toml.NewEncoder(w).Encode(c)
 }
