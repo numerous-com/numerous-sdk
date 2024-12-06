@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/app"
+	"numerous.com/cli/cmd/config"
 	"numerous.com/cli/cmd/deletecmd"
 	"numerous.com/cli/cmd/deploy"
 	"numerous.com/cli/cmd/download"
@@ -149,6 +150,7 @@ func init() {
 		token.Cmd,
 		version.Cmd,
 		app.Cmd,
+		config.Cmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),

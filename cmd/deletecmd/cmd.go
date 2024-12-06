@@ -1,12 +1,14 @@
 package deletecmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/cmd/usage"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
@@ -24,16 +26,14 @@ var Cmd = &cobra.Command{
 	Args:    args.OptionalAppDir(&appDir),
 }
 
-const long = `Deletes the specified app from the organization.
+const longFormat = `Deletes the specified app from the organization.
 
-If <app> and <organization> flags are set, they define the app to delete. If
-they are not the default deployment section in the manifest is used if it is
-defined.
+%s
 
-If [app directory] is specified, that directory will be used to read the
-app manifest for the default deployment information.
+%s
+`
 
-If no [app directory] is specified, the current working directory is used.`
+var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to delete"), usage.AppDirectoryArgument)
 
 const example = `To delete an app use the following form:
 

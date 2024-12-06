@@ -1,27 +1,25 @@
 package share
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
+	"numerous.com/cli/cmd/usage"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
 )
 
-var long string = `Creates a shared URL for the specified app.
+const longFormat string = `Creates a shared URL for the specified app.
 
-If <name> and <organization> flags are set, they define the app
-to create a shared URL for.
-If they are not, the default deployment section in the manifest is used,
-if it is defined.
+%s
 
-If [app directory] is specified, that directory will be used to read the
-app manifest for the default deployment information.
-
-If no [app directory] is specified, the current working directory is used.
+%s
 `
+
+var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to create a shared URL for"), usage.AppDirectoryArgument)
 
 var Cmd = &cobra.Command{
 	Use:   "share [app directory]",

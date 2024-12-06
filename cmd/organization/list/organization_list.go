@@ -4,6 +4,7 @@ import (
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/gql/user"
 
@@ -40,11 +41,13 @@ func list(a auth.Authenticator, g *gqlclient.Client) error {
 		return err
 	}
 
+	configuredOrganization := config.OrganizationSlug()
+
 	switch displayMode {
 	case DisplayModeList:
-		displayList(userResp.Memberships)
+		displayList(userResp.Memberships, configuredOrganization)
 	case DisplayModeTable:
-		displayTable(userResp.Memberships)
+		displayTable(userResp.Memberships, configuredOrganization)
 	default:
 		output.PrintError("Unexpected display mode %q", "", displayMode)
 		return errInvalidDisplayMode

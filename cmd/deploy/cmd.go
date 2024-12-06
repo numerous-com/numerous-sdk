@@ -1,34 +1,37 @@
 package deploy
 
 import (
+	"fmt"
 	"net/http"
 
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
+	"numerous.com/cli/cmd/usage"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
 
 	"github.com/spf13/cobra"
 )
 
+const longFormat string = `Deploys an application to an organization on the Numerous platform.
+
+After deployment the deployed version of the app is available in the
+organization's apps page.
+
+%s
+
+%s
+`
+
+var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to deploy"), usage.AppDirectoryArgument)
+
 var Cmd = &cobra.Command{
 	Use:     "deploy [app directory]",
 	RunE:    run,
 	GroupID: group.AppCommandsGroupID,
 	Short:   "Deploy an app to an organization",
-	Long: `Deploys an application to an organization on the Numerous platform.
-
-An app's deployment is identified with the <name> and <organization> identifier.
-Deploying an app to a given <name> and <organization> combination, will override
-the existing version.
-
-The <name> must contain only lower-case alphanumeric characters and dashes.
-
-After deployment the deployed version of the app is available in the
-organization's apps page.
-
-If no [app directory] is specified, the current working directory is used.`,
+	Long:    long,
 	Example: `
 If an app has been initialized in the current working directory, and it should
 be pushed to the organization "organization-slug-a2ecf59b", and the app slug

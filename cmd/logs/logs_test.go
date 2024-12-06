@@ -8,6 +8,7 @@ import (
 
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,12 @@ func TestLogs(t *testing.T) {
 		assert.ErrorIs(t, err, appident.ErrInvalidAppSlug)
 	})
 
-	t.Run("given neither slug nor app slug arguments and numerous.toml without deploy then it returns error", func(t *testing.T) {
+	t.Run("given neither slug nor app slug arguments, numerous.toml without deploy and no config then it returns error", func(t *testing.T) {
+		oldConfigBaseDir := config.OverrideConfigBaseDir(t.TempDir())
+		t.Cleanup(func() {
+			config.OverrideConfigBaseDir(oldConfigBaseDir)
+		})
+
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
