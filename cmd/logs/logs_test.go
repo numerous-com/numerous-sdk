@@ -23,12 +23,16 @@ func TestLogs(t *testing.T) {
 	testError := errors.New("test error")
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
+		appDir := t.TempDir()
+
 		err := Logs(context.TODO(), nil, appDir, "Some Invalid Organization Slug", appSlug, dummyPrinter)
 
 		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
 
 	t.Run("given invalid app slug then it returns error", func(t *testing.T) {
+		appDir := t.TempDir()
+
 		err := Logs(context.TODO(), nil, appDir, slug, "Some Invalid App Name", dummyPrinter)
 
 		assert.ErrorIs(t, err, appident.ErrInvalidAppSlug)

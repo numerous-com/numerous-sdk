@@ -25,7 +25,7 @@ func TestDelete(t *testing.T) {
 		expectedInput := app.DeleteAppInput{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest"}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
 
-		err := Delete(context.TODO(), service, appDir, "", "")
+		err := deleteApp(context.TODO(), service, appDir, "", "")
 		assert.NoError(t, err)
 	})
 
@@ -36,7 +36,7 @@ func TestDelete(t *testing.T) {
 		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
 
-		err := Delete(context.TODO(), service, appDir, slug, appSlug)
+		err := deleteApp(context.TODO(), service, appDir, slug, appSlug)
 		assert.NoError(t, err)
 	})
 
@@ -47,7 +47,7 @@ func TestDelete(t *testing.T) {
 		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(testError)
 
-		err := Delete(context.TODO(), service, appDir, slug, appSlug)
+		err := deleteApp(context.TODO(), service, appDir, slug, appSlug)
 
 		assert.ErrorIs(t, err, testError)
 	})

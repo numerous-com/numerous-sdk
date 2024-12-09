@@ -55,7 +55,7 @@ func TestList(t *testing.T) {
 		}`
 		c, transportMock := test.CreateMockGQLClient(response)
 
-		err := list(m, c)
+		err := list(m, c, DisplayModeList)
 
 		assert.NoError(t, err)
 		m.AssertExpectations(t)
@@ -69,7 +69,7 @@ func TestList(t *testing.T) {
 
 		c, transportMock := test.CreateMockGQLClient()
 
-		err := list(m, c)
+		err := list(m, c, DisplayModeList)
 
 		assert.NoError(t, err)
 		m.AssertExpectations(t)

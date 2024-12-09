@@ -19,25 +19,30 @@ const longFormat string = `Creates a shared URL for the specified app.
 %s
 `
 
-var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to create a shared URL for"), usage.AppDirectoryArgument)
+var cmdActionText = "to create a shared URL for"
+
+var long string = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
 
 var Cmd = &cobra.Command{
 	Use:   "share [app directory]",
 	RunE:  run,
 	Short: "Create app shared URL",
 	Long:  long,
-	Args:  args.OptionalAppDir(&appDir),
+	Args:  args.OptionalAppDir(&cmdArgs.appDir),
 }
 
-var (
-	orgSlug string
-	appSlug string
-	appDir  string
-)
+var cmdArgs struct {
+	appIdent args.AppIdentifierArg
+	appDir   string
+}
 
 func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	input := Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}
+	input := Input{
+		AppDir:  cmdArgs.appDir,
+		AppSlug: cmdArgs.appIdent.AppSlug,
+		OrgSlug: cmdArgs.appIdent.OrganizationSlug,
+	}
 
 	err := shareApp(cmd.Context(), service, input)
 
@@ -46,6 +51,5 @@ func run(cmd *cobra.Command, args []string) error {
 
 func init() {
 	flags := Cmd.Flags()
-	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to create a shared URL for. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appSlug, "app", "a", "", "An app slug identifier of the app to create a shared URL for.")
+	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
 }
