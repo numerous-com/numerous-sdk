@@ -6,31 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"numerous.com/cli/cmd/errorhandling"
-	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
-
-	"github.com/spf13/cobra"
 )
-
-var Cmd = &cobra.Command{
-	Use:     "login",
-	Short:   "Login to the Numerous CLI",
-	Args:    cobra.NoArgs,
-	GroupID: group.AdditionalCommandsGroupID,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
-		if user != nil {
-			output.PrintlnOK("Great, you are already logged in!")
-			return nil
-		}
-
-		_, err := login(auth.NumerousTenantAuthenticator, cmd.Context())
-
-		return errorhandling.ErrorAlreadyPrinted(err)
-	},
-}
 
 const loggingInMessage = `You are logging into Numerous.
 
@@ -96,25 +74,4 @@ func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 	output.PrintlnOK("You are now logged in to Numerous!")
 
 	return a.GetLoggedInUserFromKeyring(), nil
-}
-
-func RefreshAccessToken(user *auth.User, client *http.Client, a auth.Authenticator) error {
-	if err := user.CheckAuthenticationStatus(); err != auth.ErrExpiredToken {
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	newAccessToken, err := a.RegenerateAccessToken(client, user.RefreshToken)
-	if err != nil {
-		return err
-	}
-	if err := a.StoreAccessToken(newAccessToken); err != nil {
-		return err
-	}
-	user.AccessToken = newAccessToken
-
-	return nil
 }

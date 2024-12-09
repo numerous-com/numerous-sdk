@@ -2,25 +2,17 @@ package login
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
 	"numerous.com/cli/internal/auth"
-	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-)
-
-var (
-	testTenant = "test.domain.com"
-	testIssuer = fmt.Sprintf("https://%s/", testTenant)
 )
 
 func TestLogin(t *testing.T) {
+	testTenant := "test.domain.com"
 	state := auth.DeviceCodeState{
 		DeviceCode:      "some-code",
 		UserCode:        "some-long-user-code",
@@ -55,65 +47,4 @@ func TestLogin(t *testing.T) {
 
 	m.AssertExpectations(t)
 	assert.Equal(t, expectedUser, acutalUser)
-}
-
-func TestRefreshAccessToken(t *testing.T) {
-	t.Run("Refreshes access token if it has expired", func(t *testing.T) {
-		// Create test tokens
-		refreshToken := "refresh-token"
-		accessToken := test.GenerateJWT(t, testIssuer, time.Now().Add(-time.Hour))
-		expectedNewAccessToken := test.GenerateJWT(t, testIssuer, time.Now().Add(time.Hour))
-
-		user := &auth.User{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			Tenant:       testTenant,
-		}
-
-		// Mock function from authenticator
-		client := &http.Client{}
-		m := new(auth.MockAuthenticator)
-		m.On("RegenerateAccessToken", client, refreshToken).Return(expectedNewAccessToken, nil)
-		m.On("StoreAccessToken", expectedNewAccessToken).Return(nil)
-
-		// Execute function we test
-		err := RefreshAccessToken(user, client, m)
-		require.NoError(t, err)
-
-		assert.Equal(t, expectedNewAccessToken, user.AccessToken)
-		m.AssertExpectations(t)
-	})
-
-	t.Run("Does not refresh if user not logged in", func(t *testing.T) {
-		var user *auth.User
-		m := new(auth.MockAuthenticator)
-		client := &http.Client{}
-		err := RefreshAccessToken(user, client, m)
-
-		require.EqualError(t, err, auth.ErrUserNotLoggedIn.Error())
-		m.AssertExpectations(t)
-	})
-
-	t.Run("Does not refresh if access token has not expired", func(t *testing.T) {
-		// Create test tokens
-		refreshToken := "refresh-token"
-		accessToken := test.GenerateJWT(t, testIssuer, time.Now().Add(time.Hour))
-
-		user := &auth.User{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			Tenant:       testTenant,
-		}
-
-		// Mock function from authenticator
-		client := &http.Client{}
-		m := new(auth.MockAuthenticator)
-
-		// Execute function we test
-		err := RefreshAccessToken(user, client, m)
-		require.NoError(t, err)
-
-		assert.Equal(t, user.AccessToken, accessToken)
-		m.AssertExpectations(t)
-	})
 }

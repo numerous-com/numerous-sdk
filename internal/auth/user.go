@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"numerous.com/cli/internal/keyring"
@@ -63,6 +64,27 @@ func (u *User) CheckAuthenticationStatus() error {
 func (u *User) HasExpiredToken() bool {
 	token, _ := u.extractToken()
 	return tokenExpired(token)
+}
+
+func (u *User) RefreshAccessToken(client *http.Client, a Authenticator) error {
+	if err := u.CheckAuthenticationStatus(); err != ErrExpiredToken {
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	newAccessToken, err := a.RegenerateAccessToken(client, u.RefreshToken)
+	if err != nil {
+		return err
+	}
+	if err := a.StoreAccessToken(newAccessToken); err != nil {
+		return err
+	}
+	u.AccessToken = newAccessToken
+
+	return nil
 }
 
 func validateToken(t jwt.Token, tenantName string) error {

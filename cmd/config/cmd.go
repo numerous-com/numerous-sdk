@@ -13,22 +13,24 @@ var Cmd = &cobra.Command{
 	Use:     "config",
 	Short:   "Configure the Numerous CLI",
 	Long:    "Set configuration values, or print the entire configuration.",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			// do nothing if subcommand is running
-			return nil
-		}
+	RunE:    run,
+}
 
-		cfg := config.Config{}
-		if err := cfg.Load(); err != nil {
-			output.PrintErrorDetails("Error loading configuration", err)
-			return err
-		}
-
-		cfg.Print()
-
+func run(cmd *cobra.Command, args []string) error {
+	if len(args) != 0 {
+		// do nothing if subcommand is running
 		return nil
-	},
+	}
+
+	cfg := config.Config{}
+	if err := cfg.Load(); err != nil {
+		output.PrintErrorDetails("Error loading configuration", err)
+		return err
+	}
+
+	cfg.Print()
+
+	return nil
 }
 
 func init() {

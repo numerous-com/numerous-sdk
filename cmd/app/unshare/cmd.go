@@ -19,25 +19,31 @@ const longFormat string = `Removes a shared URL for the specified app.
 %s
 `
 
-var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to remove a shared URL for"), usage.AppDirectoryArgument)
+var (
+	cmdActionText        = "to remove a shared URL for"
+	long          string = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
+)
 
 var Cmd = &cobra.Command{
 	Use:   "unshare [app directory]",
 	RunE:  run,
 	Short: "Remove app shared URL",
 	Long:  long,
-	Args:  args.OptionalAppDir(&appDir),
+	Args:  args.OptionalAppDir(&cmdArgs.appDir),
 }
 
-var (
-	orgSlug string
-	appSlug string
-	appDir  string
-)
+var cmdArgs struct {
+	appIdent args.AppIdentifierArg
+	appDir   string
+}
 
 func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	input := Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}
+	input := Input{
+		AppDir:  cmdArgs.appDir,
+		AppSlug: cmdArgs.appIdent.AppSlug,
+		OrgSlug: cmdArgs.appIdent.OrganizationSlug,
+	}
 
 	err := unshareApp(cmd.Context(), service, input)
 
@@ -46,6 +52,5 @@ func run(cmd *cobra.Command, args []string) error {
 
 func init() {
 	flags := Cmd.Flags()
-	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to remove a shared URL for. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appSlug, "app", "a", "", "An app slug identifier of the app to remove a shared URL for.")
+	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
 }

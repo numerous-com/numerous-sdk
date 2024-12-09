@@ -20,11 +20,11 @@ import (
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/token"
-	"numerous.com/cli/cmd/version"
+	cmdversion "numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/logging"
-	ver "numerous.com/cli/internal/version"
+	"numerous.com/cli/internal/version"
 
 	"github.com/spf13/cobra"
 )
@@ -34,56 +34,59 @@ var (
 	ErrIncompatibleVersion = errors.New("incompatible version")
 )
 
-var (
-	logLevel logging.Level = logging.LevelError
-	rootCmd                = &cobra.Command{
-		Use: "numerous",
-		Long: "\n                      ~~~        \n" +
-			"            ---       ~~~~~~~      \n" +
-			"     °      -------   ~~~~~~~~~~  \n" +
-			"     °°°°   ----------- ~~~~~~~~~\n" +
-			"     °°°°°°° ----------- ~~~~~~~~       _   _                                              \n" +
-			"     °°°°°°°°°°  ------- ~~~~~~~~      | \\ | |                                         \n" +
-			"     °°°°°°°°°°°°° -----  ~~~~~~~      |  \\| |_   _ _ __ ___   ___ _ __ ___  _   _ ___\n" +
-			"     °°°°°°°°°°°°° -----  ~~~~~~~      | . ` | | | | '_ ` _ \\ / _ \\ '__/ _ \\| | | / __|\n" +
-			"     °°°°°°°°°°°°° -----     ~~~~      | |\\  | |_| | | | | | |  __/ | | (_) | |_| \\__ \\\n" +
-			"     °°°°°°°°°°°°°  ----       ~~      |_| \\_|\\__,_|_| |_| |_|\\___|_|  \\___/ \\__,_|___/\n" +
-			"        °°°°°°°°°°    --\n" +
-			"          °°°°°°°°    \n" +
-			"             °°°°°   \n" +
-			"                °°     \n" +
-			"",
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			output.NotifyFeedbackMaybe()
+var args = struct {
+	logLevel logging.Level
+}{
+	logLevel: logging.LevelError,
+}
 
-			if !version.Check(ver.NewService(gql.NewClient())) {
-				return errorhandling.ErrorAlreadyPrinted(ErrIncompatibleVersion)
-			}
+var cmd = &cobra.Command{
+	Use: "numerous",
+	Long: "\n                      ~~~        \n" +
+		"            ---       ~~~~~~~      \n" +
+		"     °      -------   ~~~~~~~~~~  \n" +
+		"     °°°°   ----------- ~~~~~~~~~\n" +
+		"     °°°°°°° ----------- ~~~~~~~~       _   _                                              \n" +
+		"     °°°°°°°°°°  ------- ~~~~~~~~      | \\ | |                                         \n" +
+		"     °°°°°°°°°°°°° -----  ~~~~~~~      |  \\| |_   _ _ __ ___   ___ _ __ ___  _   _ ___\n" +
+		"     °°°°°°°°°°°°° -----  ~~~~~~~      | . ` | | | | '_ ` _ \\ / _ \\ '__/ _ \\| | | / __|\n" +
+		"     °°°°°°°°°°°°° -----     ~~~~      | |\\  | |_| | | | | | |  __/ | | (_) | |_| \\__ \\\n" +
+		"     °°°°°°°°°°°°°  ----       ~~      |_| \\_|\\__,_|_| |_| |_|\\___|_|  \\___/ \\__,_|___/\n" +
+		"        °°°°°°°°°°    --\n" +
+		"          °°°°°°°°    \n" +
+		"             °°°°°   \n" +
+		"                °°     \n" +
+		"",
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		output.NotifyFeedbackMaybe()
 
-			if !commandRequiresAuthentication(cmd.CommandPath()) {
-				return nil
-			}
+		if !cmdversion.Check(version.NewService(gql.NewClient())) {
+			return errorhandling.ErrorAlreadyPrinted(ErrIncompatibleVersion)
+		}
 
-			if os.Getenv("NUMEROUS_ACCESS_TOKEN") != "" {
-				return nil
-			}
-
-			user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
-			if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
-				output.PrintErrorLoginForCommand(cmd)
-				return ErrNotAuthorized
-			}
-
-			if err := login.RefreshAccessToken(user, http.DefaultClient, auth.NumerousTenantAuthenticator); err != nil {
-				return err
-			}
-
+		if !commandRequiresAuthentication(cmd.CommandPath()) {
 			return nil
-		},
-	}
-)
+		}
+
+		if os.Getenv("NUMEROUS_ACCESS_TOKEN") != "" {
+			return nil
+		}
+
+		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+		if user.CheckAuthenticationStatus() == auth.ErrUserNotLoggedIn {
+			output.PrintErrorLoginForCommand(cmd)
+			return ErrNotAuthorized
+		}
+
+		if err := user.RefreshAccessToken(http.DefaultClient, auth.NumerousTenantAuthenticator); err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
 
 func commandRequiresAuthentication(invokedCommandName string) bool {
 	commandsWithAuthRequired := []string{
@@ -114,30 +117,30 @@ func commandRequiresAuthentication(invokedCommandName string) bool {
 }
 
 func Execute() {
-	err := rootCmd.Execute()
+	executedCmd, err := cmd.ExecuteC()
 	if err != nil {
 		if !errors.Is(err, errorhandling.ErrAlreadyPrinted) {
 			output.PrintError("Error: %s", "", err.Error())
 			println()
-			rootCmd.Usage() // nolint: errcheck
+			executedCmd.Usage() // nolint: errcheck
 		}
 		os.Exit(1)
 	}
 }
 
 func init() {
-	rootCmd.PersistentFlags().VarP(&logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
+	cmd.PersistentFlags().VarP(&args.logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
 
-	rootCmd.AddGroup(&cobra.Group{
+	cmd.AddGroup(&cobra.Group{
 		Title: "Numerous App Commands:",
 		ID:    "app-cmds",
 	})
-	rootCmd.AddGroup(&cobra.Group{
+	cmd.AddGroup(&cobra.Group{
 		Title: "Additional Numerous Commands:",
 		ID:    "additional-cmds",
 	})
 
-	rootCmd.AddCommand(
+	cmd.AddCommand(
 		cmdinit.Cmd,
 		login.Cmd,
 		logout.Cmd,
@@ -148,7 +151,7 @@ func init() {
 		logs.Cmd,
 		download.Cmd,
 		token.Cmd,
-		version.Cmd,
+		cmdversion.Cmd,
 		app.Cmd,
 		config.Cmd,
 
@@ -161,7 +164,10 @@ func init() {
 	)
 
 	cobra.OnInitialize(func() {
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel.ToSlogLevel()})))
+		logOpts := &slog.HandlerOptions{Level: args.logLevel.ToSlogLevel()}
+		logHandler := slog.NewTextHandler(os.Stderr, logOpts)
+		logger := slog.New(logHandler)
+		slog.SetDefault(logger)
 	})
 }
 

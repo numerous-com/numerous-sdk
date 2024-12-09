@@ -30,21 +30,20 @@ var Cmd = &cobra.Command{
 	Short:   "Download app sources",
 	Long:    long,
 	GroupID: group.AppCommandsGroupID,
-	Args:    args.OptionalAppDir(&appDir),
+	Args:    args.OptionalAppDir(&cmdArgs.appDir),
 }
 
-var (
-	orgSlug string
-	appSlug string
-	appDir  string
-)
+var cmdArgs struct {
+	appIdent args.AppIdentifierArg
+	appDir   string
+}
 
 func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 	input := Input{
-		AppDir:  appDir,
-		AppSlug: appSlug,
-		OrgSlug: orgSlug,
+		AppDir:  cmdArgs.appDir,
+		AppSlug: cmdArgs.appIdent.AppSlug,
+		OrgSlug: cmdArgs.appIdent.OrganizationSlug,
 	}
 
 	err := Download(cmd.Context(), http.DefaultClient, service, input, surveyConfirmOverwrite)
@@ -54,6 +53,5 @@ func run(cmd *cobra.Command, args []string) error {
 
 func init() {
 	flags := Cmd.Flags()
-	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to download. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appSlug, "app", "a", "", "A app slug identifier of the app to download.")
+	cmdArgs.appIdent.AddAppIdentifierFlags(flags, "to download")
 }

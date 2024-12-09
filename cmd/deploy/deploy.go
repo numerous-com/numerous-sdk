@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -22,7 +23,10 @@ import (
 
 const maxUploadBytes int64 = 5368709120
 
-var ErrArchiveTooLarge = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
+var (
+	ErrArchiveTooLarge   = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
+	ErrAppDirOutOfBounds = errors.New("app directory out of bounds of project directory")
+)
 
 type deployBuildError struct {
 	Message string
@@ -54,7 +58,7 @@ type DeployInput struct {
 	Follow     bool
 }
 
-func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
+func deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	appRelativePath, err := findAppRelativePath(input)
 	if err != nil {
 		output.PrintError("Project directory %q must be a parent of app directory %q", "", input.ProjectDir, input.AppDir)
@@ -75,10 +79,17 @@ func Deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(archive.Name())
 
 	if err := uploadAppArchive(ctx, apps, archive, appVersionOutput.AppVersionID); err != nil {
 		return err
+	}
+
+	if err := archive.Close(); err != nil {
+		slog.Error("Error closing temporary app archive", slog.String("error", err.Error()))
+	}
+
+	if err := os.Remove(archive.Name()); err != nil {
+		slog.Error("Error removing temporary app archive", slog.String("error", err.Error()))
 	}
 
 	if err := deployApp(ctx, appVersionOutput, secrets, apps, input, appRelativePath); err != nil {
@@ -130,8 +141,12 @@ func findAppRelativePath(input DeployInput) (string, error) {
 	}
 
 	rel, err := filepath.Rel(absProjectDir, absAppDir)
-	if err != nil || strings.HasPrefix(rel, "..") {
+	if err != nil {
 		return "", err
+	}
+
+	if strings.HasPrefix(rel, "..") {
+		return "", ErrAppDirOutOfBounds
 	}
 
 	return filepath.ToSlash(rel), nil

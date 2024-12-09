@@ -24,7 +24,10 @@ organization's apps page.
 %s
 `
 
-var long string = fmt.Sprintf(longFormat, usage.AppIdentifier("to deploy"), usage.AppDirectoryArgument)
+var (
+	cmdActionText        = "to deploy"
+	long          string = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
+)
 
 var Cmd = &cobra.Command{
 	Use:     "deploy [app directory]",
@@ -39,43 +42,41 @@ be pushed to the organization "organization-slug-a2ecf59b", and the app slug
 
 	numerous deploy --organization "organization-slug-a2ecf59b" --app "my-app"
 	`,
-	Args: args.OptionalAppDir(&appDir),
+	Args: args.OptionalAppDir(&cmdArgs.appDir),
 }
 
-var (
-	orgSlug    string
-	appSlug    string
+var cmdArgs struct {
+	appIdent   args.AppIdentifierArg
 	verbose    bool
-	appDir     string = "."
-	projectDir string = ""
+	appDir     string
+	projectDir string
 	message    string
 	version    string
 	follow     bool
-)
+}
 
 func run(cmd *cobra.Command, args []string) error {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
 	input := DeployInput{
-		AppDir:     appDir,
-		ProjectDir: projectDir,
-		OrgSlug:    orgSlug,
-		AppSlug:    appSlug,
-		Message:    message,
-		Version:    version,
-		Verbose:    verbose,
-		Follow:     follow,
+		AppDir:     cmdArgs.appDir,
+		ProjectDir: cmdArgs.projectDir,
+		OrgSlug:    cmdArgs.appIdent.OrganizationSlug,
+		AppSlug:    cmdArgs.appIdent.AppSlug,
+		Message:    cmdArgs.message,
+		Version:    cmdArgs.version,
+		Verbose:    cmdArgs.verbose,
+		Follow:     cmdArgs.follow,
 	}
-	err := Deploy(cmd.Context(), service, input)
+	err := deploy(cmd.Context(), service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }
 
 func init() {
 	flags := Cmd.Flags()
-	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to deploy to. List available organizations with 'numerous organization list'.")
-	flags.StringVarP(&appSlug, "app", "a", "", "A app slug identifier of the app to deploy to.")
-	flags.BoolVarP(&verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
-	flags.BoolVarP(&follow, "follow", "f", false, "Follow app deployment logs after deployment has succeeded.")
-	flags.StringVarP(&projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
+	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
+	flags.BoolVarP(&cmdArgs.verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
+	flags.BoolVarP(&cmdArgs.follow, "follow", "f", false, "Follow app deployment logs after deployment has succeeded.")
+	flags.StringVarP(&cmdArgs.projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 }

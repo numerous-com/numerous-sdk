@@ -12,7 +12,7 @@ type AppService interface {
 	Delete(ctx context.Context, input app.DeleteAppInput) error
 }
 
-func Delete(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string) error {
+func deleteApp(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string) error {
 	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
 		appident.PrintGetAppIdentifierError(err, appDir, ai)

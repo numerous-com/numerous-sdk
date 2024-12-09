@@ -24,16 +24,16 @@ var Cmd = &cobra.Command{
 	RunE:    run,
 }
 
-var (
-	argName             string
-	argDesc             string
-	argLibraryKey       string
-	argAppFile          string
-	argRequirementsFile string
-	argDockerfile       string
-	argDockerContext    string
-	argDockerPort       uint
-)
+var cmdArgs struct {
+	name                 string
+	description          string
+	libraryKey           string
+	appFilePath          string
+	requirementsFilePath string
+	dockerfilePath       string
+	dockerContextPath    string
+	dockerPort           uint
+}
 
 var (
 	ErrGetWorkDir            = errors.New("error getting working directory")
@@ -52,14 +52,14 @@ func run(cmd *cobra.Command, args []string) error {
 
 	params := InitializeParams{
 		AppDir:           appDir,
-		Name:             argName,
-		Desc:             argDesc,
-		LibraryKey:       argLibraryKey,
-		AppFile:          argAppFile,
-		RequirementsFile: argRequirementsFile,
-		Dockerfile:       argDockerfile,
-		DockerContext:    argDockerContext,
-		DockerPort:       int(argDockerPort),
+		Name:             cmdArgs.name,
+		Desc:             cmdArgs.description,
+		LibraryKey:       cmdArgs.libraryKey,
+		AppFile:          cmdArgs.appFilePath,
+		RequirementsFile: cmdArgs.requirementsFilePath,
+		Dockerfile:       cmdArgs.dockerfilePath,
+		DockerContext:    cmdArgs.dockerContextPath,
+		DockerPort:       int(cmdArgs.dockerPort),
 	}
 	_, err = Initialize(&wizard.SurveyAsker{}, params)
 	if errors.Is(err, wizard.ErrStopInit) {
@@ -92,16 +92,16 @@ Next steps:
 }
 
 func init() {
-	Cmd.Flags().StringVarP(&argName, "name", "n", "", "Name of the app")
-	Cmd.Flags().StringVarP(&argDesc, "description", "d", "", "Description of the app")
-	Cmd.Flags().StringVarP(&argLibraryKey, "app-library", "t", "", "Library the app is made with")
+	Cmd.Flags().StringVarP(&cmdArgs.name, "name", "n", "", "Name of the app")
+	Cmd.Flags().StringVarP(&cmdArgs.description, "description", "d", "", "Description of the app")
+	Cmd.Flags().StringVarP(&cmdArgs.libraryKey, "app-library", "t", "", "Library the app is made with")
 
-	Cmd.Flags().StringVarP(&argAppFile, "app-file", "f", "", "Path to the entrypoint module of the python app")
-	Cmd.Flags().StringVarP(&argRequirementsFile, "requirements-file", "r", "", "Path to the requirements file of the python app")
+	Cmd.Flags().StringVarP(&cmdArgs.appFilePath, "app-file", "f", "", "Path to the entrypoint module of the python app")
+	Cmd.Flags().StringVarP(&cmdArgs.requirementsFilePath, "requirements-file", "r", "", "Path to the requirements file of the python app")
 
-	Cmd.Flags().StringVar(&argDockerfile, "dockerfile", "", "Path to the Dockerfile for the app")
-	Cmd.Flags().StringVar(&argDockerContext, "docker-context", "", "Path used as the context for building the app Dockerfile")
-	Cmd.Flags().UintVar(&argDockerPort, "docker-port", 0, "The port exposed in the Dockerfile")
+	Cmd.Flags().StringVar(&cmdArgs.dockerfilePath, "dockerfile", "", "Path to the Dockerfile for the app")
+	Cmd.Flags().StringVar(&cmdArgs.dockerContextPath, "docker-context", "", "Path used as the context for building the app Dockerfile")
+	Cmd.Flags().UintVar(&cmdArgs.dockerPort, "docker-port", 0, "The port exposed in the Dockerfile")
 }
 
 func PathArgumentHandler(providedPath string, currentPath string) string {

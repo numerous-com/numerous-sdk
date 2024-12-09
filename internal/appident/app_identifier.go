@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"numerous.com/cli/cmd/validate"
 	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/manifest"
 )
@@ -25,7 +24,7 @@ func (ai AppIdentifier) validate() error {
 		return ErrMissingOrganizationSlug
 	}
 
-	if !validate.IsValidIdentifier(ai.OrganizationSlug) {
+	if !IsValidIdentifier(ai.OrganizationSlug) {
 		return ErrInvalidOrganizationSlug
 	}
 
@@ -33,7 +32,7 @@ func (ai AppIdentifier) validate() error {
 		return ErrMissingAppSlug
 	}
 
-	if !validate.IsValidIdentifier(ai.AppSlug) {
+	if !IsValidIdentifier(ai.AppSlug) {
 		return ErrInvalidAppSlug
 	}
 
