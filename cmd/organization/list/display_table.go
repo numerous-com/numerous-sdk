@@ -20,15 +20,20 @@ var (
 	rowStyle = lipgloss.NewStyle().Padding(0, 1)
 )
 
-func setupTable(organizations []organization.OrganizationMembership) *table.Table {
-	columns := []string{"Name", "Slug", "Role", "ID"}
+func setupTable(organizations []organization.OrganizationMembership, configuredOrganizationSlug string) *table.Table {
+	columns := []string{"Name", "Slug", "Role", "ID", "Default"}
 	var rows [][]string
 	for _, o := range organizations {
+		isDefault := ""
+		if o.Organization.Slug == configuredOrganizationSlug {
+			isDefault = "*"
+		}
 		rows = append(rows, []string{
 			o.Organization.Name,
 			o.Organization.Slug,
 			string(o.Role),
 			o.Organization.ID,
+			isDefault,
 		})
 	}
 
@@ -52,6 +57,6 @@ func setupTable(organizations []organization.OrganizationMembership) *table.Tabl
 	return t
 }
 
-func displayTable(organizations []organization.OrganizationMembership) {
-	fmt.Println(setupTable(organizations))
+func displayTable(organizations []organization.OrganizationMembership, configuredOrganizationSlug string) {
+	fmt.Println(setupTable(organizations, configuredOrganizationSlug))
 }

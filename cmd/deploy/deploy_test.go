@@ -3,7 +3,6 @@ package deploy
 import (
 	"context"
 	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -11,11 +10,11 @@ import (
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeploy(t *testing.T) {
@@ -101,7 +100,12 @@ func TestDeploy(t *testing.T) {
 		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
 
-	t.Run("given no slug argument and no manifest deployment then it returns error", func(t *testing.T) {
+	t.Run("given no slug argument, no manifest deployment and no config then it returns error", func(t *testing.T) {
+		oldConfigBaseDir := config.OverrideConfigBaseDir(t.TempDir())
+		t.Cleanup(func() {
+			config.OverrideConfigBaseDir(oldConfigBaseDir)
+		})
+
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
@@ -227,8 +231,7 @@ func TestDeploy(t *testing.T) {
 		})
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true}
-
-		stdout, err := mockStdout(t, func() error {
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
 			return Deploy(context.TODO(), apps, input)
 		})
 
@@ -257,7 +260,7 @@ func TestDeploy(t *testing.T) {
 			"Or you can use the --follow flag:\n",
 			"  numerous deploy --follow --organization=organization-slug --app=app-slug " + appDir + "\n",
 		}
-		output, _ := io.ReadAll(stdout)
+		output, _ := io.ReadAll(stdoutR)
 		actual := cleanNonASCIIAndANSI(string(output))
 		assert.Equal(t, strings.Join(expected, ""), actual)
 	})
@@ -277,12 +280,12 @@ func TestDeploy(t *testing.T) {
 		apps.On("AppDeployLogs", appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}).Once().Return(ch, nil)
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true, Follow: true}
-		stdout, err := mockStdout(t, func() error {
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
 			return Deploy(context.TODO(), apps, input)
 		})
 
 		assert.NoError(t, err)
-		output, _ := io.ReadAll(stdout)
+		output, _ := io.ReadAll(stdoutR)
 		actual := cleanNonASCIIAndANSI(string(output))
 
 		expected := strings.Join(
@@ -313,24 +316,4 @@ func cleanNonASCIIAndANSI(s string) string {
 	}
 
 	return cleaned
-}
-
-func mockStdout(t *testing.T, f func() error) (io.Reader, error) {
-	t.Helper()
-
-	realStdout := os.Stdout
-
-	defer func() {
-		os.Stdout = realStdout
-	}()
-
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	err = f()
-
-	require.NoError(t, w.Close())
-
-	return r, err
 }
