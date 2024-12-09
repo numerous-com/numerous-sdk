@@ -20,7 +20,7 @@ jobs:
     environment: main
     steps:
       - name: Download coverage percentage
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v7
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: sdk-coverage
@@ -42,7 +42,7 @@ jobs:
     environment: main
     steps:
       - name: Download coverage percentage
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v7
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: cli-coverage
@@ -74,7 +74,7 @@ jobs:
           python-version: "3.9"
           cache: "pip"
       - name: Download build artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v7
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: dist
