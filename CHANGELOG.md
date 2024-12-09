@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.39.0 (2024-12-09)
+
+### Documentation
+
+* docs(python-sdk): fix typos, and add sections about listing, tagging and deleting ([`295def0`](https://github.com/numerous-com/numerous-sdk/commit/295def0f481f8a1aec42b25d20392cdac697555f))
+
+
+
+### Feature
+
+* feat(cli): configure default organization for commands (#61) ([`fc8943e`](https://github.com/numerous-com/numerous-sdk/commit/fc8943e04a18ee1df6d6ef7de431ad1ae80e12cf))
+
+  > 
+  > * Adds `config` command which can be used to list or set configuration values
+  > * Adds an `organization` config value that can be configured with an organization slug
+  > * Uses the configured organization slug when getting app identifiers as a fallback value if no organization slug is given in arguments or manifest deployment section
+  > * Updates help messages for commands that use the default organization.
+
+
+
+
 ## v0.38.0 (2024-12-02)
 
 ### Documentation
