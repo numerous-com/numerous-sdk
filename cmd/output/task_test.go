@@ -314,6 +314,28 @@ func TestTask(t *testing.T) {
 		})
 	})
 
+	t.Run("Progress", func(t *testing.T) {
+		buf := bytes.NewBuffer(nil)
+		term := &stubTerminal{buf: buf, width: 19} // width: task message + 10 spaces for progress + max suffix length
+
+		task := StartTaskWithTerminal("message", term)
+		for i := float32(0.0); i <= 100.0; i += 20.0 {
+			task.Progress(i)
+		}
+		actual := buf.String()
+
+		expected := strings.Join([]string{
+			hourglassIcon + " message" + AnsiFaint + "....." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "....." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "#...." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "##..." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "###.." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "####." + AnsiReset,
+			"\r" + hourglassIcon + " message" + AnsiFaint + "#####" + AnsiReset,
+		}, "")
+		assert.Equal(t, expected, actual)
+	})
+
 	t.Run("StartTask", func(t *testing.T) {
 		t.Run("writes expected output to stdout", func(t *testing.T) {
 			stdoutR := test.RunWithPatchedStdout(t, func() {
