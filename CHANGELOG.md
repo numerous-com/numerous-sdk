@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.39.1 (2024-12-10)
+
+### Fix
+
+* fix(cli): relevant usage on CLI errors, remove app archive on `deploy`, `app list` use configured organization (#62) ([`b6df1a0`](https://github.com/numerous-com/numerous-sdk/commit/b6df1a0591106eea68c48a31c0ef8aa80e03ee58))
+
+  > 
+  > * fix(cli): show proper usage message on errors
+  > 
+  > * Show proper sub-commands usage text instead of the root usage when errors occur
+  > * Store CLI arguments in objects, to avoid accidentally referring to them within the packages
+  > * Extract repeated code for app identifier arguments
+  > * Move logic for refreshing access tokens to the `auth` package
+  > * Move logic for validating app identifiers into the `appident` package
+  > * Move organization creation wizard logic into the `cmd/organization/create` package to simplify
+  > * Split several commands logic, so that `cmd.go` contains the actual command definition
+  > 
+  > * app list: use configured organization and fix organization flag usage text
+  > 
+  > * refactor root command
+
+
+
+
 ## v0.39.0 (2024-12-09)
 
 ### Documentation
