@@ -23,7 +23,7 @@ var Cmd = &cobra.Command{
 	GroupID: group.AppCommandsGroupID,
 	Long:    long,
 	Example: example,
-	Args:    args.OptionalAppDir(&appDir),
+	Args:    args.OptionalAppDir(&cmdArgs.appDir),
 }
 
 const longFormat = `Deletes the specified app from the organization.
@@ -45,26 +45,24 @@ Otherwise, assuming an app has been initialized in the directory
 numerous delete my_project/my_app
 `
 
-var (
-	orgSlug string
-	appSlug string
-	appDir  string = "."
-)
+var cmdArgs struct {
+	appIdent args.AppIdentifierArg
+	appDir   string
+}
 
-func run(cmd *cobra.Command, args []string) error {
-	if exists, _ := dir.AppIDExists(appDir); exists {
+func run(cmd *cobra.Command, _ []string) error {
+	if exists, _ := dir.AppIDExists(cmdArgs.appDir); exists {
 		output.NotifyCmdChanged("numerous delete", "numerous legacy delete")
 		println()
 	}
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	err := Delete(cmd.Context(), service, appDir, orgSlug, appSlug)
+	err := deleteApp(cmd.Context(), service, cmdArgs.appDir, cmdArgs.appIdent.OrganizationSlug, cmdArgs.appIdent.AppSlug)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }
 
 func init() {
-	flags := Cmd.Flags()
-	flags.StringVarP(&orgSlug, "organization", "o", "", "The organization slug identifier of the app to read logs from.")
-	flags.StringVarP(&appSlug, "app", "a", "", "The app slug identifier of the app to read logs from.")
+	f := Cmd.Flags()
+	cmdArgs.appIdent.AddAppIdentifierFlags(f, "")
 }

@@ -1,4 +1,4 @@
-package wizard
+package create
 
 import (
 	"numerous.com/cli/internal/auth"
@@ -6,7 +6,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-func RunOrganizationCreateWizard(name *string, user auth.User) error {
+func runWizard(name *string, user auth.User) error {
 	questions := []*survey.Question{
 		{
 			Name: "Name",

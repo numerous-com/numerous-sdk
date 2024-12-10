@@ -64,7 +64,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		assert.NoError(t, err)
 	})
@@ -75,7 +75,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		assert.NoError(t, err)
 		apps.AssertNotCalled(t, "Create")
@@ -85,7 +85,7 @@ func TestDeploy(t *testing.T) {
 		dir := t.TempDir()
 
 		input := DeployInput{AppDir: dir, OrgSlug: slug, AppSlug: appSlug}
-		err := Deploy(context.TODO(), nil, input)
+		err := deploy(context.TODO(), nil, input)
 
 		assert.EqualError(t, err, "open "+dir+"/numerous.toml: no such file or directory")
 	})
@@ -95,7 +95,7 @@ func TestDeploy(t *testing.T) {
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		input := DeployInput{AppDir: appDir, OrgSlug: "Some Invalid Organization Slug", AppSlug: appSlug}
-		err := Deploy(context.TODO(), nil, input)
+		err := deploy(context.TODO(), nil, input)
 
 		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
@@ -110,7 +110,7 @@ func TestDeploy(t *testing.T) {
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
 		input := DeployInput{AppDir: appDir, AppSlug: appSlug}
-		err := Deploy(context.TODO(), nil, input)
+		err := deploy(context.TODO(), nil, input)
 
 		assert.ErrorIs(t, err, appident.ErrMissingOrganizationSlug)
 	})
@@ -121,7 +121,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, AppSlug: "app-slug-in-argument", OrgSlug: "organization-slug-in-argument"}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		if assert.NoError(t, err) {
 			apps.AssertCalled(t, "ReadApp", mock.Anything, app.ReadAppInput{OrganizationSlug: "organization-slug-in-argument", AppSlug: "app-slug-in-argument"})
@@ -134,7 +134,7 @@ func TestDeploy(t *testing.T) {
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 
 		input := DeployInput{AppDir: appDir, OrgSlug: "organization-slug", AppSlug: "Some Invalid App Name"}
-		err := Deploy(context.TODO(), nil, input)
+		err := deploy(context.TODO(), nil, input)
 
 		assert.ErrorIs(t, err, appident.ErrInvalidAppSlug)
 	})
@@ -145,7 +145,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: "organization-slug"}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		expectedAppSlug := "streamlit-app-without-deploy"
 		if assert.NoError(t, err) {
@@ -159,7 +159,7 @@ func TestDeploy(t *testing.T) {
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
 		apps := mockAppNotExists()
 
-		err := Deploy(context.TODO(), apps, DeployInput{AppDir: appDir})
+		err := deploy(context.TODO(), apps, DeployInput{AppDir: appDir})
 
 		if assert.NoError(t, err) {
 			expectedInput := app.CreateAppInput{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest", DisplayName: "Streamlit App With Deploy"}
@@ -173,7 +173,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppNotExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: "organization-slug-in-argument", AppSlug: "app-slug-in-argument"}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		if assert.NoError(t, err) {
 			apps.AssertCalled(t, "ReadApp", mock.Anything, app.ReadAppInput{OrganizationSlug: "organization-slug-in-argument", AppSlug: "app-slug-in-argument"})
@@ -189,7 +189,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		if assert.NoError(t, err) {
 			expectedInput := app.CreateAppVersionInput{
@@ -207,7 +207,7 @@ func TestDeploy(t *testing.T) {
 		apps := mockAppExists()
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug}
-		err := Deploy(context.TODO(), apps, input)
+		err := deploy(context.TODO(), apps, input)
 
 		if assert.NoError(t, err) {
 			expectedInput := app.CreateAppVersionInput{AppID: appID}
@@ -232,7 +232,7 @@ func TestDeploy(t *testing.T) {
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true}
 		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
-			return Deploy(context.TODO(), apps, input)
+			return deploy(context.TODO(), apps, input)
 		})
 
 		assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestDeploy(t *testing.T) {
 
 		input := DeployInput{AppDir: appDir, OrgSlug: slug, AppSlug: appSlug, Version: expectedVersion, Message: expectedMessage, Verbose: true, Follow: true}
 		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
-			return Deploy(context.TODO(), apps, input)
+			return deploy(context.TODO(), apps, input)
 		})
 
 		assert.NoError(t, err)

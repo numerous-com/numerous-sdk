@@ -7,18 +7,18 @@ import (
 	"numerous.com/cli/internal/token"
 )
 
-var id string
+var cmdArgs struct{ id string }
 
 var Cmd = &cobra.Command{
 	Use:   "revoke",
 	Short: "Revoke a personal access token.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := Revoke(cmd.Context(), token.NewService(gql.NewClient()), id)
+		err := Revoke(cmd.Context(), token.NewService(gql.NewClient()), cmdArgs.id)
 		return errorhandling.ErrorAlreadyPrinted(err)
 	},
 }
 
 func init() {
 	flags := Cmd.Flags()
-	flags.StringVarP(&id, "id", "", "", "The id of the personal access token.")
+	flags.StringVarP(&cmdArgs.id, "id", "", "", "The id of the personal access token.")
 }

@@ -24,13 +24,13 @@ var InitCmd = &cobra.Command{
 	Run:     run,
 }
 
-var (
+var cmdArgs struct {
 	name             string
 	desc             string
 	libraryKey       string
 	appFile          string
 	requirementsFile string
-)
+}
 
 func run(cmd *cobra.Command, args []string) {
 	appDir, err := os.Getwd()
@@ -53,11 +53,11 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	params := cmdinit.InitializeParams{
-		Name:             name,
-		Desc:             desc,
-		LibraryKey:       libraryKey,
-		AppFile:          appFile,
-		RequirementsFile: requirementsFile,
+		Name:             cmdArgs.name,
+		Desc:             cmdArgs.desc,
+		LibraryKey:       cmdArgs.libraryKey,
+		AppFile:          cmdArgs.appFile,
+		RequirementsFile: cmdArgs.requirementsFile,
 		AppDir:           appDir,
 	}
 	m, err := cmdinit.Initialize(&wizard.SurveyAsker{}, params)
@@ -102,9 +102,9 @@ If you are logged in, you can use numerous list to find the App ID again.
 }
 
 func init() {
-	InitCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the app")
-	InitCmd.Flags().StringVarP(&desc, "description", "d", "", "Description of your app")
-	InitCmd.Flags().StringVarP(&libraryKey, "app-library", "t", "", "Library the app is made with")
-	InitCmd.Flags().StringVarP(&appFile, "app-file", "f", "", "Path to that main file of the project")
-	InitCmd.Flags().StringVarP(&requirementsFile, "requirements-file", "r", "", "Requirements file of the project")
+	InitCmd.Flags().StringVarP(&cmdArgs.name, "name", "n", "", "Name of the app")
+	InitCmd.Flags().StringVarP(&cmdArgs.desc, "description", "d", "", "Description of your app")
+	InitCmd.Flags().StringVarP(&cmdArgs.libraryKey, "app-library", "t", "", "Library the app is made with")
+	InitCmd.Flags().StringVarP(&cmdArgs.appFile, "app-file", "f", "", "Path to that main file of the project")
+	InitCmd.Flags().StringVarP(&cmdArgs.requirementsFile, "requirements-file", "r", "", "Requirements file of the project")
 }

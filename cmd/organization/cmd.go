@@ -17,6 +17,6 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(create.OrganizationCreateCmd)
-	Cmd.AddCommand(list.OrganizationListCmd)
+	Cmd.AddCommand(create.Cmd)
+	Cmd.AddCommand(list.Cmd)
 }
