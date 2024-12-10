@@ -1,7 +1,7 @@
 package main
 
-import "numerous.com/cli/cmd"
+import "numerous.com/cli/cmd/root"
 
 func main() {
-	cmd.Execute()
+	root.Execute()
 }
