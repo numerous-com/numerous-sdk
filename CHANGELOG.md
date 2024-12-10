@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.39.2 (2024-12-10)
+
+### Fix
+
+* fix(cli): use current directory as app directory default ([`c4d5b76`](https://github.com/numerous-com/numerous-sdk/commit/c4d5b76ecef2f22732ae1989b81c46a3e7e4c320))
+
+
+
+
 ## v0.39.1 (2024-12-10)
 
 ### Fix
