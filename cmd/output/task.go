@@ -9,7 +9,7 @@ import (
 const (
 	fallbackTaskLineWidth = 60
 	maxTaskLineWidth      = 120
-	minDots               = 3
+	defaultMinDots        = 3
 )
 
 type lineWidthFunc func() int
@@ -18,12 +18,13 @@ type Task struct {
 	msg          string
 	lineAdded    bool
 	lineUpdating bool
+	progress     bool
 	lineWidth    lineWidthFunc
 	w            io.Writer
 }
 
 func (t *Task) line(icon string) string {
-	dotCount, msg := t.trimMessage()
+	dotCount, msg := t.trimMessage(defaultMinDots)
 
 	line := icon + " " + msg + AnsiFaint + "..."
 	line += strings.Repeat(".", dotCount)
@@ -31,7 +32,7 @@ func (t *Task) line(icon string) string {
 	return line + AnsiReset
 }
 
-func (t *Task) trimMessage() (int, string) {
+func (t *Task) trimMessage(minDots int) (int, string) {
 	w := t.lineWidth()
 
 	errLineLen := 2 + len(t.msg) + minDots + len("Error") // +2 for icon and space
@@ -80,6 +81,25 @@ func (t *Task) EndUpdateLine() {
 		fmt.Fprintln(t.w)
 		t.lineUpdating = false
 	}
+}
+
+func (t *Task) Progress(percent float32) {
+	if t.lineAdded || t.lineUpdating {
+		return
+	}
+
+	t.progress = true
+	progressWidth, msg := t.trimMessage(0)
+	line := "\r" + hourglassIcon + " " + msg + AnsiFaint
+
+	if progressWidth > 0 {
+		completedWidth := int((float32)(progressWidth) / 100.0 * percent)
+		remainingWidth := progressWidth - completedWidth
+		line += strings.Repeat("#", completedWidth) + strings.Repeat(".", remainingWidth)
+	}
+	line += AnsiReset
+
+	fmt.Fprint(t.w, line)
 }
 
 func (t *Task) Done() {

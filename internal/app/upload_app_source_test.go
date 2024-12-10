@@ -13,8 +13,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var dummyData = []byte("some data")
+
 func dummyReader() io.Reader {
-	return bytes.NewBuffer([]byte("some data"))
+	return bytes.NewBuffer(dummyData)
 }
 
 func TestUploadAppSource(t *testing.T) {
@@ -26,7 +28,7 @@ func TestUploadAppSource(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(nilResp, testError)
 		s := Service{uploadDoer: &doer}
 
-		err := s.UploadAppSource("http://some-upload-url", dummyReader())
+		err := s.UploadAppSource("http://some-upload-url", UploadArchive{Reader: dummyReader(), Size: int64(len(dummyData))})
 
 		assert.ErrorIs(t, err, testError)
 	})
@@ -38,7 +40,7 @@ func TestUploadAppSource(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
-		err := s.UploadAppSource("http://some-upload-url", dummyReader())
+		err := s.UploadAppSource("http://some-upload-url", UploadArchive{Reader: dummyReader(), Size: int64(len(dummyData))})
 
 		expected := AppSourceUploadError{
 			HTTPStatusCode: http.StatusBadRequest,
@@ -55,7 +57,7 @@ func TestUploadAppSource(t *testing.T) {
 	t.Run("given invalid upload URL then it returns error", func(t *testing.T) {
 		s := Service{uploadDoer: &test.MockDoer{}}
 
-		err := s.UploadAppSource("://invalid-url", dummyReader())
+		err := s.UploadAppSource("://invalid-url", UploadArchive{Reader: dummyReader(), Size: int64(len(dummyData))})
 
 		assert.Error(t, err)
 	})
@@ -66,7 +68,7 @@ func TestUploadAppSource(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
 
-		err := s.UploadAppSource("http://some-upload-url", bytes.NewReader([]byte("")))
+		err := s.UploadAppSource("http://some-upload-url", UploadArchive{Reader: bytes.NewReader([]byte("")), Size: 0})
 
 		assert.NoError(t, err)
 	})
@@ -76,7 +78,8 @@ func TestUploadAppSource(t *testing.T) {
 		resp := http.Response{Status: "OK", StatusCode: http.StatusOK}
 		doer.On("Do", mock.Anything).Return(&resp, nil)
 		s := Service{uploadDoer: &doer}
-		err := s.UploadAppSource("http://some-upload-url", bytes.NewReader([]byte("some data")))
+		data := []byte("some data")
+		err := s.UploadAppSource("http://some-upload-url", UploadArchive{Reader: bytes.NewReader(data), Size: int64(len(data))})
 
 		assert.NoError(t, err)
 		doer.AssertCalled(t, "Do", mock.MatchedBy(func(r *http.Request) bool {
