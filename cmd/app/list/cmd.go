@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/gql"
 )
 
@@ -20,8 +20,16 @@ var Cmd = &cobra.Command{
 }
 
 func run(cmd *cobra.Command) error {
-	if cmdArgs.organizationSlug == "" {
-		output.PrintError("Missing organization argument.", "")
+	orgSlug := cmdArgs.organizationSlug
+	if orgSlug == "" {
+		orgSlug = config.OrganizationSlug()
+	}
+
+	if orgSlug == "" {
+		output.PrintError(
+			"No organization provided or configured",
+			"Specify an organization with the --organization flag, or configure one with \"numerous config\".",
+		)
 		cmd.Usage() // nolint:errcheck
 
 		return errorhandling.ErrAlreadyPrinted
@@ -35,5 +43,5 @@ func run(cmd *cobra.Command) error {
 
 func init() {
 	flags := Cmd.Flags()
-	args.AddOrganizationSlugFlag(flags, "to list apps from", &cmdArgs.organizationSlug)
+	flags.StringVarP(&cmdArgs.organizationSlug, "organization", "o", "", "The organization slug identifier to list apps from. List available organizations with 'numerous organization list'.")
 }
