@@ -41,7 +41,7 @@ type appService interface {
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
 	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
 	AppVersionUploadURL(ctx context.Context, input app.AppVersionUploadURLInput) (app.AppVersionUploadURLOutput, error)
-	UploadAppSource(uploadURL string, archive io.Reader) error
+	UploadAppSource(uploadURL string, archive app.UploadArchive) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
 	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
@@ -269,6 +269,35 @@ func readOrCreateApp(ctx context.Context, apps appService, ai appident.AppIdenti
 	return appCreateOutput.AppID, nil
 }
 
+type progressReader struct {
+	r         io.Reader
+	bytesSent int
+	task      *output.Task
+	totalSize int64
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.r.Read(p)
+	pr.bytesSent += n
+	pr.report(errors.Is(err, io.EOF))
+
+	return n, err
+}
+
+func (pr *progressReader) report(eof bool) {
+	if eof {
+		pr.task.Progress(100.0) // nolint:mnd
+		return
+	}
+
+	percent := float32(0.0)
+	if pr.bytesSent >= 0 {
+		percent = 100.0 * float32(pr.bytesSent) / float32(pr.totalSize) // nolint:mnd
+	}
+
+	pr.task.Progress(percent)
+}
+
 func uploadAppArchive(ctx context.Context, apps appService, archive *os.File, appVersionID string) error {
 	task := output.StartTask("Uploading app archive")
 	uploadURLInput := app.AppVersionUploadURLInput(app.AppVersionUploadURLInput{AppVersionID: appVersionID})
@@ -280,7 +309,8 @@ func uploadAppArchive(ctx context.Context, apps appService, archive *os.File, ap
 		return err
 	}
 
-	if stat, err := archive.Stat(); err != nil {
+	stat, err := archive.Stat()
+	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Error checking archive size", err)
 
@@ -292,7 +322,12 @@ func uploadAppArchive(ctx context.Context, apps appService, archive *os.File, ap
 		return errArchiveTooLarge
 	}
 
-	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
+	uploadArchive := app.UploadArchive{
+		Reader: &progressReader{r: archive, totalSize: stat.Size(), task: task},
+		Size:   stat.Size(),
+	}
+
+	err = apps.UploadAppSource(uploadURLOutput.UploadURL, uploadArchive)
 	var appSourceUploadErr *app.AppSourceUploadError
 	if errors.As(err, &appSourceUploadErr) {
 		task.Error()
