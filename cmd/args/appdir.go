@@ -2,6 +2,7 @@ package args
 
 import (
 	"errors"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/output"
@@ -10,7 +11,7 @@ import (
 var ErrOptionalAppDirArgCount = errors.New("there must be at most 1 argument for optional app directory")
 
 // Returns an arguments handler, which checks an optional app dir positional
-// argument, and writes it into the given string reference.
+// argument, and writes the absolute path into the given string reference.
 func OptionalAppDir(appDir *string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
@@ -21,9 +22,19 @@ func OptionalAppDir(appDir *string) func(cmd *cobra.Command, args []string) erro
 			return ErrOptionalAppDirArgCount
 		}
 
-		if len(args) == 1 {
-			*appDir = args[0]
+		// default to empty string
+		appDirArg := ""
+		if len(args) != 0 {
+			appDirArg = args[0]
 		}
+
+		// find the absolute path - current working directory if appDirArg is empty
+		absAppDir, err := filepath.Abs(appDirArg)
+		if err != nil {
+			return err
+		}
+
+		*appDir = absAppDir
 
 		return nil
 	}

@@ -2,8 +2,9 @@ package initialize
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 
+	"numerous.com/cli/cmd/args"
 	cmdinit "numerous.com/cli/cmd/init"
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
@@ -20,7 +21,7 @@ var InitCmd = &cobra.Command{
 	Aliases: []string{"initialize"},
 	Short:   "Initialize a Numerous project",
 	Long:    `Helps the user bootstrap a python project as a Numerous project.`,
-	Args:    cobra.MaximumNArgs(1),
+	Args:    args.OptionalAppDir(&cmdArgs.appDir),
 	Run:     run,
 }
 
@@ -30,16 +31,13 @@ var cmdArgs struct {
 	libraryKey       string
 	appFile          string
 	requirementsFile string
+	appDir           string
 }
 
 func run(cmd *cobra.Command, args []string) {
-	appDir, err := os.Getwd()
+	appDir, err := filepath.Abs(cmdArgs.appDir)
 	if err != nil {
 		return
-	}
-
-	if len(args) != 0 {
-		appDir = cmdinit.PathArgumentHandler(args[0], appDir)
 	}
 
 	if exists, _ := dir.AppIDExists(appDir); exists {
