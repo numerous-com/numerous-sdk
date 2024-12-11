@@ -20,7 +20,9 @@ func TestAppRead(t *testing.T) {
 			{
 				"data": {
 					"app": {
-						"id": "some-app-id"
+						"id": "some-app-id",
+						"displayName": "App Name",
+						"description": "App description"
 					}
 				}
 			}
@@ -35,7 +37,9 @@ func TestAppRead(t *testing.T) {
 		output, err := s.ReadApp(context.TODO(), input)
 
 		expected := ReadAppOutput{
-			AppID: "some-app-id",
+			AppID:          "some-app-id",
+			AppDisplayName: "App Name",
+			AppDescription: "App description",
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expected, output)

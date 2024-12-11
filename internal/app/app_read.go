@@ -12,20 +12,26 @@ type ReadAppInput struct {
 }
 
 type ReadAppOutput struct {
-	AppID string
+	AppID          string
+	AppDisplayName string
+	AppDescription string
 }
 
 const queryAppText = `
 query CLIAppRead($orgSlug: String!, $appSlug: String!) {
 	app(organizationSlug: $orgSlug, appSlug: $appSlug) {
 		id
+		displayName
+		description
 	}
 }
 `
 
 type appResponse struct {
 	App struct {
-		ID string
+		ID          string
+		DisplayName string
+		Description string
 	}
 }
 
@@ -35,7 +41,7 @@ func (s *Service) ReadApp(ctx context.Context, input ReadAppInput) (ReadAppOutpu
 	variables := map[string]any{"orgSlug": input.OrganizationSlug, "appSlug": input.AppSlug}
 	err := s.client.Exec(ctx, queryAppText, &resp, variables, graphql.OperationName("CLIAppRead"))
 	if err == nil {
-		return ReadAppOutput{AppID: resp.App.ID}, nil
+		return ReadAppOutput{AppID: resp.App.ID, AppDisplayName: resp.App.DisplayName, AppDescription: resp.App.Description}, nil
 	}
 
 	return ReadAppOutput{}, convertErrors(err)

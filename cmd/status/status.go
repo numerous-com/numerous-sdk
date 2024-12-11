@@ -34,10 +34,20 @@ func status(ctx context.Context, apps appReaderWorkloadLister, input statusInput
 		return err
 	}
 
-	workloads, err := apps.ListAppWorkloads(ctx, app.ListAppWorkloadsInput(readOutput))
+	println("Name: " + readOutput.AppDisplayName)
+	if readOutput.AppDescription != "" {
+		println("Description: " + readOutput.AppDescription)
+	}
+
+	workloads, err := apps.ListAppWorkloads(ctx, app.ListAppWorkloadsInput{AppID: readOutput.AppID})
 	if err != nil {
 		app.PrintAppError(err, ai)
 		return err
+	}
+
+	println()
+	if len(workloads) == 0 {
+		println("No workloads found")
 	}
 
 	printWorkloads(workloads)

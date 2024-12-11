@@ -24,9 +24,8 @@ const longFormat = `Get an overview of the status of all workloads related to an
 var long = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
 
 var cmdArgs struct {
-	orgSlug string
-	appSlug string
-	appDir  string
+	appIdent args.AppIdentifierArg
+	appDir   string
 }
 
 var Cmd = &cobra.Command{
@@ -42,10 +41,15 @@ func run(cmd *cobra.Command, args []string) error {
 
 	input := statusInput{
 		appDir:  cmdArgs.appDir,
-		appSlug: cmdArgs.appSlug,
-		orgSlug: cmdArgs.orgSlug,
+		appSlug: cmdArgs.appIdent.AppSlug,
+		orgSlug: cmdArgs.appIdent.OrganizationSlug,
 	}
 	err := status(cmd.Context(), service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
+}
+
+func init() {
+	flags := Cmd.Flags()
+	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
 }
