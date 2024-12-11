@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"context"
-	"io"
 
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
@@ -53,7 +52,7 @@ func (m *mockAppService) CreateVersion(ctx context.Context, input app.CreateAppV
 }
 
 // UploadAppSource implements AppService.
-func (m *mockAppService) UploadAppSource(uploadURL string, archive io.Reader) error {
+func (m *mockAppService) UploadAppSource(uploadURL string, archive app.UploadArchive) error {
 	args := m.Called(uploadURL, archive)
 	return args.Error(0)
 }
