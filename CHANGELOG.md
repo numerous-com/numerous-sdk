@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.40.0 (2024-12-11)
+
+### Feature
+
+* feat(cli): show progress bar when uploading app sources with `deploy` (#63) ([`523303c`](https://github.com/numerous-com/numerous-sdk/commit/523303ccf51c9eac8a93c08d52356dd2064a87db))
+
+
+
+
 ## v0.39.3 (2024-12-11)
 
 ### Fix
