@@ -36,7 +36,7 @@ func run(cmd *cobra.Command) error {
 	}
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	err := list(cmd.Context(), service, AppListInput{OrganizationSlug: cmdArgs.organizationSlug})
+	err := list(cmd.Context(), service, AppListInput{OrganizationSlug: orgSlug})
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }
