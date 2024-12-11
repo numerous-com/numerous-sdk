@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var _ AppService = &mockAppService{}
+var _ appService = &mockAppService{}
 
 type mockAppService struct {
 	mock.Mock

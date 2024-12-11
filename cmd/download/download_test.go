@@ -29,7 +29,7 @@ func TestDownload(t *testing.T) {
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 
-		err := Download(context.TODO(), client, apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, confirmAlways)
+		err := download(context.TODO(), client, apps, downloadInput{appDir: appDir, appSlug: appSlug, orgSlug: orgSlug, overwriteConfirmer: confirmAlways})
 
 		assert.NoError(t, err)
 		if assert.DirExists(t, appDir) {
@@ -49,7 +49,7 @@ func TestDownload(t *testing.T) {
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 		confirmCalled := false
 
-		err := Download(context.TODO(), client, apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, getConfirmer(true, &confirmCalled))
+		err := download(context.TODO(), client, apps, downloadInput{appDir: appDir, appSlug: appSlug, orgSlug: orgSlug, overwriteConfirmer: getConfirmer(true, &confirmCalled)})
 
 		assert.NoError(t, err)
 		assert.False(t, confirmCalled)
@@ -75,7 +75,7 @@ func TestDownload(t *testing.T) {
 		var modeReadable fs.FileMode = 0o644
 		require.NoError(t, os.WriteFile(appDir+"/numerous.toml", []byte(data), modeReadable))
 
-		err = Download(context.TODO(), client, apps, Input{AppDir: appDir}, confirmAlways)
+		err = download(context.TODO(), client, apps, downloadInput{appDir: appDir, overwriteConfirmer: confirmAlways})
 
 		assert.NoError(t, err)
 		if assert.DirExists(t, appDir) {
@@ -95,7 +95,7 @@ func TestDownload(t *testing.T) {
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 		confirmCalled := false
 
-		err := Download(context.TODO(), client, apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, getConfirmer(true, &confirmCalled))
+		err := download(context.TODO(), client, apps, downloadInput{appDir: appDir, appSlug: appSlug, orgSlug: orgSlug, overwriteConfirmer: getConfirmer(true, &confirmCalled)})
 
 		assert.NoError(t, err)
 		assertFileContentEqual(t, "../../testdata/streamlit_app/app.py", appDir+"/app.py")
@@ -123,7 +123,7 @@ func TestDownload(t *testing.T) {
 		test.WriteFile(t, filePath, originalData)
 		confirmCalled := false
 
-		err := Download(context.TODO(), client, apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, getConfirmer(false, &confirmCalled))
+		err := download(context.TODO(), client, apps, downloadInput{appDir: appDir, appSlug: appSlug, orgSlug: orgSlug, overwriteConfirmer: getConfirmer(false, &confirmCalled)})
 
 		assert.NoError(t, err)
 		notOverwrittenData, err := os.ReadFile(filePath)
@@ -147,9 +147,9 @@ func TestDownload(t *testing.T) {
 		apps.On("CurrentAppVersion", mock.Anything, app.CurrentAppVersionInput{OrganizationSlug: orgSlug, AppSlug: appSlug}).Return(app.CurrentAppVersionOutput{AppVersionID: appVersionID}, nil)
 		apps.On("AppVersionDownloadURL", mock.Anything, app.AppVersionDownloadURLInput{AppVersionID: appVersionID}).Return(app.AppVersionDownloadURLOutput{DownloadURL: downloadURL}, nil)
 
-		err := Download(context.TODO(), server.Client(), apps, Input{AppDir: appDir, AppSlug: appSlug, OrgSlug: orgSlug}, confirmAlways)
+		err := download(context.TODO(), server.Client(), apps, downloadInput{appDir: appDir, appSlug: appSlug, orgSlug: orgSlug, overwriteConfirmer: confirmAlways})
 
-		assert.ErrorIs(t, err, ErrDownloadFailed)
+		assert.ErrorIs(t, err, errDownloadFailed)
 	})
 }
 

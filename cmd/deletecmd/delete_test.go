@@ -20,7 +20,7 @@ func TestDelete(t *testing.T) {
 	t.Run("given app with manifest then it deletes expected app", func(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app", appDir)
-		service := &MockAppService{}
+		service := &mockAppDeleter{}
 
 		expectedInput := app.DeleteAppInput{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest"}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
@@ -31,7 +31,7 @@ func TestDelete(t *testing.T) {
 
 	t.Run("given slug and app slug arguments then it deletes expected app", func(t *testing.T) {
 		appDir := t.TempDir()
-		service := &MockAppService{}
+		service := &mockAppDeleter{}
 
 		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(nil)
@@ -42,7 +42,7 @@ func TestDelete(t *testing.T) {
 
 	t.Run("given error is returned then it passes the error on", func(t *testing.T) {
 		appDir := t.TempDir()
-		service := &MockAppService{}
+		service := &mockAppDeleter{}
 
 		expectedInput := app.DeleteAppInput{OrganizationSlug: slug, AppSlug: appSlug}
 		service.On("Delete", mock.Anything, expectedInput).Return(testError)

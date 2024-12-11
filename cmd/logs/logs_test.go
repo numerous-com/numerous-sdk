@@ -17,15 +17,15 @@ import (
 func dummyPrinter(entry app.AppDeployLogEntry) {}
 
 func TestLogs(t *testing.T) {
-	const slug = "organization-slug"
+	const orgSlug = "organization-slug"
 	const appSlug = "app-slug"
-	ai := appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}
+	ai := appident.AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
 	testError := errors.New("test error")
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
 
-		err := Logs(context.TODO(), nil, appDir, "Some Invalid Organization Slug", appSlug, dummyPrinter)
+		err := logs(context.TODO(), nil, logsInput{appDir: appDir, orgSlug: "Some Invalid Organization Slug", appSlug: appSlug, printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, appident.ErrInvalidOrganizationSlug)
 	})
@@ -33,7 +33,7 @@ func TestLogs(t *testing.T) {
 	t.Run("given invalid app slug then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
 
-		err := Logs(context.TODO(), nil, appDir, slug, "Some Invalid App Name", dummyPrinter)
+		err := logs(context.TODO(), nil, logsInput{appDir: appDir, orgSlug: orgSlug, appSlug: "Some Invalid App Name", printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, appident.ErrInvalidAppSlug)
 	})
@@ -47,7 +47,7 @@ func TestLogs(t *testing.T) {
 		appDir := t.TempDir()
 		test.CopyDir(t, "../../testdata/streamlit_app_without_deploy", appDir)
 
-		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
+		err := logs(context.TODO(), nil, logsInput{appDir: appDir, orgSlug: "", appSlug: "", printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, appident.ErrMissingOrganizationSlug)
 	})
@@ -55,7 +55,7 @@ func TestLogs(t *testing.T) {
 	t.Run("given no slug and app slug arguments and app dir without numerous.toml then it returns error", func(t *testing.T) {
 		appDir := t.TempDir()
 
-		err := Logs(context.TODO(), nil, appDir, "", "", dummyPrinter)
+		err := logs(context.TODO(), nil, logsInput{appDir: appDir, orgSlug: "", appSlug: "", printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, appident.ErrAppNotInitialized)
 	})
@@ -66,7 +66,7 @@ func TestLogs(t *testing.T) {
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
 
-		err := Logs(context.TODO(), apps, "", slug, appSlug, dummyPrinter)
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
 
 		assert.NoError(t, err)
 	})
@@ -81,7 +81,7 @@ func TestLogs(t *testing.T) {
 		ai := appident.AppIdentifier{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest"}
 		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
 
-		err := Logs(context.TODO(), apps, appDir, "", "", dummyPrinter)
+		err := logs(context.TODO(), apps, logsInput{appDir: appDir, orgSlug: "", appSlug: "", printer: dummyPrinter})
 
 		assert.NoError(t, err)
 		apps.AssertExpectations(t)
@@ -97,7 +97,7 @@ func TestLogs(t *testing.T) {
 			time.Sleep(time.Millisecond * 10)
 			cancel()
 		}()
-		err := Logs(ctx, apps, "", slug, appSlug, dummyPrinter)
+		err := logs(ctx, apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
 
 		assert.NoError(t, err)
 	})
@@ -107,7 +107,7 @@ func TestLogs(t *testing.T) {
 		apps := &AppServiceMock{}
 		apps.On("AppDeployLogs", ai).Return(nilChan, testError)
 
-		err := Logs(context.TODO(), apps, "", slug, appSlug, dummyPrinter)
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, testError)
 	})
@@ -129,7 +129,7 @@ func TestLogs(t *testing.T) {
 			ch <- entry1
 			ch <- entry2
 		}()
-		err := Logs(context.TODO(), apps, "", slug, appSlug, printer)
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: printer})
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)

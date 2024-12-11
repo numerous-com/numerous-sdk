@@ -58,15 +58,15 @@ var cmdArgs struct {
 func run(cmd *cobra.Command, args []string) error {
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
-	input := DeployInput{
-		AppDir:     cmdArgs.appDir,
-		ProjectDir: cmdArgs.projectDir,
-		OrgSlug:    cmdArgs.appIdent.OrganizationSlug,
-		AppSlug:    cmdArgs.appIdent.AppSlug,
-		Message:    cmdArgs.message,
-		Version:    cmdArgs.version,
-		Verbose:    cmdArgs.verbose,
-		Follow:     cmdArgs.follow,
+	input := deployInput{
+		appDir:     cmdArgs.appDir,
+		projectDir: cmdArgs.projectDir,
+		orgSlug:    cmdArgs.appIdent.OrganizationSlug,
+		appSlug:    cmdArgs.appIdent.AppSlug,
+		message:    cmdArgs.message,
+		version:    cmdArgs.version,
+		verbose:    cmdArgs.verbose,
+		follow:     cmdArgs.follow,
 	}
 	err := deploy(cmd.Context(), service, input)
 

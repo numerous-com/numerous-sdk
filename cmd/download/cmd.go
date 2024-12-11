@@ -40,13 +40,14 @@ var cmdArgs struct {
 
 func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	input := Input{
-		AppDir:  cmdArgs.appDir,
-		AppSlug: cmdArgs.appIdent.AppSlug,
-		OrgSlug: cmdArgs.appIdent.OrganizationSlug,
+	input := downloadInput{
+		appDir:             cmdArgs.appDir,
+		appSlug:            cmdArgs.appIdent.AppSlug,
+		orgSlug:            cmdArgs.appIdent.OrganizationSlug,
+		overwriteConfirmer: surveyConfirmOverwrite,
 	}
 
-	err := Download(cmd.Context(), http.DefaultClient, service, input, surveyConfirmOverwrite)
+	err := download(cmd.Context(), http.DefaultClient, service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }

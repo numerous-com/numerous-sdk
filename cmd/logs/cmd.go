@@ -70,7 +70,14 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	sc := gql.NewSubscriptionClient().WithSyncMode(true)
 	service := app.New(gql.NewClient(), sc, http.DefaultClient)
-	err := Logs(cmd.Context(), service, cmdArgs.appDir, cmdArgs.appIdent.OrganizationSlug, cmdArgs.appIdent.AppSlug, printer)
+
+	input := logsInput{
+		appDir:  cmdArgs.appDir,
+		orgSlug: cmdArgs.appIdent.OrganizationSlug,
+		appSlug: cmdArgs.appIdent.AppSlug,
+		printer: printer,
+	}
+	err := logs(cmd.Context(), service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }

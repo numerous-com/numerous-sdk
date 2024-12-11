@@ -15,21 +15,22 @@ import (
 	"numerous.com/cli/internal/archive"
 )
 
-var ErrDownloadFailed = errors.New("download failed")
+var errDownloadFailed = errors.New("download failed")
 
-type Input struct {
-	AppDir  string
-	AppSlug string
-	OrgSlug string
+type downloadInput struct {
+	appDir             string
+	appSlug            string
+	orgSlug            string
+	overwriteConfirmer func(appDir string) bool
 }
 
-type AppService interface {
+type appService interface {
 	CurrentAppVersion(context.Context, app.CurrentAppVersionInput) (app.CurrentAppVersionOutput, error)
 	AppVersionDownloadURL(context.Context, app.AppVersionDownloadURLInput) (app.AppVersionDownloadURLOutput, error)
 }
 
-func Download(ctx context.Context, client *http.Client, service AppService, input Input, confirmOverwrite func(appDir string) bool) error {
-	ai, err := appident.GetAppIdentifier(input.AppDir, nil, input.OrgSlug, input.AppSlug)
+func download(ctx context.Context, client *http.Client, service appService, input downloadInput) error {
+	ai, err := appident.GetAppIdentifier(input.appDir, nil, input.orgSlug, input.appSlug)
 	if errors.Is(err, appident.ErrAppNotInitialized) {
 		// ErrAppNotInitialized is only returned if both organization and app
 		// slugs are missing. We just print there error for missing the app
@@ -37,12 +38,12 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 		output.PrintErrorMissingAppSlug()
 		return err
 	} else if err != nil {
-		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.appDir, ai)
 		return err
 	}
 
-	if input.AppDir == "" {
-		input.AppDir = input.AppSlug
+	if input.appDir == "" {
+		input.appDir = input.appSlug
 	}
 
 	t := output.StartTask(fmt.Sprintf("Locating app version for %s/%s", ai.OrganizationSlug, ai.AppSlug))
@@ -68,13 +69,13 @@ func Download(ctx context.Context, client *http.Client, service AppService, inpu
 	}
 	t.Done()
 
-	if dirExists(input.AppDir) && !confirmOverwrite(input.AppDir) {
+	if dirExists(input.appDir) && !input.overwriteConfirmer(input.appDir) {
 		output.PrintError("Download interrupted", "")
 		return nil
 	}
 
-	t = output.StartTask(fmt.Sprintf("Downloading app source into %q", input.AppDir))
-	if err := downloadArchive(client, input.AppDir, urlOutput.DownloadURL); err != nil {
+	t = output.StartTask(fmt.Sprintf("Downloading app source into %q", input.appDir))
+	if err := downloadArchive(client, input.appDir, urlOutput.DownloadURL); err != nil {
 		t.Error()
 		output.PrintErrorDetails("Error downloading app source", err)
 
@@ -93,7 +94,7 @@ func downloadArchive(client *http.Client, appDir string, url string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return ErrDownloadFailed
+		return errDownloadFailed
 	}
 
 	return archive.TarExtract(resp.Body, appDir)

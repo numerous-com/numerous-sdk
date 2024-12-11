@@ -10,14 +10,21 @@ import (
 	"numerous.com/cli/internal/appident"
 )
 
-type AppService interface {
+type appService interface {
 	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
-func Logs(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string, printer func(app.AppDeployLogEntry)) error {
-	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
+type logsInput struct {
+	appDir  string
+	orgSlug string
+	appSlug string
+	printer func(app.AppDeployLogEntry)
+}
+
+func logs(ctx context.Context, apps appService, input logsInput) error {
+	ai, err := appident.GetAppIdentifier(input.appDir, nil, input.orgSlug, input.appSlug)
 	if err != nil {
-		appident.PrintGetAppIdentifierError(err, appDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.appDir, ai)
 		return err
 	}
 
@@ -33,7 +40,7 @@ func Logs(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string,
 			if !ok {
 				return nil
 			}
-			printer(entry)
+			input.printer(entry)
 		case <-ctx.Done():
 			return nil
 		}

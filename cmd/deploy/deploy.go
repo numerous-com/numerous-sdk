@@ -24,8 +24,8 @@ import (
 const maxUploadBytes int64 = 5368709120
 
 var (
-	ErrArchiveTooLarge   = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
-	ErrAppDirOutOfBounds = errors.New("app directory out of bounds of project directory")
+	errArchiveTooLarge   = fmt.Errorf("archive exceeds maximum size %d bytes", maxUploadBytes)
+	errAppDirOutOfBounds = errors.New("app directory out of bounds of project directory")
 )
 
 type deployBuildError struct {
@@ -36,7 +36,7 @@ func (e *deployBuildError) Error() string {
 	return e.Message
 }
 
-type AppService interface {
+type appService interface {
 	ReadApp(ctx context.Context, input app.ReadAppInput) (app.ReadAppOutput, error)
 	Create(ctx context.Context, input app.CreateAppInput) (app.CreateAppOutput, error)
 	CreateVersion(ctx context.Context, input app.CreateAppVersionInput) (app.CreateAppVersionOutput, error)
@@ -47,21 +47,21 @@ type AppService interface {
 	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
 }
 
-type DeployInput struct {
-	AppDir     string
-	ProjectDir string
-	OrgSlug    string
-	AppSlug    string
-	Version    string
-	Message    string
-	Verbose    bool
-	Follow     bool
+type deployInput struct {
+	appDir     string
+	projectDir string
+	orgSlug    string
+	appSlug    string
+	version    string
+	message    string
+	verbose    bool
+	follow     bool
 }
 
-func deploy(ctx context.Context, apps AppService, input DeployInput) error {
+func deploy(ctx context.Context, apps appService, input deployInput) error {
 	appRelativePath, err := findAppRelativePath(input)
 	if err != nil {
-		output.PrintError("Project directory %q must be a parent of app directory %q", "", input.ProjectDir, input.AppDir)
+		output.PrintError("Project directory %q must be a parent of app directory %q", "", input.projectDir, input.appDir)
 		return err
 	}
 
@@ -98,7 +98,7 @@ func deploy(ctx context.Context, apps AppService, input DeployInput) error {
 
 	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
 
-	if input.Follow {
+	if input.follow {
 		output.Notify("Following logs of %s/%s:", "", orgSlug, appSlug)
 		if err := followLogs(ctx, apps, orgSlug, appSlug); err != nil {
 			return err
@@ -110,13 +110,13 @@ func deploy(ctx context.Context, apps AppService, input DeployInput) error {
 		fmt.Println("Or you can use the " + output.Highlight("--follow") + " flag:")
 
 		projectDirArg := ""
-		if input.ProjectDir != "" {
-			projectDirArg = " --project-dir=" + input.ProjectDir
+		if input.projectDir != "" {
+			projectDirArg = " --project-dir=" + input.projectDir
 		}
 
 		appDirArg := ""
-		if input.AppDir != "" {
-			appDirArg = " " + input.AppDir
+		if input.appDir != "" {
+			appDirArg = " " + input.appDir
 		}
 
 		fmt.Println("  " + output.Highlight("numerous deploy --follow --organization="+orgSlug+" --app="+appSlug+projectDirArg+appDirArg))
@@ -125,17 +125,17 @@ func deploy(ctx context.Context, apps AppService, input DeployInput) error {
 	return nil
 }
 
-func findAppRelativePath(input DeployInput) (string, error) {
-	if input.ProjectDir == "" {
+func findAppRelativePath(input deployInput) (string, error) {
+	if input.projectDir == "" {
 		return "", nil
 	}
 
-	absProjectDir, err := filepath.Abs(input.ProjectDir)
+	absProjectDir, err := filepath.Abs(input.projectDir)
 	if err != nil {
 		return "", err
 	}
 
-	absAppDir, err := filepath.Abs(input.AppDir)
+	absAppDir, err := filepath.Abs(input.appDir)
 	if err != nil {
 		return "", err
 	}
@@ -146,30 +146,30 @@ func findAppRelativePath(input DeployInput) (string, error) {
 	}
 
 	if strings.HasPrefix(rel, "..") {
-		return "", ErrAppDirOutOfBounds
+		return "", errAppDirOutOfBounds
 	}
 
 	return filepath.ToSlash(rel), nil
 }
 
-func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]string, error) {
+func loadAppConfiguration(input deployInput) (*manifest.Manifest, map[string]string, error) {
 	task := output.StartTask("Loading app configuration")
-	m, err := manifest.Load(filepath.Join(input.AppDir, manifest.ManifestFileName))
+	m, err := manifest.Load(filepath.Join(input.appDir, manifest.ManifestFileName))
 	if err != nil {
 		task.Error()
-		output.PrintErrorAppNotInitialized(input.AppDir)
+		output.PrintErrorAppNotInitialized(input.appDir)
 		output.PrintManifestTOMLError(err)
 
 		return nil, nil, err
 	}
 
-	secrets := loadSecretsFromEnv(input.AppDir)
+	secrets := loadSecretsFromEnv(input.appDir)
 
 	// for validation
-	ai, err := appident.GetAppIdentifier(input.AppDir, m, input.OrgSlug, input.AppSlug)
+	ai, err := appident.GetAppIdentifier(input.appDir, m, input.orgSlug, input.appSlug)
 	if err != nil {
 		task.Error()
-		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.appDir, ai)
 
 		return nil, nil, err
 	}
@@ -179,10 +179,10 @@ func loadAppConfiguration(input DeployInput) (*manifest.Manifest, map[string]str
 	return m, secrets, nil
 }
 
-func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File, error) {
-	srcPath := input.AppDir
-	if input.ProjectDir != "" {
-		srcPath = input.ProjectDir
+func createAppArchive(input deployInput, manifest *manifest.Manifest) (*os.File, error) {
+	srcPath := input.appDir
+	if input.projectDir != "" {
+		srcPath = input.projectDir
 	}
 
 	task := output.StartTask("Creating app archive")
@@ -208,10 +208,10 @@ func createAppArchive(input DeployInput, manifest *manifest.Manifest) (*os.File,
 	return archive, nil
 }
 
-func registerAppVersion(ctx context.Context, apps AppService, input DeployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
-	ai, err := appident.GetAppIdentifier("", manifest, input.OrgSlug, input.AppSlug)
+func registerAppVersion(ctx context.Context, apps appService, input deployInput, manifest *manifest.Manifest) (app.CreateAppVersionOutput, string, string, error) {
+	ai, err := appident.GetAppIdentifier("", manifest, input.orgSlug, input.appSlug)
 	if err != nil {
-		appident.PrintGetAppIdentifierError(err, input.AppDir, ai)
+		appident.PrintGetAppIdentifierError(err, input.appDir, ai)
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
@@ -229,7 +229,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
-	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.Version, Message: input.Message}
+	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.version, Message: input.message}
 	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
 	if err != nil {
 		task.Error()
@@ -242,7 +242,7 @@ func registerAppVersion(ctx context.Context, apps AppService, input DeployInput,
 	return appVersionOutput, ai.OrganizationSlug, ai.AppSlug, nil
 }
 
-func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdentifier, manifest *manifest.Manifest) (string, error) {
+func readOrCreateApp(ctx context.Context, apps appService, ai appident.AppIdentifier, manifest *manifest.Manifest) (string, error) {
 	appReadInput := app.ReadAppInput{
 		OrganizationSlug: ai.OrganizationSlug,
 		AppSlug:          ai.AppSlug,
@@ -269,7 +269,7 @@ func readOrCreateApp(ctx context.Context, apps AppService, ai appident.AppIdenti
 	return appCreateOutput.AppID, nil
 }
 
-func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, appVersionID string) error {
+func uploadAppArchive(ctx context.Context, apps appService, archive *os.File, appVersionID string) error {
 	task := output.StartTask("Uploading app archive")
 	uploadURLInput := app.AppVersionUploadURLInput(app.AppVersionUploadURLInput{AppVersionID: appVersionID})
 	uploadURLOutput, err := apps.AppVersionUploadURL(ctx, uploadURLInput)
@@ -289,7 +289,7 @@ func uploadAppArchive(ctx context.Context, apps AppService, archive *os.File, ap
 		task.Error()
 		printAppSourceArchiveTooLarge(stat.Size())
 
-		return ErrArchiveTooLarge
+		return errArchiveTooLarge
 	}
 
 	err = apps.UploadAppSource(uploadURLOutput.UploadURL, archive)
@@ -364,7 +364,7 @@ func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
 	)
 }
 
-func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps AppService, input DeployInput, appRelativePath string) error {
+func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput, secrets map[string]string, apps appService, input deployInput, appRelativePath string) error {
 	task := output.StartTask("Deploying app")
 
 	deployAppInput := app.DeployAppInput{AppVersionID: appVersionOutput.AppVersionID, Secrets: secrets, AppRelativePath: appRelativePath}
@@ -376,19 +376,19 @@ func deployApp(ctx context.Context, appVersionOutput app.CreateAppVersionOutput,
 		return err
 	}
 
-	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.Verbose, task: task}
+	appDeploymentStatusEventUpdater := statusUpdater{verbose: input.verbose, task: task}
 	eventsInput := app.DeployEventsInput{
 		DeploymentVersionID: deployAppOutput.DeploymentVersionID,
 		Handler: func(de app.DeployEvent) error {
 			switch de.Typename {
 			case "AppBuildMessageEvent":
-				if input.Verbose {
+				if input.verbose {
 					for _, l := range strings.Split(de.BuildMessage.Message, "\n") {
 						task.AddLine("Build", l)
 					}
 				}
 			case "AppBuildErrorEvent":
-				if input.Verbose {
+				if input.verbose {
 					for _, l := range strings.Split(de.BuildError.Message, "\n") {
 						task.AddLine("Error", l)
 					}
@@ -460,7 +460,7 @@ func loadSecretsFromEnv(appDir string) map[string]string {
 	return env
 }
 
-func followLogs(ctx context.Context, apps AppService, orgSlug, appSlug string) error {
+func followLogs(ctx context.Context, apps appService, orgSlug, appSlug string) error {
 	ai := appident.AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
 	ch, err := apps.AppDeployLogs(ai)
 	if err != nil {

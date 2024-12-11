@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var _ AppService = &MockAppService{}
+var _ appDeleter = &mockAppDeleter{}
 
-type MockAppService struct {
+type mockAppDeleter struct {
 	mock.Mock
 }
 
 // Delete implements AppService.
-func (m *MockAppService) Delete(ctx context.Context, input app.DeleteAppInput) error {
+func (m *mockAppDeleter) Delete(ctx context.Context, input app.DeleteAppInput) error {
 	args := m.Called(ctx, input)
 	return args.Error(0)
 }

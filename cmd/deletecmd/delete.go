@@ -8,11 +8,11 @@ import (
 	"numerous.com/cli/internal/appident"
 )
 
-type AppService interface {
+type appDeleter interface {
 	Delete(ctx context.Context, input app.DeleteAppInput) error
 }
 
-func deleteApp(ctx context.Context, apps AppService, appDir, orgSlug, appSlug string) error {
+func deleteApp(ctx context.Context, apps appDeleter, appDir, orgSlug, appSlug string) error {
 	ai, err := appident.GetAppIdentifier(appDir, nil, orgSlug, appSlug)
 	if err != nil {
 		appident.PrintGetAppIdentifierError(err, appDir, ai)
