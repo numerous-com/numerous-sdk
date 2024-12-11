@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.39.3 (2024-12-11)
+
+### Fix
+
+* fix(cli): `app list` properly use configured organization ([`211a24d`](https://github.com/numerous-com/numerous-sdk/commit/211a24decdd3b5c7f277369b8048d40bf3e8bc7a))
+
+
+
+
 ## v0.39.2 (2024-12-10)
 
 ### Fix
