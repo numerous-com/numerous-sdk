@@ -7,6 +7,7 @@ directive @trackAppOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackAppUseOperation on FIELD_DEFINITION
 directive @trackToolOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackToolUseOperation on FIELD_DEFINITION
+directive @trackSharedAppUseOperation on FIELD_DEFINITION
 directive @trackSubscriptionOperation(eventName: String!) on FIELD_DEFINITION
 directive @trackSubscriptionUseOperation on FIELD_DEFINITION
 directive @canAccessInvitation on FIELD_DEFINITION
@@ -220,6 +221,7 @@ extend type Mutation {
     memberId: ID!
   ): OrganizationMemberRemoveResult! @hasRole(role: ADMIN)
 }
+
 ###############################################################################
 ### End of organization management
 ###############################################################################
@@ -238,11 +240,13 @@ type Auth0WhiteLabelInvitation {
 
   invitedAt: Time!
 }
+
 extend type Mutation {
   Auth0WhiteLabelInvitationCreate(
     input: Auth0WhiteLabelInvitationInput
   ): Auth0WhiteLabelInvitation!
 }
+
 ###############################################################################
 ### End of Auth0Organization management
 ###############################################################################
@@ -397,6 +401,13 @@ type AppDeployment {
   sharedURL: String
 }
 
+type AppDeploymentWorkload {
+    organization: Organization  # optional, set if workload is a private organization app
+    subscription: AppSubscription  # optional, set if workload is related to a subscription
+    startedAt: Time!
+    status: AppDeploymentStatus!
+}
+
 type AppVersionDocumentationFile {
   filename: String!
   contentBase64: String!
@@ -512,6 +523,7 @@ union AppVersionCreateGitHubResult = AppVersion | GitHubRepositoryNotFound
 
 extend type Query {
   app(organizationSlug: String!, appSlug: String!): App @hasRole(role: USER)
+  appWorkloads(appID: ID!): [AppDeploymentWorkload!]! @canManageApp
 }
 
 extend type Mutation {
@@ -540,14 +552,20 @@ extend type Mutation {
   appDeployHeartbeat(deployID: ID!): AppDeploymentHeartbeat!
     @canUseApp
     @trackAppUseOperation
+  appSharedDeployHeartbeat(sharedURLID: ID!): AppDeploymentHeartbeat!
+    @trackSharedAppUseOperation
   appVersionCreateGitHub(
     appID: ID!
     input: AppVersionCreateGitHubInput!
   ): AppVersionCreateGitHubResult
     @canManageApp
     @trackAppOperation(eventName: "App Version Create from GitHub")
-  appDeployShare(deployID: ID!): AppDeployment! @canManageApp
-  appDeployUnshare(deployID: ID!): AppDeployment! @canManageApp
+  appDeployShare(deployID: ID!): AppDeployment!
+    @canManageApp
+    @trackAppOperation(eventName: "App Share")
+  appDeployUnshare(deployID: ID!): AppDeployment!
+    @canManageApp
+    @trackAppOperation(eventName: "App Unshare")
 }
 
 extend type Subscription {
@@ -675,6 +693,11 @@ union SubscriptionOfferAcceptResult =
   | SubscriptionOfferNotFound
   | SubscriptionOfferInvalidStatus
 
+union SubscriptionOfferRejectResult =
+    SubscriptionOffer
+  | SubscriptionOfferNotFound
+  | SubscriptionOfferInvalidStatus
+
 union SubscriptionOfferWithdraw =
     SubscriptionOffer
   | SubscriptionOfferNotFound
@@ -713,8 +736,11 @@ extend type Mutation {
   ): SubscriptionOfferAcceptResult!
     @canAccessSubscriptionOffer
     @trackSubscriptionOperation(eventName: "Subscription Offer Accept")
-  subscriptionOfferReject(subscriptionOfferId: ID!): SubscriptionOfferResult!
+  subscriptionOfferReject(
+    subscriptionOfferId: ID!
+  ): SubscriptionOfferRejectResult!
     @canAccessSubscriptionOffer
+    @trackSubscriptionOperation(eventName: "Subscription Offer Reject")
   subscriptionOfferWithdraw(
     subscriptionOfferId: ID!
   ): SubscriptionOfferWithdraw!
@@ -733,6 +759,25 @@ extend type Mutation {
 
 ###############################################################################
 ### End of Subscriptions
+###############################################################################
+
+###############################################################################
+### Releases
+###############################################################################
+
+type GithubRepositoryRelease {
+  id: String!
+  name: String!
+  body: String!
+  publishedAt: Time!
+}
+
+extend type Query {
+  numerousReleases: [GithubRepositoryRelease!]!
+}
+
+###############################################################################
+### Releases
 ###############################################################################
 
 ###############################################################################
@@ -973,7 +1018,8 @@ union CollectionDocumentDeleteResult =
   | CollectionDocumentNotFound
 
 extend type Query {
-  collectionDocument(id: ID!): CollectionDocumentResult @canAccessCollectionDocument
+  collectionDocument(id: ID!): CollectionDocumentResult
+    @canAccessCollectionDocument
 }
 
 extend type Mutation {
