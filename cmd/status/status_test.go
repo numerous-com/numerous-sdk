@@ -115,7 +115,7 @@ func TestHumanDuration(t *testing.T) {
 			expected: "2 days and 2 hours",
 		},
 	} {
-		actual := humanDuration(tc.duration)
+		actual := humanizeDuration(tc.duration)
 		assert.Equal(t, tc.expected, actual)
 	}
 }

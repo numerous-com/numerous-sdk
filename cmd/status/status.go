@@ -76,44 +76,44 @@ func printWorkload(workload app.AppWorkload) {
 	}
 
 	fmt.Printf("    Status: %s\n", workload.Status)
-	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanDuration(time.Since(workload.StartedAt)))
+	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
 }
 
 const (
-	hoursPerDay      float64 = 24.0
-	minutesPerHour   float64 = 60.0
-	secondsPerMinute float64 = 60.0
+	hoursPerDay      int = 24
+	minutesPerHour   int = 60
+	secondsPerMinute int = 60
 )
 
-func humanDuration(since time.Duration) string {
-	hours := since.Hours()
+func humanizeDuration(since time.Duration) string {
+	hours := int(math.Floor(since.Hours()))
 	if hours > hoursPerDay {
-		fullDays := math.Floor(hours / hoursPerDay)
-		dayHours := math.Floor(hours - fullDays*hoursPerDay)
-		if dayHours > 0.0 {
-			return fmt.Sprintf("%d days and %d hours", int(fullDays), int(dayHours))
+		fullDays := hours / hoursPerDay
+		remainingHours := hours % hoursPerDay
+		if remainingHours > 0 {
+			return fmt.Sprintf("%d days and %d hours", fullDays, remainingHours)
 		} else {
-			return fmt.Sprintf("%d days", int(fullDays))
+			return fmt.Sprintf("%d days", fullDays)
 		}
 	}
 
-	minutes := since.Minutes()
-	if hours > 1.0 {
-		fullHours := math.Floor(hours)
-		hourMinutes := minutes - fullHours*minutesPerHour
-		if fullHours > 0.0 {
-			return fmt.Sprintf("%d hours and %d minutes", int(fullHours), int(hourMinutes))
+	minutes := int(math.Floor(since.Minutes()))
+	if hours > 1 {
+		fullHours := hours
+		remainingMinutes := minutes % minutesPerHour
+		if fullHours > 0 {
+			return fmt.Sprintf("%d hours and %d minutes", fullHours, remainingMinutes)
 		}
 	}
 
-	seconds := since.Seconds()
-	if minutes > 1.0 {
-		fullMinutes := math.Floor(minutes)
-		minuteSeconds := seconds - fullMinutes*secondsPerMinute
+	seconds := int(math.Round(since.Seconds()))
+	if minutes > 1 {
+		fullMinutes := minutes
+		remainingSeconds := seconds % secondsPerMinute
 		if fullMinutes > 0.0 {
-			return fmt.Sprintf("%d minutes and %d seconds", int(fullMinutes), int(minuteSeconds))
+			return fmt.Sprintf("%d minutes and %d seconds", fullMinutes, remainingSeconds)
 		}
 	}
 
-	return fmt.Sprintf("%d seconds", int(math.Round(seconds)))
+	return fmt.Sprintf("%d seconds", seconds)
 }
