@@ -17,6 +17,7 @@ type AppWorkload struct {
 	Subscription     *AppWorkloadSubscription
 	StartedAt        time.Time
 	Status           string
+	LogEntries       []AppDeployLogEntry
 }
 
 type ListAppWorkloadsInput struct {
@@ -35,6 +36,9 @@ type appWorkloadsResponseWorkload struct {
 		}
 	}
 	StartedAt time.Time
+	Logs      struct {
+		Edges []AppDeployLogEntry
+	}
 }
 
 type appWorkloadsResponse struct {
@@ -53,6 +57,12 @@ query CLIListAppWorkloads($appID: ID!) {
 			id
 			inboundOrganization {
 				slug
+			}
+		}
+		logs(last: 10) {
+			edges {
+				timestamp
+				text
 			}
 		}
 	}
@@ -78,8 +88,9 @@ func (s *Service) ListAppWorkloads(ctx context.Context, input ListAppWorkloadsIn
 
 func appWorkloadFromResponse(responseWorkload appWorkloadsResponseWorkload) AppWorkload {
 	wl := AppWorkload{
-		StartedAt: responseWorkload.StartedAt,
-		Status:    responseWorkload.Status,
+		StartedAt:  responseWorkload.StartedAt,
+		Status:     responseWorkload.Status,
+		LogEntries: responseWorkload.Logs.Edges,
 	}
 
 	if responseWorkload.Organization != nil {

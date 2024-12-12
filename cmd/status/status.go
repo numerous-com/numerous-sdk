@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
 )
@@ -77,6 +78,14 @@ func printWorkload(workload app.AppWorkload) {
 
 	fmt.Printf("    Status: %s\n", workload.Status)
 	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
+	printLogs(workload.LogEntries)
+}
+
+func printLogs(entries []app.AppDeployLogEntry) {
+	fmt.Println("    Logs (last 10 lines):")
+	for _, entry := range entries {
+		fmt.Println("        ", output.AnsiFaint, entry.Timestamp.Format(time.RFC3339), output.AnsiReset, entry.Text)
+	}
 }
 
 const (

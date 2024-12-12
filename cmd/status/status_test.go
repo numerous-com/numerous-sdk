@@ -28,11 +28,21 @@ func TestStatus(t *testing.T) {
 			OrganizationSlug: "test-organization-slug",
 			StartedAt:        time.Date(2024, time.January, 1, 13, 0, 0, 0, time.UTC),
 			Status:           "RUNNING",
+			LogEntries: []app.AppDeployLogEntry{
+				{Timestamp: time.Date(2024, time.January, 1, 13, 0, 1, 0, time.UTC), Text: "log entry 1"},
+				{Timestamp: time.Date(2024, time.January, 1, 13, 0, 2, 0, time.UTC), Text: "log entry 2"},
+				{Timestamp: time.Date(2024, time.January, 1, 13, 0, 3, 0, time.UTC), Text: "log entry 3"},
+			},
 		},
 		{
 			Subscription: &app.AppWorkloadSubscription{OrganizationSlug: "test-subscribing-organization-slug", SubscriptionUUID: "test-subscription-id"},
 			StartedAt:    time.Date(2024, time.February, 2, 14, 0, 0, 0, time.UTC),
 			Status:       "RUNNING",
+			LogEntries: []app.AppDeployLogEntry{
+				{Timestamp: time.Date(2024, time.February, 2, 14, 0, 1, 0, time.UTC), Text: "log entry 1"},
+				{Timestamp: time.Date(2024, time.February, 2, 14, 0, 2, 0, time.UTC), Text: "log entry 2"},
+				{Timestamp: time.Date(2024, time.February, 2, 14, 0, 3, 0, time.UTC), Text: "log entry 3"},
+			},
 		},
 	}
 

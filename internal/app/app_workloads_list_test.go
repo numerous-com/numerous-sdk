@@ -25,7 +25,14 @@ func TestAppWorkloadsList(t *testing.T) {
 									"slug": "test-organization-slug"
 								},
 								"startedAt": "2024-01-01T13:00:00.000Z",
-								"status": "RUNNING"
+								"status": "RUNNING",
+								"logs": {
+									"edges": [
+										{"timestamp": "2024-01-01T13:00:01.000Z", "text": "log entry 1"},
+										{"timestamp": "2024-01-01T13:00:02.000Z", "text": "log entry 2"},
+										{"timestamp": "2024-01-01T13:00:03.000Z", "text": "log entry 3"}
+									]
+								}
 							},
 							{
 								"subscription": {
@@ -35,7 +42,14 @@ func TestAppWorkloadsList(t *testing.T) {
 									}
 								},
 								"startedAt": "2024-02-02T14:00:00.000Z",
-								"status": "RUNNING"
+								"status": "RUNNING",
+								"logs": {
+									"edges": [
+										{"timestamp": "2024-02-02T14:00:01.000Z", "text": "log entry 1"},
+										{"timestamp": "2024-02-02T14:00:02.000Z", "text": "log entry 2"},
+										{"timestamp": "2024-02-02T14:00:03.000Z", "text": "log entry 3"}
+									]
+								}
 							}
 						]
 					}
@@ -53,6 +67,11 @@ func TestAppWorkloadsList(t *testing.T) {
 				Subscription:     nil,
 				StartedAt:        time.Date(2024, time.January, 1, 13, 0, 0, 0, time.UTC),
 				Status:           "RUNNING",
+				LogEntries: []AppDeployLogEntry{
+					{Timestamp: time.Date(2024, time.January, 1, 13, 0, 1, 0, time.UTC), Text: "log entry 1"},
+					{Timestamp: time.Date(2024, time.January, 1, 13, 0, 2, 0, time.UTC), Text: "log entry 2"},
+					{Timestamp: time.Date(2024, time.January, 1, 13, 0, 3, 0, time.UTC), Text: "log entry 3"},
+				},
 			},
 			{
 				OrganizationSlug: "",
@@ -62,6 +81,11 @@ func TestAppWorkloadsList(t *testing.T) {
 				},
 				StartedAt: time.Date(2024, time.February, 2, 14, 0, 0, 0, time.UTC),
 				Status:    "RUNNING",
+				LogEntries: []AppDeployLogEntry{
+					{Timestamp: time.Date(2024, time.February, 2, 14, 0, 1, 0, time.UTC), Text: "log entry 1"},
+					{Timestamp: time.Date(2024, time.February, 2, 14, 0, 2, 0, time.UTC), Text: "log entry 2"},
+					{Timestamp: time.Date(2024, time.February, 2, 14, 0, 3, 0, time.UTC), Text: "log entry 3"},
+				},
 			},
 		}
 		assert.NoError(t, err)

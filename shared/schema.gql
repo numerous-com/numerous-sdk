@@ -406,8 +406,13 @@ type AppDeploymentWorkload {
     subscription: AppSubscription  # optional, set if workload is related to a subscription
     startedAt: Time!
     status: AppDeploymentStatus!
+    logs(last: Int): AppDeployLogEntryConnection!
 }
 
+type AppDeployLogEntryConnection {
+    edges: [AppDeployLogEntry!]!
+    pageInfo: PageInfo!
+}
 type AppVersionDocumentationFile {
   filename: String!
   contentBase64: String!
