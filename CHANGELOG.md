@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.41.0 (2024-12-12)
+
+### Feature
+
+* feat(cli): `numerous status` command for displaying app workload status (#64) ([`9739513`](https://github.com/numerous-com/numerous-sdk/commit/9739513a156e7e5d47116034377d6b57961dac7e))
+
+  > 
+  > Displays deployment status, uptime, and the last 10 log entries for all workloads of a given app (e.g. main app workload, and any subscription workloads).
+
+
+
+
 ## v0.40.0 (2024-12-11)
 
 ### Feature
