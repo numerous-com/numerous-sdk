@@ -1,18 +1,11 @@
 package app
 
 import (
-	"time"
-
 	"numerous.com/cli/internal/appident"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/hasura/go-graphql-client/pkg/jsonutil"
 )
-
-type AppDeployLogEntry struct {
-	Timestamp time.Time
-	Text      string
-}
 
 type AppDeployLogsSubscription struct {
 	AppDeployLogs AppDeployLogEntry `graphql:"appDeployLogs(input: {organizationSlug: $orgSlug, appSlug: $appSlug})"`
