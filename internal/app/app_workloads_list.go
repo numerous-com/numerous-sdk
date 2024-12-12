@@ -12,12 +12,19 @@ type AppWorkloadSubscription struct {
 	SubscriptionUUID string
 }
 
+type AppWorkloadResourceUsage struct {
+	Current float64
+	Limit   *float64
+}
+
 type AppWorkload struct {
 	OrganizationSlug string
 	Subscription     *AppWorkloadSubscription
 	StartedAt        time.Time
 	Status           string
 	LogEntries       []AppDeployLogEntry
+	CPUUsage         AppWorkloadResourceUsage
+	MemoryUsageMB    AppWorkloadResourceUsage
 }
 
 type ListAppWorkloadsInput struct {
@@ -39,6 +46,8 @@ type appWorkloadsResponseWorkload struct {
 	Logs      struct {
 		Edges []AppDeployLogEntry
 	}
+	CPUUsage      AppWorkloadResourceUsage
+	MemoryUsageMB AppWorkloadResourceUsage
 }
 
 type appWorkloadsResponse struct {
@@ -65,6 +74,14 @@ query CLIListAppWorkloads($appID: ID!) {
 				text
 			}
 		}
+		cpuUsage {
+			current
+			limit
+		}
+		memoryUsageMB {
+			current
+			limit
+		}
 	}
 }
 `
@@ -88,9 +105,11 @@ func (s *Service) ListAppWorkloads(ctx context.Context, input ListAppWorkloadsIn
 
 func appWorkloadFromResponse(responseWorkload appWorkloadsResponseWorkload) AppWorkload {
 	wl := AppWorkload{
-		StartedAt:  responseWorkload.StartedAt,
-		Status:     responseWorkload.Status,
-		LogEntries: responseWorkload.Logs.Edges,
+		StartedAt:     responseWorkload.StartedAt,
+		Status:        responseWorkload.Status,
+		LogEntries:    responseWorkload.Logs.Edges,
+		CPUUsage:      responseWorkload.CPUUsage,
+		MemoryUsageMB: responseWorkload.MemoryUsageMB,
 	}
 
 	if responseWorkload.Organization != nil {

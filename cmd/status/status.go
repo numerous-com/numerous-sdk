@@ -78,6 +78,8 @@ func printWorkload(workload app.AppWorkload) {
 
 	fmt.Printf("    Status: %s\n", workload.Status)
 	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
+	fmt.Printf("    CPU Usage: %s\n", formatUsage(workload.CPUUsage))
+	fmt.Printf("    Memory Usage (MB): %s\n", formatUsage(workload.MemoryUsageMB))
 	printLogs(workload.LogEntries)
 }
 
@@ -125,4 +127,12 @@ func humanizeDuration(since time.Duration) string {
 	}
 
 	return fmt.Sprintf("%d seconds", seconds)
+}
+
+func formatUsage(usage app.AppWorkloadResourceUsage) string {
+	if usage.Limit == nil {
+		return fmt.Sprintf("%2.f", usage.Current)
+	}
+
+	return fmt.Sprintf("%2.f / %2.f", usage.Current, *usage.Limit)
 }

@@ -33,6 +33,8 @@ func TestStatus(t *testing.T) {
 				{Timestamp: time.Date(2024, time.January, 1, 13, 0, 2, 0, time.UTC), Text: "log entry 2"},
 				{Timestamp: time.Date(2024, time.January, 1, 13, 0, 3, 0, time.UTC), Text: "log entry 3"},
 			},
+			CPUUsage:      app.AppWorkloadResourceUsage{Current: 10.0},
+			MemoryUsageMB: app.AppWorkloadResourceUsage{Current: 20.0},
 		},
 		{
 			Subscription: &app.AppWorkloadSubscription{OrganizationSlug: "test-subscribing-organization-slug", SubscriptionUUID: "test-subscription-id"},
@@ -43,6 +45,8 @@ func TestStatus(t *testing.T) {
 				{Timestamp: time.Date(2024, time.February, 2, 14, 0, 2, 0, time.UTC), Text: "log entry 2"},
 				{Timestamp: time.Date(2024, time.February, 2, 14, 0, 3, 0, time.UTC), Text: "log entry 3"},
 			},
+			CPUUsage:      app.AppWorkloadResourceUsage{Current: 10.0, Limit: ref(20.0)},
+			MemoryUsageMB: app.AppWorkloadResourceUsage{Current: 20.0, Limit: ref(40.0)},
 		},
 	}
 
@@ -128,4 +132,8 @@ func TestHumanDuration(t *testing.T) {
 		actual := humanizeDuration(tc.duration)
 		assert.Equal(t, tc.expected, actual)
 	}
+}
+
+func ref[T any](v T) *T {
+	return &v
 }

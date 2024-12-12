@@ -401,12 +401,19 @@ type AppDeployment {
   sharedURL: String
 }
 
+type AppDeploymentResourceUsage {
+  current: Float!
+  limit: Float
+}
+
 type AppDeploymentWorkload {
     organization: Organization  # optional, set if workload is a private organization app
     subscription: AppSubscription  # optional, set if workload is related to a subscription
     startedAt: Time!
     status: AppDeploymentStatus!
     logs(last: Int): AppDeployLogEntryConnection!
+    cpuUsage: AppDeploymentResourceUsage
+    memoryUsageMB: AppDeploymentResourceUsage
 }
 
 type AppDeployLogEntryConnection {
