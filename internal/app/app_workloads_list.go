@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hasura/go-graphql-client"
+	"numerous.com/cli/internal/timeseries"
 )
 
 type AppWorkloadSubscription struct {
@@ -13,8 +14,9 @@ type AppWorkloadSubscription struct {
 }
 
 type AppWorkloadResourceUsage struct {
-	Current float64
-	Limit   *float64
+	Current    float64
+	Limit      *float64
+	Timeseries timeseries.Timeseries
 }
 
 type AppWorkload struct {
@@ -77,10 +79,18 @@ query CLIListAppWorkloads($appID: ID!) {
 		cpuUsage {
 			current
 			limit
+			timeseries {
+				timestamp
+				value
+			}
 		}
 		memoryUsageMB {
 			current
 			limit
+			timeseries {
+				timestamp
+				value
+			}
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/timeseries"
 )
 
 type statusInput struct {
@@ -78,8 +79,8 @@ func printWorkload(workload app.AppWorkload) {
 
 	fmt.Printf("    Status: %s\n", workload.Status)
 	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
-	fmt.Printf("    CPU Usage: %s\n", formatUsage(workload.CPUUsage))
-	fmt.Printf("    Memory Usage (MB): %s\n", formatUsage(workload.MemoryUsageMB))
+	printCPUUsage(workload.CPUUsage)
+	printMemoryUsage(workload.MemoryUsageMB)
 	printLogs(workload.LogEntries)
 }
 
@@ -88,6 +89,26 @@ func printLogs(entries []app.AppDeployLogEntry) {
 	for _, entry := range entries {
 		fmt.Println("        ", output.AnsiFaint, entry.Timestamp.Format(time.RFC3339), output.AnsiReset, entry.Text)
 	}
+}
+
+func printCPUUsage(cpuUsage app.AppWorkloadResourceUsage) {
+	fmt.Printf("    CPU Usage: %s\n", formatUsage(cpuUsage))
+	printPlot("        |", cpuUsage.Timeseries)
+}
+
+func printMemoryUsage(memoryUsageMB app.AppWorkloadResourceUsage) {
+	fmt.Printf("    Memory Usage (MB): %s\n", formatUsage(memoryUsageMB))
+	printPlot("        |", memoryUsageMB.Timeseries)
+}
+
+func printPlot(prefix string, t timeseries.Timeseries) {
+	if len(t) == 0 {
+		return
+	}
+
+	plotHeight := 10
+	p := output.NewPlot(t)
+	p.Display(prefix, plotHeight)
 }
 
 const (
