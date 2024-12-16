@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.42.0 (2024-12-16)
+
+### Feature
+
+* feat(cli): `numerous status` display memory and cpu usage (#65) ([`b72fbbb`](https://github.com/numerous-com/numerous-sdk/commit/b72fbbbea339bb7fb6b3d5ded5ad9b524fb1c7a6))
+
+  > 
+  > Displays memory and CPU consumption of workloads. Both current value, and a plot of the usage of the last hour.
+
+
+
+
 ## v0.41.0 (2024-12-12)
 
 ### Feature
