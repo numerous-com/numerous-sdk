@@ -9,40 +9,60 @@ import (
 	"numerous.com/cli/internal/timeseries"
 )
 
-const plotUpwardsDiagonalLine = `         #
-        # 
-       #  
-      #   
-     #    
-    #     
-   #      
-  #       
- #        
-#         
+const plotUpwardsDiagonalLine = `100.00┐                                       ##
+      │                                    #####
+      │                                #########
+      │                            #############
+      │                       ##################
+      │                  #######################
+      │             ############################
+      │        #################################
+      │   ######################################
+      │#########################################
+  0.00┴─────────────────────────────────────────
+      2024-01-01T12:00:01Z  2024-01-01T12:00:05Z
 `
 
-const plotDownwardsDiagonalLine = `#         
- #        
-  #       
-   #      
-    #     
-     #    
-      #   
-       #  
-        # 
-         #
+const plotDownwardsDiagonalLine = `100.00┐###                                     
+      │#######                                 
+      │###########                             
+      │################                        
+      │####################                    
+      │########################                
+      │#############################           
+      │#################################       
+      │#####################################   
+      │########################################
+  0.00┴────────────────────────────────────────
+      2024-01-01T12:00:00Z 2024-01-02T14:00:00Z
 `
 
-const plotPointy = `    #     
-    ##    
-   # #    
-   #  #   
-  #   #   
-  #    #  
- #     #  
- #      # 
-#       # 
-#        #
+const plotPointy = `30.00┐                  ###                   
+     │                #######                 
+     │              ###########               
+     │            ###############             
+     │          ####################          
+     │        ########################        
+     │      ############################      
+     │    ################################    
+     │  ####################################  
+     │########################################
+ 0.00┴────────────────────────────────────────
+     2024-01-01T12:00:00Z 2024-01-01T14:00:00Z
+`
+
+const plotFlat = `31.00┐                                         
+     │                                         
+     │                                         
+     │                                         
+     │                                         
+     │#########################################
+     │#########################################
+     │#########################################
+     │#########################################
+     │#########################################
+29.00┴─────────────────────────────────────────
+     2024-01-01T12:00:00Z  2024-01-01T14:00:00Z
 `
 
 func TestDisplay(t *testing.T) {
@@ -50,59 +70,56 @@ func TestDisplay(t *testing.T) {
 		name       string
 		expected   string
 		timeseries timeseries.Timeseries
+		termWidth  int
 	}
-	now := time.Date(2024, time.January, 1, 1, 1, 0, 0, time.UTC)
+	now := time.Date(2024, time.January, 1, 12, 0, 0, 0, time.UTC)
 
 	for _, tc := range []testCase{
 		{
-			name:     "upwards diagonal line from multiple points",
+			name:     "upwards diagonal line",
 			expected: plotUpwardsDiagonalLine,
 			timeseries: timeseries.Timeseries{
 				{Value: 0.0, Timestamp: now.Add(time.Second)},
-				{Value: 10.0, Timestamp: now.Add(2 * time.Second)},
-				{Value: 20.0, Timestamp: now.Add(3 * time.Second)},
-				{Value: 30.0, Timestamp: now.Add(4 * time.Second)},
+				{Value: 25.0, Timestamp: now.Add(2 * time.Second)},
+				{Value: 50.0, Timestamp: now.Add(3 * time.Second)},
+				{Value: 75.0, Timestamp: now.Add(4 * time.Second)},
+				{Value: 100.0, Timestamp: now.Add(5 * time.Second)},
 			},
+			termWidth: 48,
 		},
 		{
-			name:     "upwards diagonal line between two points",
-			expected: plotUpwardsDiagonalLine,
-			timeseries: timeseries.Timeseries{
-				{Value: 1000.0, Timestamp: now.Add(time.Second)},
-				{Value: 100000.0, Timestamp: now.Add(time.Hour * 123)},
-			},
-		},
-		{
-			name:     "downwards diagonal line from multiple points",
+			name:     "downwards diagonal line",
 			expected: plotDownwardsDiagonalLine,
 			timeseries: timeseries.Timeseries{
-				{Value: 30.0, Timestamp: now.Add(time.Second)},
-				{Value: 20.0, Timestamp: now.Add(2 * time.Second)},
-				{Value: 10.0, Timestamp: now.Add(3 * time.Second)},
-				{Value: 0.0, Timestamp: now.Add(4 * time.Second)},
+				{Value: 100.0, Timestamp: now},
+				{Value: 0.0, Timestamp: now.Add(time.Hour * 26)},
 			},
+			termWidth: 47,
 		},
 		{
-			name:     "downwards diagonal line between two points",
-			expected: plotDownwardsDiagonalLine,
-			timeseries: timeseries.Timeseries{
-				{Value: 100000.0, Timestamp: now.Add(time.Second)},
-				{Value: 1000.0, Timestamp: now.Add(time.Hour * 123)},
-			},
-		},
-		{
-			name:     "plots pointy",
-			expected: plotPointy,
+			name:      "plots pointy",
+			expected:  plotPointy,
+			termWidth: 46,
 			timeseries: timeseries.Timeseries{
 				{Value: 0.0, Timestamp: now},
-				{Value: 10.0, Timestamp: now.Add(time.Hour)},
+				{Value: 30.0, Timestamp: now.Add(time.Hour)},
 				{Value: 0.0, Timestamp: now.Add(time.Hour).Add(time.Hour)},
+			},
+		},
+		{
+			name:      "flat timeseries is shown in the middle",
+			expected:  plotFlat,
+			termWidth: 47,
+			timeseries: timeseries.Timeseries{
+				{Value: 30.0, Timestamp: now},
+				{Value: 30.0, Timestamp: now.Add(time.Hour)},
+				{Value: 30.0, Timestamp: now.Add(time.Hour).Add(time.Hour)},
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
-			stubTerm := &stubTerminal{width: 10, buf: buf}
+			stubTerm := &stubTerminal{width: tc.termWidth, buf: buf}
 
 			p := NewPlotWithTerm(tc.timeseries, stubTerm)
 			p.Display("", 10)

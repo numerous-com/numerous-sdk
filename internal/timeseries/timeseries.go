@@ -1,7 +1,6 @@
 package timeseries
 
 import (
-	"math"
 	"time"
 )
 
@@ -19,7 +18,7 @@ func (t Timeseries) MaxValue() float64 {
 
 	maxVal := t[0].Value
 	for _, p := range t {
-		maxVal = math.Max(maxVal, p.Value)
+		maxVal = max(maxVal, p.Value)
 	}
 
 	return maxVal
@@ -32,7 +31,7 @@ func (t Timeseries) MinValue() float64 {
 
 	minVal := t[0].Value
 	for _, p := range t {
-		minVal = math.Min(minVal, p.Value)
+		minVal = min(minVal, p.Value)
 	}
 
 	return minVal

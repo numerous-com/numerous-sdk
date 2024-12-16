@@ -77,28 +77,28 @@ func printWorkload(workload app.AppWorkload) {
 		fmt.Println("Workload of unknown origin:")
 	}
 
-	fmt.Printf("    Status: %s\n", workload.Status)
-	fmt.Printf("    Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
+	fmt.Printf("  Status: %s\n", workload.Status)
+	fmt.Printf("  Started at: %s (up for %s)\n", workload.StartedAt.Format(time.DateTime), humanizeDuration(time.Since(workload.StartedAt)))
 	printCPUUsage(workload.CPUUsage)
 	printMemoryUsage(workload.MemoryUsageMB)
 	printLogs(workload.LogEntries)
 }
 
 func printLogs(entries []app.AppDeployLogEntry) {
-	fmt.Println("    Logs (last 10 lines):")
+	fmt.Println("  Logs (last 10 lines):")
 	for _, entry := range entries {
-		fmt.Println("        ", output.AnsiFaint, entry.Timestamp.Format(time.RFC3339), output.AnsiReset, entry.Text)
+		fmt.Println("    " + output.AnsiFaint + entry.Timestamp.Format(time.RFC3339) + output.AnsiReset + entry.Text)
 	}
 }
 
 func printCPUUsage(cpuUsage app.AppWorkloadResourceUsage) {
-	fmt.Printf("    CPU Usage: %s\n", formatUsage(cpuUsage))
-	printPlot("        |", cpuUsage.Timeseries)
+	fmt.Printf("  CPU Usage: %s\n", formatUsage(cpuUsage))
+	printPlot("    ", cpuUsage.Timeseries)
 }
 
 func printMemoryUsage(memoryUsageMB app.AppWorkloadResourceUsage) {
-	fmt.Printf("    Memory Usage (MB): %s\n", formatUsage(memoryUsageMB))
-	printPlot("        |", memoryUsageMB.Timeseries)
+	fmt.Printf("  Memory Usage (MB): %s\n", formatUsage(memoryUsageMB))
+	printPlot("    ", memoryUsageMB.Timeseries)
 }
 
 func printPlot(prefix string, t timeseries.Timeseries) {

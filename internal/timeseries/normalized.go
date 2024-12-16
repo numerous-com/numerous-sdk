@@ -12,6 +12,7 @@ type NormalizedTimeseries []NormalizedPoint
 func (t Timeseries) Normalize(xScale float64, yScale float64) NormalizedTimeseries {
 	minVal := t.MinValue()
 	maxVal := t.MaxValue()
+	valDiff := maxVal - minVal
 	minTS := t.MinTimestamp()
 	maxTS := t.MaxTimestamp()
 
@@ -20,14 +21,17 @@ func (t Timeseries) Normalize(xScale float64, yScale float64) NormalizedTimeseri
 		return xScale * ratio
 	}
 
-	normalizeValue := func(v float64) float64 {
-		valDiff := maxVal - minVal
-		if valDiff == 0.0 {
-			return 0.0
+	var normalizeValue func(v float64) float64
+	if valDiff != 0.0 {
+		normalizeValue = func(v float64) float64 {
+			ratio := (v - minVal) / valDiff
+			return yScale * ratio
 		}
-		ratio := (v - minVal) / valDiff
-
-		return yScale * ratio
+	} else {
+		// "vertically" center data with no "vertical" differences
+		normalizeValue = func(float64) float64 {
+			return yScale * 0.5 // nolint:mnd
+		}
 	}
 
 	var normalized NormalizedTimeseries
