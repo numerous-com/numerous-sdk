@@ -401,17 +401,30 @@ type AppDeployment {
   sharedURL: String
 }
 
+type AppDeploymentResourceUsageDataPoint {
+  timestamp: Time!
+  value: Float!
+}
+
+type AppDeploymentResourceUsage {
+  current: Float!
+  limit: Float
+  timeseries: [AppDeploymentResourceUsageDataPoint!]
+}
+
 type AppDeploymentWorkload {
-    organization: Organization  # optional, set if workload is a private organization app
-    subscription: AppSubscription  # optional, set if workload is related to a subscription
-    startedAt: Time!
-    status: AppDeploymentStatus!
-    logs(last: Int): AppDeployLogEntryConnection!
+  organization: Organization # optional, set if workload is a private organization app
+  subscription: AppSubscription # optional, set if workload is related to a subscription
+  startedAt: Time!
+  status: AppDeploymentStatus!
+  logs(last: Int): AppDeployLogEntryConnection!
+  cpuUsage: AppDeploymentResourceUsage
+  memoryUsageMB: AppDeploymentResourceUsage
 }
 
 type AppDeployLogEntryConnection {
-    edges: [AppDeployLogEntry!]!
-    pageInfo: PageInfo!
+  edges: [AppDeployLogEntry!]!
+  pageInfo: PageInfo!
 }
 type AppVersionDocumentationFile {
   filename: String!
@@ -626,6 +639,7 @@ type PaymentConfiguration {
 type SubscriptionOffer {
   id: ID!
   email: String!
+  name: String!
   app: App!
   offeringOrganization: Organization!
   status: SubscriptionOfferStatus!
@@ -641,6 +655,7 @@ input PaymentConfigurationInput {
 input SubscriptionOfferInput {
   email: String!
   appSlug: String!
+  name: String
   message: String
   payment: PaymentConfigurationInput # subscription offer is free if no payment config
 }

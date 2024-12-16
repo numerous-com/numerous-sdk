@@ -121,12 +121,6 @@ func (t *Task) terminate(icon, status string) {
 	fmt.Fprintln(t.w, ln+status)
 }
 
-type terminal interface {
-	IsTerminal() bool
-	GetSize() (int, int, error)
-	Writer() io.Writer
-}
-
 func terminalWidthFunc(t terminal) lineWidthFunc {
 	// if we are not writing to a terminal (e.g. piping to a file) fall back to
 	// fallback task line width

@@ -7,6 +7,12 @@ import (
 	"golang.org/x/term"
 )
 
+type terminal interface {
+	IsTerminal() bool
+	GetSize() (width int, height int, err error)
+	Writer() io.Writer
+}
+
 type termTerminal struct {
 	fd int
 	w  io.Writer

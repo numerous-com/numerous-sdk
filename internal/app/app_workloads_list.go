@@ -5,11 +5,18 @@ import (
 	"time"
 
 	"github.com/hasura/go-graphql-client"
+	"numerous.com/cli/internal/timeseries"
 )
 
 type AppWorkloadSubscription struct {
 	OrganizationSlug string
 	SubscriptionUUID string
+}
+
+type AppWorkloadResourceUsage struct {
+	Current    float64
+	Limit      *float64
+	Timeseries timeseries.Timeseries
 }
 
 type AppWorkload struct {
@@ -18,6 +25,8 @@ type AppWorkload struct {
 	StartedAt        time.Time
 	Status           string
 	LogEntries       []AppDeployLogEntry
+	CPUUsage         AppWorkloadResourceUsage
+	MemoryUsageMB    AppWorkloadResourceUsage
 }
 
 type ListAppWorkloadsInput struct {
@@ -39,6 +48,8 @@ type appWorkloadsResponseWorkload struct {
 	Logs      struct {
 		Edges []AppDeployLogEntry
 	}
+	CPUUsage      AppWorkloadResourceUsage
+	MemoryUsageMB AppWorkloadResourceUsage
 }
 
 type appWorkloadsResponse struct {
@@ -65,6 +76,22 @@ query CLIListAppWorkloads($appID: ID!) {
 				text
 			}
 		}
+		cpuUsage {
+			current
+			limit
+			timeseries {
+				timestamp
+				value
+			}
+		}
+		memoryUsageMB {
+			current
+			limit
+			timeseries {
+				timestamp
+				value
+			}
+		}
 	}
 }
 `
@@ -88,9 +115,11 @@ func (s *Service) ListAppWorkloads(ctx context.Context, input ListAppWorkloadsIn
 
 func appWorkloadFromResponse(responseWorkload appWorkloadsResponseWorkload) AppWorkload {
 	wl := AppWorkload{
-		StartedAt:  responseWorkload.StartedAt,
-		Status:     responseWorkload.Status,
-		LogEntries: responseWorkload.Logs.Edges,
+		StartedAt:     responseWorkload.StartedAt,
+		Status:        responseWorkload.Status,
+		LogEntries:    responseWorkload.Logs.Edges,
+		CPUUsage:      responseWorkload.CPUUsage,
+		MemoryUsageMB: responseWorkload.MemoryUsageMB,
 	}
 
 	if responseWorkload.Organization != nil {
