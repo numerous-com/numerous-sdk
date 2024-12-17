@@ -1,7 +1,11 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -169,4 +173,67 @@ func TestAppWorkloadsList(t *testing.T) {
 		assert.Nil(t, actual)
 		assert.ErrorIs(t, err, ErrAccessDenied)
 	})
+
+	t.Run("given metrics time it is used", func(t *testing.T) {
+		metricsSince := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+
+		appWorkloadsRespBody := `{"data": {"appWorkloads": []}}`
+		resp := test.JSONResponse(appWorkloadsRespBody)
+		doer.On("Do", mock.MatchedBy(func(r *http.Request) bool {
+			body := testInterceptGraphQLBody(t, r)
+			return body.Variables["metricsSince"] == metricsSince.Format(time.RFC3339)
+		})).Return(resp, nil).Once()
+
+		input := ListAppWorkloadsInput{AppID: "test-app-id", MetricsSince: &metricsSince}
+		_, err := s.ListAppWorkloads(context.TODO(), input)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("given no metrics time it uses last hour", func(t *testing.T) {
+		now := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+		metricsSince := now.Add(-time.Hour)
+
+		doer := test.MockDoer{}
+		c := test.CreateTestGQLClient(t, &doer)
+		s := New(c, nil, nil)
+		s.clock = &StubClock{now}
+
+		appWorkloadsRespBody := `{"data": {"appWorkloads": []}}`
+		resp := test.JSONResponse(appWorkloadsRespBody)
+		doer.On("Do", mock.MatchedBy(func(r *http.Request) bool {
+			body := testInterceptGraphQLBody(t, r)
+			return body.Variables["metricsSince"] == metricsSince.Format(time.RFC3339)
+		})).Return(resp, nil).Once()
+
+		input := ListAppWorkloadsInput{AppID: "test-app-id"}
+		_, err := s.ListAppWorkloads(context.TODO(), input)
+
+		assert.NoError(t, err)
+	})
+}
+
+type graphqlBody struct {
+	Query         string
+	OperationName string
+	Variables     map[string]any
+}
+
+// Intercepts the given request and reads the GraphQL body of the request,
+// replacing Request.Body with a new reader of the same original data, and
+// returning the parsed GraphQL request.
+func testInterceptGraphQLBody(t *testing.T, r *http.Request) graphqlBody {
+	t.Helper()
+
+	data, err := io.ReadAll(r.Body)
+	assert.NoError(t, err)
+	r.Body = io.NopCloser(bytes.NewReader([]byte(data)))
+	var body graphqlBody
+	assert.NoError(t, json.Unmarshal(data, &body))
+
+	return body
 }
