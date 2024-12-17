@@ -24,8 +24,9 @@ const longFormat = `Get an overview of the status of all workloads related to an
 var long = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
 
 var cmdArgs struct {
-	appIdent args.AppIdentifierArg
-	appDir   string
+	appIdent     args.AppIdentifierArg
+	appDir       string
+	metricsSince Since
 }
 
 var Cmd = &cobra.Command{
@@ -40,9 +41,10 @@ func run(cmd *cobra.Command, args []string) error {
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
 
 	input := statusInput{
-		appDir:  cmdArgs.appDir,
-		appSlug: cmdArgs.appIdent.AppSlug,
-		orgSlug: cmdArgs.appIdent.OrganizationSlug,
+		appDir:       cmdArgs.appDir,
+		appSlug:      cmdArgs.appIdent.AppSlug,
+		orgSlug:      cmdArgs.appIdent.OrganizationSlug,
+		metricsSince: cmdArgs.metricsSince.Time(),
 	}
 	err := status(cmd.Context(), service, input)
 
@@ -52,4 +54,5 @@ func run(cmd *cobra.Command, args []string) error {
 func init() {
 	flags := Cmd.Flags()
 	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
+	flags.Var(&cmdArgs.metricsSince, "metrics-since", "Read metrics since this time. Can be an RFC3339 timestamp (e.g. 2024-01-01T12:00:00Z), a plain date (e.g. 2024-06-06), or a duration of seconds, minutes, hours or days (e.g. 1s, 10m, 5h, d).")
 }
