@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.43.0 (2024-12-17)
+
+### Feature
+
+* feat(cli): add `--metrics-since` flag to `numerous status` (#66) ([`337d714`](https://github.com/numerous-com/numerous-sdk/commit/337d714b8067d4e573b11a10e6714d1fb41fd01f))
+
+  > 
+  > Allows querying the app workloads for CPU and memory metrics within a specified timeframe (since a duration (e.g. &#34;1h&#34;) or a specific timestamp (e.g. &#34;2024-06-06T12:00:00Z&#34;)
+
+
+
+
 ## v0.42.0 (2024-12-16)
 
 ### Feature
