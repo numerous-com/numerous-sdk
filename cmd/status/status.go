@@ -3,7 +3,6 @@ package status
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"numerous.com/cli/cmd/output"
@@ -13,9 +12,10 @@ import (
 )
 
 type statusInput struct {
-	appDir  string
-	appSlug string
-	orgSlug string
+	appDir       string
+	appSlug      string
+	orgSlug      string
+	metricsSince *time.Time
 }
 
 type appReaderWorkloadLister interface {
@@ -41,7 +41,7 @@ func status(ctx context.Context, apps appReaderWorkloadLister, input statusInput
 		println("Description: " + readOutput.AppDescription)
 	}
 
-	workloads, err := apps.ListAppWorkloads(ctx, app.ListAppWorkloadsInput{AppID: readOutput.AppID})
+	workloads, err := apps.ListAppWorkloads(ctx, app.ListAppWorkloadsInput{AppID: readOutput.AppID, MetricsSince: input.metricsSince})
 	if err != nil {
 		app.PrintAppError(err, ai)
 		return err
@@ -87,7 +87,7 @@ func printWorkload(workload app.AppWorkload) {
 func printLogs(entries []app.AppDeployLogEntry) {
 	fmt.Println("  Logs (last 10 lines):")
 	for _, entry := range entries {
-		fmt.Println("    " + output.AnsiFaint + entry.Timestamp.Format(time.RFC3339) + output.AnsiReset + entry.Text)
+		fmt.Println("    "+output.AnsiFaint+entry.Timestamp.Format(time.RFC3339)+output.AnsiReset, entry.Text)
 	}
 }
 
@@ -109,45 +109,6 @@ func printPlot(prefix string, t timeseries.Timeseries) {
 	plotHeight := 10
 	p := output.NewPlot(t)
 	p.Display(prefix, plotHeight)
-}
-
-const (
-	hoursPerDay      int = 24
-	minutesPerHour   int = 60
-	secondsPerMinute int = 60
-)
-
-func humanizeDuration(since time.Duration) string {
-	hours := int(math.Floor(since.Hours()))
-	if hours > hoursPerDay {
-		fullDays := hours / hoursPerDay
-		remainingHours := hours % hoursPerDay
-		if remainingHours > 0 {
-			return fmt.Sprintf("%d days and %d hours", fullDays, remainingHours)
-		} else {
-			return fmt.Sprintf("%d days", fullDays)
-		}
-	}
-
-	minutes := int(math.Floor(since.Minutes()))
-	if hours > 1 {
-		fullHours := hours
-		remainingMinutes := minutes % minutesPerHour
-		if fullHours > 0 {
-			return fmt.Sprintf("%d hours and %d minutes", fullHours, remainingMinutes)
-		}
-	}
-
-	seconds := int(math.Round(since.Seconds()))
-	if minutes > 1 {
-		fullMinutes := minutes
-		remainingSeconds := seconds % secondsPerMinute
-		if fullMinutes > 0.0 {
-			return fmt.Sprintf("%d minutes and %d seconds", fullMinutes, remainingSeconds)
-		}
-	}
-
-	return fmt.Sprintf("%d seconds", seconds)
 }
 
 func formatUsage(usage app.AppWorkloadResourceUsage) string {

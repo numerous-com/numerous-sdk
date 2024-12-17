@@ -539,9 +539,13 @@ type GitHubRepositoryNotFound {
 
 union AppVersionCreateGitHubResult = AppVersion | GitHubRepositoryNotFound
 
+input AppWorkloadsInput {
+  metricsSince: Time
+}
+
 extend type Query {
   app(organizationSlug: String!, appSlug: String!): App @hasRole(role: USER)
-  appWorkloads(appID: ID!): [AppDeploymentWorkload!]! @canManageApp
+  appWorkloads(appID: ID!, input: AppWorkloadsInput): [AppDeploymentWorkload!]! @canManageApp
 }
 
 extend type Mutation {
@@ -586,7 +590,7 @@ extend type Mutation {
     @trackAppOperation(eventName: "App Unshare")
 }
 
-extend type Subscription {
+type Subscription {
   appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
   appDeployLogs(input: AppDeployLogsInput!): AppDeployLogEntry!
 }

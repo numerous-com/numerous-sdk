@@ -30,7 +30,8 @@ type AppWorkload struct {
 }
 
 type ListAppWorkloadsInput struct {
-	AppID string
+	AppID        string
+	MetricsSince *time.Time
 }
 
 type appWorkloadsResponseWorkload struct {
@@ -57,8 +58,8 @@ type appWorkloadsResponse struct {
 }
 
 const queryAppWorkloadsText = `
-query CLIListAppWorkloads($appID: ID!) {
-	appWorkloads(appID: $appID) {
+query CLIListAppWorkloads($appID: ID!, $metricsSince: Time!) {
+	appWorkloads(appID: $appID, input: {metricsSince: $metricsSince}) {
 		status
 		startedAt
 		organization {
@@ -97,8 +98,15 @@ query CLIListAppWorkloads($appID: ID!) {
 `
 
 func (s *Service) ListAppWorkloads(ctx context.Context, input ListAppWorkloadsInput) ([]AppWorkload, error) {
+	var metricsSince time.Time
+	if input.MetricsSince != nil {
+		metricsSince = *input.MetricsSince
+	} else {
+		metricsSince = s.clock.Now().Add(-time.Hour)
+	}
+
 	var resp appWorkloadsResponse
-	variables := map[string]any{"appID": input.AppID}
+	variables := map[string]any{"appID": input.AppID, "metricsSince": metricsSince.Format(time.RFC3339)}
 
 	err := s.client.Exec(ctx, queryAppWorkloadsText, &resp, variables, graphql.OperationName("CLIListAppWorkloads"))
 	if err != nil {
