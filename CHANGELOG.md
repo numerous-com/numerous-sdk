@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.43.1 (2024-12-18)
+
+### Fix
+
+* fix(cli): `numerous status` add CPU metric unit to display ([`b23ecb4`](https://github.com/numerous-com/numerous-sdk/commit/b23ecb4d293d3a555ead6d600363a31f9799d000))
+
+
+* fix(cli): `numerous status` plots handling of narrow terminals ([`1fe5643`](https://github.com/numerous-com/numerous-sdk/commit/1fe5643b29d2d429d651989a332065250db50b5f))
+
+
+
+
 ## v0.43.0 (2024-12-17)
 
 ### Feature
