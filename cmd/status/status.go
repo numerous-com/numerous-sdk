@@ -92,7 +92,7 @@ func printLogs(entries []app.AppDeployLogEntry) {
 }
 
 func printCPUUsage(cpuUsage app.AppWorkloadResourceUsage) {
-	fmt.Printf("  CPU Usage: %s\n", formatUsage(cpuUsage))
+	fmt.Printf("  CPU Usage (1024·vCPU): %s\n", formatUsage(cpuUsage))
 	printPlot("    ", cpuUsage.Timeseries)
 }
 
