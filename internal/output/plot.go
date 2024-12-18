@@ -11,14 +11,18 @@ import (
 )
 
 const (
-	plotRune       rune = '#'
-	boxVertical    rune = '│'
-	boxDownLeft    rune = '┐'
-	boxHorizontal  rune = '─'
-	boxUpLeftRight rune = '┴'
+	plotRune           rune = '█'
+	boxVertical        rune = '│'
+	boxDownLeft        rune = '┐'
+	boxHorizontal      rune = '─'
+	boxUpLeftRight     rune = '┴'
+	boxUpLeftRightDown rune = '┼'
 
 	defaultPlotLineWidth int = 80
 	maxPlotLineWidth     int = 120
+
+	plotShortenedLabelDotsCount int = 2
+	plotXLabelMinLen            int = 3
 )
 
 type Plot struct {
@@ -132,21 +136,47 @@ func (pa *plotAxes) renderYAxisAtHeight(y int) string {
 func (pa *plotAxes) renderXAxis(prefix string) string {
 	maxYLabelLen := max(len(pa.yLabelMax), len(pa.yLabelMin))
 
-	hz := strings.Repeat(" ", maxYLabelLen-len(pa.yLabelMin)) + pa.yLabelMin + string(boxUpLeftRight)
-	hzRemaining := pa.width - utf8.RuneCountInString(hz) - len(prefix)
-	if hzRemaining > 0 {
-		hz += strings.Repeat(string(boxHorizontal), hzRemaining)
+	hz := prefix + strings.Repeat(" ", maxYLabelLen-len(pa.yLabelMin)) + pa.yLabelMin + string(boxUpLeftRightDown)
+	hzRemaining := pa.width - utf8.RuneCountInString(hz)
+	if hzRemaining > 1 {
+		hz += strings.Repeat(string(boxHorizontal), hzRemaining-1) + string(boxDownLeft)
 	}
 
-	xLabelLn := strings.Repeat(" ", maxYLabelLen)
-	xLabelSpacing := pa.width - len(xLabelLn) - len(pa.xLabelMin) - len(pa.xLabelMax) - len(prefix)
-	if xLabelSpacing > 0 {
+	xLabelLn := prefix + strings.Repeat(" ", maxYLabelLen)
+	xLabelSpacing := pa.width - len(xLabelLn) - len(pa.xLabelMin) - len(pa.xLabelMax)
+	switch {
+	case xLabelSpacing > 0:
 		xLabelLn += pa.xLabelMin
 		xLabelLn += strings.Repeat(" ", xLabelSpacing)
 		xLabelLn += pa.xLabelMax
-	}
 
-	return prefix + hz + "\n" + prefix + xLabelLn
+		return hz + "\n" + xLabelLn
+	case pa.width-len(xLabelLn)-len(prefix) > 1+2*plotShortenedLabelDotsCount+2*plotXLabelMinLen:
+		// enough space to print part of the x-axis label:
+		//  * 1 empty space
+		//  * dots on both sides
+		//  * a minimum x-label length
+		remainingSpace := pa.width - len(xLabelLn) - 2*plotShortenedLabelDotsCount - 1
+		minXLabelCutLen := remainingSpace / 2 // nolint:mnd
+		maxXLabelCutLen := remainingSpace / 2 // nolint:mnd
+
+		xLabelLn += pa.xLabelMin[0:minXLabelCutLen] +
+			strings.Repeat(".", plotShortenedLabelDotsCount) +
+			" " +
+			strings.Repeat(".", plotShortenedLabelDotsCount) +
+			pa.xLabelMax[len(pa.xLabelMax)-maxXLabelCutLen:]
+
+		return hz + "\n" + xLabelLn
+	default:
+		// if there is no space for x-label, draw x-axis line differently
+		hz = prefix + strings.Repeat(" ", maxYLabelLen-len(pa.yLabelMin)) + pa.yLabelMin + string(boxUpLeftRight)
+		hzRemaining := pa.width - utf8.RuneCountInString(hz)
+		if hzRemaining > 1 {
+			hz += strings.Repeat(string(boxHorizontal), hzRemaining)
+		}
+
+		return hz
+	}
 }
 
 // A raster for plotting graphs onto.
