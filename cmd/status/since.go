@@ -26,7 +26,7 @@ func (s *Since) Set(v string) error {
 }
 
 func (*Since) Type() string {
-	return "Since time"
+	return "time"
 }
 
 func (s *Since) Time() *time.Time {

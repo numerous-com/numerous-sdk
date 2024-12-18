@@ -52,7 +52,7 @@ func Execute() {
 }
 
 func init() {
-	cmd.PersistentFlags().VarP(&args.logLevel, "log-level", "l", "The log level, one of \"debug\", \"info\", \"warning\", or \"error\". Defaults to \"error\".")
+	cmd.PersistentFlags().VarP(&args.logLevel, "log-level", "l", `The log level, one of "debug", "info", "warning", or "error".`)
 
 	cmd.AddGroup(&cobra.Group{
 		Title: "Numerous App Commands:",

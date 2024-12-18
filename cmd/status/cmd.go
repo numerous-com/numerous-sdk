@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
+	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/usage"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/gql"
@@ -30,11 +31,12 @@ var cmdArgs struct {
 }
 
 var Cmd = &cobra.Command{
-	Use:   "status",
-	Short: "Get the status of an apps workloads",
-	Long:  long,
-	Args:  args.OptionalAppDir(&cmdArgs.appDir),
-	RunE:  run,
+	Use:     "status",
+	Short:   "Get the status of an app's workloads",
+	Long:    long,
+	Args:    args.OptionalAppDir(&cmdArgs.appDir),
+	RunE:    run,
+	GroupID: group.AppCommandsGroupID,
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -54,5 +56,6 @@ func run(cmd *cobra.Command, args []string) error {
 func init() {
 	flags := Cmd.Flags()
 	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
-	flags.Var(&cmdArgs.metricsSince, "metrics-since", "Read metrics since this time. Can be an RFC3339 timestamp (e.g. 2024-01-01T12:00:00Z), a plain date (e.g. 2024-06-06), or a duration of seconds, minutes, hours or days (e.g. 1s, 10m, 5h, d).")
+	f := flags.VarPF(&cmdArgs.metricsSince, "metrics-since", "", `Read metrics since this time. Can be an RFC3339 timestamp (e.g. "2024-01-01T12:00:00Z"), a date (e.g. "2024-06-06"), or a duration of seconds, minutes, hours or days (e.g. "1s", "10m", "5h", "2d").`)
+	f.DefValue = `"1h"` // Hack to display correct default value in the help text
 }

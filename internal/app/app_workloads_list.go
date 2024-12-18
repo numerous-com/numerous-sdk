@@ -102,6 +102,7 @@ func (s *Service) ListAppWorkloads(ctx context.Context, input ListAppWorkloadsIn
 	if input.MetricsSince != nil {
 		metricsSince = *input.MetricsSince
 	} else {
+		// If this default is changed, remember to update the help text default text for the `--metrics-since` flag.
 		metricsSince = s.clock.Now().Add(-time.Hour)
 	}
 
