@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.43.2 (2024-12-18)
+
+### Fix
+
+* fix(cli): improve `numerous status` help message ([`b70c14d`](https://github.com/numerous-com/numerous-sdk/commit/b70c14dd2a670d2385fff551d990056146047a6a))
+
+  > 
+  > * Fix the default value of the `--metrics-since` flag.
+  > * Change the &#34;type name&#34; of the `--metrics-since` flag.
+
+
+
+
 ## v0.43.1 (2024-12-18)
 
 ### Fix
