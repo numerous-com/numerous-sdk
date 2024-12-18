@@ -3,8 +3,8 @@ package init
 import (
 	"errors"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/python"
 	"numerous.com/cli/internal/wizard"
 )

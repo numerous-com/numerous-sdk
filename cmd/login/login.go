@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
+	"numerous.com/cli/internal/output"
 )
 
 const loggingInMessage = `You are logging into Numerous.

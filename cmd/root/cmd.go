@@ -18,11 +18,11 @@ import (
 	"numerous.com/cli/cmd/logout"
 	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/organization"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/status"
 	"numerous.com/cli/cmd/token"
 	cmdversion "numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/logging"
+	"numerous.com/cli/internal/output"
 )
 
 var args = struct {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/output"
 )
 
 var (

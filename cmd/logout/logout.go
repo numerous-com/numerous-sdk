@@ -3,8 +3,8 @@ package logout
 import (
 	"net/http"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
+	"numerous.com/cli/internal/output"
 )
 
 func logout(a auth.Authenticator) error {

@@ -1,10 +1,10 @@
 package list
 
 import (
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/config"
 	"numerous.com/cli/internal/gql/user"
+	"numerous.com/cli/internal/output"
 
 	"git.sr.ht/~emersion/gqlclient"
 )

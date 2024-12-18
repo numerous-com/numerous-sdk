@@ -3,7 +3,7 @@ package appident
 import (
 	"errors"
 
-	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/output"
 )
 
 var (

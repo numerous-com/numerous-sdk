@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/token"
 )
 

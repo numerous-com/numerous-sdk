@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"numerous.com/cli/cmd/errorhandling"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/dotenv"
@@ -17,6 +16,7 @@ import (
 	"numerous.com/cli/internal/gql/app"
 	"numerous.com/cli/internal/gql/build"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/output"
 
 	"github.com/spf13/cobra"
 )

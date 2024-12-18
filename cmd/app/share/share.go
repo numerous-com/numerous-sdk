@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/output"
 )
 
 var ErrEmptySharedURL = errors.New("empty shared URL")

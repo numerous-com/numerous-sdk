@@ -3,8 +3,8 @@ package log
 import (
 	"os"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
+	"numerous.com/cli/internal/output"
 
 	"github.com/spf13/cobra"
 )

@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"numerous.com/cli/cmd/errorhandling"
-	"numerous.com/cli/cmd/output"
 	cmdversion "numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/version"
 
 	"github.com/spf13/cobra"

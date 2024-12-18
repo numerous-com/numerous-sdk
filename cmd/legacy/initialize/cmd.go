@@ -6,11 +6,11 @@ import (
 
 	"numerous.com/cli/cmd/args"
 	cmdinit "numerous.com/cli/cmd/init"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/gql/app"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/wizard"
 
 	"github.com/spf13/cobra"

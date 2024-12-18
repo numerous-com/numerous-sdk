@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
+	"numerous.com/cli/internal/output"
 
 	"numerous.com/cli/internal/gql/organization"
 

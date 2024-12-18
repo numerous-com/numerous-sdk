@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/archive"
+	"numerous.com/cli/internal/output"
 )
 
 var errDownloadFailed = errors.New("download failed")

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/output"
 )
 
 var ErrOptionalAppDirArgCount = errors.New("there must be at most 1 argument for optional app directory")

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"numerous.com/cli/assets"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
+	"numerous.com/cli/internal/output"
 )
 
 const EnvFileName string = ".env"

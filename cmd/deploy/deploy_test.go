@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/config"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/test"
 
 	"github.com/stretchr/testify/assert"

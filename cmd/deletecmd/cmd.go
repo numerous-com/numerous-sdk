@@ -7,11 +7,11 @@ import (
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/cmd/usage"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/dir"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/output"
 
 	"github.com/spf13/cobra"
 )

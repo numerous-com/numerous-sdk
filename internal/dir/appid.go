@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/output"
 )
 
 const (

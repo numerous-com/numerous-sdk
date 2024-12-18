@@ -4,8 +4,8 @@ import (
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/config/set"
 	"numerous.com/cli/cmd/group"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/config"
+	"numerous.com/cli/internal/output"
 )
 
 var Cmd = &cobra.Command{

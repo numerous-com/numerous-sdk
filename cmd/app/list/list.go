@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
+	"numerous.com/cli/internal/output"
 )
 
 type AppLister interface {

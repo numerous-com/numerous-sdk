@@ -3,7 +3,7 @@ package version
 import (
 	"context"
 
-	"numerous.com/cli/cmd/output"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/version"
 )
 

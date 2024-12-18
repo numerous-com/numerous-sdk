@@ -3,8 +3,8 @@ package set
 import (
 	"errors"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/config"
+	"numerous.com/cli/internal/output"
 )
 
 var (

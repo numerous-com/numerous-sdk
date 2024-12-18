@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/dir"
+	"numerous.com/cli/internal/output"
 )
 
 func fileExists(path string) (bool, error) {

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/timeseries"
 )
 

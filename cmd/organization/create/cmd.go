@@ -3,9 +3,9 @@ package create
 import (
 	"github.com/spf13/cobra"
 	"numerous.com/cli/cmd/errorhandling"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/auth"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/output"
 )
 
 var Cmd = &cobra.Command{

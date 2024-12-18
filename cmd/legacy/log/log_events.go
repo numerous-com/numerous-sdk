@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/output"
 
 	"github.com/hasura/go-graphql-client"
 )

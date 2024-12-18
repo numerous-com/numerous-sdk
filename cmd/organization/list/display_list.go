@@ -3,8 +3,8 @@ package list
 import (
 	"fmt"
 
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/gql/organization"
+	"numerous.com/cli/internal/output"
 )
 
 func displayList(memberships []organization.OrganizationMembership, configuredOrganizationSlug string) {

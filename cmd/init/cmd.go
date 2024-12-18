@@ -8,8 +8,8 @@ import (
 	"numerous.com/cli/cmd/args"
 	"numerous.com/cli/cmd/errorhandling"
 	"numerous.com/cli/cmd/group"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/wizard"
 
 	"github.com/spf13/cobra"

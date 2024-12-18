@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"numerous.com/cli/cmd/logs"
-	"numerous.com/cli/cmd/output"
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
 	"numerous.com/cli/internal/archive"
 	"numerous.com/cli/internal/dotenv"
 	"numerous.com/cli/internal/links"
 	"numerous.com/cli/internal/manifest"
+	"numerous.com/cli/internal/output"
 )
 
 const maxUploadBytes int64 = 5368709120
