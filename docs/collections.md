@@ -9,14 +9,11 @@ Collections acts as a schemaless database, where users can store, retrieve, and 
 4. Tag documents and files with key/value tags, and filter documents and files
    by these tags.
 
-
 !!! note
-    This feature only supports apps that are deployed to Numerous.
-
+This feature only supports apps that are deployed to Numerous.
 
 !!! tip
-    Remember to add `numerous` as a dependency in your project; most likely to your `requirements.txt` file.
-
+Remember to add `numerous` as a dependency in your project; most likely to your `requirements.txt` file.
 
 Import the [Numerous SDK](http://www.pypi.org/project/numerous) in your Python
 code.
@@ -74,11 +71,10 @@ collection = numerous.collections.collection("my-collection")
 ```
 
 !!! note
-    Collection keys are scoped to an organization, meaning that if multiple apps
-    use the same Collection keys, they will access the same data.
-     
-    For nested collections, they are scoped to their parent collection.
+Collection keys are scoped to an organization, meaning that if multiple apps
+use the same Collection keys, they will access the same data.
 
+    For nested collections, they are scoped to their parent collection.
 
 See the [reference](/reference/numerous/collections/collection#numerous.collections.collection.collection) for more information.
 
@@ -119,9 +115,8 @@ for file in col_ref.files():
 Collections exist within the organization that deploys the app.
 
 It is on our immediate roadmap to store data in the subscribing
-organization instead, in order to ensure correct ownership of data produced by
+organization instead to ensure correct ownership of data produced by
 apps.
-
 
 ## API reference
 

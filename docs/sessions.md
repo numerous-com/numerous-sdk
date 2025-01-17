@@ -11,7 +11,7 @@ the correct import for the framework you are using.
 
 ## Example: Streamlit
 
-Below is an example of how to use the session to access cookies, and active user
+Below is an example of how to use the session to access cookies and active user
 information. See the [user page](user.md) for more information about how to
 work with user information.
 
@@ -20,10 +20,10 @@ import numerous.frameworks.streamlit
 
 session = numerous.frameworks.streamlit.get_session()
 
-# access cookies of the session
+# Access cookies of the session
 for name, value in session.cookies.items():
     st.write(f"Cookie '{name}' has value '{value}'")
 
-# access user information
+# Access user information
 st.write(f"Your name is {session.user.name}")
 ```

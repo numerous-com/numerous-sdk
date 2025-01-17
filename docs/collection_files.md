@@ -19,16 +19,16 @@ file_ref = col_ref.file("my-file.txt")
 
 ## Listing and filtering files
 
-You can list all files in a collection, and also filter by specific tags.
+You can list all files in a collection and also filter by specific tags.
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
 
-# iterate over all files in the collection
+# Iterate over all files in the collection
 for file_ref in col_ref.files():
     print(file_ref.key, file_ref.get())
 
-# iterate over all files in the collection with the given tag
+# Iterate over all files in the collection with the given tag
 for file_ref in col_ref.files(tag_key="my-tag-key", tag_value="my-tag-value"):
     print(file_ref.key, file_ref.get())
 ```
@@ -79,7 +79,7 @@ file_ref.delete()
 
 ## Tagging files
 
-Files can be tagged. Tags are used to filter files, and to store
+Files can be tagged. Tags are used to filter files and to store
 metadata about the files.
 
 ```py
