@@ -6,9 +6,9 @@
 ![cli coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/cli-coverage.json)
 ![sdk coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jfeodor/a9b9bfdfa0620696fba9e76223790f53/raw/sdk-coverage.json)
 
-Welcome to the Numerous SDK documentation!
+Welcome to the Numerous Developer Documentation page!
 
-This is the documentation for the SDK, if you are looking an overview of the
+This is the documentation for the Numerous SDK. If you are looking an overview of the
 Numerous platform, please visit the
 [Numerous platform documentation](https://numerous.com/docs).
 
@@ -19,14 +19,14 @@ Numerous platform, please visit the
 🛠 The installation includes two main components: the CLI and the Numerous
 Python package.
 
-## Command Line Interface (CLI) - a tool for managing your apps
+## Command Line Interface (CLI): A tool for managing your apps
 
 Use the CLI to deploy and manage apps on the Numerous platform:
 
 - `numerous init` - Create a new Numerous app
 - `numerous deploy` - Deploy your app to production
 
-## Python SDK package - integrate Numerous features into Python-based web apps
+## Python SDK package: Integrate Numerous features into Python-based web apps
 
 The SDK enables you to interact with Numerous services programmatically in
 your Python web applications.
@@ -42,9 +42,8 @@ developers interested in contributing to the SDK.
 Most common tasks are defined in the `Makefile`. Use `make help` to get an
 overview.
 
-In order to setup pre-commit hooks, use [pre-commit](https://pre-commit.com/) to
-to setup hooks for linters and tests. This requires pre-commit to be installed
-of course, and it is included in the python SDK development dependencies.
+In order to setup pre-commit hooks, use [pre-commit](https://pre-commit.com/)
+to setup hooks for linters and tests. This requires pre-commit to be installed and it is included in the Python SDK development dependencies.
 
 To install pre-commit and pre-push hooks:
 
@@ -75,7 +74,7 @@ And the linters:
 
 ## Development of Go CLI 🐹
 
-To build, run `make cli-build`, and the executable is stored as `build/numerous`
+To build, run `make cli-build`. The executable is stored as `build/numerous`.
 
 While developing, you can run the CLI like below:
 

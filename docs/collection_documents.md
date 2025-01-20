@@ -1,11 +1,10 @@
-
 # Collection documents
 
 Documents with JSON content can be stored in collections.
 
 ## Referring to documents
 
-In order to access a document, use the `document` method of a collection.
+Use the `document` method of a collection to access a document.
 
 Calling the `document` method does not actually create a document, but rather
 creates a reference to that document.
@@ -20,24 +19,24 @@ doc_ref = col_ref.document("my-document")
 
 ## Listing and filtering documents
 
-You can list all documents in a collection, and also filter by specific tags.
+You can list all documents in a collection and also filter by specific tags.
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
 
-# iterate over all documents in the collection
+# Iterate over all documents in the collection
 for doc_ref in col_ref.documents():
     print(doc_ref.key, doc_ref.get())
 
-# iterate over all documents in the collection with the given tag
+# Iterate over all documents in the collection with the given tag
 for doc_ref in col_ref.documents(tag_key="my-tag-key", tag_value="my-tag-value"):
     print(doc_ref.key, doc_ref.get())
 ```
 
 ## Loading document data
 
-In order to load the data in a document, use the `get`command. This command returns any data stored
-in the document, or `None` if the document does not exist.
+Use the `get` command to load the data in a document. This command returns any data stored
+in the document or `None` if the document does not exist.
 
 ```py
 col_ref = numerous.collections.collection("my-collection")
@@ -50,7 +49,7 @@ if data is None:
 
 ## Setting document content
 
-In order to save data, you must `set` the document's content. This will override
+To save data, you must `set` the document's content. This will override
 any existing data in that document. If you wish to modify the data, load it with
 `get` first, modify the loaded data, and `set` it again.
 

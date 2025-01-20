@@ -1,4 +1,4 @@
-"""Class for working with numerous collections."""
+"""Class for working with Numerous collections."""
 
 from __future__ import annotations
 

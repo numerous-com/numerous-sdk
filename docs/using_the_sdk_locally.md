@@ -20,7 +20,7 @@ used as the folder for storing the data.
 
 ## Connecting the SDK to the platform locally
 
-In order to connect the SDK to the platform locally, it needs to be configured
+To connect the SDK to the platform locally, it needs to be configured
 with an access token and an organization ID. You can generate these values
 using the CLI.
 
@@ -67,12 +67,11 @@ checked into your version control.
     already, and it is also added to the `exclude` section of your app manifest
     `numerous.toml` by default.
 
-### Loading the credentials in your python script
+### Loading the credentials in your Python script
 
-First we need to install `python-dotenv`. Do this with `pip` in the terminal or
-perhaps with the integrated tooling of your IDE.
+First, install `python-dotenv`. Do this with `pip` in the terminal or with the integrated tooling of your IDE.
 
-Now we update the code to load the `.env` file. Below, we use the `python-dotenv`
+Next, we update the code to load the `.env` file. Below, we use the `python-dotenv`
 package to load the `.env` file we just created. In this case, we only want to
 load the `.env` file locally, so we wrap the loading logic in a `try-except`
 block so that it will still work when run remotely.
@@ -89,5 +88,5 @@ except ModuleNotFoundError:
 
 col_ref = collection("my-collection)
 
-# use the collection reference ...
+# Use the collection reference ...
 ```

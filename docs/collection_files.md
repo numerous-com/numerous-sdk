@@ -4,7 +4,7 @@ Files can be stored in collections. They can contain arbitrary data.
 
 ## Referring to files
 
-In order to access a file, use the `file` method of a collection.
+Use the `file` method of a collection to access a file.
 
 Calling the `file` method does not actually create a file, but rather
 creates a reference to that file.
@@ -52,7 +52,7 @@ with file_ref.open() as f:
 
 ## Saving files
 
-Files can be saved with either of the methods `save` (for saving `str` or
+Files can be saved with either of the two methods: `save` (for saving `str` or
 `bytes` data directly) or `save_file` (for saving a an opened IO object, e.g. a
 file from the file system).
 

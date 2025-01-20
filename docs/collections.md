@@ -60,7 +60,7 @@ Numerous Collections acts as a schemaless document database and a folder of file
 
 ### Creating and accessing collections
 
-In order to access a collection in your application, you can use
+To access a collection in your application, you can use
 `numerous.collections.collection`, which returns a `CollectionReference` with
 the specified key.
 
@@ -81,7 +81,7 @@ See the [reference](/reference/numerous/collections/collection#numerous.collecti
 ### Creating and accessing nested collections
 
 Collections can contain other collections. You can use the `collection` method
-on a collection to get a nested Collection with the specified key.
+on a collection to get a nested collection with the specified key.
 
 Nested collections are automatically created the first time they are accessed.
 
@@ -95,8 +95,8 @@ nested = parent.collection("nested-collection")
 Documents and files can be accessed by their key or can otherwise be iterated
 over.
 
-See more on the user guides for [collection documents](collection_documents.md),
-and [collection files](collection_files.md).
+See more on the user guides for [collection documents](collection_documents.md)
+and [collection files](collection_files.md):
 
 ```py
 col_ref = numerous.collections.collection("my-collection")

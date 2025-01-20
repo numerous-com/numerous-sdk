@@ -1,8 +1,8 @@
 """
-Collections client for managing collections, files and documents.
+Collections client for managing collections, files, and documents.
 
-This module defines a Client protocol which specifies all required methods needed to
-manage collections, documents and files.
+This module defines a client protocol, which specifies all required methods needed to
+manage collections, documents, and files.
 """
 
 from __future__ import annotations
