@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.43.3 (2025-01-21)
+
+### Fix
+
+* fix(python-sdk): makefile lint python folder instead of root (#67) ([`ac1e2e4`](https://github.com/numerous-com/numerous-sdk/commit/ac1e2e40234716985a08be171513f5109bae1d95))
+
+
+* fix(docs): removed apostrophe ([`3622c0b`](https://github.com/numerous-com/numerous-sdk/commit/3622c0bbd81f11937f4bff4a1c2b4f602fddbb57))
+
+
+* fix(docs): made small edits to text ([`c3a218b`](https://github.com/numerous-com/numerous-sdk/commit/c3a218b730e7ac8c02fe33f01ba2ad8a6e6a41db))
+
+
+* fix(docs): made small edits to dev docs ([`a6792e9`](https://github.com/numerous-com/numerous-sdk/commit/a6792e9e4c88c956a4f4a00700e7575819772a4f))
+
+
+
+
 ## v0.43.2 (2024-12-18)
 
 ### Fix
