@@ -63,8 +63,8 @@ dep: sdk-dep cli-dep
 sdk-lint:
 	@echo "-- Running SDK linters"
 	$(SDK_CHECK_VENV)
-	ruff check . && echo -n "true" > .lint-ruff.txt || echo -n "false" > .lint-ruff.txt;
-	mypy --strict . && echo -n "true" > .lint-mypy.txt || echo -n "false" > .lint-mypy.txt;
+	ruff check ./python && echo -n "true" > .lint-ruff.txt || echo -n "false" > .lint-ruff.txt;
+	mypy --strict ./python && echo -n "true" > .lint-mypy.txt || echo -n "false" > .lint-mypy.txt;
 	$$(cat .lint-ruff.txt) && $$(cat .lint-mypy.txt)
 
 sdk-test:
