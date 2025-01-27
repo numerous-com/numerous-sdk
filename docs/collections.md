@@ -72,7 +72,7 @@ collection = numerous.collections.collection("my-collection")
 
 !!! note
 Collection keys are scoped to an organization, meaning that if multiple apps
-use the same Collection keys, they will access the same data.
+use the same collection keys, they will access the same data.
 
     For nested collections, they are scoped to their parent collection.
 

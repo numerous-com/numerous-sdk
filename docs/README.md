@@ -42,7 +42,7 @@ developers interested in contributing to the SDK.
 Most common tasks are defined in the `Makefile`. Use `make help` to get an
 overview.
 
-In order to setup pre-commit hooks, use [pre-commit](https://pre-commit.com/)
+To setup pre-commit hooks, use [pre-commit](https://pre-commit.com/)
 to setup hooks for linters and tests. This requires pre-commit to be installed and it is included in the Python SDK development dependencies.
 
 To install pre-commit and pre-push hooks:
