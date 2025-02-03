@@ -4,7 +4,7 @@ Numerous allows you to expose your apps functionality not just through a web UI,
 
 If you would like to enable your users to have access to your app via API requests, follow these steps:
 
-1. Manually update the TOML file and add the following lines:
+1\. Manually update the TOML file and add the following lines:
 
 ```
 # numerous.toml
@@ -28,6 +28,6 @@ If you would like to include API docs for your app, you can include a docs path 
 
 ```
 
-2. Deploy the app using the `numerous deploy` command
-3. The backend will update the app "state" and will enable the API access.
-4. Once you have enabled API access, users can find the API docs and option to create API keys on the app card. Find more information about API Keys on the [platform documentation page](https://www.numerous.com/docs).
+2\. Deploy the app using the `numerous deploy` command
+<br/>3\. The backend will update the app "state" and will enable the API access.
+<br/>4\. Once you have enabled API access, users can find the API docs and option to create API keys on the app card. Find more information about API Keys on the [platform documentation page](https://www.numerous.com/docs).
