@@ -7,13 +7,16 @@ nav:
   - PyPI page: https://pypi.org/project/numerous/
   - Platform docs: https://numerous.com/docs
   - Usage:
-    - Collections: collections.md
-    - Collection documents: collection_documents.md
-    - Collection files: collection_files.md
-    - Sessions: sessions.md
-    - Users: user.md
-    - Frameworks: frameworks.md
-    - Using the SDK locally: using_the_sdk_locally.md
+      - CLI Reference: cli.md
+      - Collections: collections.md
+      - Collection documents: collection_documents.md
+      - Collection files: collection_files.md
+      - Sessions: sessions.md
+      - Users: user.md
+      - Frameworks: frameworks.md
+      - Using the SDK locally: using_the_sdk_locally.md
+      - Enabling/Setting up API access: api.md
+      - Deploying your app with GitHub Actions: github-actions.md
   - API reference: reference/
 
 theme:
@@ -21,7 +24,7 @@ theme:
   logo: logo.svg
   favicon: favicon.png
   features:
-      - content.code.copy
+    - content.code.copy
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
@@ -30,7 +33,7 @@ theme:
         name: Switch to light mode
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: default 
+      scheme: default
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
