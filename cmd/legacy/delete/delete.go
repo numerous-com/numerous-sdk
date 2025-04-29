@@ -52,9 +52,10 @@ func deleteApp(client *gqlclient.Client, args []string) error {
 
 		return err
 	} else {
-		if result.ToolDelete.Typename == "ToolDeleteSuccess" {
+		switch result.ToolDelete.Typename {
+		case "ToolDeleteSuccess":
 			fmt.Println("The app has been successfully removed from Numerous")
-		} else if result.ToolDelete.Typename == "ToolDeleteFailure" {
+		case "ToolDeleteFailure":
 			err := errors.New(result.ToolDelete.Result)
 			output.PrintUnknownError(err)
 

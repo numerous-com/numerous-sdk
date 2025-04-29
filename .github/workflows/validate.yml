@@ -131,9 +131,9 @@ jobs:
       - name: Create version.txt
         run: make version
       - name: Lint (golangci-lint)
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.59.0
+          version: v2.1.2
           args: --verbose
       - name: Install gofumpt
         shell: bash
