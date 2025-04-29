@@ -20,11 +20,13 @@ class User:
     Attributes:
         id (str): The unique identifier for the user.
         name (str): The full name of the user.
+        email (str | None): The email of the user.
 
     """
 
     id: str
     name: str
+    email: str | None = None
     _client: Client | None = None
 
     @property
@@ -61,5 +63,6 @@ class User:
         return User(
             id=user_info["user_id"],
             name=user_info["user_full_name"],
+            email=user_info.get("user_email"),
             _client=_client,
         )

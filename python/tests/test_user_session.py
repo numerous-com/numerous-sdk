@@ -46,6 +46,25 @@ def test_user_property_raises_value_error_when_no_cookie(client: GraphQLClient) 
 def test_user_property_returns_user_when_valid_cookie(
     client: GraphQLClient,
 ) -> None:
+    user_info = {
+        "user_id": "1",
+        "user_full_name": "Test User",
+        "user_email": "test@example.com",
+    }
+    encoded_info = base64.b64encode(json.dumps(user_info).encode()).decode()
+    cg = CookieGetterStub({"numerous_user_info": encoded_info})
+
+    session = Session(cg, _client=client)
+
+    assert session.user is not None
+    assert session.user.id == "1"
+    assert session.user.name == "Test User"
+    assert session.user.email == "test@example.com"
+
+
+def test_user_property_returns_user_when_valid_cookie_and_no_email(
+    client: GraphQLClient,
+) -> None:
     user_info = {"user_id": "1", "user_full_name": "Test User"}
     encoded_info = base64.b64encode(json.dumps(user_info).encode()).decode()
     cg = CookieGetterStub({"numerous_user_info": encoded_info})
@@ -55,3 +74,4 @@ def test_user_property_returns_user_when_valid_cookie(
     assert session.user is not None
     assert session.user.id == "1"
     assert session.user.name == "Test User"
+    assert session.user.email is None
