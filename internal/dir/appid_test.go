@@ -48,7 +48,7 @@ func TestReadAppID(t *testing.T) {
 
 		actualAppID, err := ReadAppID(tmpDir)
 		require.ErrorIs(t, err, ErrAppIDNotFound)
-		assert.Equal(t, "", actualAppID)
+		assert.Empty(t, actualAppID)
 	})
 }
 

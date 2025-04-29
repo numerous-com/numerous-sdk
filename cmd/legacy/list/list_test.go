@@ -66,7 +66,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("returns empty if url is empty", func(t *testing.T) {
-		assert.Equal(t, "", getPublicEmoji(""))
+		assert.Empty(t, getPublicEmoji(""))
 	})
 
 	t.Run("returns checkmark if url is not empty", func(t *testing.T) {
