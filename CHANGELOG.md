@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.44.0 (2025-04-29)
+
+### Documentation
+
+* docs(fix): made small edits to text ([`8dd914d`](https://github.com/numerous-com/numerous-sdk/commit/8dd914ddc60f6ddc9d07b01e4efab57d34eec4b1))
+
+
+* docs(python-sdk): removed typo ([`c947d06`](https://github.com/numerous-com/numerous-sdk/commit/c947d0673d61ffc8f3f6d3794a0de7fffe4d944c))
+
+
+* docs(fix): fixed numbering ([`57918b6`](https://github.com/numerous-com/numerous-sdk/commit/57918b686fc31c28355221d504a81cd52be9b6ed))
+
+
+* docs(fix): moved docs from platform docs ([`9d383d9`](https://github.com/numerous-com/numerous-sdk/commit/9d383d9cc58144d191fd2bad436ceee7400445ce))
+
+
+
+### Feature
+
+* feat(python-sdk): user email (#70) ([`df95c75`](https://github.com/numerous-com/numerous-sdk/commit/df95c7502cd47934785ec766c9bf10a216924b1d))
+
+
+
+
 ## v0.43.3 (2025-01-21)
 
 ### Fix
