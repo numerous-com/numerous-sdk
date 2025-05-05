@@ -11,6 +11,10 @@ from numerous._client.graphql.collection_document import (
     CollectionDocumentCollectionDocumentCollectionDocument,
     CollectionDocumentCollectionDocumentCollectionDocumentNotFound,
 )
+from numerous._client.graphql.organization_by_id import (
+    OrganizationByID,
+    OrganizationByIDOrganizationByIdOrganizationNotFound,
+)
 from numerous.collections._client import (
     CollectionDocumentIdentifier,
     CollectionFileIdentifier,
@@ -18,6 +22,7 @@ from numerous.collections._client import (
     Tag,
 )
 from numerous.collections.exceptions import ParentCollectionNotFoundError
+from numerous.organization._client import OrganizationData
 
 from .graphql import fragments
 from .graphql.collection_collections import (
@@ -78,30 +83,8 @@ if TYPE_CHECKING:
         CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
     )
 
-
 COLLECTED_OBJECTS_NUMBER = 100
 _REQUEST_TIMEOUT_SECONDS_ = 1.5
-
-
-class APIURLMissingError(Exception):
-    _msg = "NUMEROUS_API_URL environment variable is not set"
-
-    def __init__(self) -> None:
-        super().__init__(self._msg)
-
-
-class APIAccessTokenMissingError(Exception):
-    _msg = "NUMEROUS_API_ACCESS_TOKEN environment variable is not set"
-
-    def __init__(self) -> None:
-        super().__init__(self._msg)
-
-
-class OrganizationIDMissingError(Exception):
-    _msg = "NUMEROUS_ORGANIZATION_ID environment variable is not set"
-
-    def __init__(self) -> None:
-        super().__init__(self._msg)
 
 
 class GraphQLClient:
@@ -487,6 +470,18 @@ class GraphQLClient:
             return False
 
         return file.download_url is not None and file.download_url.strip() != ""
+
+    def get_organization(self, organization_id: str) -> OrganizationData | None:
+        result = self._get_organization(organization_id).organization_by_id
+        if isinstance(result, OrganizationByIDOrganizationByIdOrganizationNotFound):
+            return None
+
+        return OrganizationData(id=result.id, slug=result.slug)
+
+    def _get_organization(self, organization_id: str) -> OrganizationByID:
+        return self._loop.await_coro(
+            self._gql.organization_by_id(organization_id, headers=self._headers)
+        )
 
 
 def _tag_input_strict(tag: Tag) -> TagInput:

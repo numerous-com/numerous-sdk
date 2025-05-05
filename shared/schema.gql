@@ -200,6 +200,7 @@ union OrganizationMemberRemoveResult =
 extend type Query {
   organization(organizationSlug: String!): OrganizationQueryResult!
     @hasRole(role: USER)
+  organizationById(organizationId: ID!): OrganizationQueryResult! @hasRole(role: USER)
   organizationInvitation(invitationId: ID!): OrganizationInvitationQueryResult
     @canAccessInvitation
 }

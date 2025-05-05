@@ -127,6 +127,7 @@ from .input_types import (
     AppSecret,
     AppVersionCreateGitHubInput,
     AppVersionInput,
+    AppWorkloadsInput,
     Auth0WhiteLabelInvitationInput,
     BuildPushInput,
     NewOrganization,
@@ -137,6 +138,11 @@ from .input_types import (
     PersonalAccessTokenCreateInput,
     SubscriptionOfferInput,
     TagInput,
+)
+from .organization_by_id import (
+    OrganizationByID,
+    OrganizationByIDOrganizationByIdOrganization,
+    OrganizationByIDOrganizationByIdOrganizationNotFound,
 )
 
 __all__ = [
@@ -151,6 +157,7 @@ __all__ = [
     "AppSubscriptionStatus",
     "AppVersionCreateGitHubInput",
     "AppVersionInput",
+    "AppWorkloadsInput",
     "AsyncBaseClient",
     "Auth0WhiteLabelInvitationInput",
     "AuthRole",
@@ -230,6 +237,9 @@ __all__ = [
     "GraphQLClientInvalidResponseError",
     "NewOrganization",
     "NewTool",
+    "OrganizationByID",
+    "OrganizationByIDOrganizationByIdOrganization",
+    "OrganizationByIDOrganizationByIdOrganizationNotFound",
     "OrganizationInvitationInput",
     "OrganizationMemberEditRoleInput",
     "PaymentAccountStatus",
