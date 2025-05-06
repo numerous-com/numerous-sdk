@@ -84,6 +84,10 @@ class AppVersionCreateGitHubInput(BaseModel):
     repo: str
 
 
+class AppWorkloadsInput(BaseModel):
+    metrics_since: Optional[Any] = Field(alias="metricsSince", default=None)
+
+
 class PaymentConfigurationInput(BaseModel):
     monthly_price_usd: Any = Field(alias="monthlyPriceUSD")
     trial_days: Optional[int] = Field(alias="trialDays", default=None)
@@ -92,6 +96,7 @@ class PaymentConfigurationInput(BaseModel):
 class SubscriptionOfferInput(BaseModel):
     email: str
     app_slug: str = Field(alias="appSlug")
+    name: Optional[str] = None
     message: Optional[str] = None
     payment: Optional["PaymentConfigurationInput"] = None
 

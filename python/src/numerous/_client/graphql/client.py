@@ -21,6 +21,7 @@ from .collection_file_tag_add import CollectionFileTagAdd
 from .collection_file_tag_delete import CollectionFileTagDelete
 from .collection_files import CollectionFiles
 from .input_types import TagInput
+from .organization_by_id import OrganizationByID
 
 
 def gql(q: str) -> str:
@@ -621,3 +622,29 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionFile.model_validate(data)
+
+    async def organization_by_id(
+        self, organization_id: str, **kwargs: Any
+    ) -> OrganizationByID:
+        query = gql(
+            """
+            query OrganizationByID($organizationId: ID!) {
+              organizationById(organizationId: $organizationId) {
+                __typename
+                ... on Organization {
+                  id
+                  slug
+                }
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"organizationId": organization_id}
+        response = await self.execute(
+            query=query,
+            operation_name="OrganizationByID",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return OrganizationByID.model_validate(data)
