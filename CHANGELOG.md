@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.45.0 (2025-05-06)
+
+### Feature
+
+* feat(python-sdk): organization info ([`dab21e5`](https://github.com/numerous-com/numerous-sdk/commit/dab21e5b62a99e5ee156939f5474eeee479b0255))
+
+  > 
+  > * Adds organization info getting API
+  > * Adds `numerous.organization` package
+
+
+
+
 ## v0.44.0 (2025-04-29)
 
 ### Documentation
