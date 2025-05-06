@@ -45,7 +45,7 @@ class Organization:
         """
         Get the organization slug.
 
-        The slug is cached and updated at most once every _UPDATE_INTERVAL_SECONDS.
+        The slug is cached and updated at most once every 5 minutes.
 
         Returns:
             The organization slug.
