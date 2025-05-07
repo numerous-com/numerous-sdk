@@ -46,9 +46,9 @@ func setupTable(organizations []organization.OrganizationMembership, configuredO
 		StyleFunc(func(row, col int) lipgloss.Style {
 			var style lipgloss.Style
 			if row == 0 {
-				style = headerStyle.Copy()
+				style = headerStyle
 			} else {
-				style = rowStyle.Copy()
+				style = rowStyle
 			}
 
 			return style
