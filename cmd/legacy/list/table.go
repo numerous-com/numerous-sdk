@@ -41,9 +41,9 @@ func setupTable(apps []app.App) *table.Table {
 		StyleFunc(func(row, col int) lipgloss.Style {
 			var style lipgloss.Style
 			if row == 0 {
-				style = headerStyle.Copy()
+				style = headerStyle
 			} else {
-				style = rowStyle.Copy()
+				style = rowStyle
 			}
 			if col == publicAppColumnIdx {
 				style = style.AlignHorizontal(lipgloss.Center)
