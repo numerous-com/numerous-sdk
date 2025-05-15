@@ -9,9 +9,10 @@ version = "0.45.0"
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
     "typing-extensions>=4.12.2",
-    "ariadne-codegen[subscriptions]>=0.14.0",
-    "plotly>4",
     "requests>=2.32.3",
+    "httpx>=0.23,<0.28.0",
+    "pydantic>=2.9.0,<2.10.0",
+    "websockets>=0.11",
 ]
 
 [project.optional-dependencies]
@@ -26,9 +27,10 @@ dev = [
     "coverage==7.6.1",
     "twine==5.1.1",
     "marimo==0.8.14",
-    "pydantic==2.9",
     "types-setuptools>=74.1.0",
     "build==1.2.2",
+    # for generating GraphQL client code from schema
+    "ariadne-codegen[subscriptions]>=0.14.0",
     # for docs
     "mkdocs==1.6.0",
     "mkdocstrings==0.26.2",
