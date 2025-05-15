@@ -1,6 +1,32 @@
 # CHANGELOG
 
 
+## v0.45.1 (2025-05-15)
+
+### Build
+
+* build(deps): update CLI go version (#73) ([`dc213d2`](https://github.com/numerous-com/numerous-sdk/commit/dc213d2305741a3bc02a112ca6b3914afb69ebae))
+
+  > 
+  > * Updates packages.
+  > * Updates `gofumpt`.
+  > * Pipeline gets Go version from `go.mod`.
+
+
+
+### Fix
+
+* fix(python-sdk): loose dependencies (#74) ([`25046c6`](https://github.com/numerous-com/numerous-sdk/commit/25046c6378ff4ab9e9f02f74201a9c6b02d975da))
+
+  > 
+  > * Moves `ariadne-codegen` to optional dependencies and adds requirements of the generated code.
+  > * Moves `pydantic` to dependencies since it is used in the codebase.
+  > * Removes redundant `plotly` dependency.
+  > * Removes redundant `requirements.txt`.
+
+
+
+
 ## v0.45.0 (2025-05-06)
 
 ### Feature
