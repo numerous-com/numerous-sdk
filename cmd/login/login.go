@@ -58,17 +58,21 @@ func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 		return nil, err
 	}
 
+	// Store access token (with automatic fallback)
 	if err := a.StoreAccessToken(result.AccessToken); err != nil {
-		output.PrintErrorDetails("Login failed. Could not store credentials in keyring.", err)
+		output.PrintErrorDetails("Failed to store credentials. Both keyring and file-based storage failed.", err)
 		return nil, err
 	}
 
+	// Store refresh token (with automatic fallback)
 	if err := a.StoreRefreshToken(result.RefreshToken); err != nil {
 		output.PrintError(
-			"Error occurred storing refresh token in your keyring.",
-			"When your access token expires, you will need to log in again.\n"+
+			"Warning: Failed to store refresh token",
+			"Your access token was saved, but the refresh token could not be stored.\n"+
+				"You may need to log in again when your access token expires.\n"+
 				"Error details: "+err.Error(),
 		)
+		// Don't return error here - access token was stored successfully
 	}
 
 	output.PrintlnOK("You are now logged in to Numerous!")

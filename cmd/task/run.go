@@ -1,0 +1,1245 @@
+package task
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/spf13/cobra"
+	"numerous.com/cli/internal/gql"
+	"numerous.com/cli/internal/output"
+)
+
+var (
+	taskName       string
+	taskArgs       []string
+	taskDir        string
+	localExecution bool
+	noDocker       bool
+	verbose        bool
+	outputFormat   string
+	timeoutSeconds int
+	orgSlug        string
+	collectionName string
+	follow         bool
+)
+
+var runCmd = &cobra.Command{
+	Use:   "run [task-name]",
+	Short: "Run a task from a task collection",
+	Long: `Run a specific task from a deployed task collection.
+
+By default, this command runs tasks remotely on the Numerous platform using deployed task collections.
+Use --local to run tasks locally for development and testing.
+
+Organization is required for all executions to identify which workspace to use.
+
+Remote execution examples:
+  numerous task run validate_environment --org my-org --collection my-tasks
+  numerous task run process_data --org my-org --collection my-tasks --args '["input.csv"]'
+  numerous task run validate_environment --org my-org  # Will list collections if only one exists
+
+Local execution examples:
+  numerous task run validate_environment --org my-org --local --task-dir ./examples/validator/python-tasks
+  numerous task run process_data --org my-org --local --task-dir ./examples/validator/python-tasks
+  numerous task run --org my-org --local --list-tasks --task-dir ./examples/validator/docker-tasks`,
+	RunE: runTask,
+}
+
+func init() {
+	runCmd.Flags().StringVarP(&taskName, "task", "t", "", "Name of the task to run")
+	runCmd.Flags().StringSliceVarP(&taskArgs, "args", "a", []string{}, "Arguments to pass to the task (JSON array for remote execution)")
+	runCmd.Flags().BoolVar(&localExecution, "local", false, "Run task locally instead of on the platform")
+	runCmd.Flags().StringVarP(&taskDir, "task-dir", "d", ".", "Directory containing the task collection (local execution only)")
+	runCmd.Flags().BoolVar(&noDocker, "no-docker", false, "Run Docker tasks locally without Docker (local execution only)")
+	runCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Output format: text, json")
+	runCmd.Flags().IntVar(&timeoutSeconds, "timeout", 300, "Task execution timeout in seconds")
+	runCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow task execution and wait for completion")
+
+	// Organization is mandatory for all modes
+	runCmd.Flags().StringVar(&orgSlug, "organization", "", "Organization slug (required)")
+	runCmd.MarkFlagRequired("organization")
+
+	// Collection is optional - if not specified, we can list available collections or infer from context
+	runCmd.Flags().StringVarP(&collectionName, "collection", "c", "", "Task collection name (optional for remote execution)")
+
+	// Mark directories for local execution
+	runCmd.MarkFlagDirname("task-dir")
+}
+
+type TaskManifest struct {
+	Name        string        `toml:"name"`
+	Version     string        `toml:"version"`
+	Description string        `toml:"description"`
+	Task        []TaskDef     `toml:"task"`
+	Python      *PythonConfig `toml:"python,omitempty"`
+	Docker      *DockerConfig `toml:"docker,omitempty"`
+	Deployment  *DeployConfig `toml:"deployment,omitempty"`
+}
+
+type TaskDef struct {
+	FunctionName      string   `toml:"function_name"`
+	SourceFile        string   `toml:"source_file"`
+	DecoratedFunction string   `toml:"decorated_function,omitempty"`
+	Description       string   `toml:"description,omitempty"`
+	Entrypoint        []string `toml:"entrypoint,omitempty"`
+	APIEndpoint       string   `toml:"api_endpoint,omitempty"`
+	PythonStub        string   `toml:"python_stub,omitempty"`
+}
+
+type PythonConfig struct {
+	Version          string `toml:"version"`
+	RequirementsFile string `toml:"requirements_file"`
+}
+
+type DockerConfig struct {
+	Dockerfile string `toml:"dockerfile,omitempty"`
+	Context    string `toml:"context,omitempty"`
+}
+
+type DeployConfig struct {
+	OrganizationSlug string `toml:"organization_slug,omitempty"`
+}
+
+type TaskResult struct {
+	TaskName      string                 `json:"task_name"`
+	Status        string                 `json:"status"`
+	StartTime     time.Time              `json:"start_time"`
+	EndTime       time.Time              `json:"end_time"`
+	Duration      time.Duration          `json:"duration"`
+	Output        string                 `json:"output"`
+	Error         string                 `json:"error,omitempty"`
+	ExitCode      int                    `json:"exit_code"`
+	Environment   string                 `json:"environment"`
+	ExecutionMode string                 `json:"execution_mode"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func runTask(cmd *cobra.Command, args []string) error {
+	// Determine task name
+	if len(args) > 0 {
+		taskName = args[0]
+	}
+
+	// Validate required parameters based on execution mode
+	if localExecution {
+		return runTaskLocally(cmd, args)
+	} else {
+		return runTaskRemotely(cmd, args)
+	}
+}
+
+func runTaskLocally(cmd *cobra.Command, args []string) error {
+	// Load task manifest
+	manifestPath := filepath.Join(taskDir, "numerous-task.toml")
+	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
+		return fmt.Errorf("no task manifest found at %s", manifestPath)
+	}
+
+	var manifest TaskManifest
+	if _, err := toml.DecodeFile(manifestPath, &manifest); err != nil {
+		return fmt.Errorf("failed to parse task manifest: %w", err)
+	}
+
+	// If no task specified, list available tasks
+	if taskName == "" {
+		return listTasks(&manifest)
+	}
+
+	// Find the task
+	var task *TaskDef
+	for _, t := range manifest.Task {
+		if t.FunctionName == taskName {
+			task = &t
+			break
+		}
+	}
+
+	if task == nil {
+		output.PrintError("Task not found: %s", "", taskName)
+		fmt.Println("\nAvailable tasks:")
+		for _, t := range manifest.Task {
+			fmt.Printf("  - %s: %s\n", t.FunctionName, t.Description)
+		}
+		return fmt.Errorf("task not found: %s", taskName)
+	}
+
+	// Determine environment type
+	envType := "unknown"
+	if manifest.Docker != nil {
+		envType = "docker"
+	} else if manifest.Python != nil {
+		envType = "python"
+	}
+
+	if verbose {
+		fmt.Printf("🎯 Running task locally: %s\n", taskName)
+		fmt.Printf("📦 Collection: %s v%s\n", manifest.Name, manifest.Version)
+		fmt.Printf("🔧 Environment: %s\n", envType)
+		fmt.Printf("📁 Directory: %s\n", taskDir)
+	}
+
+	// Execute the task based on environment type
+	var result TaskResult
+	var err error
+
+	switch envType {
+	case "python":
+		result, err = runPythonTask(&manifest, task)
+	case "docker":
+		if noDocker {
+			result, err = runDockerTaskLocally(&manifest, task)
+		} else {
+			result, err = runDockerTask(&manifest, task)
+		}
+	default:
+		return fmt.Errorf("unknown environment type for task collection")
+	}
+
+	if err != nil {
+		return fmt.Errorf("task execution failed: %w", err)
+	}
+
+	// Output results
+	return outputTaskResult(&result)
+}
+
+func runTaskRemotely(cmd *cobra.Command, args []string) error {
+	// Validate required parameters for remote execution
+	if taskName == "" {
+		return fmt.Errorf("task name is required for remote execution")
+	}
+
+	// Organization is now required by flag validation, but let's be explicit
+	if orgSlug == "" {
+		return fmt.Errorf("organization slug is required (use --organization flag)")
+	}
+
+	// Collection is optional - if not provided, we should try to infer or list available collections
+	if collectionName == "" {
+		return fmt.Errorf("collection name is required for task execution (use --collection flag)\nTo list available collections, use: numerous task list --organization %s", orgSlug)
+	}
+
+	if verbose {
+		fmt.Printf("🌐 Running task remotely: %s\n", taskName)
+		fmt.Printf("🏢 Organization: %s\n", orgSlug)
+		fmt.Printf("📦 Collection: %s\n", collectionName)
+	}
+
+	// Execute the remote task using the GraphQL infrastructure
+	result, err := executeRemoteTask(taskName, taskArgs, orgSlug, collectionName)
+	if err != nil {
+		return fmt.Errorf("remote task execution failed: %w", err)
+	}
+
+	// Output results
+	return outputTaskResult(&result)
+}
+
+func listTasks(manifest *TaskManifest) error {
+	fmt.Printf("📋 Task Collection: %s v%s\n", manifest.Name, manifest.Version)
+	if manifest.Description != "" {
+		fmt.Printf("📝 Description: %s\n", manifest.Description)
+	}
+
+	envType := "unknown"
+	if manifest.Docker != nil {
+		envType = "Docker"
+	} else if manifest.Python != nil {
+		envType = "Python"
+	}
+	fmt.Printf("🔧 Environment: %s\n", envType)
+
+	fmt.Printf("\n📋 Available tasks (%d):\n", len(manifest.Task))
+
+	for i, task := range manifest.Task {
+		fmt.Printf("  %d. %s\n", i+1, output.Highlight(task.FunctionName))
+		if task.Description != "" {
+			fmt.Printf("     Description: %s\n", task.Description)
+		}
+
+		// Show execution method
+		if len(task.Entrypoint) > 0 {
+			fmt.Printf("     Entrypoint: %v\n", task.Entrypoint)
+		} else if task.SourceFile != "" {
+			fmt.Printf("     Source: %s", task.SourceFile)
+			if task.DecoratedFunction != "" && task.DecoratedFunction != task.FunctionName {
+				fmt.Printf(" (%s)", task.DecoratedFunction)
+			}
+			fmt.Println()
+		}
+
+		if task.APIEndpoint != "" {
+			fmt.Printf("     API Endpoint: %s\n", task.APIEndpoint)
+		}
+
+		fmt.Println()
+	}
+
+	fmt.Println("Usage:")
+	fmt.Printf("  numerous task run <task-name> --task-dir %s\n", taskDir)
+
+	return nil
+}
+
+func runPythonTask(manifest *TaskManifest, task *TaskDef) (TaskResult, error) {
+	result := TaskResult{
+		TaskName:      task.FunctionName,
+		Environment:   "python",
+		ExecutionMode: "direct",
+		StartTime:     time.Now(),
+		Metadata:      make(map[string]interface{}),
+	}
+
+	if task.SourceFile == "" {
+		result.Status = "failed"
+		result.Error = "no source file specified for Python task"
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("no source file specified")
+	}
+
+	// Check if source file exists
+	sourceFilePath := filepath.Join(taskDir, task.SourceFile)
+	if _, err := os.Stat(sourceFilePath); os.IsNotExist(err) {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("source file not found: %s", task.SourceFile)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("source file not found: %s", sourceFilePath)
+	}
+
+	// Prepare Python execution
+	var cmd *exec.Cmd
+
+	// Try to call specific function if it's a module
+	if strings.HasSuffix(task.SourceFile, ".py") {
+		// Execute Python file directly
+		cmd = exec.Command("python", sourceFilePath)
+
+		// Add any arguments
+		if len(taskArgs) > 0 {
+			cmd.Args = append(cmd.Args, taskArgs...)
+		}
+	}
+
+	if cmd == nil {
+		result.Status = "failed"
+		result.Error = "unable to determine Python execution method"
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("unable to determine execution method")
+	}
+
+	// Set working directory
+	cmd.Dir = taskDir
+
+	// Set environment variables
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "PYTHONPATH="+taskDir)
+
+	if verbose {
+		fmt.Printf("🔧 Executing: %s\n", strings.Join(cmd.Args, " "))
+	}
+
+	// Execute with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	cmd = exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
+	cmd.Dir = taskDir
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "PYTHONPATH="+taskDir)
+
+	output, err := cmd.CombinedOutput()
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
+	result.Output = string(output)
+
+	if err != nil {
+		result.Status = "failed"
+		result.Error = err.Error()
+		if exitError, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitError.ExitCode()
+		} else {
+			result.ExitCode = 1
+		}
+	} else {
+		result.Status = "success"
+		result.ExitCode = 0
+	}
+
+	// Add metadata
+	result.Metadata["python_version"] = getPythonVersion()
+	result.Metadata["working_directory"] = taskDir
+	result.Metadata["source_file"] = task.SourceFile
+
+	return result, nil
+}
+
+func runDockerTask(manifest *TaskManifest, task *TaskDef) (TaskResult, error) {
+	result := TaskResult{
+		TaskName:      task.FunctionName,
+		Environment:   "docker",
+		ExecutionMode: "container",
+		StartTime:     time.Now(),
+		Metadata:      make(map[string]interface{}),
+	}
+
+	// Check if Docker is available
+	if !isDockerAvailable() {
+		result.Status = "failed"
+		result.Error = "Docker is not available or not running"
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("Docker not available")
+	}
+
+	dockerfilePath := "Dockerfile"
+	if manifest.Docker.Dockerfile != "" {
+		dockerfilePath = manifest.Docker.Dockerfile
+	}
+
+	dockerContext := "."
+	if manifest.Docker.Context != "" {
+		dockerContext = manifest.Docker.Context
+	}
+
+	// Build Docker image
+	imageName := fmt.Sprintf("numerous-task-%s:%s", manifest.Name, manifest.Version)
+
+	if verbose {
+		fmt.Printf("🐳 Building Docker image: %s\n", imageName)
+	}
+
+	buildCmd := exec.Command("docker", "build",
+		"-f", filepath.Join(taskDir, dockerfilePath),
+		"-t", imageName,
+		filepath.Join(taskDir, dockerContext))
+
+	if verbose {
+		fmt.Printf("🔧 Build command: %s\n", strings.Join(buildCmd.Args, " "))
+		buildCmd.Stdout = os.Stdout
+		buildCmd.Stderr = os.Stderr
+	}
+
+	if err := buildCmd.Run(); err != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("Docker build failed: %v", err)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("Docker build failed: %w", err)
+	}
+
+	// Run the task in Docker container
+	var runCmd *exec.Cmd
+
+	if len(task.Entrypoint) > 0 {
+		// Use specified entrypoint
+		runArgs := append([]string{"run", "--rm", imageName}, task.Entrypoint...)
+		runArgs = append(runArgs, taskArgs...)
+		runCmd = exec.Command("docker", runArgs...)
+	} else {
+		// Use default container command
+		runArgs := []string{"run", "--rm", imageName}
+		runArgs = append(runArgs, taskArgs...)
+		runCmd = exec.Command("docker", runArgs...)
+	}
+
+	if verbose {
+		fmt.Printf("🚀 Running: %s\n", strings.Join(runCmd.Args, " "))
+	}
+
+	// Execute with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	runCmd = exec.CommandContext(ctx, runCmd.Args[0], runCmd.Args[1:]...)
+	output, err := runCmd.CombinedOutput()
+
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
+	result.Output = string(output)
+
+	if err != nil {
+		result.Status = "failed"
+		result.Error = err.Error()
+		if exitError, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitError.ExitCode()
+		} else {
+			result.ExitCode = 1
+		}
+	} else {
+		result.Status = "success"
+		result.ExitCode = 0
+	}
+
+	// Add metadata
+	result.Metadata["docker_image"] = imageName
+	result.Metadata["dockerfile"] = dockerfilePath
+	result.Metadata["build_context"] = dockerContext
+	if len(task.Entrypoint) > 0 {
+		result.Metadata["entrypoint"] = task.Entrypoint
+	}
+
+	return result, nil
+}
+
+func runDockerTaskLocally(manifest *TaskManifest, task *TaskDef) (TaskResult, error) {
+	result := TaskResult{
+		TaskName:      task.FunctionName,
+		Environment:   "docker-local",
+		ExecutionMode: "local",
+		StartTime:     time.Now(),
+		Metadata:      make(map[string]interface{}),
+	}
+
+	// For Docker tasks without Docker, try to run the entrypoint locally
+	if len(task.Entrypoint) == 0 {
+		result.Status = "failed"
+		result.Error = "no entrypoint specified for Docker task"
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, fmt.Errorf("no entrypoint specified")
+	}
+
+	// Execute the entrypoint locally
+	cmdArgs := append(task.Entrypoint, taskArgs...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd.Dir = taskDir
+
+	if verbose {
+		fmt.Printf("🔧 Running locally: %s\n", strings.Join(cmdArgs, " "))
+	}
+
+	// Execute with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	cmd = exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
+	cmd.Dir = taskDir
+	output, err := cmd.CombinedOutput()
+
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
+	result.Output = string(output)
+
+	if err != nil {
+		result.Status = "failed"
+		result.Error = err.Error()
+		if exitError, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitError.ExitCode()
+		} else {
+			result.ExitCode = 1
+		}
+	} else {
+		result.Status = "success"
+		result.ExitCode = 0
+	}
+
+	// Add metadata
+	result.Metadata["entrypoint"] = task.Entrypoint
+	result.Metadata["local_execution"] = true
+
+	return result, nil
+}
+
+func outputTaskResult(result *TaskResult) error {
+	switch outputFormat {
+	case "json":
+		jsonData, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal result to JSON: %w", err)
+		}
+		fmt.Println(string(jsonData))
+	case "text":
+	default:
+		// Text output
+		fmt.Printf("\n🎯 Task Execution Result\n")
+		fmt.Printf("Task: %s\n", result.TaskName)
+		fmt.Printf("Status: %s\n", formatStatus(result.Status))
+		fmt.Printf("Environment: %s\n", result.Environment)
+		fmt.Printf("Execution Mode: %s\n", result.ExecutionMode)
+		fmt.Printf("Duration: %v\n", result.Duration.Round(time.Millisecond))
+		fmt.Printf("Exit Code: %d\n", result.ExitCode)
+
+		if result.Error != "" {
+			fmt.Printf("Error: %s\n", result.Error)
+		}
+
+		if result.Output != "" {
+			fmt.Printf("\n📄 Output:\n%s\n", result.Output)
+		}
+
+		if verbose && len(result.Metadata) > 0 {
+			fmt.Printf("\n🔍 Metadata:\n")
+			for key, value := range result.Metadata {
+				fmt.Printf("  %s: %v\n", key, value)
+			}
+		}
+	}
+
+	return nil
+}
+
+func formatStatus(status string) string {
+	switch status {
+	case "success":
+		return "✅ " + status
+	case "failed":
+		return "❌ " + status
+	default:
+		return status
+	}
+}
+
+func isDockerAvailable() bool {
+	cmd := exec.Command("docker", "version")
+	err := cmd.Run()
+	return err == nil
+}
+
+func getPythonVersion() string {
+	cmd := exec.Command("python", "--version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(string(output))
+}
+
+func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionName string) (TaskResult, error) {
+	result := TaskResult{
+		TaskName:      taskName,
+		Environment:   "remote",
+		ExecutionMode: "api",
+		StartTime:     time.Now(),
+		Metadata:      make(map[string]interface{}),
+	}
+
+	// Use the main API with task execution endpoints
+	apiURL := gql.GetHTTPURL()
+	accessToken := gql.GetAccessToken()
+
+	// Create HTTP client with timeout
+	httpClient := &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}
+
+	// Prepare arguments for the task
+	// For remote execution, we construct the function identifier and arguments
+	functionIdentifier := fmt.Sprintf("%s.%s.%s", orgSlug, collectionName, taskName)
+
+	// Convert arguments to JSON strings as expected by the API
+	argsJSON := "[]"
+	kwargsJSON := "{}"
+
+	if len(taskArgs) > 0 {
+		if len(taskArgs) == 1 {
+			// Try to parse single argument as JSON
+			argsJSON = taskArgs[0]
+		} else {
+			// Multiple arguments - convert to JSON array
+			argsBytes, err := json.Marshal(taskArgs)
+			if err != nil {
+				result.Status = "failed"
+				result.Error = fmt.Sprintf("failed to marshal arguments: %v", err)
+				result.EndTime = time.Now()
+				result.Duration = result.EndTime.Sub(result.StartTime)
+				return result, err
+			}
+			argsJSON = string(argsBytes)
+		}
+	}
+
+	// Create GraphQL mutation using the correct start_task mutation
+	mutation := `
+		mutation StartTask($function: String!, $args: String!, $kwargs: String!, $filePath: String, $sessionName: String) {
+			start_task(function: $function, args: $args, kwargs: $kwargs, filePath: $filePath, sessionName: $sessionName) {
+				id
+				status
+				error
+				created_at
+				started_at
+				completed_at
+				result
+			}
+		}
+	`
+
+	variables := map[string]interface{}{
+		"function":    functionIdentifier,
+		"args":        argsJSON,
+		"kwargs":      kwargsJSON,
+		"filePath":    nil, // For deployed tasks, file path is not needed
+		"sessionName": nil, // Could be made configurable in the future
+	}
+
+	requestBody := map[string]interface{}{
+		"query":     mutation,
+		"variables": variables,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("failed to marshal request: %v", err)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, err
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("failed to create request: %v", err)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if accessToken != nil {
+		req.Header.Set("Authorization", "Bearer "+*accessToken)
+	}
+
+	if verbose {
+		fmt.Printf("🔗 Sending request to: %s\n", apiURL)
+		fmt.Printf("📧 Function: %s\n", functionIdentifier)
+		fmt.Printf("📥 Args: %s\n", argsJSON)
+	}
+
+	// Execute request
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("request failed: %v", err)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var response struct {
+		Data struct {
+			StartTask struct {
+				ID          string   `json:"id"`
+				Status      string   `json:"status"`
+				Error       *string  `json:"error"`
+				CreatedAt   float64  `json:"created_at"`   // Revert to float64 for numeric timestamps
+				StartedAt   *float64 `json:"started_at"`   // Revert to *float64
+				CompletedAt *float64 `json:"completed_at"` // Revert to *float64
+				Result      *string  `json:"result"`
+			} `json:"start_task"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+
+	bodyBytes, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("failed to read response body: %v", errRead)
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, errRead
+	}
+	// Re-initialize resp.Body as it has been read
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		result.Status = "failed"
+		// Include raw body in error for better debugging
+		result.Error = fmt.Sprintf("failed to decode response: %v. Raw Body: %s", err, string(bodyBytes))
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+
+		// In verbose mode, also print the raw response for debugging
+		if verbose {
+			fmt.Printf("🐛 Debug: Raw API Response: %s\n", string(bodyBytes))
+		}
+
+		return result, err
+	}
+
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
+
+	// Check for GraphQL errors
+	if len(response.Errors) > 0 {
+		result.Status = "failed"
+		result.Error = response.Errors[0].Message
+		return result, fmt.Errorf("GraphQL error: %s", response.Errors[0].Message)
+	}
+
+	// Check for task execution errors
+	startTaskData := response.Data.StartTask
+	if startTaskData.Error != nil {
+		result.Status = "failed"
+		result.Error = *startTaskData.Error
+		return result, fmt.Errorf("task execution failed: %s", *startTaskData.Error)
+	}
+
+	// If task is already completed, return immediately
+	if startTaskData.Status == "completed" || startTaskData.Status == "failed" {
+		result.Status = startTaskData.Status
+		if startTaskData.Status == "completed" {
+			result.ExitCode = 0
+		} else {
+			result.ExitCode = 1
+		}
+
+		// Set timing information from numeric timestamps
+		// CreatedAt is non-nullable, convert from Unix timestamp
+		result.StartTime = time.Unix(int64(startTaskData.CreatedAt), 0)
+
+		if startTaskData.StartedAt != nil {
+			// Prefer StartedAt if available
+			result.StartTime = time.Unix(int64(*startTaskData.StartedAt), 0)
+		}
+
+		if startTaskData.CompletedAt != nil {
+			result.EndTime = time.Unix(int64(*startTaskData.CompletedAt), 0)
+			result.Duration = result.EndTime.Sub(result.StartTime)
+		} else {
+			// If CompletedAt is not provided, use current time for completed/failed tasks
+			if startTaskData.Status == "completed" || startTaskData.Status == "failed" {
+				result.EndTime = time.Now()
+				result.Duration = result.EndTime.Sub(result.StartTime)
+			}
+		}
+
+		// Add metadata
+		result.Metadata["task_id"] = startTaskData.ID
+		result.Metadata["execution_id"] = startTaskData.ID
+		result.Metadata["organization"] = orgSlug
+		result.Metadata["collection"] = collectionName
+		result.Metadata["function"] = functionIdentifier
+
+		if startTaskData.Result != nil {
+			result.Metadata["result"] = *startTaskData.Result
+		}
+
+		fmt.Printf("⏳ Task is %s. Use --follow to wait for completion.\n", startTaskData.Status)
+		fmt.Printf("💡 Check status with: numerous task status %s --organization %s\n", startTaskData.ID, orgSlug)
+
+		return result, nil
+	}
+
+	// If --follow flag is not set, return immediately with current status
+	if !follow {
+		result.Status = startTaskData.Status
+		result.StartTime = time.Unix(int64(startTaskData.CreatedAt), 0)
+		if startTaskData.StartedAt != nil {
+			result.StartTime = time.Unix(int64(*startTaskData.StartedAt), 0)
+		}
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+
+		// Add metadata
+		result.Metadata["task_id"] = startTaskData.ID
+		result.Metadata["execution_id"] = startTaskData.ID
+		result.Metadata["organization"] = orgSlug
+		result.Metadata["collection"] = collectionName
+		result.Metadata["function"] = functionIdentifier
+
+		fmt.Printf("⏳ Task is %s. Use --follow to wait for completion.\n", startTaskData.Status)
+		fmt.Printf("💡 Check status with: numerous task status %s --organization %s\n", startTaskData.ID, orgSlug)
+
+		return result, nil
+	}
+
+	// For running tasks with --follow flag, poll until completion
+	if verbose {
+		fmt.Printf("⏳ Following task execution, polling for completion...\n")
+	}
+
+	// If follow flag is set, start log streaming
+	if follow {
+		go func() {
+			if err := streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient); err != nil && verbose {
+				fmt.Printf("⚠️  Log streaming error: %v\n", err)
+			}
+		}()
+	}
+
+	finalResult, err := pollTaskCompletion(startTaskData.ID, apiURL, accessToken, httpClient)
+	if err != nil {
+		result.Status = "failed"
+		result.Error = fmt.Sprintf("failed to poll task completion: %v", err)
+		return result, err
+	}
+
+	// Merge the polling result with our base result
+	finalResult.TaskName = result.TaskName
+	finalResult.Environment = result.Environment
+	finalResult.ExecutionMode = result.ExecutionMode
+	finalResult.Metadata["task_id"] = startTaskData.ID
+	finalResult.Metadata["execution_id"] = startTaskData.ID
+	finalResult.Metadata["organization"] = orgSlug
+	finalResult.Metadata["collection"] = collectionName
+	finalResult.Metadata["function"] = functionIdentifier
+
+	return finalResult, nil
+}
+
+func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpClient *http.Client) (TaskResult, error) {
+	result := TaskResult{
+		TaskName:      "",
+		Environment:   "remote",
+		ExecutionMode: "api",
+		StartTime:     time.Now(),
+		Metadata:      make(map[string]interface{}),
+	}
+
+	// Query to get task status
+	query := `
+		query TaskStatus($taskId: ID!) {
+			task_status(taskId: $taskId) {
+				id
+				status
+				result
+				error
+				created_at
+				started_at
+				completed_at
+				progress
+				status_message
+			}
+		}
+	`
+
+	maxAttempts := timeoutSeconds / 2 // Poll every 2 seconds
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		variables := map[string]interface{}{
+			"taskId": taskID,
+		}
+
+		requestBody := map[string]interface{}{
+			"query":     query,
+			"variables": variables,
+		}
+
+		jsonBody, err := json.Marshal(requestBody)
+		if err != nil {
+			return result, fmt.Errorf("failed to marshal polling request: %w", err)
+		}
+
+		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return result, fmt.Errorf("failed to create polling request: %w", err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		if accessToken != nil {
+			req.Header.Set("Authorization", "Bearer "+*accessToken)
+		}
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return result, fmt.Errorf("polling request failed: %w", err)
+		}
+
+		var response struct {
+			Data struct {
+				TaskStatus *struct {
+					ID            string   `json:"id"`
+					Status        string   `json:"status"`
+					Result        *string  `json:"result"`
+					Error         *string  `json:"error"`
+					CreatedAt     *float64 `json:"created_at"`   // Revert to *float64
+					StartedAt     *float64 `json:"started_at"`   // Revert to *float64
+					CompletedAt   *float64 `json:"completed_at"` // Revert to *float64
+					Progress      *float64 `json:"progress"`
+					StatusMessage *string  `json:"status_message"`
+				} `json:"task_status"`
+			} `json:"data"`
+			Errors []struct {
+				Message string `json:"message"`
+			} `json:"errors"`
+		}
+
+		bodyBytes, errRead := io.ReadAll(resp.Body)
+		if errRead != nil {
+			resp.Body.Close()
+			return result, fmt.Errorf("failed to read polling response body: %w", errRead)
+		}
+		// Re-initialize resp.Body as it has been read
+		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			resp.Body.Close()
+			// Include raw body in error for better debugging
+			return result, fmt.Errorf("failed to decode polling response: %w. Raw Body: %s", err, string(bodyBytes))
+		}
+		resp.Body.Close()
+
+		// Check for GraphQL errors
+		if len(response.Errors) > 0 {
+			return result, fmt.Errorf("GraphQL polling error: %s", response.Errors[0].Message)
+		}
+
+		taskStatus := response.Data.TaskStatus
+		if taskStatus == nil {
+			return result, fmt.Errorf("task not found: %s", taskID)
+		}
+
+		if verbose && attempt%5 == 0 { // Log every 10 seconds
+			fmt.Printf("📊 Status: %s", taskStatus.Status)
+			if taskStatus.Progress != nil {
+				fmt.Printf(" (%.1f%%)", *taskStatus.Progress*100)
+			}
+			if taskStatus.StatusMessage != nil {
+				fmt.Printf(" - %s", *taskStatus.StatusMessage)
+			}
+			fmt.Println()
+		}
+
+		// Check if task is completed
+		if taskStatus.Status == "completed" || taskStatus.Status == "failed" || taskStatus.Status == "cancelled" {
+			result.Status = taskStatus.Status
+
+			if taskStatus.Status == "completed" {
+				result.ExitCode = 0
+			} else {
+				result.ExitCode = 1
+			}
+
+			// Set timing information from numeric timestamps
+			if taskStatus.CreatedAt != nil {
+				result.StartTime = time.Unix(int64(*taskStatus.CreatedAt), 0)
+			}
+			if taskStatus.StartedAt != nil {
+				// Prefer StartedAt if available
+				result.StartTime = time.Unix(int64(*taskStatus.StartedAt), 0)
+			}
+			if taskStatus.CompletedAt != nil {
+				result.EndTime = time.Unix(int64(*taskStatus.CompletedAt), 0)
+				result.Duration = result.EndTime.Sub(result.StartTime)
+			} else {
+				result.EndTime = time.Now()
+				result.Duration = result.EndTime.Sub(result.StartTime)
+			}
+
+			// Set output and error information
+			if taskStatus.Error != nil {
+				result.Error = *taskStatus.Error
+			}
+			if taskStatus.Result != nil {
+				result.Output = *taskStatus.Result
+				result.Metadata["result"] = *taskStatus.Result
+			}
+			if taskStatus.Progress != nil {
+				result.Metadata["progress"] = *taskStatus.Progress
+			}
+			if taskStatus.StatusMessage != nil {
+				result.Metadata["status_message"] = *taskStatus.StatusMessage
+			}
+
+			return result, nil
+		}
+
+		// Wait before next poll
+		time.Sleep(2 * time.Second)
+	}
+
+	// Timeout reached
+	result.Status = "timeout"
+	result.Error = fmt.Sprintf("task execution timed out after %d seconds", timeoutSeconds)
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
+	result.ExitCode = 1
+
+	return result, fmt.Errorf("task execution timed out")
+}
+
+func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClient *http.Client) error {
+	// Track the last log we've seen
+	lastLogIndex := 0
+
+	// Poll for logs every 1 second
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	// Set a reasonable timeout for log streaming (same as task timeout)
+	timeout := time.After(time.Duration(timeoutSeconds) * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return nil // Timeout reached, stop streaming
+		case <-ticker.C:
+			// Query for task logs
+			query := `
+				query TaskLogs($taskId: ID!, $offset: Int!) {
+					task_logs(taskId: $taskId, offset: $offset) {
+						entries {
+							timestamp
+							message
+							level
+						}
+						hasMore
+					}
+				}
+			`
+
+			variables := map[string]interface{}{
+				"taskId": taskID,
+				"offset": lastLogIndex,
+			}
+
+			requestBody := map[string]interface{}{
+				"query":     query,
+				"variables": variables,
+			}
+
+			jsonBody, err := json.Marshal(requestBody)
+			if err != nil {
+				continue // Skip this iteration on error
+			}
+
+			req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+			if err != nil {
+				continue // Skip this iteration on error
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			if accessToken != nil {
+				req.Header.Set("Authorization", "Bearer "+*accessToken)
+			}
+
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				continue // Skip this iteration on error
+			}
+
+			// Parse response
+			var response struct {
+				Data struct {
+					TaskLogs *struct {
+						Entries []struct {
+							Timestamp string `json:"timestamp"`
+							Message   string `json:"message"`
+							Level     string `json:"level"`
+						} `json:"entries"`
+						HasMore bool `json:"hasMore"`
+					} `json:"task_logs"`
+				} `json:"data"`
+				Errors []struct {
+					Message string `json:"message"`
+				} `json:"errors"`
+			}
+
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				resp.Body.Close()
+				continue // Skip this iteration on error
+			}
+			resp.Body.Close()
+
+			if len(response.Errors) > 0 {
+				if verbose {
+					fmt.Printf("⚠️  Log streaming error: %s\n", response.Errors[0].Message)
+				}
+				continue
+			}
+
+			taskLogs := response.Data.TaskLogs
+			if taskLogs == nil {
+				continue // No logs available yet
+			}
+
+			// Print new log entries
+			for _, entry := range taskLogs.Entries {
+				// Check for completion signal in log message first
+				if strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
+					// Parse completion signal: TASK_COMPLETED:STATUS:EXITCODE
+					parts := strings.Split(entry.Message, ":")
+					if len(parts) >= 3 {
+						status := parts[1]
+						if verbose {
+							fmt.Printf("🏁 Task completed with status: %s\n", status)
+						}
+						return nil // Task completed, stop streaming
+					}
+				}
+
+				// Format timestamp for display and print the entry (skip completion signals)
+				if !strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
+					if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
+						fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
+					} else {
+						fmt.Printf("%s\n", entry.Message)
+					}
+				}
+				lastLogIndex++
+			}
+
+			// If no more logs and we can check task status, see if task is complete
+			if !taskLogs.HasMore {
+				// Make a quick status check to see if task is complete
+				statusQuery := `
+					query TaskStatus($taskId: ID!) {
+						task_status(taskId: $taskId) {
+							status
+						}
+					}
+				`
+
+				statusVars := map[string]interface{}{
+					"taskId": taskID,
+				}
+
+				statusReqBody := map[string]interface{}{
+					"query":     statusQuery,
+					"variables": statusVars,
+				}
+
+				if statusJSON, err := json.Marshal(statusReqBody); err == nil {
+					if statusReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(statusJSON)); err == nil {
+						statusReq.Header.Set("Content-Type", "application/json")
+						if accessToken != nil {
+							statusReq.Header.Set("Authorization", "Bearer "+*accessToken)
+						}
+
+						if statusResp, err := httpClient.Do(statusReq); err == nil {
+							var statusResponse struct {
+								Data struct {
+									TaskStatus *struct {
+										Status string `json:"status"`
+									} `json:"task_status"`
+								} `json:"data"`
+							}
+
+							if err := json.NewDecoder(statusResp.Body).Decode(&statusResponse); err == nil {
+								if statusResponse.Data.TaskStatus != nil {
+									status := statusResponse.Data.TaskStatus.Status
+									statusLower := strings.ToLower(status)
+									if statusLower == "completed" || statusLower == "failed" || statusLower == "cancelled" {
+										statusResp.Body.Close()
+										return nil // Task is complete, stop streaming
+									}
+								}
+							}
+							statusResp.Body.Close()
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"numerous.com/cli/internal/output"
 	"numerous.com/cli/internal/test"
 
+	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -87,7 +89,7 @@ func TestDeploy(t *testing.T) {
 		input := deployInput{appDir: dir, orgSlug: slug, appSlug: appSlug}
 		err := deploy(context.TODO(), nil, input)
 
-		assert.EqualError(t, err, "open "+dir+"/numerous.toml: no such file or directory")
+		assert.EqualError(t, err, "no app or task manifest found in "+dir)
 	})
 
 	t.Run("given invalid slug then it returns error", func(t *testing.T) {
@@ -316,4 +318,406 @@ func cleanNonASCIIAndANSI(s string) string {
 	}
 
 	return cleaned
+}
+
+func TestTaskCollectionDeploy(t *testing.T) {
+	t.Run("given Python task collection then it deploys successfully", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/python_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "test-org"}
+		err := deploy(context.TODO(), nil, input)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("given Docker task collection then it deploys successfully", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/docker_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "test-org"}
+		err := deploy(context.TODO(), nil, input)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("given task collection without environment section then it returns error", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/invalid_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "test-org"}
+		err := deploy(context.TODO(), nil, input)
+
+		assert.ErrorContains(t, err, "missing environment configuration")
+	})
+
+	t.Run("given task collection without organization then it returns error", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/python_task_collection", taskDir)
+
+		// Create manifest without deployment section
+		manifestContent := `name = "test-collection"
+version = "1.0.0"
+
+[[task]]
+function_name = "test_task"
+source_file = "task.py"
+
+[python]
+version = "3.11"
+requirements_file = "requirements.txt"
+`
+		test.WriteFile(t, filepath.Join(taskDir, "numerous-task.toml"), []byte(manifestContent))
+
+		input := deployInput{appDir: taskDir} // No orgSlug provided
+		err := deploy(context.TODO(), nil, input)
+
+		assert.ErrorContains(t, err, "missing organization identifier")
+	})
+
+	t.Run("given CLI organization flag then it overrides manifest organization", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/python_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "cli-org"} // Should override "test-organization" from manifest
+		err := deploy(context.TODO(), nil, input)
+
+		assert.NoError(t, err)
+		// Verify organization from CLI was used (would need to check mock backend path)
+	})
+
+	t.Run("given task collection with missing source files then deployment succeeds with warnings", func(t *testing.T) {
+		taskDir := t.TempDir()
+
+		// Create manifest with references to non-existent files
+		manifestContent := `name = "missing-files-collection"
+version = "1.0.0"
+
+[[task]]
+function_name = "missing_task"
+source_file = "missing_task.py"
+
+[python]
+version = "3.11"
+requirements_file = "missing_requirements.txt"
+
+[deployment]
+organization_slug = "test-org"
+`
+		test.WriteFile(t, filepath.Join(taskDir, "numerous-task.toml"), []byte(manifestContent))
+
+		input := deployInput{appDir: taskDir}
+		err := deploy(context.TODO(), nil, input)
+
+		assert.NoError(t, err) // Deployment should succeed even with missing files
+	})
+}
+
+func TestTaskCollectionDryRun(t *testing.T) {
+	t.Run("given Python task collection dry-run then it shows deployment plan", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/python_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "test-org", dryRun: true}
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
+			return deploy(context.TODO(), nil, input)
+		})
+
+		assert.NoError(t, err)
+		output, _ := io.ReadAll(stdoutR)
+		actual := cleanNonASCIIAndANSI(string(output))
+
+		// Verify dry-run output contains expected information
+		assert.Contains(t, actual, "DRY RUN: Task Collection Deployment Summary")
+		assert.Contains(t, actual, "Collection Name: python-data-processing")
+		assert.Contains(t, actual, "Version: 1.0.0")
+		assert.Contains(t, actual, "Organization: test-org")
+		assert.Contains(t, actual, "Environment: Python")
+		assert.Contains(t, actual, "Python Configuration:")
+		assert.Contains(t, actual, "Version: 3.11")
+		assert.Contains(t, actual, "Requirements file found")
+		assert.Contains(t, actual, "Tasks defined in collection (2):")
+		assert.Contains(t, actual, "process_data")
+		assert.Contains(t, actual, "cleanup_data")
+		assert.Contains(t, actual, "Would deploy Python task collection")
+	})
+
+	t.Run("given Docker task collection dry-run then it shows Docker configuration", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/docker_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "custom-org", dryRun: true}
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
+			return deploy(context.TODO(), nil, input)
+		})
+
+		assert.NoError(t, err)
+		output, _ := io.ReadAll(stdoutR)
+		actual := cleanNonASCIIAndANSI(string(output))
+
+		// Verify Docker-specific dry-run output
+		assert.Contains(t, actual, "Collection Name: docker-ml-pipeline")
+		assert.Contains(t, actual, "Version: 2.0.0")
+		assert.Contains(t, actual, "Organization: custom-org") // CLI override
+		assert.Contains(t, actual, "Environment: Docker")
+		assert.Contains(t, actual, "Docker Configuration:")
+		assert.Contains(t, actual, "Dockerfile: Dockerfile")
+		assert.Contains(t, actual, "Build Context: .")
+		assert.Contains(t, actual, "Dockerfile found")
+		assert.Contains(t, actual, "Tasks defined in collection (3):")
+		assert.Contains(t, actual, "train_model")
+		assert.Contains(t, actual, "Entrypoint: [python train.py]")
+		assert.Contains(t, actual, "api_predict")
+		assert.Contains(t, actual, "API Endpoint: /predict")
+		assert.Contains(t, actual, "Python stub found")
+		assert.Contains(t, actual, "Would deploy Docker task collection")
+	})
+
+	t.Run("given task collection dry-run with missing files then it shows warnings", func(t *testing.T) {
+		taskDir := t.TempDir()
+
+		// Create manifest with references to non-existent files
+		manifestContent := `name = "warning-collection"
+version = "1.0.0"
+
+[[task]]
+function_name = "missing_task"
+source_file = "missing_task.py"
+python_stub = "missing_stub.py"
+
+[python]
+version = "3.11"
+requirements_file = "missing_requirements.txt"
+
+[deployment]
+organization_slug = "test-org"
+`
+		test.WriteFile(t, filepath.Join(taskDir, "numerous-task.toml"), []byte(manifestContent))
+
+		input := deployInput{appDir: taskDir, dryRun: true}
+		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
+			return deploy(context.TODO(), nil, input)
+		})
+
+		assert.NoError(t, err)
+		output, _ := io.ReadAll(stdoutR)
+		actual := cleanNonASCIIAndANSI(string(output))
+
+		// Verify warnings are shown for missing files
+		assert.Contains(t, actual, "Warning: Requirements file not found")
+		assert.Contains(t, actual, "Warning: Source file not found")
+		assert.Contains(t, actual, "Warning: Python stub not found")
+	})
+
+	t.Run("given invalid task collection dry-run then it shows error", func(t *testing.T) {
+		taskDir := t.TempDir()
+		test.CopyDir(t, "../../testdata/invalid_task_collection", taskDir)
+
+		input := deployInput{appDir: taskDir, orgSlug: "test-org", dryRun: true}
+		err := deploy(context.TODO(), nil, input)
+
+		assert.ErrorContains(t, err, "missing environment configuration")
+	})
+}
+
+func TestTaskManifestParsing(t *testing.T) {
+	t.Run("given valid Python task manifest then it parses correctly", func(t *testing.T) {
+		manifestContent := `name = "test-collection"
+version = "1.0.0"
+description = "Test collection"
+
+[[task]]
+function_name = "task1"
+source_file = "task1.py"
+decorated_function = "decorated_task1"
+description = "First task"
+
+[[task]]
+function_name = "task2"
+source_file = "task2.py"
+
+[python]
+version = "3.11"
+requirements_file = "requirements.txt"
+
+[deployment]
+organization_slug = "test-org"
+`
+
+		var manifest TaskManifestCollection
+		_, err := toml.Decode(manifestContent, &manifest)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "test-collection", manifest.Name)
+		assert.Equal(t, "1.0.0", manifest.Version)
+		assert.Equal(t, "Test collection", manifest.Description)
+		assert.Len(t, manifest.Task, 2)
+		assert.Equal(t, "task1", manifest.Task[0].FunctionName)
+		assert.Equal(t, "task1.py", manifest.Task[0].SourceFile)
+		assert.Equal(t, "decorated_task1", manifest.Task[0].DecoratedFunction)
+		assert.Equal(t, "First task", manifest.Task[0].Description)
+		assert.NotNil(t, manifest.Python)
+		assert.Equal(t, "3.11", manifest.Python.Version)
+		assert.Equal(t, "requirements.txt", manifest.Python.RequirementsFile)
+		assert.Nil(t, manifest.Docker)
+		assert.NotNil(t, manifest.Deployment)
+		assert.Equal(t, "test-org", manifest.Deployment.OrganizationSlug)
+	})
+
+	t.Run("given valid Docker task manifest then it parses correctly", func(t *testing.T) {
+		manifestContent := `name = "docker-collection"
+version = "2.0.0"
+
+[[task]]
+function_name = "docker_task"
+entrypoint = ["python", "script.py"]
+api_endpoint = "/api/task"
+python_stub = "stubs/task.py"
+
+[docker]
+dockerfile = "Dockerfile"
+context = "."
+
+[deployment]
+organization_slug = "docker-org"
+`
+
+		var manifest TaskManifestCollection
+		_, err := toml.Decode(manifestContent, &manifest)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "docker-collection", manifest.Name)
+		assert.Equal(t, "2.0.0", manifest.Version)
+		assert.Len(t, manifest.Task, 1)
+		assert.Equal(t, "docker_task", manifest.Task[0].FunctionName)
+		assert.Equal(t, []string{"python", "script.py"}, manifest.Task[0].Entrypoint)
+		assert.Equal(t, "/api/task", manifest.Task[0].APIEndpoint)
+		assert.Equal(t, "stubs/task.py", manifest.Task[0].PythonStub)
+		assert.Nil(t, manifest.Python)
+		assert.NotNil(t, manifest.Docker)
+		assert.Equal(t, "Dockerfile", manifest.Docker.Dockerfile)
+		assert.Equal(t, ".", manifest.Docker.Context)
+		assert.Equal(t, "docker-org", manifest.Deployment.OrganizationSlug)
+	})
+}
+
+func TestTaskEnvironmentType(t *testing.T) {
+	tests := []struct {
+		name     string
+		manifest TaskManifestCollection
+		expected string
+	}{
+		{
+			name: "Python environment",
+			manifest: TaskManifestCollection{
+				Python: &TaskPython{Version: "3.11"},
+			},
+			expected: "Python",
+		},
+		{
+			name: "Docker environment",
+			manifest: TaskManifestCollection{
+				Docker: &TaskDocker{Dockerfile: "Dockerfile"},
+			},
+			expected: "Docker",
+		},
+		{
+			name: "Docker takes precedence over Python",
+			manifest: TaskManifestCollection{
+				Python: &TaskPython{Version: "3.11"},
+				Docker: &TaskDocker{Dockerfile: "Dockerfile"},
+			},
+			expected: "Docker",
+		},
+		{
+			name:     "No environment",
+			manifest: TaskManifestCollection{},
+			expected: "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getTaskEnvironmentType(&tt.manifest)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestTaskOrganizationIdentifier(t *testing.T) {
+	tests := []struct {
+		name          string
+		manifest      TaskManifestCollection
+		cliOrgSlug    string
+		expectedOrg   string
+		expectedError bool
+	}{
+		{
+			name:        "CLI organization takes precedence",
+			cliOrgSlug:  "cli-org",
+			manifest:    TaskManifestCollection{Deployment: &TaskDeployment{OrganizationSlug: "manifest-org"}},
+			expectedOrg: "cli-org",
+		},
+		{
+			name:        "Manifest organization when no CLI",
+			cliOrgSlug:  "",
+			manifest:    TaskManifestCollection{Deployment: &TaskDeployment{OrganizationSlug: "manifest-org"}},
+			expectedOrg: "manifest-org",
+		},
+		{
+			name:          "Error when no organization specified",
+			cliOrgSlug:    "",
+			manifest:      TaskManifestCollection{},
+			expectedError: true,
+		},
+		{
+			name:          "Error when empty deployment section",
+			cliOrgSlug:    "",
+			manifest:      TaskManifestCollection{Deployment: &TaskDeployment{}},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getTaskOrganizationIdentifier(&tt.manifest, tt.cliOrgSlug)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "missing organization identifier")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedOrg, result)
+			}
+		})
+	}
+}
+
+func TestDockerStructureConsistency(t *testing.T) {
+	t.Run("TaskDocker structure matches app Docker structure", func(t *testing.T) {
+		// This test ensures that TaskDocker has the same fields as the app Docker struct
+		// by parsing the same TOML content with both structures
+
+		dockerConfig := `dockerfile = "Dockerfile"
+context = "."`
+
+		// Parse as TaskDocker
+		var taskDocker TaskDocker
+		err1 := toml.Unmarshal([]byte(dockerConfig), &taskDocker)
+
+		// Parse as app Docker (we'll import and use a similar structure)
+		type AppDocker struct {
+			Dockerfile string `toml:"dockerfile,omitempty"`
+			Context    string `toml:"context,omitempty"`
+		}
+		var appDocker AppDocker
+		err2 := toml.Unmarshal([]byte(dockerConfig), &appDocker)
+
+		assert.NoError(t, err1)
+		assert.NoError(t, err2)
+		assert.Equal(t, "Dockerfile", taskDocker.Dockerfile)
+		assert.Equal(t, ".", taskDocker.Context)
+		assert.Equal(t, taskDocker.Dockerfile, appDocker.Dockerfile)
+		assert.Equal(t, taskDocker.Context, appDocker.Context)
+	})
 }

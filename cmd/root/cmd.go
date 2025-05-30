@@ -19,6 +19,7 @@ import (
 	"numerous.com/cli/cmd/logs"
 	"numerous.com/cli/cmd/organization"
 	"numerous.com/cli/cmd/status"
+	"numerous.com/cli/cmd/task"
 	"numerous.com/cli/cmd/token"
 	cmdversion "numerous.com/cli/cmd/version"
 	"numerous.com/cli/internal/logging"
@@ -78,6 +79,7 @@ func init() {
 		app.Cmd,
 		config.Cmd,
 		status.Cmd,
+		task.TaskCmd,
 
 		// dummy commands to display helpful messages for legacy commands
 		dummyLegacyCmd("push"),
