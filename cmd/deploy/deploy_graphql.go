@@ -45,30 +45,6 @@ type DeployTaskCollectionInput struct {
 	TaskCollectionID string `json:"taskCollectionId"`
 }
 
-// Add new types for task build events
-type TaskBuildEvent struct {
-	Typename string            `json:"__typename"`
-	Message  *TaskBuildMessage `json:"message,omitempty"`
-	Error    *TaskBuildError   `json:"error,omitempty"`
-	Status   *TaskBuildStatus  `json:"status,omitempty"`
-}
-
-type TaskBuildMessage struct {
-	Message string `json:"message"`
-}
-
-type TaskBuildError struct {
-	Message string `json:"message"`
-}
-
-type TaskBuildStatus struct {
-	Status string `json:"status"`
-}
-
-type TaskDeployEventsSubscription struct {
-	TaskDeployEvents TaskBuildEvent `json:"taskDeployEvents"`
-}
-
 type TaskEnvironmentInput struct {
 	Type   string             `json:"type"`
 	Python *PythonEnvironment `json:"python,omitempty"`
@@ -127,7 +103,7 @@ type DeployTaskCollectionResponse struct {
 }
 
 // DeployTaskCollectionGraphQL deploys a task collection via GraphQL using the new multi-step process
-func (c *GraphQLClient) DeployTaskCollectionGraphQL(ctx context.Context, input CreateTaskCollectionInput, sourceDir string, verbose bool) (*DeployTaskCollectionResponse, error) {
+func (c *GraphQLClient) DeployTaskCollectionGraphQL(ctx context.Context, input CreateTaskCollectionInput, sourceDir string) (*DeployTaskCollectionResponse, error) {
 	// Step 1: Create task collection
 	createTask := output.StartTask("Creating task collection")
 	createResponse, err := c.createTaskCollection(ctx, input)
@@ -171,13 +147,12 @@ func (c *GraphQLClient) DeployTaskCollectionGraphQL(ctx context.Context, input C
 	}
 	uploadTask.Done()
 
-	// Step 5: Deploy task collection with build event streaming
+	// Step 5: Deploy task collection
 	deployTask := output.StartTask("Deploying task collection")
 	deployInput := DeployTaskCollectionInput{
 		TaskCollectionID: taskCollectionID,
 	}
 
-	// Start deployment
 	deployResponse, err := c.deployTaskCollection(ctx, deployInput)
 	if err != nil {
 		deployTask.Error()
@@ -188,16 +163,8 @@ func (c *GraphQLClient) DeployTaskCollectionGraphQL(ctx context.Context, input C
 		deployTask.Error()
 		return nil, fmt.Errorf("deployment failed: %s", *deployResponse.DeployTaskCollection.Error)
 	}
-
-	// Stream build events if deployment started successfully
-	if verbose {
-		if err := c.streamTaskDeployEvents(ctx, taskCollectionID, deployTask); err != nil {
-			output.PrintErrorDetails("Error streaming build events", err)
-			// Don't fail the deployment, just warn about streaming issues
-		}
-	}
-
 	deployTask.Done()
+
 	return deployResponse, nil
 }
 
@@ -286,23 +253,7 @@ func (c *GraphQLClient) createSourceArchive(sourceDir string) (string, error) {
 	archivePath := filepath.Join(os.TempDir(), fmt.Sprintf("task-collection-source-%d.tar", timestamp))
 
 	// Use the same archive creation logic as apps
-	// Exclude common files that shouldn't be in the build context
-	excludePatterns := []string{
-		".git",
-		".gitignore",
-		"*.log",
-		".DS_Store",
-		"__pycache__",
-		"*.pyc",
-		".pytest_cache",
-		"node_modules",
-		".vscode",
-		".idea",
-		"*.tmp",
-		".tmp_app_archive.tar",
-	}
-
-	if err := archive.TarCreate(sourceDir, archivePath, excludePatterns); err != nil {
+	if err := archive.TarCreate(sourceDir, archivePath, []string{}); err != nil {
 		return "", fmt.Errorf("failed to create tar archive: %w", err)
 	}
 
@@ -454,57 +405,4 @@ func convertTaskManifestToGraphQLInput(manifest *TaskManifestCollection, orgSlug
 	}
 
 	return input
-}
-
-// streamTaskDeployEvents streams real-time build events during task deployment
-func (c *GraphQLClient) streamTaskDeployEvents(ctx context.Context, taskCollectionID string, task *output.Task) error {
-	// For now, implement a simple polling mechanism since GraphQL subscriptions for tasks
-	// may not be implemented on the server side yet
-	// This provides immediate feedback while full streaming can be implemented later
-
-	// Add some build output to show progress
-	task.AddLine("Build", "Building task collection...")
-	time.Sleep(500 * time.Millisecond)
-
-	task.AddLine("Build", "Downloading source archive...")
-	time.Sleep(500 * time.Millisecond)
-
-	task.AddLine("Build", "Building Docker image...")
-	time.Sleep(1 * time.Second)
-
-	task.AddLine("Build", "Pushing image to registry...")
-	time.Sleep(1 * time.Second)
-
-	task.AddLine("Build", "Updating task collection status...")
-	time.Sleep(500 * time.Millisecond)
-
-	task.AddLine("Build", "✅ Task collection deployed successfully!")
-
-	return nil
-}
-
-// streamTaskDeployEventsViaSubscription would implement real GraphQL subscription streaming
-// This can be implemented when the server-side subscription is available
-func (c *GraphQLClient) streamTaskDeployEventsViaSubscription(ctx context.Context, taskCollectionID string, task *output.Task) error {
-	// TODO: Implement GraphQL subscription for task deploy events
-	// Similar to app deployment events subscription
-	/*
-		query := `
-			subscription TaskDeployEvents($taskCollectionId: ID!) {
-				taskDeployEvents(taskCollectionId: $taskCollectionId) {
-					__typename
-					... on TaskBuildMessageEvent {
-						message
-					}
-					... on TaskBuildErrorEvent {
-						message
-					}
-					... on TaskBuildStatusEvent {
-						status
-					}
-				}
-			}
-		`
-	*/
-	return fmt.Errorf("GraphQL subscription for task deploy events not yet implemented")
 }
