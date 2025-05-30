@@ -32,12 +32,12 @@ func NewGraphQLClient(endpoint, token string) *GraphQLClient {
 
 // Input types
 type CreateTaskCollectionInput struct {
-	OrganizationID string                 `json:"organizationId"`
-	Name           string                 `json:"name"`
-	Version        string                 `json:"version"`
-	Description    *string                `json:"description,omitempty"`
-	Environment    TaskEnvironmentInput   `json:"environment"`
-	Tasks          []*TaskDefinitionInput `json:"tasks"`
+	OrganizationSlug string                 `json:"organizationSlug"`
+	Name             string                 `json:"name"`
+	Version          string                 `json:"version"`
+	Description      *string                `json:"description,omitempty"`
+	Environment      TaskEnvironmentInput   `json:"environment"`
+	Tasks            []*TaskDefinitionInput `json:"tasks"`
 }
 
 type DeployTaskCollectionInput struct {
@@ -352,13 +352,13 @@ func (c *GraphQLClient) executeQuery(ctx context.Context, query string, variable
 }
 
 // convertTaskManifestToGraphQLInput converts task manifest to GraphQL input
-func convertTaskManifestToGraphQLInput(manifest *TaskManifestCollection, orgAPIID string) CreateTaskCollectionInput {
+func convertTaskManifestToGraphQLInput(manifest *TaskManifestCollection, orgSlug string) CreateTaskCollectionInput {
 	input := CreateTaskCollectionInput{
-		OrganizationID: orgAPIID,
-		Name:           manifest.Name,
-		Version:        manifest.Version,
-		Description:    &manifest.Description,
-		Tasks:          make([]*TaskDefinitionInput, len(manifest.Task)),
+		OrganizationSlug: orgSlug,
+		Name:             manifest.Name,
+		Version:          manifest.Version,
+		Description:      &manifest.Description,
+		Tasks:            make([]*TaskDefinitionInput, len(manifest.Task)),
 	}
 
 	// Set environment

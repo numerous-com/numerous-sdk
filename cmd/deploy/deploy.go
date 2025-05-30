@@ -723,7 +723,7 @@ func deployTaskCollection(ctx context.Context, input deployInput) error {
 	}
 
 	// 3. Get Organization Identifier
-	organizationAPIID, err := getTaskOrganizationIdentifier(&taskManifest, input.orgSlug)
+	organizationSlug, err := getTaskOrganizationIdentifier(&taskManifest, input.orgSlug)
 	if err != nil {
 		task.Error()
 		output.PrintErrorDetails("Organization configuration error", err)
@@ -745,20 +745,24 @@ func deployTaskCollection(ctx context.Context, input deployInput) error {
 
 	// Try GraphQL deployment
 	if shouldUseGraphQL(graphqlEndpoint) {
-		if err := deployViaGraphQL(ctx, &taskManifest, organizationAPIID, graphqlEndpoint, authToken, input.appDir); err != nil {
-			fmt.Printf("GraphQL deployment failed: %v\n", err)
-			fmt.Printf("Falling back to mock deployment...\n")
+		if err := deployViaGraphQL(ctx, &taskManifest, organizationSlug, graphqlEndpoint, authToken, input.appDir); err != nil {
+			task.Error()
+			output.PrintErrorDetails("GraphQL deployment failed", err)
+			return err
 		} else {
 			task.Done()
 			fmt.Printf("Task collection '%s' (v%s) deployed successfully via GraphQL!\n", taskManifest.Name, taskManifest.Version)
-			fmt.Printf("Organization: %s\n", organizationAPIID)
+			fmt.Printf("Organization: %s\n", organizationSlug)
 			fmt.Printf("Environment: %s\n", envType)
 			return nil
 		}
 	}
 
-	// 5. Mock Deployment (fallback or when GraphQL is not available)
-	return deployTaskCollectionMock(ctx, input, task, &taskManifest, envType, organizationAPIID)
+	// If GraphQL deployment is disabled, return error instead of falling back to mock
+	task.Error()
+	err = errors.New("GraphQL deployment is disabled. Set USE_MOCK_DEPLOYMENT=false to enable GraphQL deployment")
+	output.PrintErrorDetails("Deployment configuration error", err)
+	return err
 }
 
 // shouldUseGraphQL checks if we should attempt GraphQL deployment
@@ -768,11 +772,11 @@ func shouldUseGraphQL(endpoint string) bool {
 }
 
 // deployViaGraphQL deploys the task collection using the GraphQL API
-func deployViaGraphQL(ctx context.Context, manifest *TaskManifestCollection, orgAPIID, endpoint, token string, sourceDir string) error {
+func deployViaGraphQL(ctx context.Context, manifest *TaskManifestCollection, orgSlug, endpoint, token string, sourceDir string) error {
 	client := NewGraphQLClient(endpoint, token)
 
 	// Convert manifest to GraphQL input
-	input := convertTaskManifestToGraphQLInput(manifest, orgAPIID)
+	input := convertTaskManifestToGraphQLInput(manifest, orgSlug)
 
 	// Deploy via GraphQL using the new multi-step process
 	response, err := client.DeployTaskCollectionGraphQL(ctx, input, sourceDir)
@@ -795,9 +799,9 @@ func createSourceArchive(sourceDir, archivePath string) error {
 }
 
 // deployTaskCollectionMock provides the existing mock deployment functionality
-func deployTaskCollectionMock(ctx context.Context, input deployInput, task *output.Task, taskManifest *TaskManifestCollection, envType, organizationAPIID string) error {
+func deployTaskCollectionMock(ctx context.Context, input deployInput, task *output.Task, taskManifest *TaskManifestCollection, envType, organizationSlug string) error {
 	// Existing mock deployment logic
-	mockBackendDir := filepath.Join(os.Getenv("HOME"), ".numerous", "mock_backend", "organizations", organizationAPIID, "tasks", taskManifest.Name, taskManifest.Version)
+	mockBackendDir := filepath.Join(os.Getenv("HOME"), ".numerous", "mock_backend", "organizations", organizationSlug, "tasks", taskManifest.Name, taskManifest.Version)
 
 	if err := os.MkdirAll(mockBackendDir, 0755); err != nil {
 		task.Error()
@@ -833,7 +837,7 @@ func deployTaskCollectionMock(ctx context.Context, input deployInput, task *outp
 
 	// Success output
 	fmt.Printf("Task collection '%s' (v%s) deployed successfully!\n", taskManifest.Name, taskManifest.Version)
-	fmt.Printf("Organization: %s\n", organizationAPIID)
+	fmt.Printf("Organization: %s\n", organizationSlug)
 	fmt.Printf("Environment: %s\n", envType)
 	fmt.Printf("Tasks: %d\n", len(taskManifest.Task))
 
