@@ -9,6 +9,7 @@ import os
 import platform
 import sys
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -55,6 +56,10 @@ def validate_environment(context: Optional[Dict[str, Any]] = None) -> Dict[str, 
         "micro": python_version.micro,
         "version_string": f"{python_version.major}.{python_version.minor}.{python_version.micro}"
     }
+
+    for i in range(1, 11):
+        print(f"📊 Status check {i}/10...")
+        time.sleep(1)
     
     # Check dependencies
     dependencies = {

@@ -11,7 +11,6 @@
 export NUMEROUS_GRAPHQL_HTTP_URL="http://localhost:8080/query"
 export NUMEROUS_GRAPHQL_WS_URL="ws://localhost:8080/query"
 
-
 # Explicitly enable file-based credentials storage instead of keyring
 # This solves the keyring access issues in WSL
 export NUMEROUS_LOGIN_USE_KEYRING=false

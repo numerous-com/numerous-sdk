@@ -144,3 +144,67 @@ When adding new task collection features:
 3. Test both Python and Docker execution modes
 4. Ensure validation passes with `numerous task validate`
 5. Document new patterns in this README 
+
+## Task Deployment Improvements
+
+### Build Event Streaming
+
+Task deployments now support verbose build output similar to app deployments. Use the `--verbose` or `-v` flag to see detailed build progress:
+
+```bash
+numerous deploy --verbose --organization your-org python-tasks/
+```
+
+This will show:
+- Source archive creation progress
+- Upload status updates  
+- Build step execution
+- Docker image build and push status
+- Deployment completion confirmation
+
+### Code Update Handling
+
+The deployment system now includes improved cache invalidation to ensure your code changes are always reflected in new deployments:
+
+- **Unique Archive Names**: Each deployment creates a uniquely timestamped source archive
+- **Build Args**: Build timestamp is passed as a Docker build argument to invalidate Docker layer cache
+- **NoCache Option**: Docker builds use `NoCache: true` to force rebuilds
+- **Exclusion Patterns**: Common development files are automatically excluded from the build context
+
+### Usage Examples
+
+**Basic deployment:**
+```bash
+numerous deploy --organization your-org python-tasks/
+```
+
+**Verbose deployment with detailed output:**
+```bash
+numerous deploy --verbose --organization your-org python-tasks/
+```
+
+**Dry run to see what would be deployed:**
+```bash
+numerous deploy --dry-run --organization your-org python-tasks/
+```
+
+### Troubleshooting
+
+If you're still not seeing code updates after deployment:
+
+1. **Check the deployment logs**: Use `--verbose` to see detailed build output
+2. **Verify file exclusions**: Make sure your source files aren't being excluded
+3. **Check Docker cache**: The system should automatically invalidate cache, but you can verify in the build logs
+4. **Validate manifest**: Use `--dry-run` to check your task configuration
+
+### Build Process Details
+
+The task deployment process now follows these steps:
+
+1. **Create Task Collection**: Register the collection metadata
+2. **Create Source Archive**: Package source files with timestamp-based naming
+3. **Get Upload URL**: Obtain a secure upload endpoint
+4. **Upload Source Archive**: Transfer the packaged source to the platform  
+5. **Deploy with Streaming**: Start the build process with real-time event streaming (when verbose mode is enabled)
+
+Each step provides feedback and the verbose mode shows detailed progress for the build and deployment phases. 

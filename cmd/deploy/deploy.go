@@ -688,71 +688,73 @@ func getTaskEnvironmentType(manifest *TaskManifestCollection) string {
 	return "Unknown"
 }
 
-// deployTaskCollection handles task collection deployment with dry-run support
+// deployTaskCollection handles deployment of task collections
 func deployTaskCollection(ctx context.Context, input deployInput) error {
 	if input.dryRun {
 		return dryRunTaskCollection(input)
 	}
 
-	task := output.StartTask("Deploying Task Collection")
-
-	// 1. Load Task Manifest (numerous-task.toml)
+	// Load and parse numerous-task.toml
+	task := output.StartTask("Loading task collection configuration")
 	taskManifestPath := filepath.Join(input.appDir, "numerous-task.toml")
 
 	var taskManifest TaskManifestCollection
-	tomlData, err := os.ReadFile(taskManifestPath)
+	if _, err := toml.DecodeFile(taskManifestPath, &taskManifest); err != nil {
+		task.Error()
+		output.PrintErrorDetails("Error loading task manifest", err)
+		return err
+	}
+
+	// Environment detection for proper handling
+	envType := "Python" // default
+	if taskManifest.Docker != nil {
+		envType = "Docker"
+	}
+
+	// Determine organization for deployment
+	orgSlug, err := getTaskOrganizationIdentifier(&taskManifest, input.orgSlug)
 	if err != nil {
 		task.Error()
-		output.PrintErrorDetails(fmt.Sprintf("Error reading task manifest %s", taskManifestPath), err)
-		return err
+		output.PrintError("Organization identifier required for task collection deployment.", "Provide organization using --organization flag or in the task manifest [deployment] section.")
+		return fmt.Errorf("missing organization identifier for task deployment")
 	}
 
-	if _, err := toml.Decode(string(tomlData), &taskManifest); err != nil {
-		task.Error()
-		output.PrintErrorDetails(fmt.Sprintf("Error parsing task manifest %s", taskManifestPath), err)
-		return err
+	task.Done()
+
+	// Check deployment method configuration
+	authToken := os.Getenv("NUMEROUS_TOKEN")
+	if authToken == "" {
+		authToken = os.Getenv("NUMEROUS_API_ACCESS_TOKEN")
 	}
 
-	// 2. Validate Environment Configuration
-	envType := getTaskEnvironmentType(&taskManifest)
-	if envType == "Unknown" {
-		task.Error()
-		err := errors.New("missing environment configuration: task collection must specify either [python] or [docker] section")
-		output.PrintErrorDetails("Invalid task manifest", err)
-		return err
+	// Determine API endpoint
+	apiURL := os.Getenv("NUMEROUS_GRAPHQL_HTTP_URL")
+	if apiURL == "" {
+		apiURL = os.Getenv("NUMEROUS_API_URL") // Fallback for backward compatibility
+	}
+	if apiURL == "" {
+		apiURL = "https://app.numerous.com/api/graphql"
 	}
 
-	// 3. Get Organization Identifier
-	organizationSlug, err := getTaskOrganizationIdentifier(&taskManifest, input.orgSlug)
-	if err != nil {
-		task.Error()
-		output.PrintErrorDetails("Organization configuration error", err)
-		return err
+	graphqlEndpoint := apiURL
+	// Only append /graphql if we're using the fallback URLs that don't already include the correct path
+	if apiURL != os.Getenv("NUMEROUS_GRAPHQL_HTTP_URL") && !strings.HasSuffix(graphqlEndpoint, "/graphql") && !strings.HasSuffix(graphqlEndpoint, "/query") {
+		if strings.HasSuffix(graphqlEndpoint, "/") {
+			graphqlEndpoint += "graphql"
+		} else {
+			graphqlEndpoint += "/graphql"
+		}
 	}
 
-	// 4. Try GraphQL deployment first, fall back to mock if not available
-	graphqlEndpoint := os.Getenv("NUMEROUS_API_URL")
-	if graphqlEndpoint == "" {
-		graphqlEndpoint = "http://localhost:8080/query" // Fixed endpoint to use /query
-	}
-
-	// Get auth token
-	authToken := os.Getenv("NUMEROUS_ACCESS_TOKEN")
-	if authToken == "" && !input.dryRun {
-		// For now, proceed without token for local development
-		fmt.Printf("Warning: No access token found. Set NUMEROUS_ACCESS_TOKEN environment variable.\n")
-	}
-
-	// Try GraphQL deployment
 	if shouldUseGraphQL(graphqlEndpoint) {
-		if err := deployViaGraphQL(ctx, &taskManifest, organizationSlug, graphqlEndpoint, authToken, input.appDir); err != nil {
+		if err := deployViaGraphQL(ctx, &taskManifest, orgSlug, graphqlEndpoint, authToken, input.appDir, input.verbose); err != nil {
 			task.Error()
 			output.PrintErrorDetails("GraphQL deployment failed", err)
 			return err
 		} else {
 			task.Done()
 			fmt.Printf("Task collection '%s' (v%s) deployed successfully via GraphQL!\n", taskManifest.Name, taskManifest.Version)
-			fmt.Printf("Organization: %s\n", organizationSlug)
+			fmt.Printf("Organization: %s\n", orgSlug)
 			fmt.Printf("Environment: %s\n", envType)
 			return nil
 		}
@@ -772,14 +774,14 @@ func shouldUseGraphQL(endpoint string) bool {
 }
 
 // deployViaGraphQL deploys the task collection using the GraphQL API
-func deployViaGraphQL(ctx context.Context, manifest *TaskManifestCollection, orgSlug, endpoint, token string, sourceDir string) error {
+func deployViaGraphQL(ctx context.Context, manifest *TaskManifestCollection, orgSlug, endpoint, token string, sourceDir string, verbose bool) error {
 	client := NewGraphQLClient(endpoint, token)
 
 	// Convert manifest to GraphQL input
 	input := convertTaskManifestToGraphQLInput(manifest, orgSlug)
 
 	// Deploy via GraphQL using the new multi-step process
-	response, err := client.DeployTaskCollectionGraphQL(ctx, input, sourceDir)
+	response, err := client.DeployTaskCollectionGraphQL(ctx, input, sourceDir, verbose)
 	if err != nil {
 		return fmt.Errorf("GraphQL deployment failed: %w", err)
 	}
