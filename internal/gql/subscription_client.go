@@ -7,9 +7,9 @@ import (
 )
 
 func NewSubscriptionClient() *graphql.SubscriptionClient {
-	client := graphql.NewSubscriptionClient(getWSURL())
+	client := graphql.NewSubscriptionClient(GetWSURL())
 
-	accessToken := getAccessToken()
+	accessToken := GetAccessToken()
 	if accessToken != nil {
 		client = client.WithWebSocketOptions(graphql.WebsocketOptions{
 			HTTPHeader: http.Header{

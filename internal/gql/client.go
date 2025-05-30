@@ -36,11 +36,11 @@ func initClient() {
 	httpClient := &http.Client{
 		Transport: &AuthenticatingRoundTripper{
 			proxied:     http.DefaultTransport,
-			accessToken: getAccessToken(),
+			accessToken: GetAccessToken(),
 		},
 	}
 
-	client = gqlclient.New(getHTTPURL(), httpClient)
+	client = gqlclient.New(GetHTTPURL(), httpClient)
 }
 
 func GetClient() *gqlclient.Client {
@@ -49,9 +49,9 @@ func GetClient() *gqlclient.Client {
 }
 
 func NewClient() *graphql.Client {
-	client := graphql.NewClient(getHTTPURL(), http.DefaultClient)
+	client := graphql.NewClient(GetHTTPURL(), http.DefaultClient)
 
-	accessToken := getAccessToken()
+	accessToken := GetAccessToken()
 	if accessToken != nil {
 		client = client.WithRequestModifier(func(r *http.Request) {
 			if accessToken != nil {
@@ -63,7 +63,7 @@ func NewClient() *graphql.Client {
 	return client
 }
 
-func getAccessToken() *string {
+func GetAccessToken() *string {
 	token := os.Getenv("NUMEROUS_ACCESS_TOKEN")
 	if token != "" {
 		return &token

@@ -8,7 +8,7 @@ var (
 	wsURL   string = "ws://localhost:8080/query"
 )
 
-func getHTTPURL() string {
+func GetHTTPURL() string {
 	if url := os.Getenv("NUMEROUS_GRAPHQL_HTTP_URL"); url != "" {
 		return url
 	} else {
@@ -16,7 +16,7 @@ func getHTTPURL() string {
 	}
 }
 
-func getWSURL() string {
+func GetWSURL() string {
 	if url := os.Getenv("NUMEROUS_GRAPHQL_WS_URL"); url != "" {
 		return url
 	} else {

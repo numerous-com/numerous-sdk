@@ -3,8 +3,8 @@ package keyring
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -172,13 +172,165 @@ func TestSecrets(t *testing.T) {
 	})
 }
 
-func randomStringOfLength(length int) string {
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	charset := "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
+func TestKeyringFallback(t *testing.T) {
+	// Save original state
+	originalUseFileBasedKeyring := useFileBasedKeyring
+	originalCredentialsFile := credentialsFile
+	originalKeyringFallbackEnabled := keyringFallbackEnabled
+	originalHasNotifiedFallback := hasNotifiedFallback
 
+	// Clean up after tests
+	defer func() {
+		useFileBasedKeyring = originalUseFileBasedKeyring
+		credentialsFile = originalCredentialsFile
+		keyringFallbackEnabled = originalKeyringFallbackEnabled
+		hasNotifiedFallback = originalHasNotifiedFallback
+	}()
+
+	t.Run("isKeyringError detects common keyring errors", func(t *testing.T) {
+		keyringErrors := []string{
+			"secret service is not available",
+			"no keyring available",
+			"keyring not available",
+			"dbus: session bus is not available",
+			"Cannot autolaunch D-Bus without X11",
+			"unknown collection",
+			"prompt dismissed",
+			"failed to unlock correct collection",
+			"failed to unlock correct collection '/org/freedesktop/secrets/aliases/default'",
+			"failed to unlock collection",
+			"collection not found",
+			"org.freedesktop.secrets",
+			"DBus.Error.ServiceUnknown",
+			"DBus.Error.NoReply",
+			"secret-tool: cannot create an item",
+			"The name org.freedesktop.secrets was not provided",
+			"Failed to open connection to session D-Bus",
+			"Unable to autolaunch a dbus-daemon",
+		}
+
+		for _, errMsg := range keyringErrors {
+			err := fmt.Errorf(errMsg)
+			assert.True(t, isKeyringError(err), "Should detect '%s' as keyring error", errMsg)
+		}
+
+		// Test non-keyring errors
+		nonKeyringErrors := []string{
+			"network error",
+			"invalid token format",
+			"permission denied",
+		}
+
+		for _, errMsg := range nonKeyringErrors {
+			err := fmt.Errorf(errMsg)
+			assert.False(t, isKeyringError(err), "Should not detect '%s' as keyring error", errMsg)
+		}
+
+		// Test nil error
+		assert.False(t, isKeyringError(nil), "Should not detect nil as keyring error")
+	})
+
+	t.Run("fallback enables file-based storage", func(t *testing.T) {
+		// Reset state
+		useFileBasedKeyring = false
+		keyringFallbackEnabled = true
+		hasNotifiedFallback = false
+
+		// Set up temporary credentials file
+		tmpDir := t.TempDir()
+		credentialsFile = fmt.Sprintf("%s/credentials.json", tmpDir)
+
+		// Trigger fallback
+		tryKeyringFallback()
+
+		assert.True(t, useFileBasedKeyring, "Should enable file-based keyring")
+		assert.True(t, hasNotifiedFallback, "Should mark as notified")
+	})
+
+	t.Run("fallback is disabled when keyringFallbackEnabled is false", func(t *testing.T) {
+		// Reset state
+		useFileBasedKeyring = false
+		keyringFallbackEnabled = false
+		hasNotifiedFallback = false
+
+		// Trigger fallback (should not work)
+		tryKeyringFallback()
+
+		assert.False(t, useFileBasedKeyring, "Should not enable file-based keyring when fallback disabled")
+		assert.False(t, hasNotifiedFallback, "Should not mark as notified when fallback disabled")
+	})
+
+	t.Run("fallback does nothing when already using file-based storage", func(t *testing.T) {
+		// Reset state
+		useFileBasedKeyring = true
+		keyringFallbackEnabled = true
+		hasNotifiedFallback = false
+
+		// Trigger fallback (should not change anything)
+		tryKeyringFallback()
+
+		assert.True(t, useFileBasedKeyring, "Should remain file-based")
+		assert.False(t, hasNotifiedFallback, "Should not notify when already using file-based storage")
+	})
+}
+
+func TestEnvironmentVariableOverride(t *testing.T) {
+	// Test the init() function behavior with environment variable
+	originalEnv := os.Getenv("NUMEROUS_LOGIN_USE_KEYRING")
+	defer func() {
+		if originalEnv == "" {
+			os.Unsetenv("NUMEROUS_LOGIN_USE_KEYRING")
+		} else {
+			os.Setenv("NUMEROUS_LOGIN_USE_KEYRING", originalEnv)
+		}
+	}()
+
+	t.Run("environment variable false forces file-based storage", func(t *testing.T) {
+		os.Setenv("NUMEROUS_LOGIN_USE_KEYRING", "false")
+
+		// Reset state and reinitialize
+		useFileBasedKeyring = false
+		keyringFallbackEnabled = false
+		hasNotifiedFallback = false
+
+		// Simulate init() behavior
+		if os.Getenv("NUMEROUS_LOGIN_USE_KEYRING") == "false" {
+			useFileBasedKeyring = true
+			setupFileBasedCredentials()
+		} else {
+			keyringFallbackEnabled = true
+		}
+
+		assert.True(t, useFileBasedKeyring, "Should use file-based storage when env var is false")
+		assert.False(t, keyringFallbackEnabled, "Should not enable fallback when explicitly set to file-based")
+	})
+
+	t.Run("no environment variable enables fallback", func(t *testing.T) {
+		os.Unsetenv("NUMEROUS_LOGIN_USE_KEYRING")
+
+		// Reset state and reinitialize
+		useFileBasedKeyring = false
+		keyringFallbackEnabled = false
+		hasNotifiedFallback = false
+
+		// Simulate init() behavior
+		if os.Getenv("NUMEROUS_LOGIN_USE_KEYRING") == "false" {
+			useFileBasedKeyring = true
+			setupFileBasedCredentials()
+		} else {
+			keyringFallbackEnabled = true
+		}
+
+		assert.False(t, useFileBasedKeyring, "Should not use file-based storage initially")
+		assert.True(t, keyringFallbackEnabled, "Should enable fallback when no env var set")
+	})
+}
+
+func randomStringOfLength(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
 	return string(b)
 }

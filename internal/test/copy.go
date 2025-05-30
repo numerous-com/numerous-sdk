@@ -25,7 +25,7 @@ func CopyDir(t *testing.T, src string, dest string) {
 		destPath := path.Join(dest, rel)
 
 		if info.IsDir() {
-			err := os.Mkdir(p, os.ModePerm)
+			err := os.Mkdir(destPath, os.ModePerm)
 			require.NoError(t, err)
 
 			return nil

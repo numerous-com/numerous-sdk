@@ -27,6 +27,14 @@ func prerun(cmd *cobra.Command, args []string) error {
 		return errorhandling.ErrorAlreadyPrinted(ErrIncompatibleVersion)
 	}
 
+	// Special case: deploy command with --dry-run flag doesn't require authentication
+	if cmd.CommandPath() == "numerous deploy" {
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		if dryRun {
+			return nil
+		}
+	}
+
 	if !commandRequiresAuthentication(cmd.CommandPath()) {
 		return nil
 	}

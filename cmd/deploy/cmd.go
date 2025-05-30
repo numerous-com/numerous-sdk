@@ -53,6 +53,7 @@ var cmdArgs struct {
 	message    string
 	version    string
 	follow     bool
+	dryRun     bool
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -67,6 +68,7 @@ func run(cmd *cobra.Command, args []string) error {
 		version:    cmdArgs.version,
 		verbose:    cmdArgs.verbose,
 		follow:     cmdArgs.follow,
+		dryRun:     cmdArgs.dryRun,
 	}
 	err := deploy(cmd.Context(), service, input)
 
@@ -78,5 +80,6 @@ func init() {
 	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
 	flags.BoolVarP(&cmdArgs.verbose, "verbose", "v", false, "Display detailed information about the app deployment.")
 	flags.BoolVarP(&cmdArgs.follow, "follow", "f", false, "Follow app deployment logs after deployment has succeeded.")
+	flags.BoolVar(&cmdArgs.dryRun, "dry-run", false, "Show what would be deployed without actually performing the deployment.")
 	flags.StringVarP(&cmdArgs.projectDir, "project-dir", "p", "", "The project directory, which is the build context if using a custom Dockerfile.")
 }
