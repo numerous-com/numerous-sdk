@@ -1,7 +1,5 @@
 FROM python:3.11-slim
 
-RUN echo "Building validator python tasks"
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
@@ -19,6 +17,8 @@ COPY . .
 
 # Make task runner executable
 RUN chmod +x task_runner.py
+
+RUN echo "Building validator python tasks"
 
 # Default entrypoint - can be overridden with specific task
 ENTRYPOINT ["python", "task_runner.py"]
