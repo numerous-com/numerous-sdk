@@ -15,10 +15,19 @@ def load_task_manifest():
     """Load the task manifest from numerous-task.toml"""
     try:
         import toml
-        manifest_path = Path("/app/numerous-task.toml")
+        # Prefer manifest in current working directory (e.g. /app within container)
+        # then fallback to a relative path if not found (less likely in container).
+        manifest_path = Path("numerous-task.toml")
         if not manifest_path.exists():
-            manifest_path = Path("numerous-task.toml")
-        
+            # Fallback for cases where CWD might not be /app
+            manifest_path_alt = Path("/app/numerous-task.toml")
+            if manifest_path_alt.exists():
+                manifest_path = manifest_path_alt
+            elif not manifest_path.exists(): # if original numerous-task.toml also didn't exist
+                 print("Warning: numerous-task.toml not found in CWD or /app.")
+                 return None
+
+
         with open(manifest_path, 'r') as f:
             return toml.load(f)
     except ImportError:
@@ -38,12 +47,10 @@ def find_task_by_name(manifest, function_name):
     return None
 
 
-def load_and_execute_task(source_file, function_name, args=None, kwargs=None):
+def load_and_execute_task(source_file, function_name, task_script_args=None):
     """Load a Python module and execute the specified function"""
-    if args is None:
-        args = []
-    if kwargs is None:
-        kwargs = {}
+    if task_script_args is None:
+        task_script_args = []
     
     try:
         # Add /app to Python path if it exists
@@ -73,8 +80,8 @@ def load_and_execute_task(source_file, function_name, args=None, kwargs=None):
         func = getattr(module, function_name)
         
         # Execute the function
-        print(f"🚀 Executing {function_name} from {source_file}")
-        result = func(*args, **kwargs)
+        print(f"🚀 Executing {function_name} from {source_file} with args: {task_script_args}")
+        result = func(*task_script_args)
         
         print(f"✅ Task completed successfully")
         return result
@@ -86,17 +93,22 @@ def load_and_execute_task(source_file, function_name, args=None, kwargs=None):
 
 def main():
     """Main entrypoint for the task runner"""
-    # Get function name from environment or command line
-    function_name = os.environ.get('TASK_FUNCTION_NAME')
-    if not function_name and len(sys.argv) > 1:
+    # Get function name from command line (first argument)
+    if len(sys.argv) > 1:
         function_name = sys.argv[1]
-    
+    else:
+        function_name = os.environ.get('TASK_FUNCTION_NAME') # Fallback for older mechanism if needed
+
     if not function_name:
-        print("Error: No function name specified")
-        print("Usage: python task_runner.py <function_name>")
-        print("   or: Set TASK_FUNCTION_NAME environment variable")
+        print("Error: No function name specified.")
+        print(f"Usage: python {sys.argv[0]} <function_name> [arg1 arg2 ...]")
+        print("   or: Set TASK_FUNCTION_NAME environment variable (fallback)")
         sys.exit(1)
-    
+
+    # Subsequent arguments are for the task itself
+    task_script_args = sys.argv[2:]
+    print(f"Task arguments received: {task_script_args}")
+
     # Load manifest to find task details
     manifest = load_task_manifest()
     task_def = find_task_by_name(manifest, function_name) if manifest else None
@@ -125,25 +137,9 @@ def main():
         
         print(f"⚠️  No manifest found, using source file: {source_file}")
     
-    # Get input from environment variables or stdin
-    args = []
-    kwargs = {}
-    
-    # Try to get input from environment
-    input_json = os.environ.get('TASK_INPUT_JSON')
-    if input_json:
-        try:
-            input_data = json.loads(input_json)
-            if isinstance(input_data, dict):
-                kwargs = input_data
-            elif isinstance(input_data, list):
-                args = input_data
-        except json.JSONDecodeError:
-            print(f"Warning: Could not parse TASK_INPUT_JSON: {input_json}")
-    
     # Execute the task
     try:
-        result = load_and_execute_task(source_file, function_name, args, kwargs)
+        result = load_and_execute_task(source_file, function_name, task_script_args)
         
         # Output result as JSON
         output = {
