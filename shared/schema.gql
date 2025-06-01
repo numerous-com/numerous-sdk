@@ -1249,3 +1249,13 @@ extend type Query {
 ###############################################################################
 ### Version check end
 ###############################################################################
+
+# Task execution logs subscription input
+# input TaskExecutionLogsInput {
+#   taskId: ID!
+# }
+
+# Extend subscriptions for task execution logs
+# extend type Subscription {
+#   taskExecutionLogs(input: TaskExecutionLogsInput!): TaskLogEntry!
+# }

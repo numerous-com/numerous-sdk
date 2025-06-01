@@ -143,12 +143,12 @@ func runTaskLocally(cmd *cobra.Command, args []string) error {
 	// Load task manifest
 	manifestPath := filepath.Join(taskDir, "numerous-task.toml")
 	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
-		return fmt.Errorf("no task manifest found at %s", manifestPath)
+		return fmt.Errorf("no task manifest found at %s (expected in --task-dir, which defaults to current directory)", manifestPath)
 	}
 
 	var manifest TaskManifest
 	if _, err := toml.DecodeFile(manifestPath, &manifest); err != nil {
-		return fmt.Errorf("failed to parse task manifest: %w", err)
+		return fmt.Errorf("failed to parse task manifest '%s': %w", manifestPath, err)
 	}
 
 	// If no task specified, list available tasks
@@ -158,35 +158,70 @@ func runTaskLocally(cmd *cobra.Command, args []string) error {
 
 	// Find the task
 	var task *TaskDef
-	for _, t := range manifest.Task {
-		if t.FunctionName == taskName {
-			task = &t
+	for i := range manifest.Task { // Iterate by index to get a pointer
+		if manifest.Task[i].FunctionName == taskName {
+			task = &manifest.Task[i]
 			break
 		}
 	}
 
 	if task == nil {
-		output.PrintError("Task not found: %s", "", taskName)
-		fmt.Println("\nAvailable tasks:")
+		output.PrintError("Task not found: %s in manifest %s", "", taskName, manifestPath)
+		fmt.Println("Available tasks:")
 		for _, t := range manifest.Task {
 			fmt.Printf("  - %s: %s\n", t.FunctionName, t.Description)
 		}
-		return fmt.Errorf("task not found: %s", taskName)
+		return fmt.Errorf("task '%s' not found in manifest %s", taskName, manifestPath)
 	}
 
-	// Determine environment type
+	// Determine environment type and check for potential misconfigurations
 	envType := "unknown"
+	dockerfilePresent := false
+	dockerfilePath := filepath.Join(taskDir, "Dockerfile")
+	if _, err := os.Stat(dockerfilePath); err == nil {
+		dockerfilePresent = true
+	}
+
 	if manifest.Docker != nil {
 		envType = "docker"
 	} else if manifest.Python != nil {
-		envType = "python"
+		// [python] section exists, but no [docker] section.
+		if dockerfilePresent {
+			return fmt.Errorf("ambiguous configuration in '%s': numerous-task.toml has a [python] section and a 'Dockerfile' exists, but no [docker] section was found. "+
+				"If this is a Docker-based task collection, add a [docker] section to numerous-task.toml. "+
+				"If it is a Python task collection intended for direct execution, remove the 'Dockerfile' from '%s' to avoid ambiguity.", taskDir, taskDir)
+		}
+		envType = "python" // Clear Python task: [python] present, no [docker], no Dockerfile.
+	} else if dockerfilePresent {
+		// Dockerfile exists, but manifest has neither [docker] nor [python] task configuration sections.
+		return fmt.Errorf("incomplete manifest in '%s': a 'Dockerfile' exists, but the numerous-task.toml lacks a [docker] section to define how to build/run tasks, and also lacks a [python] section. "+
+			"Please define your tasks and their execution environment (e.g., [docker] or [python]) in numerous-task.toml.", taskDir)
 	}
+	// If envType remains "unknown" here, it means manifest is missing [docker] and [python] sections, and no Dockerfile exists.
+	// The switch statement's default case will handle this.
 
 	if verbose {
 		fmt.Printf("🎯 Running task locally: %s\n", taskName)
-		fmt.Printf("📦 Collection: %s v%s\n", manifest.Name, manifest.Version)
-		fmt.Printf("🔧 Environment: %s\n", envType)
-		fmt.Printf("📁 Directory: %s\n", taskDir)
+		fmt.Printf("�� Collection: %s v%s (from manifest: %s)\n", manifest.Name, manifest.Version, manifestPath)
+		fmt.Printf("🔧 Determined Environment Type: %s\n", envType)
+		if manifest.Docker != nil {
+			fmt.Printf("   - Found [docker] section in manifest.\n")
+			if manifest.Docker.Dockerfile != "" {
+				fmt.Printf("     - Custom Dockerfile specified in manifest: %s\n", manifest.Docker.Dockerfile)
+			}
+			if manifest.Docker.Context != "" {
+				fmt.Printf("     - Custom Docker context specified in manifest: %s\n", manifest.Docker.Context)
+			}
+		}
+		if manifest.Python != nil {
+			fmt.Printf("   - Found [python] section in manifest.\n")
+		}
+		if dockerfilePresent {
+			fmt.Printf("   - Found 'Dockerfile' at: %s\n", dockerfilePath)
+		} else {
+			fmt.Printf("   - No 'Dockerfile' found at: %s\n", dockerfilePath)
+		}
+		fmt.Printf("📁 Task Directory (--task-dir): %s\n", taskDir)
 	}
 
 	// Execute the task based on environment type
@@ -391,12 +426,11 @@ func runDockerTask(manifest *TaskManifest, task *TaskDef) (TaskResult, error) {
 	result := TaskResult{
 		TaskName:      task.FunctionName,
 		Environment:   "docker",
-		ExecutionMode: "container",
+		ExecutionMode: "container (local run of deployed image)",
 		StartTime:     time.Now(),
 		Metadata:      make(map[string]interface{}),
 	}
 
-	// Check if Docker is available
 	if !isDockerAvailable() {
 		result.Status = "failed"
 		result.Error = "Docker is not available or not running"
@@ -405,92 +439,89 @@ func runDockerTask(manifest *TaskManifest, task *TaskDef) (TaskResult, error) {
 		return result, fmt.Errorf("Docker not available")
 	}
 
-	dockerfilePath := "Dockerfile"
-	if manifest.Docker.Dockerfile != "" {
-		dockerfilePath = manifest.Docker.Dockerfile
-	}
-
-	dockerContext := "."
-	if manifest.Docker.Context != "" {
-		dockerContext = manifest.Docker.Context
-	}
-
-	// Build Docker image
-	imageName := fmt.Sprintf("numerous-task-%s:%s", manifest.Name, manifest.Version)
-
-	if verbose {
-		fmt.Printf("🐳 Building Docker image: %s\n", imageName)
-	}
-
-	buildCmd := exec.Command("docker", "build",
-		"-f", filepath.Join(taskDir, dockerfilePath),
-		"-t", imageName,
-		filepath.Join(taskDir, dockerContext))
-
-	if verbose {
-		fmt.Printf("🔧 Build command: %s\n", strings.Join(buildCmd.Args, " "))
-		buildCmd.Stdout = os.Stdout
-		buildCmd.Stderr = os.Stderr
-	}
-
-	if err := buildCmd.Run(); err != nil {
+	// Determine the deployed image name
+	// OrgSlug is a global flag, manifest.Name and manifest.Version come from the loaded manifest
+	if orgSlug == "" {
+		// This should ideally be caught by earlier validation if orgSlug is always required for local docker run
 		result.Status = "failed"
-		result.Error = fmt.Sprintf("Docker build failed: %v", err)
+		result.Error = "Organization slug not provided (required to identify deployed image)"
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(result.StartTime)
-		return result, fmt.Errorf("Docker build failed: %w", err)
+		return result, fmt.Errorf("organization slug not provided")
 	}
-
-	// Run the task in Docker container
-	var runCmd *exec.Cmd
-
-	if len(task.Entrypoint) > 0 {
-		// Use specified entrypoint
-		runArgs := append([]string{"run", "--rm", imageName}, task.Entrypoint...)
-		runArgs = append(runArgs, taskArgs...)
-		runCmd = exec.Command("docker", runArgs...)
-	} else {
-		// Use default container command
-		runArgs := []string{"run", "--rm", imageName}
-		runArgs = append(runArgs, taskArgs...)
-		runCmd = exec.Command("docker", runArgs...)
-	}
+	imageName := fmt.Sprintf("numerous-tasks/%s/%s:%s", orgSlug, manifest.Name, manifest.Version)
 
 	if verbose {
-		fmt.Printf("🚀 Running: %s\n", strings.Join(runCmd.Args, " "))
+		fmt.Printf("🐳 Attempting to run deployed Docker image: %s\n", imageName)
+		fmt.Printf("Task to run in container: %s\n", task.FunctionName)
+	}
+
+	// Check if image exists locally (optional, docker run will fail if not found anyway)
+	// inspectCmd := exec.Command("docker", "image", "inspect", imageName)
+	// if err := inspectCmd.Run(); err != nil {
+	// 	result.Status = "failed"
+	// 	result.Error = fmt.Sprintf("Deployed image %s not found locally. Please deploy the collection first or pull the image.", imageName)
+	// 	result.EndTime = time.Now()
+	// 	result.Duration = result.EndTime.Sub(result.StartTime)
+	// 	return result, fmt.Errorf("image %s not found: %w", imageName, err)
+	// }
+
+	// Prepare arguments for docker run
+	// Base: docker run --rm <imageName>
+	// Args to container: <taskDef.FunctionName> [taskArgs...]
+	dockerRunArgs := []string{"run", "--rm"} // --network=host could be useful for local dev if tasks need to reach host services
+
+	// Pass environment variables from current shell (optional, but can be useful for local dev)
+	// for _, e := range os.Environ() {
+	// 	dockerRunArgs = append(dockerRunArgs, "-e", e)
+	// }
+
+	dockerRunArgs = append(dockerRunArgs, imageName)
+	dockerRunArgs = append(dockerRunArgs, task.FunctionName) // First arg to entrypoint is task name
+	dockerRunArgs = append(dockerRunArgs, taskArgs...)       // Subsequent args are task inputs
+
+	runCmd := exec.Command("docker", dockerRunArgs...)
+
+	if verbose {
+		fmt.Printf("🚀 Executing command: %s\n", strings.Join(runCmd.Args, " "))
 	}
 
 	// Execute with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	runCmd = exec.CommandContext(ctx, runCmd.Args[0], runCmd.Args[1:]...)
-	output, err := runCmd.CombinedOutput()
+	// Re-assign runCmd to include context, ensuring the original args are used
+	runCmd = exec.CommandContext(ctx, "docker", dockerRunArgs...)
+	var combinedOutput bytes.Buffer
+	runCmd.Stdout = &combinedOutput
+	runCmd.Stderr = &combinedOutput
+
+	err := runCmd.Run()
 
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
-	result.Output = string(output)
+	result.Output = combinedOutput.String()
 
 	if err != nil {
 		result.Status = "failed"
-		result.Error = err.Error()
+		// If context deadline exceeded, it's a timeout
+		if ctx.Err() == context.DeadlineExceeded {
+			result.Error = fmt.Sprintf("task timed out after %d seconds", timeoutSeconds)
+		} else {
+			result.Error = err.Error() // Includes docker command error and stderr
+		}
 		if exitError, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitError.ExitCode()
 		} else {
-			result.ExitCode = 1
+			result.ExitCode = 1 // Default error code
 		}
 	} else {
 		result.Status = "success"
 		result.ExitCode = 0
 	}
 
-	// Add metadata
-	result.Metadata["docker_image"] = imageName
-	result.Metadata["dockerfile"] = dockerfilePath
-	result.Metadata["build_context"] = dockerContext
-	if len(task.Entrypoint) > 0 {
-		result.Metadata["entrypoint"] = task.Entrypoint
-	}
+	result.Metadata["docker_image_used"] = imageName
+	result.Metadata["ran_deployed_image"] = true
 
 	return result, nil
 }
