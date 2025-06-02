@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/hasura/go-graphql-client"
 	"github.com/spf13/cobra"
 	"numerous.com/cli/internal/gql"
 	"numerous.com/cli/internal/output"
@@ -123,6 +124,18 @@ type TaskResult struct {
 	Environment   string                 `json:"environment"`
 	ExecutionMode string                 `json:"execution_mode"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// TaskExecutionLogsSubscription defines the subscription for task execution logs
+type TaskExecutionLogsSubscription struct {
+	TaskExecutionLogs TaskLogEntry `graphql:"taskExecutionLogs(input: {taskExecutionId: $taskExecutionId})"`
+}
+
+// TaskLogEntry represents a single log entry from the task execution
+type TaskLogEntry struct {
+	Timestamp string `json:"timestamp"`
+	Message   string `json:"message"`
+	Level     string `json:"level"`
 }
 
 func runTask(cmd *cobra.Command, args []string) error {
@@ -702,6 +715,7 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 				started_at
 				completed_at
 				result
+				logTopicId
 			}
 		}
 	`
@@ -771,6 +785,7 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 				StartedAt   *float64 `json:"started_at"`   // Revert to *float64
 				CompletedAt *float64 `json:"completed_at"` // Revert to *float64
 				Result      *string  `json:"result"`
+				LogTopicId  *string  `json:"logTopicId"`
 			} `json:"start_task"`
 		} `json:"data"`
 		Errors []struct {
@@ -901,8 +916,28 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 	logStreamDone := make(chan bool)
 	if follow {
 		go func() {
-			if err := streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx); err != nil && verbose {
-				fmt.Printf("⚠️  Log streaming error: %v\n", err)
+			// Determine which ID to use for subscription
+			subscriptionTopicId := startTaskData.ID // Default to task ID
+			if startTaskData.LogTopicId != nil && *startTaskData.LogTopicId != "" {
+				subscriptionTopicId = *startTaskData.LogTopicId // Use log topic ID if available
+				if verbose {
+					fmt.Printf("📡 Using log topic ID for subscription: %s\n", subscriptionTopicId)
+				}
+			} else if verbose {
+				fmt.Printf("📡 No log topic ID provided, using task ID for subscription: %s\n", subscriptionTopicId)
+			}
+
+			// Try WebSocket subscription first, fallback to HTTP polling if it fails
+			err := streamTaskLogsViaSubscription(subscriptionTopicId, apiURL, accessToken, completionCtx)
+			if err != nil {
+				if verbose {
+					fmt.Printf("⚠️  WebSocket subscription failed, falling back to HTTP polling: %v\n", err)
+				}
+				// Fallback to HTTP polling (still uses task ID for HTTP polling)
+				err = streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx)
+				if err != nil && verbose {
+					fmt.Printf("⚠️  Log streaming error: %v\n", err)
+				}
 			}
 			completionCancel() // Signal completion detected
 			logStreamDone <- true
@@ -1329,5 +1364,123 @@ func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClien
 				}
 			}
 		}
+	}
+}
+
+// streamTaskLogsViaSubscription uses WebSocket subscription to stream task logs in real-time
+func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *string, completionCtx context.Context) error {
+	// Create WebSocket URL for subscriptions
+	wsURL := strings.Replace(apiURL, "http://", "ws://", 1)
+	wsURL = strings.Replace(wsURL, "https://", "wss://", 1)
+
+	// Prepare headers
+	headers := map[string]interface{}{}
+	if accessToken != nil {
+		headers["Authorization"] = "Bearer " + *accessToken
+	}
+
+	// Create subscription client
+	subscriptionClient := graphql.NewSubscriptionClient(wsURL).
+		WithConnectionParams(headers).
+		WithSyncMode(true)
+
+	defer subscriptionClient.Close()
+
+	// Track if we've seen the completion signal
+	completionDetected := false
+
+	// Variables for the subscription - use interface{} for ID type
+	variables := map[string]interface{}{
+		"taskExecutionId": taskID,
+	}
+
+	// Define the subscription operation with proper variable declaration
+	subscriptionQuery := `
+		subscription CLITaskExecutionLogs($taskExecutionId: ID!) {
+			taskExecutionLogs(input: {taskExecutionId: $taskExecutionId}) {
+				timestamp
+				message
+				level
+			}
+		}
+	`
+
+	// Handler for subscription messages
+	handler := func(message []byte, err error) error {
+		if err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Subscription error: %v\n", err)
+			}
+			return err
+		}
+
+		// Parse the subscription response
+		var response struct {
+			Data struct {
+				TaskExecutionLogs TaskLogEntry `json:"taskExecutionLogs"`
+			} `json:"data"`
+		}
+
+		err = json.Unmarshal(message, &response)
+		if err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to parse subscription message: %v\n", err)
+			}
+			return err
+		}
+
+		entry := response.Data.TaskExecutionLogs
+
+		// Check for completion signal in log message first
+		if strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
+			// Parse completion signal: TASK_COMPLETED:STATUS:EXITCODE
+			parts := strings.Split(entry.Message, ":")
+			if len(parts) >= 3 {
+				status := parts[1]
+				if verbose {
+					fmt.Printf("🏁 Task completed with status: %s\n", status)
+				}
+				completionDetected = true
+			}
+			return graphql.ErrSubscriptionStopped // Stop the subscription
+		}
+
+		// Format timestamp for display and print the entry
+		if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
+			fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
+		} else {
+			fmt.Printf("%s\n", entry.Message)
+		}
+
+		return nil
+	}
+
+	// Subscribe using raw GraphQL operation
+	_, err := subscriptionClient.SubscribeRaw(subscriptionQuery, variables, handler)
+	if err != nil {
+		if verbose {
+			fmt.Printf("⚠️  Failed to subscribe to task logs: %v\n", err)
+		}
+		return err
+	}
+
+	// Run the subscription in a goroutine so we can handle completion context
+	done := make(chan error, 1)
+	go func() {
+		done <- subscriptionClient.Run()
+	}()
+
+	// Wait for either subscription completion or context cancellation
+	select {
+	case <-completionCtx.Done():
+		if verbose && !completionDetected {
+			fmt.Printf("📊 Log streaming stopped by completion context\n")
+		}
+		return nil
+	case err := <-done:
+		if err != nil && verbose {
+			fmt.Printf("⚠️  Subscription ended with error: %v\n", err)
+		}
+		return err
 	}
 }
