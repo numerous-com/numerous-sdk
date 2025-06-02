@@ -202,7 +202,7 @@ func runTaskLocally(cmd *cobra.Command, args []string) error {
 
 	if verbose {
 		fmt.Printf("🎯 Running task locally: %s\n", taskName)
-		fmt.Printf("�� Collection: %s v%s (from manifest: %s)\n", manifest.Name, manifest.Version, manifestPath)
+		fmt.Printf(" Collection: %s v%s (from manifest: %s)\n", manifest.Name, manifest.Version, manifestPath)
 		fmt.Printf("🔧 Determined Environment Type: %s\n", envType)
 		if manifest.Docker != nil {
 			fmt.Printf("   - Found [docker] section in manifest.\n")
@@ -896,21 +896,32 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 		fmt.Printf("⏳ Following task execution, polling for completion...\n")
 	}
 
-	// If follow flag is set, start log streaming
+	// If follow flag is set, start log streaming with shared completion context
+	completionCtx, completionCancel := context.WithCancel(context.Background())
+	logStreamDone := make(chan bool)
 	if follow {
 		go func() {
-			if err := streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient); err != nil && verbose {
+			if err := streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx); err != nil && verbose {
 				fmt.Printf("⚠️  Log streaming error: %v\n", err)
 			}
+			completionCancel() // Signal completion detected
+			logStreamDone <- true
 		}()
 	}
 
-	finalResult, err := pollTaskCompletion(startTaskData.ID, apiURL, accessToken, httpClient)
+	finalResult, err := pollTaskCompletion(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx, completionCancel)
 	if err != nil {
 		result.Status = "failed"
 		result.Error = fmt.Sprintf("failed to poll task completion: %v", err)
+		completionCancel() // Ensure cleanup
 		return result, err
 	}
+
+	// Wait for log streaming to complete if follow was enabled
+	if follow {
+		<-logStreamDone
+	}
+	completionCancel() // Ensure cleanup
 
 	// Merge the polling result with our base result
 	finalResult.TaskName = result.TaskName
@@ -925,7 +936,7 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 	return finalResult, nil
 }
 
-func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpClient *http.Client) (TaskResult, error) {
+func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpClient *http.Client, completionCtx context.Context, completionCancel context.CancelFunc) (TaskResult, error) {
 	result := TaskResult{
 		TaskName:      "",
 		Environment:   "remote",
@@ -957,6 +968,18 @@ func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpC
 	}
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
+		// Check if completion was detected by log streaming
+		select {
+		case <-completionCtx.Done():
+			// Completion detected by log streaming, make one final status check and return
+			if verbose {
+				fmt.Printf("📊 Completion detected by log streaming, making final status check...\n")
+			}
+			// Fall through to make final status check below
+		default:
+			// Continue with normal polling
+		}
+
 		variables := map[string]interface{}{
 			"taskId": taskID,
 		}
@@ -1082,11 +1105,38 @@ func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpC
 				result.Metadata["status_message"] = *taskStatus.StatusMessage
 			}
 
+			// Signal completion to stop log streaming
+			completionCancel()
 			return result, nil
 		}
 
-		// Wait before next poll
-		time.Sleep(2 * time.Second)
+		// If completion was detected by log streaming but task status is not yet complete,
+		// return immediately to avoid infinite polling
+		select {
+		case <-completionCtx.Done():
+			// Context was cancelled, which means completion was detected
+			// Return current status even if not marked as complete
+			result.Status = taskStatus.Status
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+
+			if taskStatus.Error != nil {
+				result.Error = *taskStatus.Error
+			}
+			if taskStatus.Result != nil {
+				result.Output = *taskStatus.Result
+				result.Metadata["result"] = *taskStatus.Result
+			}
+
+			if verbose {
+				fmt.Printf("📊 Returning due to completion detection via logs\n")
+			}
+
+			return result, nil
+		default:
+			// Continue with normal polling - wait before next poll
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	// Timeout reached
@@ -1099,7 +1149,7 @@ func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpC
 	return result, fmt.Errorf("task execution timed out")
 }
 
-func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClient *http.Client) error {
+func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClient *http.Client, completionCtx context.Context) error {
 	// Track the last log we've seen
 	lastLogIndex := 0
 
@@ -1107,13 +1157,16 @@ func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClien
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	// Set a reasonable timeout for log streaming (same as task timeout)
-	timeout := time.After(time.Duration(timeoutSeconds) * time.Second)
+	// Track if we've seen the completion signal
+	completionDetected := false
 
 	for {
 		select {
-		case <-timeout:
-			return nil // Timeout reached, stop streaming
+		case <-completionCtx.Done():
+			if verbose && !completionDetected {
+				fmt.Printf("📊 Log streaming stopped by completion context\n")
+			}
+			return nil // Completion detected elsewhere, stop streaming
 		case <-ticker.C:
 			// Query for task logs
 			query := `
@@ -1205,22 +1258,26 @@ func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClien
 						if verbose {
 							fmt.Printf("🏁 Task completed with status: %s\n", status)
 						}
-						return nil // Task completed, stop streaming
+						completionDetected = true
 					}
+					continue // Don't print the completion signal itself
 				}
 
-				// Format timestamp for display and print the entry (skip completion signals)
-				if !strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
-					if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
-						fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
-					} else {
-						fmt.Printf("%s\n", entry.Message)
-					}
+				// Format timestamp for display and print the entry
+				if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
+					fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
+				} else {
+					fmt.Printf("%s\n", entry.Message)
 				}
 				lastLogIndex++
 			}
 
-			// If no more logs and we can check task status, see if task is complete
+			// If completion was detected, exit immediately
+			if completionDetected {
+				return nil
+			}
+
+			// If no more logs and task might be complete, check status
 			if !taskLogs.HasMore {
 				// Make a quick status check to see if task is complete
 				statusQuery := `
