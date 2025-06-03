@@ -1151,30 +1151,29 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 			return err
 		}
 
-		// Parse the subscription response
-		var response struct {
-			Data struct {
-				TaskExecutionLogs json.RawMessage `json:"taskExecutionLogs"`
-			} `json:"data"`
+		// Try to parse directly as taskExecutionLogs (without data wrapper)
+		var directResponse struct {
+			TaskExecutionLogs json.RawMessage `json:"taskExecutionLogs"`
 		}
 
-		if err := json.Unmarshal(message, &response); err != nil {
-			// Check if it's an empty JSON issue
-			if strings.Contains(err.Error(), "unexpected end of JSON input") {
-				if verbose {
-					fmt.Printf("⚠️  Received empty event data, skipping...\n")
-				}
-				return nil // Skip empty events
-			}
+		if err := json.Unmarshal(message, &directResponse); err != nil {
 			if verbose {
 				fmt.Printf("⚠️  Failed to parse subscription message: %v\n", err)
 			}
 			return err
 		}
 
+		// Check if we have taskExecutionLogs data
+		if len(directResponse.TaskExecutionLogs) == 0 {
+			if verbose {
+				fmt.Printf("⚠️  No taskExecutionLogs field found in message\n")
+			}
+			return nil
+		}
+
 		// Try to determine the event type and handle accordingly
 		var eventData map[string]interface{}
-		if err := json.Unmarshal(response.Data.TaskExecutionLogs, &eventData); err != nil {
+		if err := json.Unmarshal(directResponse.TaskExecutionLogs, &eventData); err != nil {
 			// Check if it's an empty JSON issue
 			if strings.Contains(err.Error(), "unexpected end of JSON input") {
 				if verbose {
@@ -1191,13 +1190,19 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		// Skip if eventData is empty
 		if len(eventData) == 0 {
 			if verbose {
-				fmt.Printf("⚠️  Received empty event data, skipping...\n")
+				fmt.Printf("⚠️  Received empty event data object, skipping...\n")
 			}
 			return nil
 		}
 
 		// Handle different event types based on available fields
 		if timestamp, hasTimestamp := eventData["timestamp"]; hasTimestamp {
+			// Check for __typename field to help identify union type
+			typename, hasTypename := eventData["__typename"]
+			if verbose && hasTypename {
+				fmt.Printf("🔍 Event type: %v\n", typename)
+			}
+
 			if message, hasMessage := eventData["message"]; hasMessage {
 				// This is a TaskLogEntry
 				level := "INFO"
@@ -1232,6 +1237,16 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 				}
 				fmt.Printf("📊 Returning due to completion detection via logs\n")
 				return graphql.ErrSubscriptionStopped // Signal to stop the subscription
+			} else {
+				// Unknown event with timestamp but no recognized fields
+				if verbose {
+					fmt.Printf("⚠️  Unknown event type with timestamp: %v\n", eventData)
+				}
+			}
+		} else {
+			// Event without timestamp - might be a GraphQL null/empty object
+			if verbose {
+				fmt.Printf("⚠️  Event without timestamp (possibly null): %v\n", eventData)
 			}
 		}
 
