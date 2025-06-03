@@ -883,95 +883,77 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 		return result, nil
 	}
 
-	// If --follow flag is not set, return immediately with current status
-	if !follow {
-		result.Status = startTaskData.Status
-		result.StartTime = time.Unix(int64(startTaskData.CreatedAt), 0)
-		if startTaskData.StartedAt != nil {
-			result.StartTime = time.Unix(int64(*startTaskData.StartedAt), 0)
-		}
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(result.StartTime)
-
-		// Add metadata
-		result.Metadata["task_id"] = startTaskData.ID
-		result.Metadata["execution_id"] = startTaskData.ID
-		result.Metadata["organization"] = orgSlug
-		result.Metadata["collection"] = collectionName
-		result.Metadata["function"] = functionIdentifier
-
-		fmt.Printf("⏳ Task is %s. Use --follow to wait for completion.\n", startTaskData.Status)
-		fmt.Printf("💡 Check status with: numerous task status %s --organization %s\n", startTaskData.ID, orgSlug)
-
-		return result, nil
-	}
-
-	// For running tasks with --follow flag, poll until completion
+	// For running tasks with --follow flag, use subscription only
 	if verbose {
-		fmt.Printf("⏳ Following task execution, polling for completion...\n")
+		fmt.Printf("⏳ Following task execution via subscription...\n")
 	}
 
 	// If follow flag is set, start log streaming with shared completion context
 	completionCtx, completionCancel := context.WithCancel(context.Background())
-	logStreamDone := make(chan bool)
+	defer completionCancel()
+
 	if follow {
-		go func() {
-			// Determine which ID to use for subscription
-			subscriptionTopicId := startTaskData.ID // Default to task ID
-			if startTaskData.LogTopicId != nil && *startTaskData.LogTopicId != "" {
-				subscriptionTopicId = *startTaskData.LogTopicId // Use log topic ID if available
-				if verbose {
-					fmt.Printf("📡 Using log topic ID for subscription: %s\n", subscriptionTopicId)
-				}
-			} else if verbose {
-				fmt.Printf("📡 No log topic ID provided, using task ID for subscription: %s\n", subscriptionTopicId)
+		// Determine which ID to use for subscription
+		subscriptionTopicId := startTaskData.ID // Default to task ID
+		if startTaskData.LogTopicId != nil && *startTaskData.LogTopicId != "" {
+			subscriptionTopicId = *startTaskData.LogTopicId // Use log topic ID if available
+			if verbose {
+				fmt.Printf("📡 Using log topic ID for subscription: %s\n", subscriptionTopicId)
 			}
+		} else if verbose {
+			fmt.Printf("📡 No log topic ID provided, using task ID for subscription: %s\n", subscriptionTopicId)
+		}
 
-			// Try WebSocket subscription first, fallback to HTTP polling if it fails
-			err := streamTaskLogsViaSubscription(subscriptionTopicId, apiURL, accessToken, completionCtx)
-			if err != nil {
-				if verbose {
-					fmt.Printf("⚠️  WebSocket subscription failed, falling back to HTTP polling: %v\n", err)
-				}
-				// Fallback to HTTP polling (still uses task ID for HTTP polling)
-				err = streamTaskLogs(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx)
-				if err != nil && verbose {
-					fmt.Printf("⚠️  Log streaming error: %v\n", err)
-				}
-			}
-			completionCancel() // Signal completion detected
-			logStreamDone <- true
-		}()
+		// Use WebSocket subscription ONLY - no HTTP polling fallback
+		err := streamTaskLogsViaSubscription(subscriptionTopicId, apiURL, accessToken, completionCtx)
+		if err != nil {
+			return result, fmt.Errorf("subscription failed: %v", err)
+		}
+
+		// If we reach here, subscription completed successfully
+		// Get final status to return complete result
+		finalResult, err := getTaskStatus(startTaskData.ID, apiURL, accessToken, httpClient)
+		if err != nil {
+			return result, fmt.Errorf("failed to get final task status: %v", err)
+		}
+
+		// Merge the final result with our base result
+		finalResult.TaskName = result.TaskName
+		finalResult.Environment = result.Environment
+		finalResult.ExecutionMode = result.ExecutionMode
+		finalResult.Metadata["task_id"] = startTaskData.ID
+		finalResult.Metadata["execution_id"] = startTaskData.ID
+		finalResult.Metadata["organization"] = orgSlug
+		finalResult.Metadata["collection"] = collectionName
+		finalResult.Metadata["function"] = functionIdentifier
+
+		return finalResult, nil
 	}
 
-	finalResult, err := pollTaskCompletion(startTaskData.ID, apiURL, accessToken, httpClient, completionCtx, completionCancel)
-	if err != nil {
-		result.Status = "failed"
-		result.Error = fmt.Sprintf("failed to poll task completion: %v", err)
-		completionCancel() // Ensure cleanup
-		return result, err
+	// If not following, return current status
+	result.Status = startTaskData.Status
+	result.StartTime = time.Unix(int64(startTaskData.CreatedAt), 0)
+	if startTaskData.StartedAt != nil {
+		result.StartTime = time.Unix(int64(*startTaskData.StartedAt), 0)
 	}
+	result.EndTime = time.Now()
+	result.Duration = result.EndTime.Sub(result.StartTime)
 
-	// Wait for log streaming to complete if follow was enabled
-	if follow {
-		<-logStreamDone
-	}
-	completionCancel() // Ensure cleanup
+	// Add metadata
+	result.Metadata["task_id"] = startTaskData.ID
+	result.Metadata["execution_id"] = startTaskData.ID
+	result.Metadata["organization"] = orgSlug
+	result.Metadata["collection"] = collectionName
+	result.Metadata["function"] = functionIdentifier
 
-	// Merge the polling result with our base result
-	finalResult.TaskName = result.TaskName
-	finalResult.Environment = result.Environment
-	finalResult.ExecutionMode = result.ExecutionMode
-	finalResult.Metadata["task_id"] = startTaskData.ID
-	finalResult.Metadata["execution_id"] = startTaskData.ID
-	finalResult.Metadata["organization"] = orgSlug
-	finalResult.Metadata["collection"] = collectionName
-	finalResult.Metadata["function"] = functionIdentifier
+	fmt.Printf("⏳ Task is %s. Use --follow to wait for completion.\n", startTaskData.Status)
+	fmt.Printf("💡 Check status with: numerous task status %s --organization %s\n", startTaskData.ID, orgSlug)
 
-	return finalResult, nil
+	return result, nil
 }
 
-func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpClient *http.Client, completionCtx context.Context, completionCancel context.CancelFunc) (TaskResult, error) {
+// getTaskStatus performs a single HTTP request to get task status
+func getTaskStatus(taskID string, apiURL string, accessToken *string, httpClient *http.Client) (TaskResult, error) {
 	result := TaskResult{
 		TaskName:      "",
 		Environment:   "remote",
@@ -997,374 +979,108 @@ func pollTaskCompletion(taskID string, apiURL string, accessToken *string, httpC
 		}
 	`
 
-	maxAttempts := timeoutSeconds / 2 // Poll every 2 seconds
-	if maxAttempts < 1 {
-		maxAttempts = 1
+	variables := map[string]interface{}{
+		"taskId": taskID,
 	}
 
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		// Check if completion was detected by log streaming
-		select {
-		case <-completionCtx.Done():
-			// Completion detected by log streaming, make one final status check and return
-			if verbose {
-				fmt.Printf("📊 Completion detected by log streaming, making final status check...\n")
-			}
-			// Fall through to make final status check below
-		default:
-			// Continue with normal polling
-		}
-
-		variables := map[string]interface{}{
-			"taskId": taskID,
-		}
-
-		requestBody := map[string]interface{}{
-			"query":     query,
-			"variables": variables,
-		}
-
-		jsonBody, err := json.Marshal(requestBody)
-		if err != nil {
-			return result, fmt.Errorf("failed to marshal polling request: %w", err)
-		}
-
-		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
-		if err != nil {
-			return result, fmt.Errorf("failed to create polling request: %w", err)
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		if accessToken != nil {
-			req.Header.Set("Authorization", "Bearer "+*accessToken)
-		}
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return result, fmt.Errorf("polling request failed: %w", err)
-		}
-
-		var response struct {
-			Data struct {
-				TaskStatus *struct {
-					ID            string   `json:"id"`
-					Status        string   `json:"status"`
-					Result        *string  `json:"result"`
-					Error         *string  `json:"error"`
-					CreatedAt     *float64 `json:"created_at"`   // Revert to *float64
-					StartedAt     *float64 `json:"started_at"`   // Revert to *float64
-					CompletedAt   *float64 `json:"completed_at"` // Revert to *float64
-					Progress      *float64 `json:"progress"`
-					StatusMessage *string  `json:"status_message"`
-				} `json:"task_status"`
-			} `json:"data"`
-			Errors []struct {
-				Message string `json:"message"`
-			} `json:"errors"`
-		}
-
-		bodyBytes, errRead := io.ReadAll(resp.Body)
-		if errRead != nil {
-			resp.Body.Close()
-			return result, fmt.Errorf("failed to read polling response body: %w", errRead)
-		}
-		// Re-initialize resp.Body as it has been read
-		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			resp.Body.Close()
-			// Include raw body in error for better debugging
-			return result, fmt.Errorf("failed to decode polling response: %w. Raw Body: %s", err, string(bodyBytes))
-		}
-		resp.Body.Close()
-
-		// Check for GraphQL errors
-		if len(response.Errors) > 0 {
-			return result, fmt.Errorf("GraphQL polling error: %s", response.Errors[0].Message)
-		}
-
-		taskStatus := response.Data.TaskStatus
-		if taskStatus == nil {
-			return result, fmt.Errorf("task not found: %s", taskID)
-		}
-
-		if verbose && attempt%5 == 0 { // Log every 10 seconds
-			fmt.Printf("📊 Status: %s", taskStatus.Status)
-			if taskStatus.Progress != nil {
-				fmt.Printf(" (%.1f%%)", *taskStatus.Progress*100)
-			}
-			if taskStatus.StatusMessage != nil {
-				fmt.Printf(" - %s", *taskStatus.StatusMessage)
-			}
-			fmt.Println()
-		}
-
-		// Check if task is completed
-		if taskStatus.Status == "completed" || taskStatus.Status == "failed" || taskStatus.Status == "cancelled" {
-			result.Status = taskStatus.Status
-
-			if taskStatus.Status == "completed" {
-				result.ExitCode = 0
-			} else {
-				result.ExitCode = 1
-			}
-
-			// Set timing information from numeric timestamps
-			if taskStatus.CreatedAt != nil {
-				result.StartTime = time.Unix(int64(*taskStatus.CreatedAt), 0)
-			}
-			if taskStatus.StartedAt != nil {
-				// Prefer StartedAt if available
-				result.StartTime = time.Unix(int64(*taskStatus.StartedAt), 0)
-			}
-			if taskStatus.CompletedAt != nil {
-				result.EndTime = time.Unix(int64(*taskStatus.CompletedAt), 0)
-				result.Duration = result.EndTime.Sub(result.StartTime)
-			} else {
-				result.EndTime = time.Now()
-				result.Duration = result.EndTime.Sub(result.StartTime)
-			}
-
-			// Set output and error information
-			if taskStatus.Error != nil {
-				result.Error = *taskStatus.Error
-			}
-			if taskStatus.Result != nil {
-				result.Output = *taskStatus.Result
-				result.Metadata["result"] = *taskStatus.Result
-			}
-			if taskStatus.Progress != nil {
-				result.Metadata["progress"] = *taskStatus.Progress
-			}
-			if taskStatus.StatusMessage != nil {
-				result.Metadata["status_message"] = *taskStatus.StatusMessage
-			}
-
-			// Signal completion to stop log streaming
-			completionCancel()
-			return result, nil
-		}
-
-		// If completion was detected by log streaming but task status is not yet complete,
-		// return immediately to avoid infinite polling
-		select {
-		case <-completionCtx.Done():
-			// Context was cancelled, which means completion was detected
-			// Return current status even if not marked as complete
-			result.Status = taskStatus.Status
-			result.EndTime = time.Now()
-			result.Duration = result.EndTime.Sub(result.StartTime)
-
-			if taskStatus.Error != nil {
-				result.Error = *taskStatus.Error
-			}
-			if taskStatus.Result != nil {
-				result.Output = *taskStatus.Result
-				result.Metadata["result"] = *taskStatus.Result
-			}
-
-			if verbose {
-				fmt.Printf("📊 Returning due to completion detection via logs\n")
-			}
-
-			return result, nil
-		default:
-			// Continue with normal polling - wait before next poll
-			time.Sleep(2 * time.Second)
-		}
+	requestBody := map[string]interface{}{
+		"query":     query,
+		"variables": variables,
 	}
 
-	// Timeout reached
-	result.Status = "timeout"
-	result.Error = fmt.Sprintf("task execution timed out after %d seconds", timeoutSeconds)
-	result.EndTime = time.Now()
-	result.Duration = result.EndTime.Sub(result.StartTime)
-	result.ExitCode = 1
-
-	return result, fmt.Errorf("task execution timed out")
-}
-
-func streamTaskLogs(taskID string, apiURL string, accessToken *string, httpClient *http.Client, completionCtx context.Context) error {
-	// Track the last log we've seen
-	lastLogIndex := 0
-
-	// Poll for logs every 1 second
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	// Track if we've seen the completion signal
-	completionDetected := false
-
-	for {
-		select {
-		case <-completionCtx.Done():
-			if verbose && !completionDetected {
-				fmt.Printf("📊 Log streaming stopped by completion context\n")
-			}
-			return nil // Completion detected elsewhere, stop streaming
-		case <-ticker.C:
-			// Query for task logs
-			query := `
-				query TaskLogs($taskId: ID!, $offset: Int!) {
-					task_logs(taskId: $taskId, offset: $offset) {
-						entries {
-							timestamp
-							message
-							level
-						}
-						hasMore
-					}
-				}
-			`
-
-			variables := map[string]interface{}{
-				"taskId": taskID,
-				"offset": lastLogIndex,
-			}
-
-			requestBody := map[string]interface{}{
-				"query":     query,
-				"variables": variables,
-			}
-
-			jsonBody, err := json.Marshal(requestBody)
-			if err != nil {
-				continue // Skip this iteration on error
-			}
-
-			req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
-			if err != nil {
-				continue // Skip this iteration on error
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			if accessToken != nil {
-				req.Header.Set("Authorization", "Bearer "+*accessToken)
-			}
-
-			resp, err := httpClient.Do(req)
-			if err != nil {
-				continue // Skip this iteration on error
-			}
-
-			// Parse response
-			var response struct {
-				Data struct {
-					TaskLogs *struct {
-						Entries []struct {
-							Timestamp string `json:"timestamp"`
-							Message   string `json:"message"`
-							Level     string `json:"level"`
-						} `json:"entries"`
-						HasMore bool `json:"hasMore"`
-					} `json:"task_logs"`
-				} `json:"data"`
-				Errors []struct {
-					Message string `json:"message"`
-				} `json:"errors"`
-			}
-
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-				resp.Body.Close()
-				continue // Skip this iteration on error
-			}
-			resp.Body.Close()
-
-			if len(response.Errors) > 0 {
-				if verbose {
-					fmt.Printf("⚠️  Log streaming error: %s\n", response.Errors[0].Message)
-				}
-				continue
-			}
-
-			taskLogs := response.Data.TaskLogs
-			if taskLogs == nil {
-				continue // No logs available yet
-			}
-
-			// Print new log entries
-			for _, entry := range taskLogs.Entries {
-				// Check for completion signal in log message first
-				if strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
-					// Parse completion signal: TASK_COMPLETED:STATUS:EXITCODE
-					parts := strings.Split(entry.Message, ":")
-					if len(parts) >= 3 {
-						status := parts[1]
-						if verbose {
-							fmt.Printf("🏁 Task completed with status: %s\n", status)
-						}
-						completionDetected = true
-					}
-					continue // Don't print the completion signal itself
-				}
-
-				// Format timestamp for display and print the entry
-				if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
-					fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
-				} else {
-					fmt.Printf("%s\n", entry.Message)
-				}
-				lastLogIndex++
-			}
-
-			// If completion was detected, exit immediately
-			if completionDetected {
-				return nil
-			}
-
-			// If no more logs and task might be complete, check status
-			if !taskLogs.HasMore {
-				// Make a quick status check to see if task is complete
-				statusQuery := `
-					query TaskStatus($taskId: ID!) {
-						task_status(taskId: $taskId) {
-							status
-						}
-					}
-				`
-
-				statusVars := map[string]interface{}{
-					"taskId": taskID,
-				}
-
-				statusReqBody := map[string]interface{}{
-					"query":     statusQuery,
-					"variables": statusVars,
-				}
-
-				if statusJSON, err := json.Marshal(statusReqBody); err == nil {
-					if statusReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(statusJSON)); err == nil {
-						statusReq.Header.Set("Content-Type", "application/json")
-						if accessToken != nil {
-							statusReq.Header.Set("Authorization", "Bearer "+*accessToken)
-						}
-
-						if statusResp, err := httpClient.Do(statusReq); err == nil {
-							var statusResponse struct {
-								Data struct {
-									TaskStatus *struct {
-										Status string `json:"status"`
-									} `json:"task_status"`
-								} `json:"data"`
-							}
-
-							if err := json.NewDecoder(statusResp.Body).Decode(&statusResponse); err == nil {
-								if statusResponse.Data.TaskStatus != nil {
-									status := statusResponse.Data.TaskStatus.Status
-									statusLower := strings.ToLower(status)
-									if statusLower == "completed" || statusLower == "failed" || statusLower == "cancelled" {
-										statusResp.Body.Close()
-										return nil // Task is complete, stop streaming
-									}
-								}
-							}
-							statusResp.Body.Close()
-						}
-					}
-				}
-			}
-		}
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return result, fmt.Errorf("failed to marshal request: %w", err)
 	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return result, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if accessToken != nil {
+		req.Header.Set("Authorization", "Bearer "+*accessToken)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return result, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var response struct {
+		Data struct {
+			TaskStatus *struct {
+				ID            string   `json:"id"`
+				Status        string   `json:"status"`
+				Result        *string  `json:"result"`
+				Error         *string  `json:"error"`
+				CreatedAt     *float64 `json:"created_at"`
+				StartedAt     *float64 `json:"started_at"`
+				CompletedAt   *float64 `json:"completed_at"`
+				Progress      *float64 `json:"progress"`
+				StatusMessage *string  `json:"status_message"`
+			} `json:"task_status"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return result, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	// Check for GraphQL errors
+	if len(response.Errors) > 0 {
+		return result, fmt.Errorf("GraphQL error: %s", response.Errors[0].Message)
+	}
+
+	taskStatus := response.Data.TaskStatus
+	if taskStatus == nil {
+		return result, fmt.Errorf("task not found: %s", taskID)
+	}
+
+	result.Status = taskStatus.Status
+
+	if taskStatus.Status == "completed" {
+		result.ExitCode = 0
+	} else {
+		result.ExitCode = 1
+	}
+
+	// Set timing information
+	if taskStatus.CreatedAt != nil {
+		result.StartTime = time.Unix(int64(*taskStatus.CreatedAt), 0)
+	}
+	if taskStatus.StartedAt != nil {
+		result.StartTime = time.Unix(int64(*taskStatus.StartedAt), 0)
+	}
+	if taskStatus.CompletedAt != nil {
+		result.EndTime = time.Unix(int64(*taskStatus.CompletedAt), 0)
+		result.Duration = result.EndTime.Sub(result.StartTime)
+	} else {
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime)
+	}
+
+	// Set output and error information
+	if taskStatus.Error != nil {
+		result.Error = *taskStatus.Error
+	}
+	if taskStatus.Result != nil {
+		result.Output = *taskStatus.Result
+		result.Metadata["result"] = *taskStatus.Result
+	}
+	if taskStatus.Progress != nil {
+		result.Metadata["progress"] = *taskStatus.Progress
+	}
+	if taskStatus.StatusMessage != nil {
+		result.Metadata["status_message"] = *taskStatus.StatusMessage
+	}
+
+	return result, nil
 }
 
 // streamTaskLogsViaSubscription uses WebSocket subscription to stream task logs in real-time
