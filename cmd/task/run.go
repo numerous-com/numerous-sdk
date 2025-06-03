@@ -1386,24 +1386,45 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 
 	defer subscriptionClient.Close()
 
-	// Track if we've seen the completion signal
-	completionDetected := false
-
-	// Variables for the subscription - use interface{} for ID type
-	variables := map[string]interface{}{
-		"taskExecutionId": taskID,
-	}
-
-	// Define the subscription operation with proper variable declaration
+	// Define the subscription query with inline fragments for the union type
 	subscriptionQuery := `
-		subscription CLITaskExecutionLogs($taskExecutionId: ID!) {
+		subscription TaskExecutionLogs($taskExecutionId: ID!) {
 			taskExecutionLogs(input: {taskExecutionId: $taskExecutionId}) {
-				timestamp
-				message
-				level
+				... on TaskLogEntry {
+					timestamp
+					message
+					level
+				}
+				... on TaskStatusEvent {
+					timestamp
+					status
+					statusMessage
+				}
+				... on TaskProgressEvent {
+					timestamp
+					progress
+				}
+				... on TaskResultEvent {
+					timestamp
+					executionResult {
+						id
+						status
+						result
+						error
+						created_at
+						started_at
+						completed_at
+						progress
+						status_message
+					}
+				}
 			}
 		}
 	`
+
+	variables := map[string]interface{}{
+		"taskExecutionId": taskID,
+	}
 
 	// Handler for subscription messages
 	handler := func(message []byte, err error) error {
@@ -1417,39 +1438,63 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		// Parse the subscription response
 		var response struct {
 			Data struct {
-				TaskExecutionLogs TaskLogEntry `json:"taskExecutionLogs"`
+				TaskExecutionLogs json.RawMessage `json:"taskExecutionLogs"`
 			} `json:"data"`
 		}
 
-		err = json.Unmarshal(message, &response)
-		if err != nil {
+		if err := json.Unmarshal(message, &response); err != nil {
 			if verbose {
 				fmt.Printf("⚠️  Failed to parse subscription message: %v\n", err)
 			}
 			return err
 		}
 
-		entry := response.Data.TaskExecutionLogs
-
-		// Check for completion signal in log message first
-		if strings.HasPrefix(entry.Message, "TASK_COMPLETED:") {
-			// Parse completion signal: TASK_COMPLETED:STATUS:EXITCODE
-			parts := strings.Split(entry.Message, ":")
-			if len(parts) >= 3 {
-				status := parts[1]
-				if verbose {
-					fmt.Printf("🏁 Task completed with status: %s\n", status)
-				}
-				completionDetected = true
+		// Try to determine the event type and handle accordingly
+		var eventData map[string]interface{}
+		if err := json.Unmarshal(response.Data.TaskExecutionLogs, &eventData); err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to parse event data: %v\n", err)
 			}
-			return graphql.ErrSubscriptionStopped // Stop the subscription
+			return err
 		}
 
-		// Format timestamp for display and print the entry
-		if timestamp, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
-			fmt.Printf("%s %s\n", timestamp.Format("15:04:05"), entry.Message)
-		} else {
-			fmt.Printf("%s\n", entry.Message)
+		// Handle different event types based on available fields
+		if timestamp, hasTimestamp := eventData["timestamp"]; hasTimestamp {
+			if message, hasMessage := eventData["message"]; hasMessage {
+				// This is a TaskLogEntry
+				level := "INFO"
+				if l, hasLevel := eventData["level"]; hasLevel {
+					level = fmt.Sprintf("%v", l)
+				}
+				fmt.Printf("📋 [%s] %s: %v\n", level, timestamp, message)
+			} else if status, hasStatus := eventData["status"]; hasStatus {
+				// This is a TaskStatusEvent
+				statusMsg := ""
+				if sm, hasStatusMsg := eventData["statusMessage"]; hasStatusMsg && sm != nil {
+					statusMsg = fmt.Sprintf(" - %v", sm)
+				}
+				fmt.Printf("📊 Status: %v%s\n", status, statusMsg)
+
+				// Check for completion
+				if statusStr := fmt.Sprintf("%v", status); statusStr == "COMPLETED" || statusStr == "FAILED" {
+					fmt.Printf("📊 Returning due to completion detection via logs\n")
+					return graphql.ErrSubscriptionStopped // Signal to stop the subscription
+				}
+			} else if progress, hasProgress := eventData["progress"]; hasProgress {
+				// This is a TaskProgressEvent
+				if p, ok := progress.(float64); ok {
+					fmt.Printf("📊 Progress: %.1f%%\n", p*100)
+				}
+			} else if executionResult, hasResult := eventData["executionResult"]; hasResult {
+				// This is a TaskResultEvent
+				fmt.Printf("✅ Task execution completed\n")
+				if verbose {
+					resultJSON, _ := json.MarshalIndent(executionResult, "", "  ")
+					fmt.Printf("📋 Final result: %s\n", string(resultJSON))
+				}
+				fmt.Printf("📊 Returning due to completion detection via logs\n")
+				return graphql.ErrSubscriptionStopped // Signal to stop the subscription
+			}
 		}
 
 		return nil
@@ -1473,14 +1518,15 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 	// Wait for either subscription completion or context cancellation
 	select {
 	case <-completionCtx.Done():
-		if verbose && !completionDetected {
+		if verbose {
 			fmt.Printf("📊 Log streaming stopped by completion context\n")
 		}
 		return nil
 	case err := <-done:
-		if err != nil && verbose {
+		// If subscription stopped normally (due to completion), that's expected
+		if err != nil && err != graphql.ErrSubscriptionStopped && verbose {
 			fmt.Printf("⚠️  Subscription ended with error: %v\n", err)
 		}
-		return err
+		return nil
 	}
 }
