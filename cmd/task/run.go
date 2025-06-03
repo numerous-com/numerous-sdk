@@ -1212,28 +1212,36 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 				}
 				fmt.Printf("📊 Status: %v%s\n", status, statusMsg)
 
-				// Check for completion
-				if statusStr := fmt.Sprintf("%v", status); statusStr == "COMPLETED" || statusStr == "FAILED" {
-					fmt.Printf("✅ Task completed with status: %s\n", statusStr)
-					return graphql.ErrSubscriptionStopped // Signal to stop the subscription
+				// Check if task is completed or failed
+				statusStr := fmt.Sprintf("%v", status)
+				if statusStr == "COMPLETED" || statusStr == "FAILED" {
+					if verbose {
+						fmt.Printf("✅ Task execution %s, terminating subscription\n", statusStr)
+					}
+					return fmt.Errorf("task_completed:%s", statusStr)
 				}
-			} else if progress, hasProgress := eventData["progress"]; hasProgress {
-				// This is a TaskProgressEvent
-				if p, ok := progress.(float64); ok {
-					fmt.Printf("📊 Progress: %.1f%%\n", p*100)
-				}
-			} else if executionResult, hasResult := eventData["executionResult"]; hasResult {
+			} else if executionResult, hasResult := eventData["executionResult"]; hasResult && executionResult != nil {
 				// This is a TaskResultEvent
-				fmt.Printf("✅ Task execution completed\n")
-				if verbose {
-					resultJSON, _ := json.MarshalIndent(executionResult, "", "  ")
-					fmt.Printf("📋 Final result: %s\n", string(resultJSON))
+				fmt.Printf("🎯 Task completed with result\n")
+				if result, ok := executionResult.(map[string]interface{}); ok {
+					if status, hasStatus := result["status"]; hasStatus {
+						fmt.Printf("📊 Final Status: %v\n", status)
+					}
+					if taskResult, hasTaskResult := result["result"]; hasTaskResult && taskResult != nil {
+						fmt.Printf("📋 Result: %v\n", taskResult)
+					}
+					if taskError, hasError := result["error"]; hasError && taskError != nil {
+						fmt.Printf("❌ Error: %v\n", taskError)
+					}
 				}
-				return graphql.ErrSubscriptionStopped // Signal to stop the subscription
-			} else {
-				// Unknown event with timestamp but no recognized fields
 				if verbose {
-					fmt.Printf("⚠️  Unknown event type with timestamp: %v\n", eventData)
+					fmt.Printf("✅ Received TaskResultEvent, terminating subscription\n")
+				}
+				return fmt.Errorf("task_result_received")
+			} else {
+				// Unknown event type, log it in verbose mode
+				if verbose {
+					fmt.Printf("🔍 Unknown event: %v\n", eventData)
 				}
 			}
 		} else {
@@ -1255,26 +1263,28 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		return err
 	}
 
-	// Run the subscription in a goroutine so we can handle completion context
-	done := make(chan error, 1)
-	go func() {
-		done <- subscriptionClient.Run()
-	}()
+	// Run the subscription client
+	err = subscriptionClient.Run()
 
-	// Wait for either subscription completion or context cancellation
-	select {
-	case <-completionCtx.Done():
-		if verbose {
-			fmt.Printf("📊 Log streaming stopped by completion context\n")
-		}
-		return nil
-	case err := <-done:
-		// If subscription stopped normally (due to completion), that's expected
-		if err != nil && err != graphql.ErrSubscriptionStopped && verbose {
+	// Check if this is a completion signal
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "task_completed:") {
+			status := strings.TrimPrefix(err.Error(), "task_completed:")
+			if status == "COMPLETED" {
+				fmt.Printf("✅ Task completed successfully\n")
+				return nil
+			} else if status == "FAILED" {
+				fmt.Printf("❌ Task failed\n")
+				return fmt.Errorf("task execution failed")
+			}
+		} else if err.Error() == "task_result_received" {
+			fmt.Printf("✅ Task execution finished\n")
+			return nil
+		} else if verbose {
 			fmt.Printf("⚠️  Subscription ended with error: %v\n", err)
 		}
-		return nil
 	}
+	return err
 }
 
 func getFieldNames(data map[string]interface{}) []string {
