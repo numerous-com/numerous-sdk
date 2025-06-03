@@ -1159,6 +1159,13 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		}
 
 		if err := json.Unmarshal(message, &response); err != nil {
+			// Check if it's an empty JSON issue
+			if strings.Contains(err.Error(), "unexpected end of JSON input") {
+				if verbose {
+					fmt.Printf("⚠️  Received empty event data, skipping...\n")
+				}
+				return nil // Skip empty events
+			}
 			if verbose {
 				fmt.Printf("⚠️  Failed to parse subscription message: %v\n", err)
 			}
@@ -1168,10 +1175,25 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		// Try to determine the event type and handle accordingly
 		var eventData map[string]interface{}
 		if err := json.Unmarshal(response.Data.TaskExecutionLogs, &eventData); err != nil {
+			// Check if it's an empty JSON issue
+			if strings.Contains(err.Error(), "unexpected end of JSON input") {
+				if verbose {
+					fmt.Printf("⚠️  Received empty event data, skipping...\n")
+				}
+				return nil // Skip empty events
+			}
 			if verbose {
 				fmt.Printf("⚠️  Failed to parse event data: %v\n", err)
 			}
 			return err
+		}
+
+		// Skip if eventData is empty
+		if len(eventData) == 0 {
+			if verbose {
+				fmt.Printf("⚠️  Received empty event data, skipping...\n")
+			}
+			return nil
 		}
 
 		// Handle different event types based on available fields
