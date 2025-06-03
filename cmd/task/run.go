@@ -1197,12 +1197,6 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 
 		// Handle different event types based on available fields
 		if timestamp, hasTimestamp := eventData["timestamp"]; hasTimestamp {
-			// Check for __typename field to help identify union type
-			typename, hasTypename := eventData["__typename"]
-			if verbose && hasTypename {
-				fmt.Printf("🔍 Event type: %v\n", typename)
-			}
-
 			if message, hasMessage := eventData["message"]; hasMessage {
 				// This is a TaskLogEntry
 				level := "INFO"
@@ -1220,7 +1214,7 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 
 				// Check for completion
 				if statusStr := fmt.Sprintf("%v", status); statusStr == "COMPLETED" || statusStr == "FAILED" {
-					fmt.Printf("📊 Returning due to completion detection via logs\n")
+					fmt.Printf("✅ Task completed with status: %s\n", statusStr)
 					return graphql.ErrSubscriptionStopped // Signal to stop the subscription
 				}
 			} else if progress, hasProgress := eventData["progress"]; hasProgress {
@@ -1235,7 +1229,6 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 					resultJSON, _ := json.MarshalIndent(executionResult, "", "  ")
 					fmt.Printf("📋 Final result: %s\n", string(resultJSON))
 				}
-				fmt.Printf("📊 Returning due to completion detection via logs\n")
 				return graphql.ErrSubscriptionStopped // Signal to stop the subscription
 			} else {
 				// Unknown event with timestamp but no recognized fields
@@ -1282,4 +1275,12 @@ func streamTaskLogsViaSubscription(taskID string, apiURL string, accessToken *st
 		}
 		return nil
 	}
+}
+
+func getFieldNames(data map[string]interface{}) []string {
+	fieldNames := []string{}
+	for key := range data {
+		fieldNames = append(fieldNames, key)
+	}
+	return fieldNames
 }
