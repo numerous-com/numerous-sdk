@@ -14,13 +14,15 @@ Key Abstractions:
 
 from .task import task, Task, TaskInstance, TaskConfig
 from .control import TaskControl, set_task_control_handler, LocalTaskControlHandler, PoCMockRemoteTaskControlHandler
-from .session import Session, SessionError, SessionNotFoundError
+from .session import Session
 from .future import Future, TaskStatus, TaskCancelledError
 from .exceptions import (
     TaskError,
     MaxInstancesReachedError,
     BackendError,
-    TaskDefinitionError
+    TaskDefinitionError,
+    SessionNotFoundError,
+    SessionError
 )
 from .backends import (
     ExecutionBackend,
@@ -29,6 +31,12 @@ from .backends import (
     set_default_backend
 )
 from .backends.local import LocalExecutionBackend
+from .backends.remote import RemoteExecutionBackend
+
+# Local backend is registered by default.
+_local_backend = LocalExecutionBackend()
+register_backend("local", _local_backend)
+set_default_backend("local")
 
 __all__ = [
     # Core task definition and instance management
@@ -48,8 +56,8 @@ __all__ = [
     # Exceptions
     "TaskError",
     "MaxInstancesReachedError",
-    "SessionError",
     "SessionNotFoundError",
+    "SessionError",
     "TaskCancelledError",
     "BackendError",
     "TaskDefinitionError",
@@ -62,5 +70,6 @@ __all__ = [
     "LocalExecutionBackend",
     "set_task_control_handler", # For runner or advanced setup
     "LocalTaskControlHandler",  # For type hinting or direct use if needed
-    "PoCMockRemoteTaskControlHandler" # For PoC testing
+    "PoCMockRemoteTaskControlHandler", # For PoC testing
+    "RemoteExecutionBackend",
 ] 
