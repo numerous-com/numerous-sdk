@@ -6,6 +6,9 @@ if False: # TYPE_CHECKING
     from ..future import Future
     from ..task import TaskInstance # Not directly used here, but good for context
 
+from .local import LocalExecutionBackend
+from .remote import RemoteExecutionBackend # Import the new backend
+
 _backends: Dict[str, 'ExecutionBackend'] = {}
 _default_backend_name: Optional[str] = None
 
@@ -75,7 +78,6 @@ def get_backend(name: Optional[str] = None) -> Optional[ExecutionBackend]:
     backend = _backends.get(name)
     if backend is None and name == 'local':
         # Auto-initialize local backend if requested and not yet registered
-        from .local import LocalExecutionBackend
         local_backend = LocalExecutionBackend()
         local_backend.startup()
         register_backend('local', local_backend)
@@ -98,3 +100,12 @@ def set_default_backend(name: str) -> None:
 # Auto-register the local backend by default when this module is imported.
 # This ensures 'local' is always available unless explicitly overridden or removed.
 # Deferring actual instantiation until get_backend('local') is called. 
+
+__all__ = [
+    "ExecutionBackend",
+    "register_backend",
+    "get_backend",
+    "set_default_backend",
+    "LocalExecutionBackend",
+    "RemoteExecutionBackend", # Add to __all__
+] 

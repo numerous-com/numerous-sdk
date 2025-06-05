@@ -35,25 +35,29 @@ class Task(Generic[UserCallable, R]):
     It wraps the user's original function and handles the injection of TaskControl,
     instance creation, and interaction with the execution backend.
     """
-    def __init__(self, func: UserCallable, config: TaskConfig):
+    def __init__(self, func: UserCallable, config: TaskConfig, expects_task_control: bool):
         functools.update_wrapper(self, func) # Copies name, docstring, etc.
         self._original_func: UserCallable = func
-        self._internal_func: InternalCallable = self._wrap_original_func(func)
         self.config = config
         self.name = config.name if config.name else func.__name__
+        self.expects_task_control = expects_task_control # Store the flag
 
         # Store signature for validation and potential future use
         self._sig = inspect.signature(self._original_func)
 
     def _wrap_original_func(self, user_func: UserCallable) -> InternalCallable:
-        """Wraps the user's function to inject TaskControl as the first argument."""
+        """Wraps the user's function. The actual TaskControl injection is conditional in _task_runner."""
         @functools.wraps(user_func)
-        def wrapped_func(task_control: TaskControl, *args: Any, **kwargs: Any) -> Any:
-            return user_func(*args, **kwargs) # Pass through, TaskControl handled by backend
-        
-        # Actual injection will be handled by the backend. For now, this is a placeholder
-        # conceptually. The _task_runner in TaskInstance will correctly pass TaskControl.
-        return wrapped_func # type: ignore
+        def wrapped_func_placeholder(task_control_placeholder: TaskControl, *args: Any, **kwargs: Any) -> Any:
+            # This wrapper's signature might be misleading if not used carefully.
+            # The core logic is now in _task_runner.
+            if self.expects_task_control:
+                return user_func(task_control_placeholder, *args, **kwargs)
+            return user_func(*args, **kwargs)
+        # The type InternalCallable implies TaskControl is always first.
+        # This might need a more complex type or a re-evaluation of _internal_func's purpose.
+        # For now, _task_runner directly calls _original_func.
+        return user_func # type: ignore # Returning original_func directly if _internal_func is not strictly used by backend
 
     def instance(self) -> 'TaskInstance[UserCallable, R]':
         """Creates a new TaskInstance for this task definition.
@@ -127,39 +131,17 @@ class TaskInstance(Generic[UserCallable, R]):
 
     def _task_runner(self, *args: Any, **kwargs: Any) -> R:
         """Internal method that actually executes the task's original function
-        with the TaskControl object.
+        with the TaskControl object if expected.
         """
-        # This is where the TaskControl is explicitly passed to the user's code.
-        # The self.task_definition._original_func is the user's actual code.
         try:
-            # We need to call the user's original function with task_control and other args.
-            # The _internal_func wrapper was more conceptual for the Task definition.
-            
-            # Bind arguments to the original function's signature to respect defaults, etc.
-            # and to separate args from kwargs if the user function expects that.
-            bound_args = self.task_definition._sig.bind_partial(*args, **kwargs)
-            
-            # The TaskControl is the first *logical* argument to the user's task
-            # as they define it (e.g. def my_task(tc: TaskControl, x, y)).
-            # However, the @task decorator hides this from the *call signature*.
-            # So, when calling the _original_func, it does NOT expect TaskControl directly.
-            # TaskControl is provided by the execution environment (backend).
-            
-            # The current pathfinder approach: _task_wrapper in old task.py took func, task_control
-            # This means the backend.execute needs to be aware of this convention.
-            
-            # For now, let's assume the backend.execute will handle providing TaskControl
-            # to the original function or a wrapped version of it.
-            # So, this _task_runner will directly call original_func, assuming TaskControl is handled.
-            # This aligns with the Task._wrap_original_func. 
-            # OR, the backend execute calls THIS method, and this method provides tc. 
-            # The latter seems more direct for local backend. 
-
-            # Let's try this: the `_task_runner` IS the function the backend executes.
-            # It receives args/kwargs meant for the *user's function*.
-            # It then calls the *user's function* prepending the `task_control`.
-            
-            return self.task_definition._original_func(self.task_control, *args, **kwargs)
+            if self.task_definition.expects_task_control:
+                return self.task_definition._original_func(self.task_control, *args, **kwargs)
+            else:
+                # Bind arguments to the original function's signature to respect defaults, etc.
+                # This is important if the user function does not expect TaskControl.
+                # However, if _original_func is called directly with *args, **kwargs,
+                # Python handles the binding. The main difference is the TaskControl.
+                return self.task_definition._original_func(*args, **kwargs)
         except Exception as e:
             # The future should capture this exception
             raise
@@ -237,32 +219,34 @@ def task(
     Returns:
         A Task object that can be used to create and start instances.
     """
-    config = TaskConfig(name=name, max_parallel=max_parallel, size=size)
+    task_config = TaskConfig(name=name, max_parallel=max_parallel, size=size)
     
     def decorator(func_to_wrap: UserCallable) -> Task[UserCallable, Any]:
-        # Validate that the first argument of func_to_wrap is type-hinted as TaskControl
+        expects_task_control = False
         sig = inspect.signature(func_to_wrap)
         params = list(sig.parameters.values())
-        if not params or params[0].name == 'self' or params[0].name == 'cls': # Skip self/cls for methods
-            if len(params) < 2 or params[1].annotation != TaskControl:
-                 raise TypeError(
-                    f"Task function '{func_to_wrap.__name__}' must have 'TaskControl' as its first "
-                    f"argument (after self/cls if a method). Example: def {func_to_wrap.__name__}(tc: TaskControl, ...)."
-                )
-        elif params[0].annotation != TaskControl:
-            raise TypeError(
-                f"Task function '{func_to_wrap.__name__}' must have 'TaskControl' as its first "
-                f"argument. Example: def {func_to_wrap.__name__}(tc: TaskControl, ...)."
-            )
 
-        # Modify the user's function signature to remove TaskControl for the Task object's __call__.
-        # This is tricky because the actual call to the original function *must* include TaskControl.
-        # The Task object itself, when called, should reflect the user's intended signature.
+        if params: # Function has parameters
+            first_actual_param_index = 0
+            # Check if it's a method (first param is 'self' or 'cls')
+            if params[0].name in ('self', 'cls'):
+                if len(params) > 1: # Method has more params after self/cls
+                    first_actual_param_index = 1
+                else: # Method only has self/cls, so no other params to check for TaskControl
+                    params = [] # Treat as if no checkable params for TaskControl
+
+            # Check if a parameter exists at first_actual_param_index and if its annotation is TaskControl
+            if params and first_actual_param_index < len(params):
+                # Ensure the parameter at first_actual_param_index has an annotation
+                if params[first_actual_param_index].annotation == TaskControl:
+                    expects_task_control = True
         
-        # The Task object will store the original func and handle TaskControl injection.
-        return Task(func_to_wrap, config)
+        # The old validation raising TypeError is removed.
+        # TaskControl is now optionally injected based on expects_task_control.
+        
+        return Task(func_to_wrap, task_config, expects_task_control)
 
-    if _func is None:
-        return decorator # Decorator called with parentheses: @task(...)
-    else:
-        return decorator(_func) # Decorator called without parentheses: @task 
+    if _func is None: # Decorator called with parentheses: @task(...)
+        return decorator
+    else: # Decorator called without parentheses: @task
+        return decorator(_func) 
