@@ -2,12 +2,53 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, Future as ConcurrentFuture
 from typing import Callable, Any, Optional, Dict, Set
 import logging
-
-from . import ExecutionBackend
+from abc import ABC, abstractmethod
 from ..future import LocalFuture, TaskStatus # Assuming LocalFuture is in ..future
 from ..control import TaskControl # Assuming TaskControl is in ..control
 
 logger = logging.getLogger(__name__)
+
+# Forward declaration for type hinting
+if False: # TYPE_CHECKING
+    from ..future import Future
+    from ..task import TaskInstance # Not directly used here, but good for context
+
+class ExecutionBackend(ABC):
+    """Abstract base class for task execution backends."""
+
+    @abstractmethod
+    def execute(
+        self, 
+        target_callable: Callable[..., Any], # The function to execute (e.g., TaskInstance._task_runner)
+        future: 'Future',                  # The future object to be updated by the backend
+        args: tuple, 
+        kwargs: dict
+    ) -> None:
+        """Execute the target_callable.
+
+        This method should arrange for the callable to be run, and upon its completion
+        (or failure), it must update the provided `future` object with the result
+        or exception.
+
+        For local backends (like a thread pool), this might involve submitting the
+        callable to the pool and attaching callbacks to update the future.
+        For remote backends, this would involve serializing the call, sending it to
+        a remote service, and then managing the future based on responses from that service.
+        """
+        pass
+
+    @abstractmethod
+    def cancel_task_instance(self, instance_id: str, session_id: Optional[str] = None) -> bool:
+        """Attempt to cancel a task instance managed by this backend."""
+        pass
+
+    def startup(self) -> None:
+        """Called when the backend is initialized, for any setup."""
+        pass
+
+    def shutdown(self) -> None:
+        """Called when the SDK or application is shutting down, for cleanup."""
+        pass
 
 class LocalExecutionBackend(ExecutionBackend):
     """Executes tasks locally using a thread pool."""

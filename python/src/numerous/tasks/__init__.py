@@ -15,7 +15,7 @@ Key Abstractions:
 from .task import task, Task, TaskInstance, TaskConfig
 from .control import TaskControl, set_task_control_handler, LocalTaskControlHandler, PoCMockRemoteTaskControlHandler
 from .session import Session
-from .future import Future, TaskStatus, TaskCancelledError
+from .future import Future, LocalFuture, TaskStatus, TaskCancelledError
 from .exceptions import (
     TaskError,
     MaxInstancesReachedError,
@@ -51,6 +51,7 @@ __all__ = [
     
     # Futures and status
     "Future",
+    "LocalFuture",
     "TaskStatus",
     
     # Exceptions
