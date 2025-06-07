@@ -81,48 +81,115 @@ def _get_env_var(name: str, is_mandatory: bool = True, default: Optional[str] = 
 def _fetch_task_inputs(api_client: Any, task_instance_id: str) -> Dict[str, Any]:
     """Fetches task inputs using the API client."""
     runner_logger.info(f"Fetching inputs for task instance {task_instance_id} via API...")
-    # Placeholder: Construct and execute GraphQL query
-    # query = """
-    #     query GetTaskInputs($id: UUID!) {
-    #         getTaskInstance(id: $id) {
-    #             inputs
-    #         }
-    #     }
-    # """
-    # variables = {"id": task_instance_id}
-    # response = api_client.execute(query, variable_values=variables) # Conceptual
-    # inputs_data = response.get("getTaskInstance", {}).get("inputs")
-    # if inputs_data is None:
-    #     raise RunnerError(f"Failed to fetch inputs for task instance {task_instance_id} or inputs are null.")
-    # runner_logger.info(f"Successfully fetched inputs: {inputs_data}")
-    # return inputs_data
-
-    # --- Dummy implementation for now ---
-    runner_logger.warning(f"DUMMY: _fetch_task_inputs called for {task_instance_id}. Returning dummy inputs.")
-    # In a real scenario, this would come from an API call that might fail.
-    # This dummy data should match what your actual task expects.
-    # If the task 'add_numbers' expects {"a": 1, "b": 2}, return that.
-    # If it's for a generic task, an empty dict might be okay for initial testing IF tasks handle it.
-    return {"message": "This is a dummy input from runner_entrypoint._fetch_task_inputs"}
-    # --- End Dummy implementation ---
+    
+    try:
+        # GraphQL query to get task instance inputs
+        query = """
+            query GetTaskInstance($id: ID!) {
+                getTaskInstance(id: $id) {
+                    id
+                    inputs
+                    taskDefinitionName
+                    status
+                }
+            }
+        """
+        
+        # Execute the query
+        variables = {"id": task_instance_id}
+        result = api_client.execute(query, variable_values=variables)
+        
+        # Check for errors
+        if "errors" in result:
+            error_msg = f"GraphQL errors: {result['errors']}"
+            runner_logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        # Extract task instance data
+        task_instance = result.get("data", {}).get("getTaskInstance")
+        if not task_instance:
+            raise RuntimeError(f"Task instance {task_instance_id} not found")
+        
+        # Extract and parse inputs
+        inputs_base64 = task_instance.get("inputs")
+        if not inputs_base64:
+            runner_logger.info("No inputs provided for task instance")
+            return {}
+        
+        # Decode Base64JSON inputs
+        import base64
+        import json
+        inputs_json = base64.b64decode(inputs_base64).decode('utf-8')
+        inputs_data = json.loads(inputs_json)
+        
+        runner_logger.info(f"Successfully fetched inputs for task instance {task_instance_id}")
+        return inputs_data
+        
+    except Exception as e:
+        runner_logger.error(f"Failed to fetch task inputs: {e}")
+        raise RuntimeError(f"Failed to fetch inputs for task instance {task_instance_id}: {e}")
 
 
 # Placeholder for reporting outcome via API
 def _report_task_outcome(api_client: Any, task_instance_id: str, status: str, result: Optional[Any] = None, error: Optional[Dict[str, Any]] = None) -> None:
     """Reports the final task outcome using the API client."""
     runner_logger.info(f"Reporting outcome for task instance {task_instance_id} via API: Status - {status}")
-    # Placeholder: Construct and execute GraphQL mutation
-    # mutation = """ ... ReportTaskOutcomeInput ... """
-    # variables = { ... }
-    # api_client.execute(mutation, variable_values=variables) # Conceptual
-    # runner_logger.info(f"Successfully reported outcome for task instance {task_instance_id}.")
-
-    # --- Dummy implementation for now ---
-    runner_logger.warning(
-        f"DUMMY: _report_task_outcome called for {task_instance_id}. Status: {status}. "
-        f"Result: {result if result else 'N/A'}. Error: {error if error else 'N/A'}."
-    )
-    # --- End Dummy implementation ---
+    
+    try:
+        # Prepare the mutation input
+        mutation = """
+            mutation ReportTaskOutcome($input: ReportTaskOutcomeInput!) {
+                reportTaskOutcome(input: $input) {
+                    id
+                    status
+                    completedAt
+                }
+            }
+        """
+        
+        # Prepare the input
+        import base64
+        import json
+        
+        mutation_input = {
+            "taskInstanceId": task_instance_id,
+            "status": status.upper()  # Ensure status is uppercase (PENDING, COMPLETED, FAILED, etc.)
+        }
+        
+        # Add result if provided
+        if result is not None:
+            result_json = json.dumps(result)
+            result_base64 = base64.b64encode(result_json.encode('utf-8')).decode('utf-8')
+            mutation_input["result"] = result_base64
+        
+        # Add error if provided
+        if error is not None:
+            mutation_input["error"] = {
+                "errorType": error.get("error_type", "UnknownError"),
+                "message": error.get("message", "An unknown error occurred"),
+                "traceback": error.get("traceback")
+            }
+        
+        # Execute the mutation
+        variables = {"input": mutation_input}
+        result = api_client.execute(mutation, variable_values=variables)
+        
+        # Check for errors
+        if "errors" in result:
+            error_msg = f"GraphQL errors: {result['errors']}"
+            runner_logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        # Log success
+        reported_task = result.get("data", {}).get("reportTaskOutcome")
+        if reported_task:
+            runner_logger.info(f"Successfully reported outcome for task instance {task_instance_id}. Final status: {reported_task.get('status')}")
+        else:
+            runner_logger.warning(f"Reported outcome but received unexpected response for task instance {task_instance_id}")
+            
+    except Exception as e:
+        runner_logger.error(f"Failed to report task outcome: {e}")
+        raise RuntimeError(f"Failed to report outcome for task instance {task_instance_id}: {e}")
 
 
 def main():
