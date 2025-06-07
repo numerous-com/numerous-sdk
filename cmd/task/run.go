@@ -1516,62 +1516,100 @@ func streamLogsOnFailure(taskID string, logTopicID *string, apiURL string, acces
 
 // fetchContainerLogsDirectly attempts to fetch container logs using docker command
 func fetchContainerLogsDirectly(taskID string) error {
-	// Get the most recent workload containers (sorted by creation time, newest first)
-	cmd := exec.Command("docker", "ps", "-a", "--filter", "name=workload", "--format", "{{.Names}}\t{{.Status}}\t{{.CreatedAt}}", "--no-trunc")
+	var containerName string
+	var err error
 
+	if taskID != "" {
+		// Try to find the specific container for this task ID
+		containerName, err = findContainerByTaskID(taskID)
+		if err != nil && verbose {
+			fmt.Printf("⚠️  Could not find container by task ID: %v, falling back to recent container search\n", err)
+		}
+	}
+
+	// If we couldn't find a specific container by task ID, fall back to recent container search
+	if containerName == "" {
+		containerName, err = findMostRecentWorkloadContainer()
+		if err != nil {
+			return fmt.Errorf("failed to find container: %w", err)
+		}
+	}
+
+	if verbose {
+		fmt.Printf("📋 Fetching logs from container: %s\n", containerName)
+	}
+
+	// Get container logs
+	logsCmd := exec.Command("docker", "logs", containerName)
+	logsOutput, err := logsCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to get logs from %s: %w", containerName, err)
+	}
+
+	if len(logsOutput) > 0 {
+		fmt.Printf("🔍 Container logs from %s:\n", containerName)
+		fmt.Printf("---\n")
+		fmt.Printf("%s", string(logsOutput))
+		fmt.Printf("---\n")
+	} else {
+		fmt.Printf("📋 Container %s has no logs\n", containerName)
+	}
+
+	return nil
+}
+
+// findContainerByTaskID attempts to find the specific container for a given task ID
+func findContainerByTaskID(taskID string) (string, error) {
+	// Try different approaches to find the container by task ID
+
+	// Approach 1: Look for container with task ID in the name
+	cmd := exec.Command("docker", "ps", "-a", "--filter", fmt.Sprintf("name=%s", taskID), "--format", "{{.Names}}")
+	if output, err := cmd.Output(); err == nil {
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		if len(lines) > 0 && lines[0] != "" {
+			return lines[0], nil
+		}
+	}
+
+	// Approach 2: Look for containers with task execution labels
+	cmd = exec.Command("docker", "ps", "-a", "--filter", "label=workload-type=task-execution", "--format", "{{.Names}}\t{{.CreatedAt}}")
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to list containers: %w", err)
+		return "", fmt.Errorf("failed to list task containers: %w", err)
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	if len(lines) == 0 || lines[0] == "" {
-		return fmt.Errorf("no workload containers found")
+		return "", fmt.Errorf("no task execution containers found")
 	}
 
-	// Try the most recent few containers to find one with logs
-	maxContainersToCheck := 3
-	if len(lines) < maxContainersToCheck {
-		maxContainersToCheck = len(lines)
+	// Return the most recent task container (they should be sorted by creation time)
+	parts := strings.Fields(lines[0])
+	if len(parts) > 0 {
+		return parts[0], nil
 	}
 
-	for i := 0; i < maxContainersToCheck; i++ {
-		parts := strings.Fields(lines[i])
-		if len(parts) == 0 {
-			continue
-		}
+	return "", fmt.Errorf("no suitable task container found")
+}
 
-		containerName := parts[0]
-		status := "unknown"
-		if len(parts) > 1 {
-			status = parts[1]
-		}
-
-		if verbose {
-			fmt.Printf("📋 Checking container: %s (status: %s)\n", containerName, status)
-		}
-
-		// Get container logs
-		logsCmd := exec.Command("docker", "logs", containerName)
-		logsOutput, err := logsCmd.CombinedOutput()
-		if err != nil {
-			if verbose {
-				fmt.Printf("⚠️  Failed to get logs from %s: %v\n", containerName, err)
-			}
-			continue
-		}
-
-		if len(logsOutput) > 0 {
-			fmt.Printf("🔍 Container logs from %s:\n", containerName)
-			fmt.Printf("---\n")
-			fmt.Printf("%s", string(logsOutput))
-			fmt.Printf("---\n")
-			return nil // Found logs, return success
-		} else if verbose {
-			fmt.Printf("📋 Container %s has no logs\n", containerName)
-		}
+// findMostRecentWorkloadContainer finds the most recent workload container as fallback
+func findMostRecentWorkloadContainer() (string, error) {
+	cmd := exec.Command("docker", "ps", "-a", "--filter", "name=workload", "--format", "{{.Names}}\t{{.CreatedAt}}", "--no-trunc")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to list containers: %w", err)
 	}
 
-	fmt.Printf("📋 No container logs found in %d recent containers\n", maxContainersToCheck)
-	return nil
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) == 0 || lines[0] == "" {
+		return "", fmt.Errorf("no workload containers found")
+	}
+
+	// Return the first (most recent) container
+	parts := strings.Fields(lines[0])
+	if len(parts) > 0 {
+		return parts[0], nil
+	}
+
+	return "", fmt.Errorf("no suitable workload container found")
 }
