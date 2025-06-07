@@ -826,6 +826,17 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 	if len(response.Errors) > 0 {
 		result.Status = "failed"
 		result.Error = response.Errors[0].Message
+
+		// Always try to get container logs for GraphQL errors related to task execution
+		if strings.Contains(response.Errors[0].Message, "task execution failed") {
+			fmt.Printf("❌ Task execution failed via GraphQL. Fetching container logs for debugging...\n")
+			if err := fetchContainerLogsDirectly(""); err != nil {
+				if verbose {
+					fmt.Printf("⚠️  Failed to fetch container logs: %v\n", err)
+				}
+			}
+		}
+
 		return result, fmt.Errorf("GraphQL error: %s", response.Errors[0].Message)
 	}
 
@@ -834,6 +845,25 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 	if startTaskData.Error != nil {
 		result.Status = "failed"
 		result.Error = *startTaskData.Error
+
+		// Always try to get detailed logs when task fails
+		fmt.Printf("❌ Task execution failed. Fetching logs for debugging...\n")
+
+		// Try subscription-based logs first
+		if err := streamLogsOnFailure(startTaskData.ID, startTaskData.LogTopicId, apiURL, accessToken); err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to fetch logs via subscription: %v\n", err)
+			}
+		}
+
+		// Always try direct container logs as a fallback
+		fmt.Printf("📋 Fetching recent container logs...\n")
+		if err := fetchContainerLogsDirectly(startTaskData.ID); err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to fetch container logs: %v\n", err)
+			}
+		}
+
 		return result, fmt.Errorf("task execution failed: %s", *startTaskData.Error)
 	}
 
@@ -844,6 +874,14 @@ func executeRemoteTask(taskName string, taskArgs []string, orgSlug, collectionNa
 			result.ExitCode = 0
 		} else {
 			result.ExitCode = 1
+
+			// For failed tasks, always try to get container logs for debugging
+			fmt.Printf("❌ Task completed with failed status. Fetching container logs for debugging...\n")
+			if err := fetchContainerLogsDirectly(startTaskData.ID); err != nil {
+				if verbose {
+					fmt.Printf("⚠️  Failed to fetch container logs: %v\n", err)
+				}
+			}
 		}
 
 		// Set timing information from numeric timestamps
@@ -1293,4 +1331,247 @@ func getFieldNames(data map[string]interface{}) []string {
 		fieldNames = append(fieldNames, key)
 	}
 	return fieldNames
+}
+
+// streamLogsOnFailure attempts to collect and display logs for failed tasks
+func streamLogsOnFailure(taskID string, logTopicID *string, apiURL string, accessToken *string) error {
+	// Determine which ID to use for subscription
+	subscriptionTopicId := taskID // Default to task ID
+	if logTopicID != nil && *logTopicID != "" {
+		subscriptionTopicId = *logTopicID // Use log topic ID if available
+	}
+
+	// Create WebSocket URL for subscriptions
+	wsURL := strings.Replace(apiURL, "http://", "ws://", 1)
+	wsURL = strings.Replace(wsURL, "https://", "wss://", 1)
+
+	// Prepare headers
+	headers := map[string]interface{}{}
+	if accessToken != nil {
+		headers["Authorization"] = "Bearer " + *accessToken
+	}
+
+	// Create subscription client
+	subscriptionClient := graphql.NewSubscriptionClient(wsURL).
+		WithConnectionParams(headers).
+		WithSyncMode(true)
+
+	defer subscriptionClient.Close()
+
+	// Define the subscription query
+	subscriptionQuery := `
+		subscription TaskExecutionLogs($taskExecutionId: ID!) {
+			taskExecutionLogs(input: {taskExecutionId: $taskExecutionId}) {
+				... on TaskLogEntry {
+					timestamp
+					message
+					level
+				}
+				... on TaskStatusEvent {
+					timestamp
+					status
+					statusMessage
+				}
+				... on TaskProgressEvent {
+					timestamp
+					progress
+				}
+				... on TaskResultEvent {
+					timestamp
+					executionResult {
+						id
+						status
+						result
+						error
+						created_at
+						started_at
+						completed_at
+						progress
+						status_message
+					}
+				}
+			}
+		}
+	`
+
+	variables := map[string]interface{}{
+		"taskExecutionId": subscriptionTopicId,
+	}
+
+	// Keep track of whether we've seen any logs
+	logsSeen := false
+
+	// Handler for subscription messages
+	handler := func(message []byte, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Try to parse directly as taskExecutionLogs
+		var directResponse struct {
+			TaskExecutionLogs json.RawMessage `json:"taskExecutionLogs"`
+		}
+
+		if err := json.Unmarshal(message, &directResponse); err != nil {
+			return err
+		}
+
+		// Check if we have taskExecutionLogs data
+		if len(directResponse.TaskExecutionLogs) == 0 {
+			return nil
+		}
+
+		// Try to determine the event type and handle accordingly
+		var eventData map[string]interface{}
+		if err := json.Unmarshal(directResponse.TaskExecutionLogs, &eventData); err != nil {
+			return nil // Skip malformed events
+		}
+
+		// Skip if eventData is empty
+		if len(eventData) == 0 {
+			return nil
+		}
+
+		// Handle different event types based on available fields
+		if timestamp, hasTimestamp := eventData["timestamp"]; hasTimestamp {
+			if message, hasMessage := eventData["message"]; hasMessage {
+				// This is a TaskLogEntry
+				level := "INFO"
+				if l, hasLevel := eventData["level"]; hasLevel {
+					level = fmt.Sprintf("%v", l)
+				}
+				fmt.Printf("📋 [%s] %s: %v\n", level, timestamp, message)
+				logsSeen = true
+			} else if status, hasStatus := eventData["status"]; hasStatus {
+				// This is a TaskStatusEvent
+				statusMsg := ""
+				if sm, hasStatusMsg := eventData["statusMessage"]; hasStatusMsg && sm != nil {
+					statusMsg = fmt.Sprintf(" - %v", sm)
+				}
+				fmt.Printf("📊 Status: %v%s\n", status, statusMsg)
+				logsSeen = true
+
+				// Stop when we see a terminal status
+				statusStr := fmt.Sprintf("%v", status)
+				if statusStr == "COMPLETED" || statusStr == "FAILED" {
+					return fmt.Errorf("task_completed:%s", statusStr)
+				}
+			} else if executionResult, hasResult := eventData["executionResult"]; hasResult && executionResult != nil {
+				// This is a TaskResultEvent
+				fmt.Printf("🎯 Task completed with result\n")
+				if result, ok := executionResult.(map[string]interface{}); ok {
+					if status, hasStatus := result["status"]; hasStatus {
+						fmt.Printf("📊 Final Status: %v\n", status)
+					}
+					if taskError, hasError := result["error"]; hasError && taskError != nil {
+						fmt.Printf("❌ Error: %v\n", taskError)
+					}
+				}
+				logsSeen = true
+				return fmt.Errorf("task_result_received")
+			}
+		}
+
+		return nil
+	}
+
+	// Subscribe using raw GraphQL operation
+	_, err := subscriptionClient.SubscribeRaw(subscriptionQuery, variables, handler)
+	if err != nil {
+		return err
+	}
+
+	// Run the subscription client with a timeout for log collection
+	done := make(chan error, 1)
+	go func() {
+		done <- subscriptionClient.Run()
+	}()
+
+	// Wait for completion or timeout (10 seconds should be enough to collect recent logs)
+	select {
+	case err := <-done:
+		// Subscription completed
+		if err != nil && !strings.Contains(err.Error(), "task_completed") && !strings.Contains(err.Error(), "task_result_received") {
+			return err
+		}
+	case <-time.After(10 * time.Second):
+		// Timeout - that's ok, we've collected what we can
+		if verbose {
+			fmt.Printf("⏱️  Log collection timeout reached\n")
+		}
+	}
+
+	if !logsSeen {
+		fmt.Printf("📋 No logs available via subscription. Attempting to fetch container logs directly...\n")
+		if err := fetchContainerLogsDirectly(taskID); err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to fetch container logs: %v\n", err)
+			}
+			fmt.Printf("📋 No detailed logs available. Task may have failed during startup.\n")
+		}
+	}
+
+	return nil
+}
+
+// fetchContainerLogsDirectly attempts to fetch container logs using docker command
+func fetchContainerLogsDirectly(taskID string) error {
+	// Get the most recent workload containers (sorted by creation time, newest first)
+	cmd := exec.Command("docker", "ps", "-a", "--filter", "name=workload", "--format", "{{.Names}}\t{{.Status}}\t{{.CreatedAt}}", "--no-trunc")
+
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to list containers: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) == 0 || lines[0] == "" {
+		return fmt.Errorf("no workload containers found")
+	}
+
+	// Try the most recent few containers to find one with logs
+	maxContainersToCheck := 3
+	if len(lines) < maxContainersToCheck {
+		maxContainersToCheck = len(lines)
+	}
+
+	for i := 0; i < maxContainersToCheck; i++ {
+		parts := strings.Fields(lines[i])
+		if len(parts) == 0 {
+			continue
+		}
+
+		containerName := parts[0]
+		status := "unknown"
+		if len(parts) > 1 {
+			status = parts[1]
+		}
+
+		if verbose {
+			fmt.Printf("📋 Checking container: %s (status: %s)\n", containerName, status)
+		}
+
+		// Get container logs
+		logsCmd := exec.Command("docker", "logs", containerName)
+		logsOutput, err := logsCmd.CombinedOutput()
+		if err != nil {
+			if verbose {
+				fmt.Printf("⚠️  Failed to get logs from %s: %v\n", containerName, err)
+			}
+			continue
+		}
+
+		if len(logsOutput) > 0 {
+			fmt.Printf("🔍 Container logs from %s:\n", containerName)
+			fmt.Printf("---\n")
+			fmt.Printf("%s", string(logsOutput))
+			fmt.Printf("---\n")
+			return nil // Found logs, return success
+		} else if verbose {
+			fmt.Printf("📋 Container %s has no logs\n", containerName)
+		}
+	}
+
+	fmt.Printf("📋 No container logs found in %d recent containers\n", maxContainersToCheck)
+	return nil
 }

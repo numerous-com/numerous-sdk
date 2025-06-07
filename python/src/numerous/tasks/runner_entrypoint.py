@@ -13,7 +13,7 @@ from typing import Dict, Any, Optional
 from .control import set_task_control_handler, PoCMockRemoteTaskControlHandler, LocalTaskControlHandler # Ensure LocalTaskControlHandler is imported
 from .session import Session
 from .exceptions import TaskError # Import base TaskError
-from ..organization import get_client # Added for API client
+from ..organization import _get_client as get_client # Added for API client
 # Assuming organization is one level up. If numerous.tasks is top-level for runner, it might be: from numerous.organization import get_client
 
 # Setup basic logging for the runner itself
