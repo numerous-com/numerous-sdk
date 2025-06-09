@@ -13,7 +13,7 @@ from typing import Dict, Any, Optional
 from .control import set_task_control_handler, PoCMockRemoteTaskControlHandler, LocalTaskControlHandler # Ensure LocalTaskControlHandler is imported
 from .session import Session
 from .exceptions import TaskError # Import base TaskError
-from ..organization import _get_client as get_client # Added for API client
+from ..collections._get_client import get_client
 # Assuming organization is one level up. If numerous.tasks is top-level for runner, it might be: from numerous.organization import get_client
 
 # Setup basic logging for the runner itself
@@ -95,18 +95,25 @@ def _fetch_task_inputs(api_client: Any, task_instance_id: str) -> Dict[str, Any]
             }
         """
         
-        # Execute the query
+        # Execute the query using the underlying async client
         variables = {"id": task_instance_id}
-        result = api_client.execute(query, variable_values=variables)
         
-        # Check for errors
-        if "errors" in result:
-            error_msg = f"GraphQL errors: {result['errors']}"
-            runner_logger.error(error_msg)
-            raise RuntimeError(error_msg)
+        # Access the underlying async GraphQL client and use the threaded event loop
+        import asyncio
+        async def execute_query():
+            response = await api_client._gql.execute(
+                query=query,
+                operation_name="GetTaskInstance",
+                variables=variables,
+                headers=api_client._headers
+            )
+            return api_client._gql.get_data(response)
+        
+        # Use the client's event loop to execute the async query
+        result = api_client._loop.await_coro(execute_query())
         
         # Extract task instance data
-        task_instance = result.get("data", {}).get("getTaskInstance")
+        task_instance = result.get("getTaskInstance")
         if not task_instance:
             raise RuntimeError(f"Task instance {task_instance_id} not found")
         
@@ -170,18 +177,24 @@ def _report_task_outcome(api_client: Any, task_instance_id: str, status: str, re
                 "traceback": error.get("traceback")
             }
         
-        # Execute the mutation
+        # Execute the mutation using the underlying async client
         variables = {"input": mutation_input}
-        result = api_client.execute(mutation, variable_values=variables)
         
-        # Check for errors
-        if "errors" in result:
-            error_msg = f"GraphQL errors: {result['errors']}"
-            runner_logger.error(error_msg)
-            raise RuntimeError(error_msg)
+        # Access the underlying async GraphQL client and use the threaded event loop
+        async def execute_mutation():
+            response = await api_client._gql.execute(
+                query=mutation,
+                operation_name="ReportTaskOutcome",
+                variables=variables,
+                headers=api_client._headers
+            )
+            return api_client._gql.get_data(response)
+        
+        # Use the client's event loop to execute the async mutation
+        result = api_client._loop.await_coro(execute_mutation())
         
         # Log success
-        reported_task = result.get("data", {}).get("reportTaskOutcome")
+        reported_task = result.get("reportTaskOutcome")
         if reported_task:
             runner_logger.info(f"Successfully reported outcome for task instance {task_instance_id}. Final status: {reported_task.get('status')}")
         else:
