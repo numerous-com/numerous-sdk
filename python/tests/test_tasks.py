@@ -314,6 +314,293 @@ class TestTaskControl:
         tc.log("debug message", level="debug", extra_field="extra_value")
 
 
+class TestTaskControlAdvanced:
+    """Test advanced TaskControl functionality and integration."""
+    
+    def test_task_control_with_mock_handler(self):
+        """Test TaskControl with mocked handler to verify method calls."""
+        mock_handler = Mock()
+        set_task_control_handler(mock_handler)
+        
+        try:
+            tc = TaskControl(instance_id="test_id", task_definition_name="test_task")
+            
+            # Test logging
+            tc.log("test message", level="info", extra="data")
+            mock_handler.log.assert_called_with(tc, "test message", "info", extra="data")
+            
+            # Test progress update
+            tc.update_progress(75.0, "progress status")
+            mock_handler.update_progress.assert_called_with(tc, 75.0, "progress status")
+            
+            # Test status update
+            tc.update_status("new status")
+            mock_handler.update_status.assert_called_with(tc, "new status")
+            
+            # Test stop request
+            tc.request_stop()
+            # Note: request_stop might not call handler, just check the internal state
+            assert tc.should_stop
+            
+        finally:
+            # Reset to default handler
+            set_task_control_handler(None)
+    
+    def test_task_control_progress_validation(self):
+        """Test TaskControl progress value validation and edge cases."""
+        tc = TaskControl(instance_id="test_id", task_definition_name="test_task")
+        
+        # Test valid progress values
+        tc.update_progress(0.0)
+        assert tc.progress == 0.0
+        
+        tc.update_progress(50.5)
+        assert tc.progress == 50.5
+        
+        tc.update_progress(100.0)
+        assert tc.progress == 100.0
+        
+        # Test progress without status
+        tc.update_progress(25.0)
+        assert tc.progress == 25.0
+        # Status should remain unchanged from previous call
+        assert tc.status == ""
+    
+    def test_task_control_in_actual_task_execution(self):
+        """Test TaskControl integration with actual task execution."""
+        control_calls = []
+        
+        @task
+        def task_with_comprehensive_control(tc: TaskControl, steps: int):
+            control_calls.append(("start", tc.instance_id))
+            
+            for i in range(steps):
+                if tc.should_stop:
+                    control_calls.append(("stopped", i))
+                    return f"stopped_at_step_{i}"
+                
+                progress = (i + 1) / steps * 100
+                tc.update_progress(progress, f"Step {i+1} of {steps}")
+                tc.log(f"Completed step {i+1}", level="debug")
+                control_calls.append(("step", i+1, progress))
+                
+                if i == steps // 2:
+                    tc.update_status("halfway_complete")
+                    control_calls.append(("halfway", tc.status))
+            
+            tc.update_status("completed")
+            control_calls.append(("finished", tc.status))
+            return f"completed_{steps}_steps"
+        
+        with Session() as session:
+            result = task_with_comprehensive_control(5)
+            assert result == "completed_5_steps"
+            
+            # Verify all control calls were made
+            start_calls = [call for call in control_calls if call[0] == "start"]
+            assert len(start_calls) == 1
+            assert ("halfway", "halfway_complete") in control_calls
+            assert ("finished", "completed") in control_calls
+            assert len([call for call in control_calls if call[0] == "step"]) == 5
+    
+    def test_task_control_stop_behavior_in_running_task(self):
+        """Test TaskControl stop behavior in a running task."""
+        stop_check_count = 0
+        
+        @task  
+        def stoppable_task(tc: TaskControl, max_iterations: int):
+            nonlocal stop_check_count
+            for i in range(max_iterations):
+                stop_check_count += 1
+                if tc.should_stop:
+                    tc.log(f"Task stopped at iteration {i}", level="info")
+                    return f"stopped_at_{i}"
+                
+                tc.update_progress(i / max_iterations * 100)
+                time.sleep(0.01)  # Small delay to allow stop signal
+            
+            return f"completed_{max_iterations}"
+        
+        with Session() as session:
+            instance = stoppable_task.instance()
+            future = instance.start(100)
+            
+            # Let it run for a bit
+            time.sleep(0.05)
+            
+            # Request stop
+            instance.stop()
+            
+            result = future.result()
+            assert result.startswith("stopped_at_")
+            assert stop_check_count > 0  # Verify stop was checked
+    
+    def test_task_control_multiple_status_updates(self):
+        """Test multiple status updates in sequence."""
+        @task
+        def multi_status_task(tc: TaskControl):
+            statuses = ["initializing", "processing", "validating", "finalizing", "complete"]
+            
+            for i, status in enumerate(statuses):
+                tc.update_status(status)
+                tc.update_progress((i + 1) / len(statuses) * 100)
+                time.sleep(0.01)
+            
+            return tc.status
+        
+        with Session() as session:
+            result = multi_status_task()
+            assert result == "complete"
+    
+    def test_task_control_logging_with_different_levels(self):
+        """Test TaskControl logging with different log levels and extra data."""
+        logged_messages = []
+        
+        # Mock handler to capture log calls
+        class TestHandler(LocalTaskControlHandler):
+            def log(self, task_control, message, level, **kwargs):
+                logged_messages.append((message, level, kwargs))
+        
+        test_handler = TestHandler()
+        set_task_control_handler(test_handler)
+        
+        try:
+            @task
+            def logging_task(tc: TaskControl):
+                tc.log("Debug message", level="debug", component="data_loader")
+                tc.log("Info message", level="info", user_id=123)
+                tc.log("Warning message", level="warning", retry_count=3)
+                tc.log("Error message", level="error", error_code="E001")
+                return "logged"
+            
+            with Session() as session:
+                result = logging_task()
+                assert result == "logged"
+                
+                # Verify all log messages were captured
+                assert len(logged_messages) == 4
+                
+                debug_msg = next(msg for msg in logged_messages if msg[1] == "debug")
+                assert debug_msg[0] == "Debug message"
+                assert debug_msg[2]["component"] == "data_loader"
+                
+                info_msg = next(msg for msg in logged_messages if msg[1] == "info")
+                assert info_msg[0] == "Info message"
+                assert info_msg[2]["user_id"] == 123
+                
+                warning_msg = next(msg for msg in logged_messages if msg[1] == "warning")
+                assert warning_msg[0] == "Warning message"
+                assert warning_msg[2]["retry_count"] == 3
+                
+                error_msg = next(msg for msg in logged_messages if msg[1] == "error")
+                assert error_msg[0] == "Error message"
+                assert error_msg[2]["error_code"] == "E001"
+        
+        finally:
+            set_task_control_handler(None)
+    
+    def test_task_control_state_persistence(self):
+        """Test that TaskControl state persists throughout task execution."""
+        state_snapshots = []
+        
+        @task
+        def state_tracking_task(tc: TaskControl):
+            # Initial state
+            state_snapshots.append({
+                'progress': tc.progress,
+                'status': tc.status,
+                'should_stop': tc.should_stop
+            })
+            
+            # Update progress
+            tc.update_progress(30.0, "processing")
+            state_snapshots.append({
+                'progress': tc.progress,
+                'status': tc.status,
+                'should_stop': tc.should_stop
+            })
+            
+            # Update status only
+            tc.update_status("validating")
+            state_snapshots.append({
+                'progress': tc.progress,
+                'status': tc.status,
+                'should_stop': tc.should_stop
+            })
+            
+            # Update progress without status
+            tc.update_progress(80.0)
+            state_snapshots.append({
+                'progress': tc.progress,
+                'status': tc.status,
+                'should_stop': tc.should_stop
+            })
+            
+            return "state_tracked"
+        
+        with Session() as session:
+            result = state_tracking_task()
+            assert result == "state_tracked"
+            
+            # Verify state progression
+            assert len(state_snapshots) == 4
+            
+            # Initial state
+            assert state_snapshots[0]['progress'] == 0.0
+            assert state_snapshots[0]['status'] == ""
+            assert not state_snapshots[0]['should_stop']
+            
+            # After first update
+            assert state_snapshots[1]['progress'] == 30.0
+            assert state_snapshots[1]['status'] == "processing"
+            
+            # After status-only update
+            assert state_snapshots[2]['progress'] == 30.0  # Should remain unchanged
+            assert state_snapshots[2]['status'] == "validating"
+            
+            # After progress-only update
+            assert state_snapshots[3]['progress'] == 80.0
+            assert state_snapshots[3]['status'] == "validating"  # Should remain unchanged
+    
+    def test_task_control_error_handling_in_updates(self):
+        """Test TaskControl behavior when handler methods raise exceptions."""
+        class FailingHandler(LocalTaskControlHandler):
+            def update_progress(self, task_control, progress, status=None):
+                raise RuntimeError("Handler failed")
+            
+            def log(self, task_control, message, level, **kwargs):
+                if level == "error":
+                    raise RuntimeError("Logging failed")
+                super().log(task_control, message, level, **kwargs)
+        
+        failing_handler = FailingHandler()
+        set_task_control_handler(failing_handler)
+        
+        try:
+            @task
+            def error_prone_task(tc: TaskControl):
+                # This should handle the handler exception gracefully
+                try:
+                    tc.update_progress(50.0, "halfway")
+                except RuntimeError:
+                    pass  # Handler error, but task continues
+                
+                try:
+                    tc.log("This should work", level="info")
+                    tc.log("This should fail", level="error")
+                except RuntimeError:
+                    pass  # Handler error, but task continues
+                
+                return "completed_despite_errors"
+            
+            with Session() as session:
+                result = error_prone_task()
+                assert result == "completed_despite_errors"
+        
+        finally:
+            set_task_control_handler(None)
+
+
 class TestTaskControlHandlers:
     """Test TaskControl handlers."""
     

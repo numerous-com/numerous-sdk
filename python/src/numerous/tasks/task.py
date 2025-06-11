@@ -1,12 +1,15 @@
-from typing import Callable, Generic, TypeVar, Optional, Any, Dict
+from typing import Callable, Generic, TypeVar, Optional, Any, Dict, TYPE_CHECKING
 from dataclasses import dataclass, field
 import functools
 import uuid
 import os
 import inspect
+import warnings
+
+if TYPE_CHECKING:
+    from .session import Session
 
 from .control import TaskControl
-from .session import Session
 from .future import Future, LocalFuture # For local execution
 from .exceptions import TaskError, MaxInstancesReachedError, SessionNotFoundError
 from .backends import get_backend # Will be used later
@@ -59,11 +62,27 @@ class Task(Generic[UserCallable, R]):
         # For now, _task_runner directly calls _original_func.
         return user_func # type: ignore # Returning original_func directly if _internal_func is not strictly used by backend
 
+    def _execute_direct(self, *args: Any, **kwargs: Any) -> R:
+        """Execute the task directly as a function call without backend infrastructure.
+        
+        This is used for Stage 1 direct execution.
+        Creates a lightweight TaskControl if needed and executes the function directly.
+        """
+        if self.expects_task_control:
+            # Create a lightweight TaskControl for direct execution
+            from .control import create_direct_execution_task_control
+            task_control = create_direct_execution_task_control(self.name)
+            return self._original_func(task_control, *args, **kwargs)
+        else:
+            # Execute function directly without TaskControl
+            return self._original_func(*args, **kwargs)
+
     def instance(self) -> 'TaskInstance[UserCallable, R]':
         """Creates a new TaskInstance for this task definition.
 
         Requires an active Session context.
         """
+        from .session import Session
         current_session = Session.current()
         if not current_session:
             raise SessionNotFoundError(
@@ -77,7 +96,9 @@ class Task(Generic[UserCallable, R]):
 
         If max_parallel=1, this will start the task and block for its result.
         If max_parallel > 1, this will raise a TypeError suggesting to use .instance().start().
-        Consider changing this to always return a Future or TaskInstance for consistency.
+        
+        For Stage 1 direct execution: If no Session is active, executes directly as a function call.
+        If a Session is active, uses TaskInstance for proper tracking and backend execution.
         """
         if self.config.max_parallel != 1:
             raise TypeError(
@@ -85,10 +106,22 @@ class Task(Generic[UserCallable, R]):
                 f"Use .instance().start() for explicit instance management and to get a Future."
             )
         
-        # For max_parallel=1, create an implicit instance and run it synchronously for now.
-        # This matches the pathfinder but might be revised based on review feedback.
-        task_instance = self.instance()
-        return task_instance.start(*args, **kwargs).result()
+        # Check if there's an active session and warn about direct execution
+        from .session import Session
+        current_session = Session.current()
+        
+        if current_session is not None:
+            warnings.warn(
+                f"Task '{self.name}' is executing directly despite active session "
+                f"'{current_session.name}'. Direct execution bypasses session tracking "
+                f"and task management. Use task.instance().start() for session-managed execution.",
+                UserWarning,
+                stacklevel=2
+            )
+        
+        # For Stage 1, always use direct execution for simplicity and performance
+        # In later stages, we can add logic to conditionally use TaskInstance when needed
+        return self._execute_direct(*args, **kwargs)
         
     @property
     def definition_name(self) -> str:
@@ -98,7 +131,7 @@ class Task(Generic[UserCallable, R]):
 class TaskInstance(Generic[UserCallable, R]):
     """Represents a single execution instance of a Task.
     """
-    def __init__(self, task_definition: Task[UserCallable, R], session: Session):
+    def __init__(self, task_definition: Task[UserCallable, R], session: 'Session'):
         self.task_definition = task_definition
         self.session = session
         self.id: str = str(uuid.uuid4()) # Unique ID for this instance

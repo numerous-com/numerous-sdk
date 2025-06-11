@@ -141,4 +141,25 @@ class TaskControl:
     def log(self, message: str, level: str = "info", **extra_data: Any) -> None:
         self._handler.log(self, message, level, **extra_data)
 
-    # TODO: Consider removing the general TODO for structured logging as this method serves that purpose. 
+    # TODO: Consider removing the general TODO for structured logging as this method serves that purpose.
+
+
+def create_direct_execution_task_control(task_definition_name: str) -> TaskControl:
+    """Create a TaskControl instance optimized for Stage 1 direct execution.
+    
+    Creates a TaskControl with a simple instance ID for direct function calls.
+    
+    Args:
+        task_definition_name: Name of the task definition
+        
+    Returns:
+        TaskControl instance for direct execution
+    """
+    # Use a simple counter-based ID for direct execution instead of UUID
+    import time
+    instance_id = f"direct_{int(time.time() * 1000000) % 1000000:06d}"
+    
+    return TaskControl(
+        instance_id=instance_id,
+        task_definition_name=task_definition_name
+    ) 

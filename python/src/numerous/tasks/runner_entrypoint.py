@@ -288,8 +288,7 @@ def main():
 
         if task_object.expects_task_control and use_mock_remote_handler_env:
             runner_logger.info("Task expects TaskControl and mock remote logging is ON. Using PoCMockRemoteTaskControlHandler.")
-            # PoCMockRemoteTaskControlHandler might also need api_client and task_instance_id for its own reporting in a real scenario
-            set_task_control_handler(PoCMockRemoteTaskControlHandler(api_client=api_client, task_instance_id=task_instance_id))
+            set_task_control_handler(PoCMockRemoteTaskControlHandler())
         else:
             log_msg_handler = "Using default LocalTaskControlHandler because "
             if task_object.expects_task_control and not use_mock_remote_handler_env:
