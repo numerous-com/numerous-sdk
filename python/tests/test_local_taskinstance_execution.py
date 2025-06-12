@@ -470,6 +470,177 @@ class TestFutureObjects:
             total_sequential_time = 0.1 + 0.05 + 0.15  # 0.3 seconds
             actual_time = end_time - start_time
             assert actual_time < total_sequential_time + 0.5  # Allow 0.5s overhead for parallel execution
+    
+    def test_realtime_progress_propagation_during_async_execution(self):
+        """Test that progress updates and logs are properly propagated during async execution."""
+        progress_log = []
+        
+        # Capture logs by temporarily replacing the handler
+        from numerous.tasks.control import get_task_control_handler, set_task_control_handler, LocalTaskControlHandler
+        
+        class LogCapturingHandler(LocalTaskControlHandler):
+            def __init__(self):
+                super().__init__()
+                self.captured_logs = []
+            
+            def log(self, task_control, message, level, **extra_data):
+                self.captured_logs.append({
+                    'task_id': task_control.task_definition_name,
+                    'instance_id': task_control.instance_id,
+                    'message': message,
+                    'level': level,
+                    'extra_data': extra_data
+                })
+                # Still call parent to maintain normal logging
+                super().log(task_control, message, level, **extra_data)
+        
+        log_handler = LogCapturingHandler()
+        original_handler = get_task_control_handler()
+        set_task_control_handler(log_handler)
+        
+        try:
+            @task(max_parallel=3)
+            def monitored_async_task(tc: TaskControl, task_id: str, steps: int) -> str:
+                tc.log(f"Starting {task_id} with {steps} steps", "info")
+                for i in range(steps):
+                    progress = (i + 1) / steps * 100
+                    tc.update_progress(progress, f"{task_id}_step_{i+1}")
+                    
+                    # Log at key milestones
+                    if i == 0:
+                        tc.log(f"{task_id} first step completed", "debug")
+                    elif i == steps // 2:
+                        tc.log(f"{task_id} halfway point reached", "info")
+                    
+                    time.sleep(0.2)  # Increased sleep to ensure monitoring can capture progress
+                
+                tc.log(f"{task_id} completed successfully", "info")
+                return f"{task_id}_complete"
+        
+            with Session() as session:
+                # Start multiple tasks concurrently
+                instances = [
+                    monitored_async_task.instance(),
+                    monitored_async_task.instance(),
+                    monitored_async_task.instance()
+                ]
+                
+                futures = [
+                    instances[0].start("task_a", 4),
+                    instances[1].start("task_b", 6), 
+                    instances[2].start("task_c", 3)
+                ]
+                
+                # Give tasks a moment to start before monitoring
+                time.sleep(0.1)
+                
+                # Monitor progress while tasks are running
+                monitoring_start = time.time()
+                progress_captured_during_execution = False
+                
+                while not all(f.done for f in futures):
+                    current_time = time.time()
+                    # Stop monitoring after reasonable time to prevent infinite loop
+                    if current_time - monitoring_start > 10.0:
+                        break
+                        
+                    for i, instance in enumerate(instances):
+                        if not futures[i].done:
+                            current_progress = instance.task_control.progress
+                            current_status = instance.task_control.status
+                            
+                            progress_log.append({
+                                'task_id': f"task_{chr(97+i)}",
+                                'progress': current_progress,
+                                'status': current_status,
+                                'timestamp': current_time,
+                                'task_running': not futures[i].done
+                            })
+                            
+                            # If we captured progress > 0 while task is still running, that's what we want
+                            if current_progress > 0 and not futures[i].done:
+                                progress_captured_during_execution = True
+                    
+                    time.sleep(0.05)  # Check progress more frequently
+                
+                # Wait for completion
+                results = [f.result() for f in futures]
+                
+                # Verify all tasks completed
+                assert results == ["task_a_complete", "task_b_complete", "task_c_complete"]
+                
+                # CRITICAL: Verify we captured progress DURING execution, not just after completion
+                assert progress_captured_during_execution, \
+                    "Must capture progress updates while tasks are still running (not just after completion)"
+                
+                # Verify progress was tracked for each task
+                task_a_progress = [p for p in progress_log if p['task_id'] == 'task_a']
+                task_b_progress = [p for p in progress_log if p['task_id'] == 'task_b'] 
+                task_c_progress = [p for p in progress_log if p['task_id'] == 'task_c']
+                
+                # Verify we captured progress during execution for each task
+                task_a_during_execution = [p for p in task_a_progress if p['task_running'] and p['progress'] > 0]
+                task_b_during_execution = [p for p in task_b_progress if p['task_running'] and p['progress'] > 0]
+                task_c_during_execution = [p for p in task_c_progress if p['task_running'] and p['progress'] > 0]
+                
+                # At least one task should have progress captured during execution
+                total_during_execution = len(task_a_during_execution) + len(task_b_during_execution) + len(task_c_during_execution)
+                assert total_during_execution > 0, \
+                    f"Should capture progress during execution. Captured: a={len(task_a_during_execution)}, b={len(task_b_during_execution)}, c={len(task_c_during_execution)}"
+                
+                # Each task should have multiple progress updates
+                total_progress_updates = len(task_a_progress) + len(task_b_progress) + len(task_c_progress)
+                assert total_progress_updates > 0, "Should have captured some progress updates"
+                
+                # For tasks that had progress updates, verify progress is reasonable
+                for task_name, task_progress in [
+                    ("task_a", task_a_progress), 
+                    ("task_b", task_b_progress), 
+                    ("task_c", task_c_progress)
+                ]:
+                    if len(task_progress) > 1:
+                        # Progress should be non-decreasing
+                        for i in range(1, len(task_progress)):
+                            assert task_progress[i]['progress'] >= task_progress[i-1]['progress'], \
+                                f"{task_name} progress should be non-decreasing"
+                        
+                        # Final progress should be reasonable (may not be 100% if captured mid-execution)
+                        assert task_progress[-1]['progress'] >= 0.0
+                        assert task_progress[-1]['progress'] <= 100.0
+                        
+                        # Status should contain task_id
+                        assert task_name.split('_')[1] in task_progress[-1]['status']
+                
+                # Verify logs were captured from running tasks
+                assert len(log_handler.captured_logs) > 0, "Should have captured at least one log message"
+                
+                # Verify we got logs from each task
+                task_a_logs = [log for log in log_handler.captured_logs if 'task_a' in log['message']]
+                task_b_logs = [log for log in log_handler.captured_logs if 'task_b' in log['message']]
+                task_c_logs = [log for log in log_handler.captured_logs if 'task_c' in log['message']]
+                
+                # Each task should have at least a start and completion log
+                assert len(task_a_logs) >= 2, "task_a should have at least start and completion logs"
+                assert len(task_b_logs) >= 2, "task_b should have at least start and completion logs"
+                assert len(task_c_logs) >= 2, "task_c should have at least start and completion logs"
+                
+                # Verify log levels are captured correctly
+                info_logs = [log for log in log_handler.captured_logs if log['level'] == 'info']
+                debug_logs = [log for log in log_handler.captured_logs if log['level'] == 'debug']
+                
+                assert len(info_logs) > 0, "Should have captured info level logs"
+                assert len(debug_logs) > 0, "Should have captured debug level logs"
+                
+                # Verify log messages contain expected content
+                start_logs = [log for log in log_handler.captured_logs if 'Starting' in log['message']]
+                completion_logs = [log for log in log_handler.captured_logs if 'completed successfully' in log['message']]
+                
+                assert len(start_logs) == 3, "Should have 3 start logs (one per task)"
+                assert len(completion_logs) == 3, "Should have 3 completion logs (one per task)"
+        
+        finally:
+            # Restore original handler
+            set_task_control_handler(original_handler)
 
 
 class TestTaskStateTransitions:
