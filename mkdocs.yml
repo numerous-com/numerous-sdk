@@ -8,6 +8,7 @@ nav:
   - Platform docs: https://numerous.com/docs
   - Usage:
       - CLI Reference: cli.md
+      - Tasks: tasks.md
       - Collections: collections.md
       - Collection documents: collection_documents.md
       - Collection files: collection_files.md

@@ -22,10 +22,14 @@ from numerous.tasks.exceptions import BackendError
 from numerous.tasks.control import set_task_control_handler, get_task_control_handler
 
 # Import our mock implementations
-from tests.mocks.backend import MockExecutionBackend, MockExecutionMode, MockTaskExecution
-from tests.mocks.handler import MockTaskControlHandler, MockLogEntry, MockProgressUpdate
-from tests.mocks.session import MockSessionManager, MockSessionState
-from tests.mocks.fixtures import (
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+from mocks.backend import MockExecutionBackend, MockExecutionMode, MockTaskExecution
+from mocks.handler import MockTaskControlHandler, MockLogEntry, MockProgressUpdate
+from mocks.session import MockSessionManager, MockSessionState
+from mocks.fixtures import (
     mock_backend, mock_handler, mock_session_manager, mock_environment,
     mock_backend_immediate, mock_backend_delayed, mock_backend_manual, mock_backend_failure
 )
