@@ -169,7 +169,7 @@ class TestDirectExecutionWarnings:
             assert len(w) == 1
             # The warning should point to the line where the task was called
             # (stacklevel=2 should skip the task.__call__ frame)
-            assert w[0].filename.endswith("test_stage1_session_warning.py")
+            assert w[0].filename.endswith("test_direct_execution_warnings.py")
     
     def test_warning_can_be_suppressed(self):
         """Test that the warning can be suppressed if users choose to."""
