@@ -165,18 +165,18 @@ class TaskInstance(Generic[UserCallable, R]):
     def _task_runner(self, *args: Any, **kwargs: Any) -> R:
         """Internal method that actually executes the task's original function
         with the TaskControl object if expected.
+        
+        This method is called by the execution backend and handles TaskControl injection.
         """
         try:
             if self.task_definition.expects_task_control:
+                # Inject TaskControl as the first argument
                 return self.task_definition._original_func(self.task_control, *args, **kwargs)
             else:
-                # Bind arguments to the original function's signature to respect defaults, etc.
-                # This is important if the user function does not expect TaskControl.
-                # However, if _original_func is called directly with *args, **kwargs,
-                # Python handles the binding. The main difference is the TaskControl.
+                # Execute function directly without TaskControl injection
                 return self.task_definition._original_func(*args, **kwargs)
         except Exception as e:
-            # The future should capture this exception
+            # Let the exception propagate to be handled by the backend/future
             raise
 
     def start(self, *args: Any, **kwargs: Any) -> Future[R]:
