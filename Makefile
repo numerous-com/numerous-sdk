@@ -133,7 +133,7 @@ cli-dep:
 
 gqlgen:
 	@echo "-- Generating GraphQL code"
-	cd python && ariadne-codegen
+	cd python && ariadne-codegen client
 
 docs:
 	mkdocs build
