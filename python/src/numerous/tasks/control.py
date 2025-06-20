@@ -141,7 +141,7 @@ class TaskControl:
     def log(self, message: str, level: str = "info", **extra_data: Any) -> None:
         self._handler.log(self, message, level, **extra_data)
 
-    # TODO: Consider removing the general TODO for structured logging as this method serves that purpose.
+    # TODO: Consider removing the general TODO for structured logging as this method serves that purpose. 
 
 
 def create_direct_execution_task_control(task_definition_name: str) -> TaskControl:
