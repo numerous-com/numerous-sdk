@@ -16,11 +16,12 @@ repos:
       - id: mypy
         entry: "mypy --strict ./python"
         pass_filenames: false
+        always_run: true
         additional_dependencies:
           - "types-requests"
           - "pytest-asyncio"
-          - "pydantic"
-          - "marimo"
+          - "pydantic<2.10.0"
+          - "marimo==0.8.14"
   - repo: local
     hooks:
       - id: pytest-check
@@ -37,6 +38,7 @@ repos:
         name: golangci-lint
         language: system
         stages: [pre-commit, pre-push]
+        types: [go]
         entry: bash -c 'golangci-lint run --allow-parallel-runners'
   - repo: https://github.com/Bahjat/pre-commit-golang
     rev: v1.0.3
@@ -47,7 +49,7 @@ repos:
       - id: go-test
         stages: [pre-push]
         name: go test
-        entry: bash -c 'if command -v gotestsum; then gotestsum; else go test ./...; fi'
+        entry: make cli-test
         language: system
         pass_filenames: false
         always_run: true
