@@ -20,6 +20,12 @@ class CollectionReference:
     key: str
     _client: Client
 
+    @property
+    def tags(self) -> dict[str, str]:
+        """Get the tags for the collection."""
+        tags = self._client.collection_tags(self.id)
+        return {tag.key: tag.value for tag in tags}
+
     def collection(self, collection_key: str) -> CollectionReference:
         """
         Get or create a child collection of this collection by key.
@@ -195,3 +201,24 @@ class CollectionReference:
         self, identifier: CollectionFileIdentifier
     ) -> FileReference:
         return FileReference(id=identifier.id, key=identifier.key, _client=self._client)
+
+    def tag(self, key: str, value: str) -> None:
+        """
+        Add a tag to the collection.
+
+        Args:
+            key: The tag key.
+            value: The tag value.
+
+        """
+        self._client.collection_tag_add(self.id, Tag(key=key, value=value))
+
+    def tag_delete(self, key: str) -> None:
+        """
+        Delete a tag from the collection.
+
+        Args:
+            key: The key of the tag to delete.
+
+        """
+        self._client.collection_tag_delete(self.id, key)

@@ -20,6 +20,9 @@ from .collection_file_delete import CollectionFileDelete
 from .collection_file_tag_add import CollectionFileTagAdd
 from .collection_file_tag_delete import CollectionFileTagDelete
 from .collection_files import CollectionFiles
+from .collection_tag_add import CollectionTagAdd
+from .collection_tag_delete import CollectionTagDelete
+from .collection_tags import CollectionTags
 from .input_types import TagInput
 from .organization_by_id import OrganizationByID
 
@@ -51,11 +54,20 @@ class Client(AsyncBaseClient):
                 ... on CollectionNotFound {
                   ...CollectionNotFound
                 }
+                ... on CollectionOrganizationMismatch {
+                  ...CollectionOrganizationMismatch
+                }
               }
             }
 
             fragment CollectionNotFound on CollectionNotFound {
               id
+            }
+
+            fragment CollectionOrganizationMismatch on CollectionOrganizationMismatch {
+              parentID
+              parentOrganizationID
+              requestedOrganizationID
             }
 
             fragment CollectionReference on Collection {
@@ -77,6 +89,44 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionCreate.model_validate(data)
+
+    async def collection_tags(
+        self, collection_id: str, **kwargs: Any
+    ) -> CollectionTags:
+        query = gql(
+            """
+            query CollectionTags($collectionID: ID!) {
+              collection(id: $collectionID) {
+                __typename
+                ... on Collection {
+                  ...CollectionWithTags
+                }
+                ... on CollectionNotFound {
+                  ...CollectionNotFound
+                }
+              }
+            }
+
+            fragment CollectionNotFound on CollectionNotFound {
+              id
+            }
+
+            fragment CollectionWithTags on Collection {
+              id
+              key
+              tags {
+                key
+                value
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"collectionID": collection_id}
+        response = await self.execute(
+            query=query, operation_name="CollectionTags", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionTags.model_validate(data)
 
     async def collection_collections(
         self,
@@ -129,6 +179,80 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionCollections.model_validate(data)
+
+    async def collection_tag_add(
+        self, collection_id: str, tag: TagInput, **kwargs: Any
+    ) -> CollectionTagAdd:
+        query = gql(
+            """
+            mutation CollectionTagAdd($collectionID: ID!, $tag: TagInput!) {
+              collectionTagAdd(collectionID: $collectionID, tag: $tag) {
+                __typename
+                ... on Collection {
+                  ...CollectionReference
+                }
+                ... on CollectionNotFound {
+                  ...CollectionNotFound
+                }
+              }
+            }
+
+            fragment CollectionNotFound on CollectionNotFound {
+              id
+            }
+
+            fragment CollectionReference on Collection {
+              id
+              key
+            }
+            """
+        )
+        variables: Dict[str, object] = {"collectionID": collection_id, "tag": tag}
+        response = await self.execute(
+            query=query,
+            operation_name="CollectionTagAdd",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionTagAdd.model_validate(data)
+
+    async def collection_tag_delete(
+        self, collection_id: str, key: str, **kwargs: Any
+    ) -> CollectionTagDelete:
+        query = gql(
+            """
+            mutation CollectionTagDelete($collectionID: ID!, $key: String!) {
+              collectionTagDelete(collectionID: $collectionID, key: $key) {
+                __typename
+                ... on Collection {
+                  ...CollectionReference
+                }
+                ... on CollectionNotFound {
+                  ...CollectionNotFound
+                }
+              }
+            }
+
+            fragment CollectionNotFound on CollectionNotFound {
+              id
+            }
+
+            fragment CollectionReference on Collection {
+              id
+              key
+            }
+            """
+        )
+        variables: Dict[str, object] = {"collectionID": collection_id, "key": key}
+        response = await self.execute(
+            query=query,
+            operation_name="CollectionTagDelete",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return CollectionTagDelete.model_validate(data)
 
     async def collection_document(self, id: str, **kwargs: Any) -> CollectionDocument:
         query = gql(

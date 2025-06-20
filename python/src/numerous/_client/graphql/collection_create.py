@@ -6,13 +6,18 @@ from typing import Literal, Union
 from pydantic import Field
 
 from .base_model import BaseModel
-from .fragments import CollectionNotFound, CollectionReference
+from .fragments import (
+    CollectionNotFound,
+    CollectionOrganizationMismatch,
+    CollectionReference,
+)
 
 
 class CollectionCreate(BaseModel):
     collection_create: Union[
         "CollectionCreateCollectionCreateCollection",
         "CollectionCreateCollectionCreateCollectionNotFound",
+        "CollectionCreateCollectionCreateCollectionOrganizationMismatch",
     ] = Field(alias="collectionCreate", discriminator="typename__")
 
 
@@ -22,6 +27,12 @@ class CollectionCreateCollectionCreateCollection(CollectionReference):
 
 class CollectionCreateCollectionCreateCollectionNotFound(CollectionNotFound):
     typename__: Literal["CollectionNotFound"] = Field(alias="__typename")
+
+
+class CollectionCreateCollectionCreateCollectionOrganizationMismatch(
+    CollectionOrganizationMismatch
+):
+    typename__: Literal["CollectionOrganizationMismatch"] = Field(alias="__typename")
 
 
 CollectionCreate.model_rebuild()

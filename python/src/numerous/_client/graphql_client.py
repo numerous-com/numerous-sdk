@@ -7,9 +7,21 @@ from typing import TYPE_CHECKING, BinaryIO
 
 import requests
 
+from numerous._client.graphql.collection_create import (
+    CollectionCreateCollectionCreateCollectionOrganizationMismatch,
+)
 from numerous._client.graphql.collection_document import (
     CollectionDocumentCollectionDocumentCollectionDocument,
     CollectionDocumentCollectionDocumentCollectionDocumentNotFound,
+)
+from numerous._client.graphql.collection_tag_add import (
+    CollectionTagAddCollectionTagAddCollectionNotFound,
+)
+from numerous._client.graphql.collection_tag_delete import (
+    CollectionTagDeleteCollectionTagDeleteCollectionNotFound,
+)
+from numerous._client.graphql.collection_tags import (
+    CollectionTagsCollectionCollectionNotFound,
 )
 from numerous._client.graphql.organization_by_id import (
     OrganizationByID,
@@ -21,7 +33,10 @@ from numerous.collections._client import (
     CollectionIdentifier,
     Tag,
 )
-from numerous.collections.exceptions import ParentCollectionNotFoundError
+from numerous.collections.exceptions import (
+    OrganizationMismatchError,
+    ParentCollectionNotFoundError,
+)
 from numerous.organization._client import OrganizationData
 
 from .graphql import fragments
@@ -108,6 +123,15 @@ class GraphQLClient:
             raise ParentCollectionNotFoundError(
                 collection_id=response.collection_create.id
             )
+        if isinstance(
+            response.collection_create,
+            CollectionCreateCollectionCreateCollectionOrganizationMismatch,
+        ):
+            raise OrganizationMismatchError(
+                parent_id=response.collection_create.parent_id,
+                parent_organization_id=response.collection_create.parent_organization_id,
+                requested_organization_id=self._organization_id,
+            )
 
         return CollectionIdentifier(
             id=response.collection_create.id, key=response.collection_create.key
@@ -120,16 +144,31 @@ class GraphQLClient:
             self._collection_reference(collection_key, parent_collection_id)
         )
 
+    def collection_tags(self, collection_id: str) -> list[Tag]:
+        return self._loop.await_coro(self._collection_tags(collection_id))
+
+    async def _collection_tags(self, collection_id: str) -> list[Tag]:
+        response = await self._gql.collection_tags(
+            collection_id,
+            headers=self._headers,
+        )
+        if isinstance(response.collection, CollectionTagsCollectionCollectionNotFound):
+            raise ParentCollectionNotFoundError(collection_id=response.collection.id)
+        if response.collection is None:
+            return []
+
+        return [Tag(key=tag.key, value=tag.value) for tag in response.collection.tags]
+
     def collection_collections(
         self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
+    ) -> tuple[list[CollectionIdentifier], bool, str]:
         return self._loop.await_coro(
             self._collection_collections(collection_key, end_cursor)
         )
 
     async def _collection_collections(
         self, collection_id: str, end_cursor: str
-    ) -> tuple[list[CollectionIdentifier] | None, bool, str]:
+    ) -> tuple[list[CollectionIdentifier], bool, str]:
         response = await self._gql.collection_collections(
             collection_id,
             after=end_cursor,
@@ -156,7 +195,7 @@ class GraphQLClient:
 
     def collection_documents(
         self, collection_id: str, end_cursor: str, tag: Tag | None
-    ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]:
+    ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         return self._loop.await_coro(
             self._collection_documents(collection_id, end_cursor, _tag_input(tag))
         )
@@ -166,7 +205,7 @@ class GraphQLClient:
         collection_id: str,
         end_cursor: str,
         tag_input: TagInput | None,
-    ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]:
+    ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         response = await self._gql.collection_documents(
             collection_id,
             tag_input,
@@ -250,6 +289,40 @@ class GraphQLClient:
         if isinstance(resp, fragments.CollectionDocumentReference):
             return CollectionDocumentIdentifier(id=resp.id, key=resp.key)
         return None
+
+    def collection_tag_add(self, collection_id: str, tag: Tag) -> None:
+        return self._loop.await_coro(self._collection_tag_add(collection_id, tag))
+
+    def collection_tag_delete(self, collection_id: str, key: str) -> None:
+        return self._loop.await_coro(self._collection_tag_delete(collection_id, key))
+
+    async def _collection_tag_add(self, collection_id: str, tag: Tag) -> None:
+        response = await self._gql.collection_tag_add(
+            collection_id,
+            _tag_input_strict(tag),
+            headers=self._headers,
+        )
+        if isinstance(
+            response.collection_tag_add,
+            CollectionTagAddCollectionTagAddCollectionNotFound,
+        ):
+            raise ParentCollectionNotFoundError(
+                collection_id=response.collection_tag_add.id
+            )
+
+    async def _collection_tag_delete(self, collection_id: str, key: str) -> None:
+        response = await self._gql.collection_tag_delete(
+            collection_id,
+            key,
+            headers=self._headers,
+        )
+        if isinstance(
+            response.collection_tag_delete,
+            CollectionTagDeleteCollectionTagDeleteCollectionNotFound,
+        ):
+            raise ParentCollectionNotFoundError(
+                collection_id=response.collection_tag_delete.id
+            )
 
     def document_reference(
         self, collection_id: str, document_key: str

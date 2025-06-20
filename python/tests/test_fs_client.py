@@ -48,6 +48,105 @@ def client(base_path: Path) -> FileSystemClient:
     return FileSystemClient(base_path)
 
 
+def test_collection_tag_add_adds_expected_tag(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
+
+    client.collection_tag_add(
+        TEST_COLLECTION_ID, Tag(key="added-tag-key", value="added-tag-value")
+    )
+
+    metadata_path = base_path / TEST_COLLECTION_ID / ".collection.meta.json"
+    assert metadata_path.exists() is True
+    metadata_content = json.loads(metadata_path.read_text())
+    assert metadata_content["tags"] == [
+        {"key": "added-tag-key", "value": "added-tag-value"},
+    ]
+
+
+def test_collection_tag_add_adds_tag_to_existing_metadata(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
+    metadata_path = base_path / TEST_COLLECTION_ID / ".collection.meta.json"
+    existing_metadata = {
+        "collection_id": TEST_COLLECTION_ID,
+        "collection_key": _TEST_COLLECTION_KEY,
+        "tags": [{"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"}],
+    }
+    metadata_path.write_text(json.dumps(existing_metadata))
+
+    client.collection_tag_add(
+        TEST_COLLECTION_ID, Tag(key="added-tag-key", value="added-tag-value")
+    )
+
+    metadata_content = json.loads(metadata_path.read_text())
+    assert metadata_content["tags"] == [
+        {"key": "pre-existing-tag-key", "value": "pre-existing-tag-value"},
+        {"key": "added-tag-key", "value": "added-tag-value"},
+    ]
+
+
+def test_collection_tag_delete_deletes_expected_tag(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
+    metadata_path = base_path / TEST_COLLECTION_ID / ".collection.meta.json"
+    existing_metadata = {
+        "collection_id": TEST_COLLECTION_ID,
+        "collection_key": _TEST_COLLECTION_KEY,
+        "tags": [
+            {"key": "tag-key", "value": "tag-value"},
+            {"key": "tag-to-be-deleted-key", "value": "tag-to-be-deleted-value"},
+        ],
+    }
+    metadata_path.write_text(json.dumps(existing_metadata))
+
+    client.collection_tag_delete(TEST_COLLECTION_ID, "tag-to-be-deleted-key")
+
+    metadata_content = json.loads(metadata_path.read_text())
+    assert metadata_content["tags"] == [
+        {"key": "tag-key", "value": "tag-value"},
+    ]
+
+
+def test_collection_tag_delete_for_nonexisting_metadata_succeeds(
+    client: FileSystemClient,
+) -> None:
+    client.collection_tag_delete(TEST_COLLECTION_ID, "nonexisting-tag-key")
+
+
+def test_collection_tags_returns_expected_tags(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    (base_path / TEST_COLLECTION_ID).mkdir(parents=True)
+    metadata_path = base_path / TEST_COLLECTION_ID / ".collection.meta.json"
+    existing_metadata = {
+        "collection_id": TEST_COLLECTION_ID,
+        "collection_key": _TEST_COLLECTION_KEY,
+        "tags": [
+            {"key": "tag-1", "value": "value-1"},
+            {"key": "tag-2", "value": "value-2"},
+        ],
+    }
+    metadata_path.write_text(json.dumps(existing_metadata))
+
+    tags = client.collection_tags(TEST_COLLECTION_ID)
+
+    assert tags == [
+        Tag(key="tag-1", value="value-1"),
+        Tag(key="tag-2", value="value-2"),
+    ]
+
+
+def test_collection_tags_returns_empty_list_for_nonexisting_metadata(
+    client: FileSystemClient,
+) -> None:
+    tags = client.collection_tags(TEST_COLLECTION_ID)
+    assert tags == []
+
+
 def test_document_reference_returns_expected_existing_document_reference(
     client: FileSystemClient, base_path: Path
 ) -> None:

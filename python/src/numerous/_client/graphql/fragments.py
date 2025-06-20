@@ -46,9 +46,26 @@ class CollectionNotFound(BaseModel):
     id: str
 
 
+class CollectionOrganizationMismatch(BaseModel):
+    parent_id: str = Field(alias="parentID")
+    parent_organization_id: str = Field(alias="parentOrganizationID")
+    requested_organization_id: str = Field(alias="requestedOrganizationID")
+
+
 class CollectionReference(BaseModel):
     id: str
     key: str
+
+
+class CollectionWithTags(BaseModel):
+    id: str
+    key: str
+    tags: List["CollectionWithTagsTags"]
+
+
+class CollectionWithTagsTags(BaseModel):
+    key: str
+    value: str
 
 
 CollectionDocumentReference.model_rebuild()
@@ -56,4 +73,6 @@ CollectionDocumentWithData.model_rebuild()
 CollectionFileNotFound.model_rebuild()
 CollectionFileReference.model_rebuild()
 CollectionNotFound.model_rebuild()
+CollectionOrganizationMismatch.model_rebuild()
 CollectionReference.model_rebuild()
+CollectionWithTags.model_rebuild()

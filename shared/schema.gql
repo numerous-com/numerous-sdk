@@ -965,6 +965,7 @@ directive @canAccessCollection on FIELD_DEFINITION
 type Collection {
   id: ID!
   key: ID!
+  tags: [Tag!]!
 
   files(after: ID, first: Int, tag: TagInput): CollectionFileConnection!
   documents(after: ID, first: Int, tag: TagInput): CollectionDocumentConnection!
@@ -987,8 +988,17 @@ type CollectionNotFound {
   id: ID!
 }
 
+type CollectionOrganizationMismatch {
+  parentID: ID!
+  parentOrganizationID: ID!
+  requestedOrganizationID: ID!
+}
+
 union CollectionResult = Collection | CollectionNotFound
-union CollectionCreateResult = Collection | CollectionNotFound
+union CollectionCreateResult =
+    Collection
+  | CollectionNotFound
+  | CollectionOrganizationMismatch
 
 extend type Query {
   collection(id: ID!): CollectionResult
@@ -1001,6 +1011,10 @@ extend type Mutation {
     key: ID!
     parentID: ID
   ): CollectionCreateResult! @canAccessCollection
+  collectionTagAdd(collectionID: ID!, tag: TagInput!): CollectionResult!
+    @canAccessCollection
+  collectionTagDelete(collectionID: ID!, key: String!): CollectionResult!
+    @canAccessCollection
 }
 
 ###############################################################################
