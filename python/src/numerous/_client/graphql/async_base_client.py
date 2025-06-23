@@ -18,15 +18,11 @@ from .exceptions import (
 )
 
 try:
-    from websockets.client import (  # type: ignore[import-not-found,unused-ignore]
+    from websockets.legacy.client import (
         WebSocketClientProtocol,
         connect as ws_connect,
     )
-    from websockets.typing import (  # type: ignore[import-not-found,unused-ignore]
-        Data,
-        Origin,
-        Subprotocol,
-    )
+    from websockets.typing import Data, Origin, Subprotocol
 except ImportError:
     from contextlib import asynccontextmanager
 
