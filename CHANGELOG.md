@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.46.0 (2025-06-23)
+
+### Feature
+
+* feat(python-sdk): add bulk upload/download functionality (#75) ([`ce3d5e3`](https://github.com/numerous-com/numerous-sdk/commit/ce3d5e302b68dcfb8bba9270c1f8fdc715cdae0a))
+
+  > 
+  > * `bulk_download` recursively downloads a collection from Numerous to the local filesystem.
+  > * `bulk_upload` recursively uploads a local directory to a Numerous collection.
+
+
+
+
 ## v0.45.1 (2025-05-15)
 
 ### Build
