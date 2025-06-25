@@ -230,6 +230,437 @@ class APIConnectedBackend:
         handler = APITaskControlHandler(self.api_client, task_instance_id)
         set_task_control_handler(handler)
         logger.info(f"API TaskControl handler set for task {task_instance_id}")
+    
+    # Task Execution Layer Methods
+    
+    def upsert_task(self, name: str, version: str, function_name: str, module: str, parameters: dict = None, metadata: dict = None) -> dict:
+        """Register or update a task definition (idempotent)."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation UpsertTask($input: UpsertTaskInput!) {
+                    upsertTask(input: $input) {
+                        id
+                        name
+                        version
+                        functionName
+                        module
+                        createdAt
+                        updatedAt
+                    }
+                }
+            """
+            
+            mutation_input = {
+                "name": name,
+                "version": version,
+                "functionName": function_name,
+                "module": module
+            }
+            
+            if parameters:
+                mutation_input["parameters"] = json.dumps(parameters)
+            if metadata:
+                mutation_input["metadata"] = json.dumps(metadata)
+            
+            variables = {"input": mutation_input}
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="UpsertTask",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("upsertTask")
+            
+        except Exception as e:
+            logger.error(f"Failed to upsert task: {e}")
+            raise BackendError(f"Failed to upsert task: {e}")
+    
+    def upsert_task_instance(self, instance_id: str, session_id: str, task_name: str, task_version: str, inputs: dict = None) -> dict:
+        """Register or update a task instance (idempotent)."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation UpsertTaskInstance($input: UpsertInstanceInput!) {
+                    upsertInstance(input: $input) {
+                        id
+                        apiId
+                        sessionId
+                        taskDefinitionName
+                        status
+                        createdAt
+                    }
+                }
+            """
+            
+            mutation_input = {
+                "instanceId": instance_id,
+                "sessionId": session_id,
+                "taskName": task_name,
+                "taskVersion": task_version
+            }
+            
+            if inputs:
+                inputs_json = json.dumps(inputs)
+                inputs_base64 = base64.b64encode(inputs_json.encode('utf-8')).decode('utf-8')
+                mutation_input["inputs"] = inputs_base64
+            
+            variables = {"input": mutation_input}
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="UpsertTaskInstance",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("upsertInstance")
+            
+        except Exception as e:
+            logger.error(f"Failed to upsert task instance: {e}")
+            raise BackendError(f"Failed to upsert task instance: {e}")
+    
+    def start_execution(self, task_instance_id: str, session_id: str, client_id: str, force: bool = False) -> dict:
+        """Start a new task execution with conflict detection."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation StartExecution($input: StartExecutionInput!) {
+                    startExecution(input: $input) {
+                        id
+                        status
+                        taskInstanceId
+                        startedAt
+                        isActive
+                    }
+                }
+            """
+            
+            mutation_input = {
+                "instanceId": task_instance_id,
+                "sessionId": session_id,
+                "force": force
+            }
+            
+            variables = {"input": mutation_input}
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="StartExecution",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("startExecution")
+            
+        except Exception as e:
+            if "ExecutionConflictError" in str(e):
+                from .exceptions import TaskExecutionConflictError
+                raise TaskExecutionConflictError(str(e))
+            logger.error(f"Failed to start execution: {e}")
+            raise BackendError(f"Failed to start execution: {e}")
+    
+    def force_start_execution(self, task_instance_id: str, session_id: str, client_id: str) -> dict:
+        """Force start a new execution, killing any active ones."""
+        return self.start_execution(task_instance_id, session_id, client_id, force=True)
+    
+    def check_execution_conflict(self, task_instance_id: str) -> dict:
+        """Check if there are any execution conflicts for a task instance."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            query = """
+                query CheckExecutionConflict($instanceId: ID!) {
+                    checkExecutionConflict(instanceId: $instanceId) {
+                        conflictType
+                        activeExecutionId
+                        instanceId
+                        message
+                    }
+                }
+            """
+            
+            variables = {"instanceId": task_instance_id}
+            
+            async def execute_query():
+                response = await self.api_client._gql.execute(
+                    query=query,
+                    operation_name="CheckExecutionConflict",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_query())
+            return result.get("checkExecutionConflict")
+            
+        except Exception as e:
+            logger.error(f"Failed to check execution conflict: {e}")
+            raise BackendError(f"Failed to check execution conflict: {e}")
+    
+    def force_stop_execution(self, execution_id: str, session_id: str, reason: str) -> dict:
+        """Force stop an execution."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation ForceStopExecution($executionId: ID!, $sessionId: ID!, $reason: String!) {
+                    forceStopExecution(executionId: $executionId, sessionId: $sessionId, reason: $reason) {
+                        id
+                        status
+                        completedAt
+                        statusMessage
+                    }
+                }
+            """
+            
+            variables = {
+                "executionId": execution_id,
+                "sessionId": session_id,
+                "reason": reason
+            }
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="ForceStopExecution",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("forceStopExecution")
+            
+        except Exception as e:
+            logger.error(f"Failed to force stop execution: {e}")
+            raise BackendError(f"Failed to force stop execution: {e}")
+    
+    def report_execution_progress(self, execution_id: str, progress: float, status_message: str = None) -> dict:
+        """Report execution progress."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation ReportExecutionProgress($input: ReportProgressInput!) {
+                    reportExecutionProgress(input: $input) {
+                        id
+                        progress
+                        statusMessage
+                        updatedAt
+                    }
+                }
+            """
+            
+            mutation_input = {
+                "executionId": execution_id,
+                "progress": progress
+            }
+            
+            if status_message:
+                mutation_input["message"] = status_message
+            
+            variables = {"input": mutation_input}
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="ReportExecutionProgress",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("reportExecutionProgress")
+            
+        except Exception as e:
+            logger.error(f"Failed to report execution progress: {e}")
+            raise BackendError(f"Failed to report execution progress: {e}")
+    
+    def complete_execution(self, execution_id: str, result: dict) -> dict:
+        """Complete an execution with results."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation CompleteExecution($executionId: ID!, $result: JSON!) {
+                    completeExecution(executionId: $executionId, result: $result) {
+                        id
+                        status
+                        result
+                        completedAt
+                    }
+                }
+            """
+            
+            result_json = json.dumps(result)
+            
+            variables = {
+                "executionId": execution_id,
+                "result": result_json
+            }
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="CompleteExecution",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("completeExecution")
+            
+        except Exception as e:
+            logger.error(f"Failed to complete execution: {e}")
+            raise BackendError(f"Failed to complete execution: {e}")
+    
+    def fail_execution(self, execution_id: str, error: str) -> dict:
+        """Fail an execution with error details."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation FailExecution($executionId: ID!, $error: String!) {
+                    failExecution(executionId: $executionId, error: $error) {
+                        id
+                        status
+                        error
+                        completedAt
+                    }
+                }
+            """
+            
+            variables = {
+                "executionId": execution_id,
+                "error": error
+            }
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="FailExecution",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("failExecution")
+            
+        except Exception as e:
+            logger.error(f"Failed to fail execution: {e}")
+            raise BackendError(f"Failed to fail execution: {e}")
+    
+    def validate_session_ownership(self, session_id: str, instance_id: str) -> bool:
+        """Validate that a task instance belongs to the specified session."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            query = """
+                query ValidateSessionOwnership($sessionId: ID!, $instanceId: ID!) {
+                    validateSessionOwnership(sessionId: $sessionId, instanceId: $instanceId)
+                }
+            """
+            
+            variables = {
+                "sessionId": session_id,
+                "instanceId": instance_id
+            }
+            
+            async def execute_query():
+                response = await self.api_client._gql.execute(
+                    query=query,
+                    operation_name="ValidateSessionOwnership",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_query())
+            return result.get("validateSessionOwnership", False)
+            
+        except Exception as e:
+            if "SessionOwnershipError" in str(e):
+                from .exceptions import SessionOwnershipError
+                raise SessionOwnershipError(str(e), session_id, instance_id)
+            logger.error(f"Failed to validate session ownership: {e}")
+            raise BackendError(f"Failed to validate session ownership: {e}")
+    
+    def disconnect_client(self, client_id: str, session_id: str) -> dict:
+        """Disconnect a client and kill its active executions."""
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        try:
+            mutation = """
+                mutation DisconnectClient($clientId: String!, $sessionId: ID!) {
+                    disconnectClient(clientId: $clientId, sessionId: $sessionId) {
+                        killedExecutions
+                        message
+                    }
+                }
+            """
+            
+            variables = {
+                "clientId": client_id,
+                "sessionId": session_id
+            }
+            
+            async def execute_mutation():
+                response = await self.api_client._gql.execute(
+                    query=mutation,
+                    operation_name="DisconnectClient",
+                    variables=variables,
+                    headers=self.api_client._headers
+                )
+                return self.api_client._gql.get_data(response)
+            
+            result = self.api_client._loop.await_coro(execute_mutation())
+            return result.get("disconnectClient")
+            
+        except Exception as e:
+            logger.error(f"Failed to disconnect client: {e}")
+            raise BackendError(f"Failed to disconnect client: {e}")
+    
+    def subscribe_to_execution_updates(self, execution_id: str):
+        """Subscribe to real-time execution updates."""
+        # TODO: Implement subscription functionality
+        # This would use GraphQL subscriptions for real-time updates
+        logger.warning("Subscription functionality not yet implemented")
+        return []
+    
+    def subscribe_to_instance_updates(self, instance_id: str):
+        """Subscribe to real-time task instance updates."""
+        # TODO: Implement subscription functionality
+        # This would use GraphQL subscriptions for real-time updates
+        logger.warning("Subscription functionality not yet implemented")
+        return []
 
 
 # Global API backend instance
