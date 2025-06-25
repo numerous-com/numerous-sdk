@@ -24,4 +24,22 @@ class BackendError(TaskError):
 
 class TaskDefinitionError(TaskError):
     """Raised when there is an issue with how a task is defined (e.g., signature)."""
-    pass 
+    pass
+
+
+class TaskExecutionConflictError(TaskError):
+    """Raised when attempting to start a task execution that conflicts with an existing active execution."""
+    
+    def __init__(self, message: str, active_execution_id: str = None, conflicting_instance_id: str = None):
+        super().__init__(message)
+        self.active_execution_id = active_execution_id
+        self.conflicting_instance_id = conflicting_instance_id
+
+
+class SessionOwnershipError(TaskError):
+    """Raised when a task instance does not belong to the specified session."""
+    
+    def __init__(self, message: str, session_id: str = None, instance_id: str = None):
+        super().__init__(message)
+        self.session_id = session_id
+        self.instance_id = instance_id 
