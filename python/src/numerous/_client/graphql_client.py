@@ -160,19 +160,20 @@ class GraphQLClient:
         return [Tag(key=tag.key, value=tag.value) for tag in response.collection.tags]
 
     def collection_collections(
-        self, collection_key: str, end_cursor: str
+        self, collection_key: str, end_cursor: str, tag: Tag | None = None
     ) -> tuple[list[CollectionIdentifier], bool, str]:
         return self._loop.await_coro(
-            self._collection_collections(collection_key, end_cursor)
+            self._collection_collections(collection_key, end_cursor, tag)
         )
 
     async def _collection_collections(
-        self, collection_id: str, end_cursor: str
+        self, collection_id: str, end_cursor: str, tag: Tag | None = None
     ) -> tuple[list[CollectionIdentifier], bool, str]:
         response = await self._gql.collection_collections(
             collection_id,
             after=end_cursor,
             first=COLLECTED_OBJECTS_NUMBER,
+            tag=_tag_input(tag),
             headers=self._headers,
         )
 

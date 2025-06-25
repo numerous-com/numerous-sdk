@@ -177,18 +177,29 @@ class CollectionReference:
                     continue
                 yield self._document_reference_from_identifier(doc_ref)
 
-    def collections(self) -> Generator[CollectionReference, None, None]:
+    def collections(
+        self, tag_key: str | None = None, tag_value: str | None = None
+    ) -> Generator[CollectionReference, None, None]:
         """
-        Retrieve nested collections from the collection.
+        Retrieve collections from the collection, filtered by a tag key and value.
+
+        Args:
+            tag_key: If this and `tag_value` is specified, filter collections with this
+                tag.
+            tag_value: If this and `tag_key` is specified, filter collections with this
+                tag.
 
         Yields:
             Nested collections of this collection.
 
         """
         end_cursor = ""
+        tag = None
+        if tag_key is not None and tag_value is not None:
+            tag = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.collection_collections(self.id, end_cursor)
+            result = self._client.collection_collections(self.id, end_cursor, tag)
             if result is None:
                 break
             refs, has_next_page, end_cursor = result

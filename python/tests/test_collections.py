@@ -299,6 +299,7 @@ def test_collection_collections_returns_expected_references(
         COLLECTION_ID,
         after="",
         first=100,
+        tag=None,
         **HEADERS_WITH_AUTHORIZATION,
     )
 
@@ -343,21 +344,45 @@ def test_collection_collections_makes_expected_paging_calls(
                 COLLECTION_ID,
                 after="",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
             call(
                 COLLECTION_ID,
                 after="nested-id-100",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
             call(
                 COLLECTION_ID,
                 after="nested-id-200",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
         ]
+    )
+
+
+def test_collection_collections_passes_tag_filter_to_client(
+    gql: Mock, client: GraphQLClient
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    col = collection(COLLECTION_KEY, client)
+
+    tag_key = "key"
+    tag_value = "value"
+    list(col.collections(tag_key=tag_key, tag_value=tag_value))
+
+    gql.collection_collections.assert_called_once_with(
+        COLLECTION_ID,
+        after="",
+        first=100,
+        tag=TagInput(key=tag_key, value=tag_value),
+        **HEADERS_WITH_AUTHORIZATION,
     )
 
 

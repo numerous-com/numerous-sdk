@@ -282,11 +282,39 @@ class FileSystemClient:
         collection_path.mkdir(parents=True, exist_ok=True)
         return CollectionIdentifier(id=collection_id, key=collection_key)
 
+    def collection_collections(
+        self,
+        collection_key: str,
+        end_cursor: str,  # noqa: ARG002
+        tag: Tag | None,
+    ) -> tuple[list[CollectionIdentifier], bool, str]:
+        col_path = self._base_path / collection_key
+        if not col_path.exists():
+            return [], False, ""
+
+        collections: list[CollectionIdentifier] = []
+        for item in col_path.iterdir():
+            if item.is_dir():
+                col_id = str(item.relative_to(self._base_path))
+
+                if tag is not None:
+                    metadata_path = self._collection_metadata_path(col_id)
+                    if metadata_path.exists():
+                        metadata = FileSystemCollectionMetadata.load(metadata_path)
+                        if not metadata.tag_matches(tag):
+                            continue
+                    else:
+                        continue
+
+                collections.append(CollectionIdentifier(id=col_id, key=item.name))
+
+        return sorted(collections, key=lambda c: c.id), False, ""
+
     def collection_documents(
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: Tag | None,
+        tag: Tag | None,
     ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
@@ -299,7 +327,7 @@ class FileSystemClient:
 
             doc = FileSystemCollectionDocument.load(doc_path)
 
-            if tag_input and not doc.tag_matches(tag_input):
+            if tag and not doc.tag_matches(tag):
                 # skips files that do not match tag input, if it is given
                 continue
 
@@ -317,7 +345,7 @@ class FileSystemClient:
         self,
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
-        tag_input: Tag | None,
+        tag: Tag | None,
     ) -> tuple[list[CollectionFileIdentifier], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
@@ -330,30 +358,13 @@ class FileSystemClient:
 
             meta = FileSystemFileMetadata.load(file_path)
 
-            if tag_input and not meta.tag_matches(tag_input):
+            if tag and not meta.tag_matches(tag):
                 # skips files that do not match tag input, if it is given
                 continue
 
             files.append(CollectionFileIdentifier(id=meta.file_id, key=meta.file_key))
 
         return files, False, ""
-
-    def collection_collections(
-        self,
-        collection_key: str,
-        end_cursor: str,  # noqa: ARG002
-    ) -> tuple[list[CollectionIdentifier], bool, str]:
-        col_path = self._base_path / collection_key
-        if not col_path.exists():
-            return [], False, ""
-
-        collections: list[CollectionIdentifier] = []
-        for item in col_path.iterdir():
-            if item.is_dir():
-                col_id = str(item.relative_to(self._base_path))
-                collections.append(CollectionIdentifier(id=col_id, key=item.name))
-
-        return sorted(collections, key=lambda c: c.id), False, ""
 
     def collection_tags(self, collection_id: str) -> list[Tag]:
         metadata_path = self._collection_metadata_path(collection_id)

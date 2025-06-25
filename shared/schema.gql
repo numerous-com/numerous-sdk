@@ -969,7 +969,7 @@ type Collection {
 
   files(after: ID, first: Int, tag: TagInput): CollectionFileConnection!
   documents(after: ID, first: Int, tag: TagInput): CollectionDocumentConnection!
-  collections(after: ID, first: Int): CollectionConnection!
+  collections(after: ID, first: Int, tag: TagInput): CollectionConnection!
 
   document(key: ID!): CollectionDocument
 }

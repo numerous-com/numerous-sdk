@@ -131,19 +131,20 @@ class Client(AsyncBaseClient):
     async def collection_collections(
         self,
         collection_id: str,
+        tag: Union[Optional[TagInput], UnsetType] = UNSET,
         after: Union[Optional[str], UnsetType] = UNSET,
         first: Union[Optional[int], UnsetType] = UNSET,
         **kwargs: Any
     ) -> CollectionCollections:
         query = gql(
             """
-            query CollectionCollections($collectionID: ID!, $after: ID, $first: Int) {
+            query CollectionCollections($collectionID: ID!, $tag: TagInput, $after: ID, $first: Int) {
               collection(id: $collectionID) {
                 __typename
                 ... on Collection {
                   id
                   key
-                  collections(after: $after, first: $first) {
+                  collections(after: $after, first: $first, tag: $tag) {
                     edges {
                       node {
                         ... on Collection {
@@ -168,6 +169,7 @@ class Client(AsyncBaseClient):
         )
         variables: Dict[str, object] = {
             "collectionID": collection_id,
+            "tag": tag,
             "after": after,
             "first": first,
         }

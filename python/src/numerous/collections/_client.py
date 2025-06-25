@@ -42,13 +42,13 @@ class Client(Protocol):
 
     def collection_tags(self, collection_id: str) -> list[Tag]: ...
 
+    def collection_collections(
+        self, collection_key: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
+
     def collection_documents(
         self, collection_id: str, end_cursor: str, tag: Tag | None
     ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]: ...
-
-    def collection_collections(
-        self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
 
     def collection_files(
         self, collection_id: str, end_cursor: str, tag: Tag | None

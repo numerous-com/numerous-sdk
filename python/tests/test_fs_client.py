@@ -370,6 +370,28 @@ def test_collection_documents_returns_documents_with_tag(
     assert end_cursor == ""
 
 
+def test_collection_collections_returns_collections_with_tag(
+    base_path: Path, client: FileSystemClient
+) -> None:
+    (base_path / TEST_COLLECTION_ID).mkdir()
+    (base_path / _TEST_NESTED_COLLECTION_ID).mkdir()
+    (base_path / _TEST_ANOTHER_NESTED_COLLECTION_ID).mkdir()
+
+    client.collection_tag_add(
+        _TEST_NESTED_COLLECTION_ID, Tag(key="environment", value="production")
+    )
+
+    collections, has_next_page, end_cursor = client.collection_collections(
+        _TEST_COLLECTION_KEY, "", Tag(key="environment", value="production")
+    )
+
+    assert has_next_page is False
+    assert end_cursor == ""
+    assert len(collections) == 1
+    assert collections[0].id == _TEST_NESTED_COLLECTION_ID
+    assert collections[0].key == _TEST_NESTED_COLLECTION_KEY
+
+
 def test_collection_collections_returns_expected_collections(
     base_path: Path, client: FileSystemClient
 ) -> None:
@@ -378,7 +400,7 @@ def test_collection_collections_returns_expected_collections(
     (base_path / _TEST_ANOTHER_NESTED_COLLECTION_ID).mkdir()
 
     collections, has_next_page, end_cursor = client.collection_collections(
-        _TEST_COLLECTION_KEY, ""
+        _TEST_COLLECTION_KEY, "", None
     )
     expected_number_of_files = 2
 

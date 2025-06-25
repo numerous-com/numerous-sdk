@@ -83,13 +83,18 @@ query CollectionTags($collectionID: ID!) {
   }
 }
 
-query CollectionCollections($collectionID: ID!, $after: ID, $first: Int) {
+query CollectionCollections(
+  $collectionID: ID!
+  $tag: TagInput
+  $after: ID
+  $first: Int
+) {
   collection(id: $collectionID) {
     __typename
     ... on Collection {
       id
       key
-      collections(after: $after, first: $first) {
+      collections(after: $after, first: $first, tag: $tag) {
         edges {
           node {
             ... on Collection {
