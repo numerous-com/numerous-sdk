@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.47.0 (2025-06-26)
+
+### Feature
+
+* feat(python-sdk): collection tags (#77) ([`4a5e6fa`](https://github.com/numerous-com/numerous-sdk/commit/4a5e6fa2a98e4c15b479beac6d8be02127df0d1b))
+
+  > 
+  > Adds collection `tags` property, `tag` and `tag_delete` methods, filtering collections by tag.
+
+
+
+
 ## v0.46.0 (2025-06-23)
 
 ### Feature
