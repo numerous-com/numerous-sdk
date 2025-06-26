@@ -130,6 +130,20 @@ for nested_col in col_ref.collections(tag_key="my-tag-key", tag_value="my-tag-va
     print(nested_col.key)
 ```
 
+### Tagging collections
+
+Collections can be tagged. Tags are used to filter collections and to store
+metadata about the collections.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+
+col_ref.tag("tag-key", "tag-value")
+
+for key, value in col_ref.tags.items():
+    print(key, value)
+```
+
 ### Collections in subscription apps
 
 Collections exist within the organization that deploys the app.
