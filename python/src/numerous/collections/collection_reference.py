@@ -20,6 +20,12 @@ class CollectionReference:
     key: str
     _client: Client
 
+    @property
+    def tags(self) -> dict[str, str]:
+        """Get the tags for the collection."""
+        tags = self._client.collection_tags(self.id)
+        return {tag.key: tag.value for tag in tags}
+
     def collection(self, collection_key: str) -> CollectionReference:
         """
         Get or create a child collection of this collection by key.
@@ -171,18 +177,29 @@ class CollectionReference:
                     continue
                 yield self._document_reference_from_identifier(doc_ref)
 
-    def collections(self) -> Generator[CollectionReference, None, None]:
+    def collections(
+        self, tag_key: str | None = None, tag_value: str | None = None
+    ) -> Generator[CollectionReference, None, None]:
         """
-        Retrieve nested collections from the collection.
+        Retrieve collections from the collection, filtered by a tag key and value.
+
+        Args:
+            tag_key: If this and `tag_value` is specified, filter collections with this
+                tag.
+            tag_value: If this and `tag_key` is specified, filter collections with this
+                tag.
 
         Yields:
             Nested collections of this collection.
 
         """
         end_cursor = ""
+        tag = None
+        if tag_key is not None and tag_value is not None:
+            tag = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.collection_collections(self.id, end_cursor)
+            result = self._client.collection_collections(self.id, end_cursor, tag)
             if result is None:
                 break
             refs, has_next_page, end_cursor = result
@@ -195,3 +212,24 @@ class CollectionReference:
         self, identifier: CollectionFileIdentifier
     ) -> FileReference:
         return FileReference(id=identifier.id, key=identifier.key, _client=self._client)
+
+    def tag(self, key: str, value: str) -> None:
+        """
+        Add a tag to the collection.
+
+        Args:
+            key: The tag key.
+            value: The tag value.
+
+        """
+        self._client.collection_tag_add(self.id, Tag(key=key, value=value))
+
+    def tag_delete(self, key: str) -> None:
+        """
+        Delete a tag from the collection.
+
+        Args:
+            key: The key of the tag to delete.
+
+        """
+        self._client.collection_tag_delete(self.id, key)

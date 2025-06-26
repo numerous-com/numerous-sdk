@@ -16,6 +16,7 @@ from .collection_create import (
     CollectionCreate,
     CollectionCreateCollectionCreateCollection,
     CollectionCreateCollectionCreateCollectionNotFound,
+    CollectionCreateCollectionCreateCollectionOrganizationMismatch,
 )
 from .collection_document import (
     CollectionDocument,
@@ -91,6 +92,21 @@ from .collection_files import (
     CollectionFilesCollectionCollectionFilesPageInfo,
     CollectionFilesCollectionCollectionNotFound,
 )
+from .collection_tag_add import (
+    CollectionTagAdd,
+    CollectionTagAddCollectionTagAddCollection,
+    CollectionTagAddCollectionTagAddCollectionNotFound,
+)
+from .collection_tag_delete import (
+    CollectionTagDelete,
+    CollectionTagDeleteCollectionTagDeleteCollection,
+    CollectionTagDeleteCollectionTagDeleteCollectionNotFound,
+)
+from .collection_tags import (
+    CollectionTags,
+    CollectionTagsCollectionCollection,
+    CollectionTagsCollectionCollectionNotFound,
+)
 from .enums import (
     AppDeploymentStatus,
     AppSubscriptionStatus,
@@ -115,7 +131,10 @@ from .fragments import (
     CollectionFileReference,
     CollectionFileReferenceTags,
     CollectionNotFound,
+    CollectionOrganizationMismatch,
     CollectionReference,
+    CollectionWithTags,
+    CollectionWithTagsTags,
 )
 from .input_types import (
     AppCreateInfo,
@@ -174,6 +193,7 @@ __all__ = [
     "CollectionCreate",
     "CollectionCreateCollectionCreateCollection",
     "CollectionCreateCollectionCreateCollectionNotFound",
+    "CollectionCreateCollectionCreateCollectionOrganizationMismatch",
     "CollectionDocument",
     "CollectionDocumentCollectionDocumentCollectionDocument",
     "CollectionDocumentCollectionDocumentCollectionDocumentNotFound",
@@ -229,7 +249,19 @@ __all__ = [
     "CollectionFilesCollectionCollectionFilesPageInfo",
     "CollectionFilesCollectionCollectionNotFound",
     "CollectionNotFound",
+    "CollectionOrganizationMismatch",
     "CollectionReference",
+    "CollectionTagAdd",
+    "CollectionTagAddCollectionTagAddCollection",
+    "CollectionTagAddCollectionTagAddCollectionNotFound",
+    "CollectionTagDelete",
+    "CollectionTagDeleteCollectionTagDeleteCollection",
+    "CollectionTagDeleteCollectionTagDeleteCollectionNotFound",
+    "CollectionTags",
+    "CollectionTagsCollectionCollection",
+    "CollectionTagsCollectionCollectionNotFound",
+    "CollectionWithTags",
+    "CollectionWithTagsTags",
     "GraphQLClientError",
     "GraphQLClientGraphQLError",
     "GraphQLClientGraphQLMultiError",

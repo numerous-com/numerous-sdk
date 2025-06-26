@@ -40,17 +40,23 @@ class Client(Protocol):
         self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionIdentifier: ...
 
+    def collection_tags(self, collection_id: str) -> list[Tag]: ...
+
+    def collection_collections(
+        self, collection_key: str, end_cursor: str, tag: Tag | None
+    ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
+
     def collection_documents(
         self, collection_id: str, end_cursor: str, tag: Tag | None
     ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]: ...
 
-    def collection_collections(
-        self, collection_key: str, end_cursor: str
-    ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
-
     def collection_files(
         self, collection_id: str, end_cursor: str, tag: Tag | None
     ) -> tuple[list[CollectionFileIdentifier], bool, str]: ...
+
+    def collection_tag_add(self, collection_id: str, tag: Tag) -> None: ...
+
+    def collection_tag_delete(self, collection_id: str, tag_key: str) -> None: ...
 
     def document_reference(
         self, collection_id: str, document_key: str

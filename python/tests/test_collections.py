@@ -10,6 +10,18 @@ from numerous._client.graphql.collection_collections import CollectionCollection
 from numerous._client.graphql.collection_create import CollectionCreate
 from numerous._client.graphql.collection_documents import CollectionDocuments
 from numerous._client.graphql.collection_files import CollectionFiles
+from numerous._client.graphql.collection_tag_add import (
+    CollectionTagAdd,
+    CollectionTagAddCollectionTagAddCollection,
+)
+from numerous._client.graphql.collection_tag_delete import (
+    CollectionTagDelete,
+    CollectionTagDeleteCollectionTagDeleteCollection,
+)
+from numerous._client.graphql.collection_tags import (
+    CollectionTags,
+    CollectionTagsCollectionCollection,
+)
 from numerous._client.graphql.input_types import TagInput
 from numerous._client.graphql_client import GraphQLClient
 from numerous.collections import collection
@@ -148,6 +160,54 @@ def _collection_files(
     )
 
 
+def _collection_tags_response(
+    collection_id: str,
+    collection_key: str,
+    tags: list[dict[str, str]],
+) -> CollectionTags:
+    collection_response = CollectionTagsCollectionCollection.model_validate(
+        {
+            "__typename": "Collection",
+            "id": collection_id,
+            "key": collection_key,
+            "tags": tags,
+        }
+    )
+    return CollectionTags.model_validate({"collection": collection_response})
+
+
+def _collection_tag_add_response(
+    collection_id: str,
+    collection_key: str,
+) -> CollectionTagAdd:
+    collection_response = CollectionTagAddCollectionTagAddCollection.model_validate(
+        {
+            "__typename": "Collection",
+            "id": collection_id,
+            "key": collection_key,
+        }
+    )
+    return CollectionTagAdd.model_validate({"collectionTagAdd": collection_response})
+
+
+def _collection_tag_delete_response(
+    collection_id: str,
+    collection_key: str,
+) -> CollectionTagDelete:
+    collection_response = (
+        CollectionTagDeleteCollectionTagDeleteCollection.model_validate(
+            {
+                "__typename": "Collection",
+                "id": collection_id,
+                "key": collection_key,
+            }
+        )
+    )
+    return CollectionTagDelete.model_validate(
+        {"collectionTagDelete": collection_response}
+    )
+
+
 @pytest.fixture
 def gql() -> Mock:
     return Mock(GQLClient)
@@ -239,6 +299,7 @@ def test_collection_collections_returns_expected_references(
         COLLECTION_ID,
         after="",
         first=100,
+        tag=None,
         **HEADERS_WITH_AUTHORIZATION,
     )
 
@@ -283,21 +344,45 @@ def test_collection_collections_makes_expected_paging_calls(
                 COLLECTION_ID,
                 after="",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
             call(
                 COLLECTION_ID,
                 after="nested-id-100",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
             call(
                 COLLECTION_ID,
                 after="nested-id-200",
                 first=100,
+                tag=None,
                 **HEADERS_WITH_AUTHORIZATION,
             ),
         ]
+    )
+
+
+def test_collection_collections_passes_tag_filter_to_client(
+    gql: Mock, client: GraphQLClient
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    col = collection(COLLECTION_KEY, client)
+
+    tag_key = "key"
+    tag_value = "value"
+    list(col.collections(tag_key=tag_key, tag_value=tag_value))
+
+    gql.collection_collections.assert_called_once_with(
+        COLLECTION_ID,
+        after="",
+        first=100,
+        tag=TagInput(key=tag_key, value=tag_value),
+        **HEADERS_WITH_AUTHORIZATION,
     )
 
 
@@ -540,4 +625,65 @@ def test_collection_files_passes_tag_filter_on_to_client(
         after="",
         first=100,
         **HEADERS_WITH_AUTHORIZATION,
+    )
+
+
+def test_collection_tags_returns_expected_tags(
+    gql: Mock, client: GraphQLClient
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    expected_tags = [
+        {"key": "tag-1", "value": "value-1"},
+        {"key": "tag-2", "value": "value-2"},
+    ]
+    gql.collection_tags.return_value = _collection_tags_response(
+        COLLECTION_ID, COLLECTION_KEY, expected_tags
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    tags = col.tags
+
+    assert tags == {"tag-1": "value-1", "tag-2": "value-2"}
+    gql.collection_tags.assert_called_once_with(
+        COLLECTION_ID, **HEADERS_WITH_AUTHORIZATION
+    )
+
+
+def test_collection_tag_add_calls_client_with_expected_parameters(
+    gql: Mock, client: GraphQLClient
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_tag_add.return_value = _collection_tag_add_response(
+        COLLECTION_ID, COLLECTION_KEY
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    col.tag("test-key", "test-value")
+
+    gql.collection_tag_add.assert_called_once_with(
+        COLLECTION_ID,
+        TagInput(key="test-key", value="test-value"),
+        **HEADERS_WITH_AUTHORIZATION,
+    )
+
+
+def test_collection_tag_delete_calls_client_with_expected_parameters(
+    gql: Mock, client: GraphQLClient
+) -> None:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_tag_delete.return_value = _collection_tag_delete_response(
+        COLLECTION_ID, COLLECTION_KEY
+    )
+
+    col = collection(COLLECTION_KEY, client)
+    col.tag_delete("test-key")
+
+    gql.collection_tag_delete.assert_called_once_with(
+        COLLECTION_ID, "test-key", **HEADERS_WITH_AUTHORIZATION
     )

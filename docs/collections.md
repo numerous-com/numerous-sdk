@@ -6,7 +6,7 @@ Collections acts as a schemaless database, where users can store, retrieve, and 
 1. Organize data in collections, indexed with user-specified keys.
 2. Store documents with JSON data (optionally indexed with user-specified keys).
 3. Store files (optionally indexed with user-specified keys).
-4. Tag documents and files with key/value tags, and filter documents and files
+4. Tag documents, files, and collections with key/value tags, and filter documents, files, and collections
    by these tags.
 
 !!! note
@@ -43,6 +43,10 @@ doc_ref.set(data)
 for doc in col_ref.documents():
     print(doc.key)
     print(doc.get())
+
+# Loop over nested collections in a collection
+for nested_col in col_ref.collections():
+    print(nested_col.key)
 
 # Delete a document
 doc_ref.delete()
@@ -108,6 +112,36 @@ for document in col_ref.documents():
 file_ref = col_ref.file("my-file")
 for file in col_ref.files():
     print(file.get())
+```
+
+### Filtering collections by tags
+
+You can list all nested collections in a collection and also filter by specific tags.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+
+# Iterate over all nested collections in the collection
+for nested_col in col_ref.collections():
+    print(nested_col.key)
+
+# Iterate over all nested collections in the collection with the given tag
+for nested_col in col_ref.collections(tag_key="my-tag-key", tag_value="my-tag-value"):
+    print(nested_col.key)
+```
+
+### Tagging collections
+
+Collections can be tagged. Tags are used to filter collections and to store
+metadata about the collections.
+
+```py
+col_ref = numerous.collections.collection("my-collection")
+
+col_ref.tag("tag-key", "tag-value")
+
+for key, value in col_ref.tags.items():
+    print(key, value)
 ```
 
 ### Collections in subscription apps

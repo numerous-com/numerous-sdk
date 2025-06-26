@@ -22,6 +22,12 @@ fragment CollectionNotFound on CollectionNotFound {
   id
 }
 
+fragment CollectionOrganizationMismatch on CollectionOrganizationMismatch {
+  parentID
+  parentOrganizationID
+  requestedOrganizationID
+}
+
 fragment CollectionFileReference on CollectionFile {
   id
   key
@@ -37,6 +43,15 @@ fragment CollectionFileNotFound on CollectionFileNotFound {
   id
 }
 
+fragment CollectionWithTags on Collection {
+  id
+  key
+  tags {
+    key
+    value
+  }
+}
+
 mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
   collectionCreate(
     organizationID: $organizationID
@@ -50,11 +65,27 @@ mutation CollectionCreate($organizationID: ID!, $key: ID!, $parentID: ID) {
     ... on CollectionNotFound {
       ...CollectionNotFound
     }
+    ... on CollectionOrganizationMismatch {
+      ...CollectionOrganizationMismatch
+    }
+  }
+}
+
+query CollectionTags($collectionID: ID!) {
+  collection(id: $collectionID) {
+    __typename
+    ... on Collection {
+      ...CollectionWithTags
+    }
+    ... on CollectionNotFound {
+      ...CollectionNotFound
+    }
   }
 }
 
 query CollectionCollections(
   $collectionID: ID!
+  $tag: TagInput
   $after: ID
   $first: Int
 ) {
@@ -63,7 +94,7 @@ query CollectionCollections(
     ... on Collection {
       id
       key
-      collections(after: $after, first: $first) {
+      collections(after: $after, first: $first, tag: $tag) {
         edges {
           node {
             ... on Collection {
@@ -76,6 +107,30 @@ query CollectionCollections(
           endCursor
         }
       }
+    }
+  }
+}
+
+mutation CollectionTagAdd($collectionID: ID!, $tag: TagInput!) {
+  collectionTagAdd(collectionID: $collectionID, tag: $tag) {
+    __typename
+    ... on Collection {
+      ...CollectionReference
+    }
+    ... on CollectionNotFound {
+      ...CollectionNotFound
+    }
+  }
+}
+
+mutation CollectionTagDelete($collectionID: ID!, $key: String!) {
+  collectionTagDelete(collectionID: $collectionID, key: $key) {
+    __typename
+    ... on Collection {
+      ...CollectionReference
+    }
+    ... on CollectionNotFound {
+      ...CollectionNotFound
     }
   }
 }
