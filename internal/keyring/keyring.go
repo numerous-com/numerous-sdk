@@ -20,6 +20,9 @@ const (
 // ErrTokenSize is thrown when the token is invalid is larger than (50*2048) bytes.
 var ErrTokenSize = errors.New("token is invalid")
 
+// ErrNotFound is re-exported from the keyring library for external use
+var ErrNotFound = keyring.ErrNotFound
+
 // StoreRefreshToken stores a tenant's refresh token in the system keyring.
 func StoreRefreshToken(tenant, value string) error {
 	return keyring.Set(secretRefreshToken, tenant, value)

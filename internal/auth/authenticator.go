@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"numerous.com/cli/internal/keyring"
-
 	"github.com/pkg/browser"
 )
 
@@ -18,6 +16,7 @@ type Authenticator interface {
 	WaitUntilUserLogsIn(ctx context.Context, client *http.Client, state DeviceCodeState) (Result, error)
 	StoreAccessToken(token string) error
 	StoreRefreshToken(token string) error
+	StoreBothTokens(accessToken, refreshToken string) error
 	GetLoggedInUserFromKeyring() *User
 	RemoveLoggedInUserFromKeyring() error
 	RegenerateAccessToken(client *http.Client, refreshToken string) (string, error)
@@ -25,12 +24,16 @@ type Authenticator interface {
 }
 
 type TenantAuthenticator struct {
-	tenant      string
-	credentials Credentials
+	tenant       string
+	credentials  Credentials
+	tokenStorage TokenStorage
+	storageMode  TokenStorageMode
 }
 
 func NewTenantAuthenticator(tenant string, clientID string, audience string) *TenantAuthenticator {
 	baseURL := "https://" + tenant
+	storage, mode := CreateTokenStorage()
+
 	return &TenantAuthenticator{
 		tenant: tenant,
 		credentials: Credentials{
@@ -40,6 +43,8 @@ func NewTenantAuthenticator(tenant string, clientID string, audience string) *Te
 			OauthTokenEndpoint:  baseURL + "/oauth/token/",
 			RevokeTokenEndpoint: baseURL + "/oauth/revoke/",
 		},
+		tokenStorage: storage,
+		storageMode:  mode,
 	}
 }
 
@@ -57,15 +62,19 @@ func (t *TenantAuthenticator) WaitUntilUserLogsIn(ctx context.Context, client *h
 }
 
 func (t *TenantAuthenticator) StoreAccessToken(token string) error {
-	return keyring.StoreAccessToken(t.tenant, token)
+	return t.tokenStorage.StoreAccessToken(t.tenant, token)
 }
 
 func (t *TenantAuthenticator) StoreRefreshToken(token string) error {
-	return keyring.StoreRefreshToken(t.tenant, token)
+	return t.tokenStorage.StoreRefreshToken(t.tenant, token)
+}
+
+func (t *TenantAuthenticator) StoreBothTokens(accessToken, refreshToken string) error {
+	return t.tokenStorage.StoreBothTokens(t.tenant, accessToken, refreshToken)
 }
 
 func (t *TenantAuthenticator) GetLoggedInUserFromKeyring() *User {
-	return getLoggedInUserFromKeyring(t.tenant)
+	return t.tokenStorage.GetLoggedInUser(t.tenant)
 }
 
 func (t *TenantAuthenticator) RegenerateAccessToken(client *http.Client, refreshToken string) (string, error) {
@@ -82,5 +91,5 @@ func (t *TenantAuthenticator) RevokeRefreshToken(client *http.Client, refreshTok
 }
 
 func (t *TenantAuthenticator) RemoveLoggedInUserFromKeyring() error {
-	return keyring.DeleteTokens(t.tenant)
+	return t.tokenStorage.RemoveTokens(t.tenant)
 }
