@@ -36,8 +36,7 @@ func TestLogin(t *testing.T) {
 	m.On("GetDeviceCode", mock.Anything, mock.Anything).Return(state, nil)
 	m.On("OpenURL", state.VerificationURI).Return(nil)
 	m.On("WaitUntilUserLogsIn", mock.Anything, mock.Anything, state).Return(result, nil)
-	m.On("StoreAccessToken", result.AccessToken).Return(nil)
-	m.On("StoreRefreshToken", result.RefreshToken).Return(nil)
+	m.On("StoreBothTokens", result.AccessToken, result.RefreshToken).Return(nil)
 	m.On("GetLoggedInUserFromKeyring").Return(&auth.User{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,

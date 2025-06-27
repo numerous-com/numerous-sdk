@@ -55,20 +55,20 @@ func login(a auth.Authenticator, ctx context.Context) (*auth.User, error) {
 		return nil, err
 	} else if err != nil {
 		output.PrintErrorDetails("Error waiting for login", err)
+
 		return nil, err
 	}
 
-	if err := a.StoreAccessToken(result.AccessToken); err != nil {
-		output.PrintErrorDetails("Login failed. Could not store credentials in keyring.", err)
-		return nil, err
-	}
+	// Store both tokens using the unified storage interface
+	if err := a.StoreBothTokens(result.AccessToken, result.RefreshToken); err != nil {
+		if errors.Is(err, auth.ErrUserDeclinedConsent) {
+			output.PrintError("Login cancelled", "File storage consent was declined.")
 
-	if err := a.StoreRefreshToken(result.RefreshToken); err != nil {
-		output.PrintError(
-			"Error occurred storing refresh token in your keyring.",
-			"When your access token expires, you will need to log in again.\n"+
-				"Error details: "+err.Error(),
-		)
+			return nil, err
+		}
+		output.PrintErrorDetails("Login failed. Could not store credentials.", err)
+
+		return nil, err
 	}
 
 	output.PrintlnOK("You are now logged in to Numerous!")

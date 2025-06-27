@@ -36,6 +36,11 @@ func (m *MockAuthenticator) StoreRefreshToken(token string) error {
 	return args.Error(0)
 }
 
+func (m *MockAuthenticator) StoreBothTokens(accessToken, refreshToken string) error {
+	args := m.Called(accessToken, refreshToken)
+	return args.Error(0)
+}
+
 func (m *MockAuthenticator) GetLoggedInUserFromKeyring() *User {
 	args := m.Called()
 	return args.Get(0).(*User)

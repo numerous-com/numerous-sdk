@@ -14,13 +14,16 @@ var Cmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	GroupID: group.AdditionalCommandsGroupID,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		user := auth.NumerousTenantAuthenticator.GetLoggedInUserFromKeyring()
+		// Use the standard tenant authenticator which now handles storage fallback
+		authenticator := auth.NumerousTenantAuthenticator
+
+		user := authenticator.GetLoggedInUserFromKeyring()
 		if user != nil {
 			output.PrintlnOK("Great, you are already logged in!")
 			return nil
 		}
 
-		_, err := login(auth.NumerousTenantAuthenticator, cmd.Context())
+		_, err := login(authenticator, cmd.Context())
 
 		return errorhandling.ErrorAlreadyPrinted(err)
 	},
