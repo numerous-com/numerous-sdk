@@ -12,6 +12,7 @@ var Cmd = &cobra.Command{
 	Short:   "Logout of the Numerous CLI",
 	GroupID: group.AdditionalCommandsGroupID,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Use the fallback authenticator for logout
 		err := logout(auth.NumerousTenantAuthenticator)
 		return errorhandling.ErrorAlreadyPrinted(err)
 	},
