@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.48.0 (2025-06-30)
+
+### Feature
+
+* feat(cli): unify token storage handling ([`9a7391d`](https://github.com/numerous-com/numerous-sdk/commit/9a7391da6f461b071bee91545b5b0756b6d93bb7))
+
+  > 
+  > * Introduces a new TokenStorage interface to abstract token storage mechanisms.
+  > * Implements file-based storage and keyring storage options.
+  > * Updates login and logout commands to utilize the new storage interface.
+  > * Modifies tests to accommodate changes in token storage methods.
+  > * Ensures both access and refresh tokens are stored together for consistency.
+
+
+
+
 ## v0.47.0 (2025-06-26)
 
 ### Feature
