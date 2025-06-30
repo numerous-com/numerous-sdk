@@ -10,6 +10,7 @@ type CreateAppVersionInput struct {
 	AppID   string
 	Version string
 	Message string
+	Size    *string
 }
 
 type CreateAppVersionOutput struct {
@@ -19,8 +20,8 @@ type CreateAppVersionOutput struct {
 }
 
 const appVersionCreateText = `
-mutation CLIAppVersionCreate($appID: ID!, $version: String, $message: String!) {
-	appVersionCreate(appID: $appID, input: {version: $version, message: $message}) {
+mutation CLIAppVersionCreate($appID: ID!, $version: String, $message: String!, $size: String) {
+	appVersionCreate(appID: $appID, input: {version: $version, message: $message, size: $size}) {
 		id
 	}
 }
@@ -38,6 +39,7 @@ func (s *Service) CreateVersion(ctx context.Context, input CreateAppVersionInput
 	variables := map[string]any{
 		"appID":   input.AppID,
 		"message": input.Message,
+		"size":    input.Size,
 	}
 
 	if input.Version != "" {

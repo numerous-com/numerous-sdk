@@ -443,6 +443,7 @@ type AppVersion {
 input AppVersionInput {
   version: String
   message: String
+  size: String
 }
 
 type App {

@@ -43,6 +43,26 @@ port = 80
   requirements_file = "requirements.txt"
 `
 
+const tomlStreamlitWithSize string = `name = "Streamlit App Name"
+description = "A description"
+cover_image = "cover.png"
+exclude = ["*venv", "venv*"]
+port = 80
+size = "small"
+
+[python]
+  library = "streamlit"
+  version = "3.11"
+  app_file = "app.py"
+  requirements_file = "requirements.txt"
+
+[deploy]
+  organization = "organization-slug"
+  app = "app-slug"
+`
+
+const jsonStreamlitWithSize string = `{"name":"Streamlit App Name","description":"A description","cover_image":"cover.png","exclude":["*venv","venv*"],"port":80,"size":"small","python":{"library":"streamlit","version":"3.11","app_file":"app.py","requirements_file":"requirements.txt"},"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+
 var manifestStreamlit Manifest = Manifest{
 	App: App{
 		Name:        "Streamlit App Name",
@@ -75,6 +95,24 @@ var manifestStreamlitNoDeploy Manifest = Manifest{
 		RequirementsFile: "requirements.txt",
 	},
 	Deployment: nil,
+}
+
+var manifestStreamlitWithSize Manifest = Manifest{
+	App: App{
+		Name:        "Streamlit App Name",
+		Description: "A description",
+		CoverImage:  "cover.png",
+		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
+		Size:        ref("small"),
+	},
+	Python: &Python{
+		Library:          LibraryStreamlit,
+		Version:          "3.11",
+		AppFile:          "app.py",
+		RequirementsFile: "requirements.txt",
+	},
+	Deployment: &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
 }
 
 const tomlDockerNoDeploy string = `name = "Docker App Name"
@@ -160,6 +198,11 @@ func TestLoad(t *testing.T) {
 				tomlContent: tomlStreamlit,
 				expected:    manifestStreamlit,
 			},
+			{
+				name:        "streamlit with size",
+				tomlContent: tomlStreamlitWithSize,
+				expected:    manifestStreamlitWithSize,
+			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				filePath := test.WriteTempFile(t, ManifestFileName, []byte(tc.tomlContent))
@@ -227,6 +270,11 @@ func TestToTOML(t *testing.T) {
 			expectedTOML: tomlStreamlitNoDeploy,
 		},
 		{
+			name:         "streamlit with size",
+			manifest:     manifestStreamlitWithSize,
+			expectedTOML: tomlStreamlitWithSize,
+		},
+		{
 			name:         "docker",
 			manifest:     manifestDocker,
 			expectedTOML: tomlDocker,
@@ -262,6 +310,11 @@ func TestToJSON(t *testing.T) {
 			name:         "streamlit without default deployment",
 			manifest:     manifestStreamlitNoDeploy,
 			expectedJSON: jsonStreamlitNoDeploy,
+		},
+		{
+			name:         "streamlit with size",
+			manifest:     manifestStreamlitWithSize,
+			expectedJSON: jsonStreamlitWithSize,
 		},
 		{
 			name:         "docker",

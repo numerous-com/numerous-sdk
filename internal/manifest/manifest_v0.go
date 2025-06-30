@@ -16,6 +16,7 @@ type ManifestV0 struct {
 	Port             string   `toml:"port" json:"port"`
 	CoverImage       string   `toml:"cover_image" json:"cover_image"`
 	Exclude          []string `toml:"exclude" json:"exclude"`
+	Size             *string  `toml:"size,omitempty"`
 }
 
 func (d *ManifestV0) ToManifest() (*Manifest, error) {
@@ -31,6 +32,7 @@ func (d *ManifestV0) ToManifest() (*Manifest, error) {
 			CoverImage:  d.CoverImage,
 			Exclude:     d.Exclude,
 			Port:        uint(port),
+			Size:        d.Size,
 		},
 		Python: &Python{
 			Library:          d.Library,

@@ -23,9 +23,27 @@ exclude = ["*venv", "venv*"]
   app = "app-slug"
 `
 
-const v1JSONStreamlit string = `{"name":"Streamlit App Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+const v1TOMLStreamlitWithSize string = `name = "Streamlit App Name"
+description = "A description"
+library = "streamlit"
+python = "3.11"
+app_file = "app.py"
+requirements_file = "requirements.txt"
+port = 80
+cover_image = "cover.png"
+exclude = ["*venv", "venv*"]
+size = "small"
 
-const v1JSONStreamlitNoDeploy string = `{"name":"Streamlit App Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"]}`
+[deploy]
+  organization = "organization-slug"
+  app = "app-slug"
+`
+
+const v1JSONStreamlit string = `{"name":"Streamlit App Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"Size":null,"deploy":{"organization":"organization-slug","app":"app-slug"}}`
+
+const v1JSONStreamlitWithSize string = `{"name":"Streamlit App Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"Size":"small","deploy":{"organization":"organization-slug","app":"app-slug"}}`
+
+const v1JSONStreamlitNoDeploy string = `{"name":"Streamlit App Name","description":"A description","library":"streamlit","python":"3.11","app_file":"app.py","requirements_file":"requirements.txt","port":80,"cover_image":"cover.png","exclude":["*venv","venv*"],"Size":null}`
 
 const v1TOMLStreamlitNoDeploy string = `name = "Streamlit App Name"
 description = "A description"
@@ -48,6 +66,20 @@ var v1ManifestStreamlit = ManifestV1{
 	RequirementsFile: "requirements.txt",
 	CoverImage:       "cover.png",
 	Exclude:          []string{"*venv", "venv*"},
+	Deployment:       &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
+}
+
+var v1ManifestStreamlitWithSize = ManifestV1{
+	Name:             "Streamlit App Name",
+	Description:      "A description",
+	Library:          LibraryStreamlit,
+	Python:           "3.11",
+	Port:             80,
+	AppFile:          "app.py",
+	RequirementsFile: "requirements.txt",
+	CoverImage:       "cover.png",
+	Exclude:          []string{"*venv", "venv*"},
+	Size:             ref("small"),
 	Deployment:       &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
 }
 
@@ -108,6 +140,24 @@ var manifestMarimo = Manifest{
 	Deployment: &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
 }
 
+var manifestStreamlitV1WithSize = Manifest{
+	App: App{
+		Name:        "Streamlit App Name",
+		Description: "A description",
+		CoverImage:  "cover.png",
+		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
+		Size:        ref("small"),
+	},
+	Python: &Python{
+		Library:          LibraryStreamlit,
+		Version:          "3.11",
+		AppFile:          "app.py",
+		RequirementsFile: "requirements.txt",
+	},
+	Deployment: &Deployment{OrganizationSlug: "organization-slug", AppSlug: "app-slug"},
+}
+
 func TestV1ToTOML(t *testing.T) {
 	testCases := []struct {
 		name         string
@@ -118,6 +168,11 @@ func TestV1ToTOML(t *testing.T) {
 			name:         "streamlit app",
 			manifest:     v1ManifestStreamlit,
 			expectedTOML: v1TOMLStreamlit,
+		},
+		{
+			name:         "streamlit app with size",
+			manifest:     v1ManifestStreamlitWithSize,
+			expectedTOML: v1TOMLStreamlitWithSize,
 		},
 		{
 			name:         "without default deployment",
@@ -147,6 +202,11 @@ func TestV1ToJSON(t *testing.T) {
 			expectedJSON: v1JSONStreamlit,
 		},
 		{
+			name:         "streamlit app with size",
+			manifest:     v1ManifestStreamlitWithSize,
+			expectedJSON: v1JSONStreamlitWithSize,
+		},
+		{
 			name:         "without default deployment",
 			manifest:     v1ManifestStreamlitNoDeploy,
 			expectedJSON: v1JSONStreamlitNoDeploy,
@@ -170,6 +230,7 @@ func TestLoadV1(t *testing.T) {
 			expected ManifestV1
 		}{
 			{name: "streamlit app", toml: v1TOMLStreamlit, expected: v1ManifestStreamlit},
+			{name: "streamlit app with size", toml: v1TOMLStreamlitWithSize, expected: v1ManifestStreamlitWithSize},
 			{name: "marimo app", toml: v1TOMLMarimo, expected: v1ManifestMarimo},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -202,6 +263,11 @@ func TestManifestV1ToManifest(t *testing.T) {
 				name:     "streamlit with deployment",
 				expected: manifestStreamlit,
 				v1:       v1ManifestStreamlit,
+			},
+			{
+				name:     "streamlit with deployment and size",
+				expected: manifestStreamlitV1WithSize,
+				v1:       v1ManifestStreamlitWithSize,
 			},
 			{
 				name:     "streamlit without deployment",
