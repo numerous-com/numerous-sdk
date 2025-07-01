@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.49.0 (2025-07-01)
+
+### Feature
+
+* feat(cli): app size parameter of `appVersionCreate` (#78) ([`17ccfeb`](https://github.com/numerous-com/numerous-sdk/commit/17ccfebc5e63ff2bee479c1ea70d6cff3046d477))
+
+  > 
+  > Explicitly pass app size as a parameter of `appVersionCreate`.
+
+
+
+
 ## v0.48.0 (2025-06-30)
 
 ### Feature
