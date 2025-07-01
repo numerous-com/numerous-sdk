@@ -37,6 +37,7 @@ type App struct {
 	CoverImage  string   `toml:"cover_image" json:"cover_image"`
 	Exclude     []string `toml:"exclude" json:"exclude"`
 	Port        uint     `toml:"port" json:"port"`
+	Size        *string  `toml:"size,omitempty" json:"size,omitempty"`
 }
 
 type Deployment struct {

@@ -43,6 +43,7 @@ class NewTool(BaseModel):
 class AppVersionInput(BaseModel):
     version: Optional[str] = None
     message: Optional[str] = None
+    size: Optional[str] = None
 
 
 class AppCreateInfo(BaseModel):

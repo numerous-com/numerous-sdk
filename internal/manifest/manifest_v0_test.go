@@ -18,6 +18,18 @@ cover_image = "cover.png"
 exclude = ["*venv", "venv*"]
 `
 
+const v0TOMLStreamlitWithSize string = `name = "Streamlit App Name"
+description = "A description"
+library = "streamlit"
+python = "3.11"
+app_file = "app.py"
+requirements_file = "requirements.txt"
+port = "80"
+cover_image = "cover.png"
+exclude = ["*venv", "venv*"]
+size = "small"
+`
+
 var v0ManifestStreamlit = ManifestV0{
 	Name:             "Streamlit App Name",
 	Description:      "A description",
@@ -28,6 +40,19 @@ var v0ManifestStreamlit = ManifestV0{
 	Port:             "80",
 	CoverImage:       "cover.png",
 	Exclude:          []string{"*venv", "venv*"},
+}
+
+var v0ManifestStreamlitWithSize = ManifestV0{
+	Name:             "Streamlit App Name",
+	Description:      "A description",
+	Library:          LibraryStreamlit,
+	Python:           "3.11",
+	AppFile:          "app.py",
+	RequirementsFile: "requirements.txt",
+	Port:             "80",
+	CoverImage:       "cover.png",
+	Exclude:          []string{"*venv", "venv*"},
+	Size:             ref("small"),
 }
 
 const v0TOMLMarimo string = `name = "Marimo App Name"
@@ -69,6 +94,23 @@ var manifestMarimoNoDeploy = Manifest{
 	},
 }
 
+var manifestStreamlitWithSizeNoDeploy = Manifest{
+	App: App{
+		Name:        "Streamlit App Name",
+		Description: "A description",
+		CoverImage:  "cover.png",
+		Exclude:     []string{"*venv", "venv*"},
+		Port:        80,
+		Size:        ref("small"),
+	},
+	Python: &Python{
+		Library:          LibraryStreamlit,
+		Version:          "3.11",
+		AppFile:          "app.py",
+		RequirementsFile: "requirements.txt",
+	},
+}
+
 func TestLoadV0(t *testing.T) {
 	t.Run("returns expected v0 manifest", func(t *testing.T) {
 		for _, tc := range []struct {
@@ -77,6 +119,7 @@ func TestLoadV0(t *testing.T) {
 			expected ManifestV0
 		}{
 			{name: "streamlit app", toml: v0TOMLStreamlit, expected: v0ManifestStreamlit},
+			{name: "streamlit app with size", toml: v0TOMLStreamlitWithSize, expected: v0ManifestStreamlitWithSize},
 			{name: "marimo app", toml: v0TOMLMarimo, expected: v0ManifestMarimo},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -110,6 +153,11 @@ func TestManifestV0ToManifest(t *testing.T) {
 				expected: manifestStreamlitNoDeploy,
 				v0:       v0ManifestStreamlit,
 			},
+			{
+				name:     "streamlit with size",
+				expected: manifestStreamlitWithSizeNoDeploy,
+				v0:       v0ManifestStreamlitWithSize,
+			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				actual, err := tc.v0.ToManifest()
@@ -121,4 +169,8 @@ func TestManifestV0ToManifest(t *testing.T) {
 			})
 		}
 	})
+}
+
+func ref[T any](v T) *T {
+	return &v
 }

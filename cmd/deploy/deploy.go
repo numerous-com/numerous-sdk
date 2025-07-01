@@ -229,7 +229,7 @@ func registerAppVersion(ctx context.Context, apps appService, input deployInput,
 		return app.CreateAppVersionOutput{}, "", "", err
 	}
 
-	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.version, Message: input.message}
+	appVersionInput := app.CreateAppVersionInput{AppID: appID, Version: input.version, Message: input.message, Size: manifest.Size}
 	appVersionOutput, err := apps.CreateVersion(ctx, appVersionInput)
 	if err != nil {
 		task.Error()

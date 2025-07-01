@@ -17,6 +17,7 @@ type ManifestV1 struct {
 	Port             uint        `toml:"port" json:"port"`
 	CoverImage       string      `toml:"cover_image" json:"cover_image"`
 	Exclude          []string    `toml:"exclude" json:"exclude"`
+	Size             *string     `toml:"size,omitempty"`
 	Deployment       *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 
@@ -41,6 +42,7 @@ func (m *ManifestV1) ToManifest() Manifest {
 			CoverImage:  m.CoverImage,
 			Exclude:     m.Exclude,
 			Port:        m.Port,
+			Size:        m.Size,
 		},
 		Python: &Python{
 			Library:          m.Library,
