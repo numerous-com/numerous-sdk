@@ -64,9 +64,9 @@ func TestLogs(t *testing.T) {
 		closedCh := make(chan app.AppDeployLogEntry)
 		close(closedCh)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
+		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(closedCh, nil)
 
-		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, tail: 0, follow: true, printer: dummyPrinter})
 
 		assert.NoError(t, err)
 	})
@@ -79,9 +79,9 @@ func TestLogs(t *testing.T) {
 		close(closedCh)
 		apps := &AppServiceMock{}
 		ai := appident.AppIdentifier{OrganizationSlug: "organization-slug-in-manifest", AppSlug: "app-slug-in-manifest"}
-		apps.On("AppDeployLogs", ai).Return(closedCh, nil)
+		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(closedCh, nil)
 
-		err := logs(context.TODO(), apps, logsInput{appDir: appDir, orgSlug: "", appSlug: "", printer: dummyPrinter})
+		err := logs(context.TODO(), apps, logsInput{appDir: appDir, orgSlug: "", appSlug: "", tail: 0, follow: true, printer: dummyPrinter})
 
 		assert.NoError(t, err)
 		apps.AssertExpectations(t)
@@ -90,14 +90,14 @@ func TestLogs(t *testing.T) {
 	t.Run("it stops when context is cancelled", func(t *testing.T) {
 		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", ai).Return(ch, nil)
+		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(ch, nil)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			time.Sleep(time.Millisecond * 10)
 			cancel()
 		}()
-		err := logs(ctx, apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
+		err := logs(ctx, apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, tail: 0, follow: true, printer: dummyPrinter})
 
 		assert.NoError(t, err)
 	})
@@ -105,9 +105,9 @@ func TestLogs(t *testing.T) {
 	t.Run("given app service returns error, it returns the error", func(t *testing.T) {
 		var nilChan chan app.AppDeployLogEntry = nil
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", ai).Return(nilChan, testError)
+		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(nilChan, testError)
 
-		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: dummyPrinter})
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, tail: 0, follow: true, printer: dummyPrinter})
 
 		assert.ErrorIs(t, err, testError)
 	})
@@ -115,7 +115,7 @@ func TestLogs(t *testing.T) {
 	t.Run("prints expected entries", func(t *testing.T) {
 		ch := make(chan app.AppDeployLogEntry)
 		apps := &AppServiceMock{}
-		apps.On("AppDeployLogs", ai).Return(ch, nil)
+		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(ch, nil)
 
 		entry1 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)}
 		entry2 := app.AppDeployLogEntry{Timestamp: time.Date(2024, time.March, 1, 2, 2, 2, 2, time.UTC)}
@@ -129,9 +129,22 @@ func TestLogs(t *testing.T) {
 			ch <- entry1
 			ch <- entry2
 		}()
-		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, printer: printer})
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, tail: 0, follow: true, printer: printer})
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("calls service with correct tail and follow parameters", func(t *testing.T) {
+		closedCh := make(chan app.AppDeployLogEntry)
+		close(closedCh)
+		apps := &AppServiceMock{}
+		tail := 100
+		apps.On("AppDeployLogs", ai, &tail, false).Return(closedCh, nil)
+
+		err := logs(context.TODO(), apps, logsInput{appDir: "", orgSlug: orgSlug, appSlug: appSlug, tail: tail, follow: false, printer: dummyPrinter})
+
+		assert.NoError(t, err)
+		apps.AssertExpectations(t)
 	})
 }

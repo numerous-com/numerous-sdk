@@ -8,10 +8,10 @@ import (
 )
 
 type AppDeployLogsSubscription struct {
-	AppDeployLogs AppDeployLogEntry `graphql:"appDeployLogs(input: {organizationSlug: $orgSlug, appSlug: $appSlug})"`
+	AppDeployLogs AppDeployLogEntry `graphql:"appDeployLogs(input: {organizationSlug: $orgSlug, appSlug: $appSlug, tail: $tail, follow: $follow})"`
 }
 
-func (s *Service) AppDeployLogs(ai appident.AppIdentifier) (chan AppDeployLogEntry, error) {
+func (s *Service) AppDeployLogs(ai appident.AppIdentifier, tail *int, follow bool) (chan AppDeployLogEntry, error) {
 	ch := make(chan AppDeployLogEntry)
 
 	handler := func(message []byte, err error) error {
@@ -34,6 +34,9 @@ func (s *Service) AppDeployLogs(ai appident.AppIdentifier) (chan AppDeployLogEnt
 	vars := make(map[string]any)
 	vars["orgSlug"] = ai.OrganizationSlug
 	vars["appSlug"] = ai.AppSlug
+	vars["tail"] = tail
+	vars["follow"] = follow
+
 	_, err := s.subscription.Subscribe(&AppDeployLogsSubscription{}, vars, handler, graphql.OperationName("CLIAppDeployLogs"))
 	if err != nil {
 		return nil, err

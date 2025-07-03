@@ -63,6 +63,8 @@ class AppDeployInput(BaseModel):
 class AppDeployLogsInput(BaseModel):
     organization_slug: str = Field(alias="organizationSlug")
     app_slug: str = Field(alias="appSlug")
+    tail: Optional[int] = None
+    follow: Optional[bool] = None
 
 
 class AppRenameInput(BaseModel):

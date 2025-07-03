@@ -44,7 +44,7 @@ type appService interface {
 	UploadAppSource(uploadURL string, archive app.UploadArchive) error
 	DeployApp(ctx context.Context, input app.DeployAppInput) (app.DeployAppOutput, error)
 	DeployEvents(ctx context.Context, input app.DeployEventsInput) error
-	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
+	AppDeployLogs(appident.AppIdentifier, *int, bool) (chan app.AppDeployLogEntry, error)
 }
 
 type deployInput struct {
@@ -497,7 +497,7 @@ func loadSecretsFromEnv(appDir string) map[string]string {
 
 func followLogs(ctx context.Context, apps appService, orgSlug, appSlug string) error {
 	ai := appident.AppIdentifier{OrganizationSlug: orgSlug, AppSlug: appSlug}
-	ch, err := apps.AppDeployLogs(ai)
+	ch, err := apps.AppDeployLogs(ai, nil, true)
 	if err != nil {
 		app.PrintAppError(err, ai)
 		return err

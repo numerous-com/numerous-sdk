@@ -497,6 +497,8 @@ union AppDeployEvent =
 input AppDeployLogsInput {
   organizationSlug: String!
   appSlug: String!
+  tail: Int # N most recent lines
+  follow: Boolean # continue streaming new logs (default: true)
 }
 
 type AppDeployLogEntry {

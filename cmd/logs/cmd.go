@@ -31,6 +31,14 @@ const example string = `To read the logs from a specific app deployment, use the
 
     numerous logs --organization "organization-slug-a2ecf59b" --app "my-app"
 
+To tail only the last 100 lines and follow new logs:
+
+    numerous logs --organization "organization-slug-a2ecf59b" --app "my-app" --tail 100 --follow
+
+To get logs without following (one-time read):
+
+    numerous logs --organization "organization-slug-a2ecf59b" --app "my-app" --follow=false
+
 Otherwise, assuming an app has been initialized in the directory
 "my_project/my_app" and has a default deployment defined in its manifest:
 
@@ -50,6 +58,8 @@ var Cmd = &cobra.Command{
 var cmdArgs struct {
 	appIdent   args.AppIdentifierArg
 	timestamps bool
+	tail       int
+	follow     bool
 	appDir     string
 }
 
@@ -75,6 +85,8 @@ func run(cmd *cobra.Command, args []string) error {
 		appDir:  cmdArgs.appDir,
 		orgSlug: cmdArgs.appIdent.OrganizationSlug,
 		appSlug: cmdArgs.appIdent.AppSlug,
+		tail:    cmdArgs.tail,
+		follow:  cmdArgs.follow,
 		printer: printer,
 	}
 	err := logs(cmd.Context(), service, input)
@@ -86,4 +98,6 @@ func init() {
 	flags := Cmd.Flags()
 	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
 	flags.BoolVarP(&cmdArgs.timestamps, "timestamps", "t", false, "Print a timestamp for each log entry.")
+	flags.IntVarP(&cmdArgs.tail, "tail", "n", 0, "Number of lines to show from the end")
+	flags.BoolVarP(&cmdArgs.follow, "follow", "f", true, "Continue streaming new log entries (default: true)")
 }
