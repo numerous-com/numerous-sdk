@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.50.0 (2025-07-04)
+
+### Feature
+
+* feat(cli): `tail` and `follow` options of `numerous logs` (#79) ([`b052a7d`](https://github.com/numerous-com/numerous-sdk/commit/b052a7db5653a89257007b1855409e43376bf327))
+
+
+
+
 ## v0.49.0 (2025-07-01)
 
 ### Feature
