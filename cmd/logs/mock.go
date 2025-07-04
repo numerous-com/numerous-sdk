@@ -14,7 +14,7 @@ type AppServiceMock struct {
 }
 
 // AppDeployLogs implements AppService.
-func (m *AppServiceMock) AppDeployLogs(ai appident.AppIdentifier) (chan app.AppDeployLogEntry, error) {
-	args := m.Called(ai)
+func (m *AppServiceMock) AppDeployLogs(ai appident.AppIdentifier, tail *int, follow bool) (chan app.AppDeployLogEntry, error) {
+	args := m.Called(ai, tail, follow)
 	return args.Get(0).(chan app.AppDeployLogEntry), args.Error(1)
 }

@@ -11,13 +11,15 @@ import (
 )
 
 type appService interface {
-	AppDeployLogs(appident.AppIdentifier) (chan app.AppDeployLogEntry, error)
+	AppDeployLogs(appident.AppIdentifier, *int, bool) (chan app.AppDeployLogEntry, error)
 }
 
 type logsInput struct {
 	appDir  string
 	orgSlug string
 	appSlug string
+	tail    int
+	follow  bool
 	printer func(app.AppDeployLogEntry)
 }
 
@@ -28,7 +30,12 @@ func logs(ctx context.Context, apps appService, input logsInput) error {
 		return err
 	}
 
-	ch, err := apps.AppDeployLogs(ai)
+	var tail *int
+	if input.tail > 0 {
+		tail = &input.tail
+	}
+
+	ch, err := apps.AppDeployLogs(ai, tail, input.follow)
 	if err != nil {
 		app.PrintAppError(err, ai)
 		return err

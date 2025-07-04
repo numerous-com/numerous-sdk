@@ -58,7 +58,7 @@ func (m *mockAppService) UploadAppSource(uploadURL string, archive app.UploadArc
 }
 
 // AppDeployLogs implements AppService.
-func (m *mockAppService) AppDeployLogs(ai appident.AppIdentifier) (chan app.AppDeployLogEntry, error) {
-	args := m.Called(ai)
+func (m *mockAppService) AppDeployLogs(ai appident.AppIdentifier, tail *int, follow bool) (chan app.AppDeployLogEntry, error) {
+	args := m.Called(ai, tail, follow)
 	return args.Get(0).(chan app.AppDeployLogEntry), args.Error(1)
 }

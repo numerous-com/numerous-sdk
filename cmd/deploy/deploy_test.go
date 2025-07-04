@@ -277,7 +277,7 @@ func TestDeploy(t *testing.T) {
 		ch <- expectedEntry1
 		ch <- expectedEntry2
 		close(ch)
-		apps.On("AppDeployLogs", appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}).Once().Return(ch, nil)
+		apps.On("AppDeployLogs", appident.AppIdentifier{OrganizationSlug: slug, AppSlug: appSlug}, (*int)(nil), true).Once().Return(ch, nil)
 
 		input := deployInput{appDir: appDir, orgSlug: slug, appSlug: appSlug, version: expectedVersion, message: expectedMessage, verbose: true, follow: true}
 		stdoutR, err := test.RunEWithPatchedStdout(t, func() error {
