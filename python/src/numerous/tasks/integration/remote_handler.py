@@ -75,7 +75,7 @@ class RemoteTaskControlHandler(TaskControlHandler):
         """Initialize the GraphQL client using existing organization client."""
         try:
             # Use existing centralized client (follows SDK patterns)
-            from numerous.organization import get_client
+            from numerous.collections._get_client import get_client
             self._client = get_client()
             
             # Initialize idempotent operations

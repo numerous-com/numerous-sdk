@@ -68,6 +68,24 @@ class Task(Generic[UserCallable, R]):
         This is used for Stage 1 direct execution.
         Creates a lightweight TaskControl if needed and executes the function directly.
         """
+        # Check if API mode is enabled and handle API execution
+        try:
+            from .api_backend import is_api_mode, api_task_execution_wrapper
+            if is_api_mode():
+                # Use API execution wrapper which handles input fetching and result reporting
+                if self.expects_task_control:
+                    def task_with_control(*api_args, **api_kwargs):
+                        from .control import create_direct_execution_task_control
+                        task_control = create_direct_execution_task_control(self.name)
+                        return self._original_func(task_control, *api_args, **api_kwargs)
+                    return api_task_execution_wrapper(task_with_control, self.name, *args, **kwargs)
+                else:
+                    return api_task_execution_wrapper(self._original_func, self.name, *args, **kwargs)
+        except ImportError:
+            # API backend not available, continue with normal execution
+            pass
+        
+        # Normal execution (non-API mode)
         if self.expects_task_control:
             # Create a lightweight TaskControl for direct execution
             from .control import create_direct_execution_task_control

@@ -20,7 +20,7 @@ dev = [
     "pre-commit",
     "pytest==8.3.2",
     "pytest-asyncio==0.24.0",
-    "freezegun==1.4.0",
+    "freezegun==1.5.1",
     "ruff==0.6.4",
     "mypy==1.11.2",
     "types-requests>=2.32.0",
@@ -29,6 +29,10 @@ dev = [
     "marimo==0.8.14",
     "types-setuptools>=74.1.0",
     "build==1.2.2",
+    # Missing dependencies for testing
+    "tomli>=2.0.0",
+    "moto[mock_aws]>=5.0.0",
+    "pytest-httpx>=0.30.0",
     # for generating GraphQL client code from schema
     "ariadne-codegen[subscriptions]>=0.14.0",
     # for docs
@@ -102,6 +106,10 @@ target_package_path = "src/numerous/_client"
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 
 [tool.semantic_release]
 branch = "main"

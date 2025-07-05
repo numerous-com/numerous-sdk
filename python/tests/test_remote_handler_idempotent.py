@@ -31,7 +31,7 @@ class TestRemoteTaskControlHandlerIdempotent:
     @pytest.fixture
     def handler(self, mock_client):
         """RemoteTaskControlHandler with mocked client."""
-        with patch('numerous.organization.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             handler = RemoteTaskControlHandler(session_id="test_session_123")
             # Mock the idempotent operations
             handler._idempotent_ops.upsert_task_definition = AsyncMock()
@@ -47,7 +47,7 @@ class TestRemoteTaskControlHandlerIdempotent:
     
     def test_initialization_auto_session(self):
         """Test handler initialization with auto-generated session ID."""
-        with patch('numerous.organization.get_client', return_value=Mock()):
+        with patch('numerous.collections._get_client.get_client', return_value=Mock()):
             handler = RemoteTaskControlHandler()
             assert handler.session_id.startswith("session_")
             assert handler.is_connected

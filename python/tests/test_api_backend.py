@@ -137,7 +137,7 @@ class TestAPIConnectedBackend:
         )
         
         mock_client = Mock()
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             assert backend.config == config
@@ -150,7 +150,7 @@ class TestAPIConnectedBackend:
             access_token="test-token"
         )
         
-        with patch('numerous.tasks.api_backend.get_client', side_effect=Exception("API connection failed")):
+        with patch('numerous.collections._get_client.get_client', side_effect=Exception("API connection failed")):
             with pytest.raises(BackendError, match="Cannot connect to API"):
                 APIConnectedBackend(config)
     
@@ -180,7 +180,7 @@ class TestAPIConnectedBackend:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response_data
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             result = backend.fetch_task_inputs("test-instance-123")
@@ -209,7 +209,7 @@ class TestAPIConnectedBackend:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response_data
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             result = backend.fetch_task_inputs("test-instance-123")
@@ -229,7 +229,7 @@ class TestAPIConnectedBackend:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response_data
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             with pytest.raises(BackendError, match="Task instance .* not found"):
@@ -253,7 +253,7 @@ class TestAPIConnectedBackend:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response_data
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Test successful result reporting
@@ -281,7 +281,7 @@ class TestAPIConnectedBackend:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response_data
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Test error reporting
@@ -298,7 +298,7 @@ class TestAPIConnectedBackend:
         )
         
         mock_client = Mock()
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             with patch('numerous.tasks.api_backend.set_task_control_handler') as mock_set_handler:
@@ -320,12 +320,15 @@ class TestAPIMode:
             'NUMEROUS_API_URL': 'https://api.test.com',
             'NUMEROUS_API_ACCESS_TOKEN': 'test-token'
         }):
-            with patch('numerous.tasks.api_backend.get_client'):
+            with patch('numerous.collections._get_client.get_client'):
                 assert is_api_mode() is True
     
     def test_is_api_mode_disabled(self):
         """Test API mode detection when environment variables are not set."""
         with patch.dict(os.environ, {}, clear=True):
+            # Clear the global backend cache to ensure clean state
+            import numerous.tasks.api_backend
+            numerous.tasks.api_backend._api_backend = None
             assert is_api_mode() is False
     
     def test_get_api_backend_success(self):
@@ -334,7 +337,7 @@ class TestAPIMode:
             'NUMEROUS_API_URL': 'https://api.test.com',
             'NUMEROUS_API_ACCESS_TOKEN': 'test-token'
         }):
-            with patch('numerous.tasks.api_backend.get_client'):
+            with patch('numerous.collections._get_client.get_client'):
                 backend = get_api_backend()
                 assert backend is not None
                 assert isinstance(backend, APIConnectedBackend)
@@ -342,6 +345,9 @@ class TestAPIMode:
     def test_get_api_backend_none(self):
         """Test getting API backend when not configured."""
         with patch.dict(os.environ, {}, clear=True):
+            # Clear the global backend cache to ensure clean state
+            import numerous.tasks.api_backend
+            numerous.tasks.api_backend._api_backend = None
             backend = get_api_backend()
             assert backend is None
     
@@ -351,7 +357,7 @@ class TestAPIMode:
             'NUMEROUS_API_URL': 'https://api.test.com',
             'NUMEROUS_API_ACCESS_TOKEN': 'test-token'
         }):
-            with patch('numerous.tasks.api_backend.get_client'):
+            with patch('numerous.collections._get_client.get_client'):
                 backend1 = get_api_backend()
                 backend2 = get_api_backend()
                 
@@ -380,7 +386,7 @@ class TestAPITaskExecutionWrapper:
             'NUMEROUS_API_ACCESS_TOKEN': 'test-token'
             # No NUMEROUS_TASK_INSTANCE_ID
         }):
-            with patch('numerous.tasks.api_backend.get_client'):
+            with patch('numerous.collections._get_client.get_client'):
                 result = api_task_execution_wrapper(test_task, "test_task", 5, 3)
                 assert result == 8
     
@@ -500,7 +506,7 @@ class TestAPIBackendErrorHandling:
         mock_client = Mock()
         mock_client._loop.await_coro.side_effect = Exception("API request failed")
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             with pytest.raises(BackendError, match="Failed to fetch inputs"):
@@ -516,7 +522,7 @@ class TestAPIBackendErrorHandling:
         mock_client = Mock()
         mock_client._loop.await_coro.side_effect = Exception("API request failed")
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             with pytest.raises(BackendError, match="Failed to report result"):

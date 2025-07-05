@@ -60,7 +60,7 @@ class TestTaskRegistration:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -97,7 +97,7 @@ class TestTaskRegistration:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -138,7 +138,7 @@ class TestExecutionConflictDetection:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -167,7 +167,7 @@ class TestExecutionConflictDetection:
         mock_error = Exception("ExecutionConflictError: Task instance instance-456 already has an active execution")
         mock_client._loop.await_coro.side_effect = mock_error
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act & Assert
@@ -198,7 +198,7 @@ class TestExecutionConflictDetection:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -222,7 +222,7 @@ class TestExecutionConflictDetection:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -255,7 +255,7 @@ class TestForceOperations:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -290,7 +290,7 @@ class TestForceOperations:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -328,7 +328,7 @@ class TestExecutionLifecycle:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -362,7 +362,7 @@ class TestExecutionLifecycle:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -395,7 +395,7 @@ class TestExecutionLifecycle:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -425,7 +425,7 @@ class TestSessionScoping:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -449,7 +449,7 @@ class TestSessionScoping:
         mock_error = Exception("SessionOwnershipError: Instance does not belong to session")
         mock_client._loop.await_coro.side_effect = mock_error
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act & Assert
@@ -477,7 +477,7 @@ class TestSessionScoping:
         mock_client = Mock()
         mock_client._loop.await_coro.return_value = mock_response
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -591,7 +591,7 @@ class TestRealTimeUpdates:
         mock_client = Mock()
         mock_client.subscribe.return_value = iter(mock_updates)
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
@@ -620,7 +620,7 @@ class TestRealTimeUpdates:
         mock_client = Mock()
         mock_client.subscribe.return_value = iter(mock_updates)
         
-        with patch('numerous.tasks.api_backend.get_client', return_value=mock_client):
+        with patch('numerous.collections._get_client.get_client', return_value=mock_client):
             backend = APIConnectedBackend(config)
             
             # Act
