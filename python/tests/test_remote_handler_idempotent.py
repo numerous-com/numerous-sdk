@@ -36,6 +36,8 @@ class TestRemoteTaskControlHandlerIdempotent:
             # Mock the idempotent operations
             handler._idempotent_ops.upsert_task_definition = AsyncMock()
             handler._idempotent_ops.upsert_task_instance = AsyncMock()
+            # Mock instance ID generation to be predictable
+            handler._idempotent_ops.generate_instance_id = Mock(return_value="test_session_123:test_task:1234567890")
             return handler
     
     def test_initialization(self, handler):

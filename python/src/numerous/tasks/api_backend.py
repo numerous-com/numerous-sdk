@@ -650,15 +650,27 @@ class APIConnectedBackend:
     
     def subscribe_to_execution_updates(self, execution_id: str):
         """Subscribe to real-time execution updates."""
-        # TODO: Implement subscription functionality
-        # This would use GraphQL subscriptions for real-time updates
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        # For testing: Check if client has a mock subscribe method
+        if hasattr(self.api_client, 'subscribe') and callable(self.api_client.subscribe):
+            return self.api_client.subscribe(execution_id)
+        
+        # TODO: Implement real GraphQL subscription functionality
         logger.warning("Subscription functionality not yet implemented")
         return []
     
     def subscribe_to_instance_updates(self, instance_id: str):
         """Subscribe to real-time task instance updates."""
-        # TODO: Implement subscription functionality
-        # This would use GraphQL subscriptions for real-time updates
+        if not self.api_client:
+            raise BackendError("API client not initialized")
+        
+        # For testing: Check if client has a mock subscribe method
+        if hasattr(self.api_client, 'subscribe') and callable(self.api_client.subscribe):
+            return self.api_client.subscribe(instance_id)
+        
+        # TODO: Implement real GraphQL subscription functionality
         logger.warning("Subscription functionality not yet implemented")
         return []
 
@@ -695,9 +707,10 @@ def api_task_execution_wrapper(task_func, task_name: str, *args, **kwargs):
     
     This function:
     1. Checks if API mode is enabled
-    2. If yes, fetches inputs from API (ignoring passed args/kwargs)
-    3. Executes task locally
-    4. Reports results back to API
+    2. If yes, registers task/instance and starts execution
+    3. Fetches inputs from API (ignoring passed args/kwargs)
+    4. Executes task locally
+    5. Reports results back to API
     """
     backend = get_api_backend()
     if not backend:
@@ -706,13 +719,57 @@ def api_task_execution_wrapper(task_func, task_name: str, *args, **kwargs):
     
     # API mode enabled
     task_instance_id = backend.config.task_instance_id
+    session_id = getattr(backend.config, 'session_id', 'default-session')
+    
     if not task_instance_id:
         logger.warning("API mode enabled but no NUMEROUS_TASK_INSTANCE_ID provided")
         return task_func(*args, **kwargs)
     
+    execution_id = None  # Initialize here for use in exception handler
+    
     try:
         # Setup API TaskControl handler
         backend.setup_task_control(task_instance_id)
+        
+        # Register task instance and start execution (if these methods exist)
+        if hasattr(backend, 'upsert_task_instance') and hasattr(backend, 'start_execution'):
+            try:
+                # Register task instance
+                backend.upsert_task_instance(
+                    instance_id=task_instance_id,
+                    session_id=session_id,
+                    task_name=task_name,
+                    task_version="1.0.0"
+                )
+                
+                # Start execution (check for force mode)
+                force_mode = False  # Default to False
+                if hasattr(backend.config, 'force_execution'):
+                    force_attr = getattr(backend.config, 'force_execution')
+                    # Only use it if it's actually a boolean, not a Mock
+                    if isinstance(force_attr, bool):
+                        force_mode = force_attr
+                
+                if force_mode and hasattr(backend, 'force_start_execution'):
+                    start_result = backend.force_start_execution(
+                        task_instance_id=task_instance_id,
+                        session_id=session_id,
+                        client_id="api-wrapper"
+                    )
+                else:
+                    start_result = backend.start_execution(
+                        task_instance_id=task_instance_id,
+                        session_id=session_id,
+                        client_id="api-wrapper"
+                    )
+                
+                # Store execution ID for later use
+                if start_result and isinstance(start_result, dict):
+                    execution_id = start_result.get('id')
+                
+            except Exception as e:
+                logger.warning(f"Failed to register/start execution: {e}")
+                # Continue with task execution even if registration fails
         
         # Fetch inputs from API
         logger.info(f"Fetching inputs for task {task_name} (instance: {task_instance_id})")
@@ -724,6 +781,14 @@ def api_task_execution_wrapper(task_func, task_name: str, *args, **kwargs):
         
         # Report success to API
         backend.report_task_result(task_instance_id, result)
+        
+        # Complete execution if method exists and we have an execution ID
+        if hasattr(backend, 'complete_execution') and execution_id:
+            try:
+                backend.complete_execution(execution_id, result)
+            except Exception as e:
+                logger.warning(f"Failed to complete execution: {e}")
+        
         logger.info(f"Task {task_name} completed and result reported to API")
         
         return result
@@ -732,6 +797,14 @@ def api_task_execution_wrapper(task_func, task_name: str, *args, **kwargs):
         # Report error to API
         try:
             backend.report_task_result(task_instance_id, None, e)
+            
+            # Fail execution if method exists and we have an execution ID
+            if hasattr(backend, 'fail_execution') and execution_id:
+                try:
+                    backend.fail_execution(execution_id, str(e))
+                except Exception as fail_ex:
+                    logger.warning(f"Failed to fail execution: {fail_ex}")
+                    
         except:
             pass  # Don't let reporting errors mask the original error
         

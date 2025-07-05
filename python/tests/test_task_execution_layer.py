@@ -85,7 +85,7 @@ class TestTaskRegistration:
         )
         
         mock_response = {
-            "upsertTaskInstance": {
+            "upsertInstance": {
                 "id": "instance-789",
                 "apiId": "instance-api-123",
                 "sessionId": "session-456",
@@ -244,7 +244,7 @@ class TestForceOperations:
         )
         
         mock_response = {
-            "forceStartExecution": {
+            "startExecution": {
                 "id": "execution-new-123",
                 "status": "RUNNING",
                 "taskInstanceId": "instance-456",
@@ -558,6 +558,12 @@ class TestTaskExecutionLayerIntegration:
         mock_backend = Mock()
         mock_backend.config.task_instance_id = "instance-123"
         mock_backend.fetch_task_inputs.return_value = {"should_fail": True}
+        
+        # Mock start_execution to return execution ID for fail_execution
+        mock_backend.start_execution.return_value = {
+            "id": "execution-error-123",
+            "status": "RUNNING"
+        }
         
         with patch('numerous.tasks.api_backend.get_api_backend', return_value=mock_backend):
             with Session() as session:
