@@ -338,7 +338,25 @@ def environment_aware_task(tc: TaskControl, data: dict) -> dict:
 
 ## Session Management
 
-Sessions provide context for managing related tasks with built-in concurrency control:
+### Understanding the Two Types of Sessions
+
+It's important to distinguish between two different session concepts:
+
+#### 1. **User Sessions** (Application/Authentication Sessions)
+- User authentication and application state management
+- Already in production and managed by your application framework
+- Examples: HTTP sessions, login sessions, browser sessions
+- Typically managed by Flask, FastAPI, Django, etc.
+
+#### 2. **Task Sessions** (Task Grouping and Management)
+- Organizational contexts for grouping related task instances  
+- Provide concurrency control and coordination for task execution
+- Can be named, persisted, and retrieved for later use
+- Independent from user authentication - one user might have multiple task sessions
+
+### Task Session Core Concepts
+
+Task Sessions provide context for managing related tasks with built-in concurrency control:
 
 ```python
 from numerous.tasks import Session, task, TaskControl
@@ -363,7 +381,7 @@ def batch_processor(tc: TaskControl, batch_id: str, items: list) -> dict:
     
     return {"batch_id": batch_id, "results": results}
 
-# Process multiple batches in a coordinated session
+# Create a named task session
 with Session(name="batch-processing-session") as session:
     futures = []
     
@@ -379,8 +397,302 @@ with Session(name="batch-processing-session") as session:
         result = future.result()
         results.append(result)
     
-    print(f"Processed {len(results)} batches")
+    print(f"Processed {len(results)} batches in session: {session.name}")
 ```
+
+### Integrating User Sessions with Task Sessions
+
+Here are common patterns for connecting user sessions with task sessions:
+
+#### Pattern 1: Task Sessions Tagged with User Session ID
+
+For short-lived, cheap tasks that are tied to a specific user session:
+
+```python
+from numerous.tasks import Session, task, TaskControl
+from flask import request, session as user_session  # User session from Flask
+
+@task
+def user_data_task(tc: TaskControl, user_id: str, data: dict) -> dict:
+    """Process user-specific data."""
+    tc.log(f"Processing data for user {user_id}", "info")
+    # Process data specific to this user
+    return {"user_id": user_id, "processed": data}
+
+def process_user_data(data):
+    """Process data within the context of the current user session."""
+    user_id = user_session.get('user_id')  # From user's HTTP session
+    
+    # Create task session tagged with user session info
+    task_session_name = f"user_{user_id}_session_{user_session.get('session_id')}"
+    
+    with Session(name=task_session_name) as task_session:
+        instance = user_data_task.instance()
+        future = instance.start(user_id, data)
+        result = future.result()
+        
+        return result
+```
+
+#### Pattern 2: Persistent Named Task Sessions
+
+For longer-running or user-managed task sessions that can be saved and loaded:
+
+```python
+from numerous.tasks import Session, task, TaskControl
+from typing import Dict, List
+import uuid
+
+# In-memory store (use database/collection in production)
+SAVED_TASK_SESSIONS: Dict[str, Dict] = {}
+
+@task(max_parallel=2)
+def data_analysis_task(tc: TaskControl, dataset_name: str, analysis_type: str) -> dict:
+    """Perform data analysis."""
+    tc.log(f"Analyzing {dataset_name} with {analysis_type}", "info")
+    # Analysis logic here
+    return {"dataset": dataset_name, "analysis": analysis_type, "result": "analyzed"}
+
+class TaskSessionManager:
+    """Manager for persistent task sessions."""
+    
+    @staticmethod
+    def create_named_session(session_name: str, user_id: str) -> str:
+        """Create a new named task session."""
+        session_id = str(uuid.uuid4())
+        
+        session_metadata = {
+            "session_id": session_id,
+            "name": session_name,
+            "user_id": user_id,
+            "created_at": "2024-01-01T00:00:00Z",
+            "status": "active",
+            "task_instances": []
+        }
+        
+        SAVED_TASK_SESSIONS[session_id] = session_metadata
+        return session_id
+    
+    @staticmethod
+    def get_user_sessions(user_id: str) -> List[Dict]:
+        """Get all task sessions for a specific user."""
+        return [
+            session for session in SAVED_TASK_SESSIONS.values()
+            if session["user_id"] == user_id
+        ]
+    
+    @staticmethod
+    def resume_session(session_id: str) -> Dict:
+        """Resume a previously created task session."""
+        return SAVED_TASK_SESSIONS.get(session_id)
+
+# Usage in your application
+def start_analysis_project(user_id: str, project_name: str, datasets: List[str]):
+    """Start a new analysis project for a user."""
+    
+    # Create persistent task session
+    session_id = TaskSessionManager.create_named_session(
+        session_name=f"{user_id}_{project_name}_analysis",
+        user_id=user_id
+    )
+    
+    # Execute tasks within the named session
+    with Session(name=f"analysis_project_{session_id}") as task_session:
+        futures = []
+        
+        for dataset in datasets:
+            instance = data_analysis_task.instance()
+            future = instance.start(dataset, "statistical_analysis")
+            futures.append(future)
+        
+        # Update session metadata
+        SAVED_TASK_SESSIONS[session_id]["task_instances"] = [
+            {"task": "data_analysis_task", "dataset": dataset} 
+            for dataset in datasets
+        ]
+        
+        # Collect results
+        results = [future.result() for future in futures]
+        
+        # Mark session as completed
+        SAVED_TASK_SESSIONS[session_id]["status"] = "completed"
+        SAVED_TASK_SESSIONS[session_id]["results"] = results
+        
+        return session_id, results
+
+def load_user_sessions_for_ui(user_id: str):
+    """Get user's task sessions for UI display (Load Session - select from list)."""
+    user_sessions = TaskSessionManager.get_user_sessions(user_id)
+    
+    # Format for UI dropdown/selection
+    return [
+        {
+            "id": session["session_id"],
+            "name": session["name"],
+            "created": session["created_at"],
+            "status": session["status"],
+            "task_count": len(session["task_instances"])
+        }
+        for session in user_sessions
+    ]
+```
+
+#### Pattern 3: Framework Integration with Session Distinction
+
+Example showing both session types in a FastAPI application:
+
+```python
+from fastapi import FastAPI, Request, Depends
+from numerous.tasks import Session, task, TaskControl
+from numerous.frameworks.fastapi import get_session
+
+app = FastAPI()
+
+@task
+def process_user_document(tc: TaskControl, doc_id: str, user_id: str) -> dict:
+    """Process a document for a specific user."""
+    tc.log(f"Processing document {doc_id} for user {user_id}", "info")
+    # Document processing logic
+    return {"doc_id": doc_id, "user_id": user_id, "status": "processed"}
+
+@app.post("/process-documents")
+async def process_documents(
+    request: Request,
+    document_ids: List[str],
+    task_session_name: str = None  # Optional: user can name their task session
+):
+    """Process multiple documents for the authenticated user."""
+    
+    # 1. Get user from HTTP/authentication session
+    user_id = request.session.get("user_id")  # From HTTP session (User Session)
+    if not user_id:
+        return {"error": "Not authenticated"}
+    
+    # 2. Create or get task session name
+    if not task_session_name:
+        task_session_name = f"user_{user_id}_docs_{len(document_ids)}"
+    
+    # 3. Use framework-specific task session
+    task_session = get_session(request)  # Gets/creates task session for this request
+    
+    # Alternative: Create explicitly named task session
+    # with Session(name=task_session_name) as task_session:
+    
+    futures = []
+    for doc_id in document_ids:
+        instance = process_user_document.instance()
+        future = instance.start(doc_id, user_id)
+        futures.append(future)
+    
+    # Wait for all documents to be processed
+    results = [future.result() for future in futures]
+    
+    return {
+        "user_id": user_id,  # From user session
+        "task_session_name": task_session_name,  # Task session identifier
+        "processed_documents": len(results),
+        "results": results
+    }
+
+@app.get("/my-task-sessions")
+async def get_my_task_sessions(request: Request):
+    """Get task sessions for the current user (for UI 'Load Session' dropdown)."""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return {"error": "Not authenticated"}
+    
+    # Return user's task sessions for UI selection
+    return load_user_sessions_for_ui(user_id)
+```
+
+### Task Session Lifecycle Management
+
+```python
+from numerous.tasks import Session, task, TaskControl
+
+@task
+def cleanup_task(tc: TaskControl, temp_files: List[str]) -> dict:
+    """Clean up temporary files."""
+    tc.log(f"Cleaning up {len(temp_files)} temporary files", "info")
+    # Cleanup logic
+    return {"cleaned_files": len(temp_files)}
+
+class TaskSessionLifecycle:
+    """Manage task session lifecycle with proper cleanup."""
+    
+    def __init__(self, session_name: str, user_id: str = None):
+        self.session_name = session_name
+        self.user_id = user_id
+        self.task_session = None
+    
+    def __enter__(self):
+        """Start the task session."""
+        self.task_session = Session(name=self.session_name)
+        return self.task_session.__enter__()
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Clean up the task session."""
+        try:
+            # Perform cleanup tasks
+            if self.task_session:
+                cleanup_instance = cleanup_task.instance()
+                cleanup_future = cleanup_instance.start([])  # Files to clean
+                cleanup_future.result()  # Wait for cleanup
+                
+        finally:
+            # Close the task session
+            if self.task_session:
+                self.task_session.__exit__(exc_type, exc_val, exc_tb)
+
+# Usage
+with TaskSessionLifecycle("data_processing_session", user_id="user123") as session:
+    # Your task processing here
+    pass  # Session automatically cleaned up
+```
+
+### Best Practices for Session Management
+
+#### 1. **Naming Conventions**
+- **User Sessions**: Use framework conventions (`session`, `request.session`, etc.)
+- **Task Sessions**: Use descriptive names that indicate purpose
+  ```python
+  # Good task session names
+  "user_123_data_analysis_2024"
+  "batch_processing_session_456"
+  "document_processing_user_789"
+  ```
+
+#### 2. **Session Scope Guidelines**
+- **User Sessions**: Authentication, user preferences, HTTP state
+- **Task Sessions**: Task coordination, concurrency control, progress tracking
+- **Don't mix**: Keep user authentication separate from task management
+
+#### 3. **Persistence Patterns**
+- **Short-lived tasks**: Tag task sessions with user session ID
+- **Long-running workflows**: Use named task sessions with database persistence
+- **UI-managed sessions**: Store task session metadata for user selection
+
+#### 4. **Error Handling**
+```python
+from numerous.tasks import Session, TaskError
+
+def safe_task_session_execution(session_name: str, user_id: str):
+    """Execute tasks with proper error handling."""
+    try:
+        with Session(name=session_name) as task_session:
+            # Task execution here
+            pass
+    except TaskError as e:
+        # Log task-specific errors
+        print(f"Task session {session_name} failed for user {user_id}: {e}")
+        # Notify user or trigger recovery
+    except Exception as e:
+        # Handle unexpected errors
+        print(f"Unexpected error in task session {session_name}: {e}")
+        # Cleanup and notify
+```
+
+By clearly separating User Sessions (authentication/application state) from Task Sessions (task grouping/management), you can build robust applications that leverage both concepts effectively while avoiding confusion between the two distinct session types.
 
 ## Task Definition and Configuration
 
