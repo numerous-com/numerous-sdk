@@ -1,35 +1,40 @@
 # Tasks
 
 With Numerous Tasks, you can define, execute, and manage long-running Python functions as distributed tasks.
-Tasks provide a powerful way to handle asynchronous operations, background processing, and scalable workloads.
+Tasks provide a powerful way to handle asynchronous operations, background processing, and scalable workloads with seamless integration across development, testing, and production environments.
 
-1. Define tasks using the simple `@task` decorator on Python functions.
-2. Execute tasks locally for development or remotely on the Numerous platform.
-3. Monitor task progress, status, and logs in real-time.
-4. Manage task sessions and coordinate multiple related tasks.
-5. Handle task cancellation, error recovery, and resource management.
+## Key Features
+
+1. **Define tasks** using the simple `@task` decorator on Python functions
+2. **Execute tasks** locally for development or remotely on the Numerous platform
+3. **Monitor progress** with real-time status updates, progress tracking, and structured logging
+4. **Manage sessions** to coordinate multiple related tasks with concurrency control
+5. **Handle cancellation** and error recovery with graceful shutdown patterns
+6. **Integrate seamlessly** with FastAPI, Streamlit, and other Python frameworks
+7. **Deploy easily** using the Numerous CLI for production workloads
 
 !!! tip
     Remember to add `numerous` as a dependency in your project; most likely to your `requirements.txt` file.
 
-Import the [Numerous SDK](http://www.pypi.org/project/numerous) in your Python code.
+## Quick Start
 
-Now, you can add code to your app that is similar to the following:
+Import the [Numerous SDK](http://www.pypi.org/project/numerous) in your Python code:
 
-```py
+```python
 import time
 from numerous.tasks import task, Session, TaskControl
 
 # Define a simple task
 @task
 def process_data(data: list) -> dict:
-    # Your task logic here
+    """Process a list of data items."""
     result = {"processed": len(data), "items": data}
     return result
 
 # Define a task with progress tracking
 @task
 def long_running_task(tc: TaskControl, iterations: int) -> str:
+    """Execute a long-running task with progress updates."""
     for i in range(iterations):
         # Check if task should stop
         if tc.should_stop:
@@ -61,63 +66,375 @@ with Session() as session:
     print(result)  # "Processed 10 items"
 ```
 
-## Using Tasks
+## Development Workflows
 
-Numerous Tasks provides a flexible framework for defining and executing asynchronous operations with built-in progress tracking, logging, and session management.
+Numerous Tasks support multiple execution modes to accommodate different stages of your development workflow:
 
-### Defining Tasks
+### 1. Direct Execution (Development & Testing)
 
-Use the `@task` decorator to convert any Python function into a Numerous Task:
+Perfect for rapid development and unit testing. Tasks execute synchronously as regular function calls:
 
-```py
+```python
 from numerous.tasks import task
 
 @task
-def simple_task(value: int) -> int:
-    return value * 2
+def validate_data(data: dict) -> bool:
+    """Validate data structure."""
+    return all(key in data for key in ['id', 'name', 'value'])
 
-# Task with configuration
-@task(max_parallel=5, size="medium")
-def configured_task(data: list) -> dict:
-    return {"count": len(data)}
+# Direct execution - no session required
+# Great for development and testing
+is_valid = validate_data({'id': 1, 'name': 'test', 'value': 42})
+print(is_valid)  # True
 ```
 
-#### Task Configuration Options
+**Use cases:**
+- Unit testing task logic
+- Interactive development in Jupyter notebooks
+- Quick validation of task behavior
 
-- `max_parallel`: Maximum number of concurrent instances (default: 1)
-- `size`: Resource size hint - "small", "medium", "large" (default: "small")
-- `name`: Custom name for the task (default: function name)
+### 2. Local Task Instances (Integration Testing)
 
-### Task Control and Progress Tracking
+Execute tasks as instances with full TaskControl features while running locally:
 
-Tasks can receive a `TaskControl` object for advanced features like progress tracking, logging, and cancellation:
+```python
+from numerous.tasks import task, Session, TaskControl
 
-```py
+@task
+def integration_test_task(tc: TaskControl, config: dict) -> dict:
+    """Test task with full monitoring capabilities."""
+    tc.log("Starting integration test", "info")
+    tc.update_progress(50, "Validating configuration")
+    
+    # Your test logic here
+    result = {"status": "success", "config": config}
+    
+    tc.update_progress(100, "Test completed")
+    tc.log("Integration test finished", "info")
+    return result
+
+# Local execution with task control
+with Session() as session:
+    instance = integration_test_task.instance()
+    future = instance.start({"env": "test"})
+    result = future.result()
+    print(result)
+```
+
+**Use cases:**
+- Integration testing with monitoring
+- Local development with progress tracking
+- Testing cancellation and error handling
+
+### 3. Remote Execution (Production)
+
+Execute tasks on the Numerous platform with automatic scaling and resource management:
+
+```python
+import os
+
+# Configure for remote execution
+os.environ['NUMEROUS_TASK_BACKEND'] = 'remote'
+
+# Same code works for remote execution
+with Session() as session:
+    instance = process_large_dataset.instance()
+    future = instance.start(massive_dataset)
+    result = future.result()  # Executes on Numerous platform
+```
+
+**Use cases:**
+- Production workloads
+- Resource-intensive tasks
+- Scaling beyond local machine capabilities
+
+## Framework Integration
+
+### FastAPI Integration
+
+Integrate tasks seamlessly with FastAPI applications for robust web APIs:
+
+```python
+from fastapi import FastAPI, Request, BackgroundTasks
+from numerous.tasks import task, Session, TaskControl
+from numerous.frameworks.fastapi import get_session
+
+app = FastAPI()
+
+@task
+def process_upload(tc: TaskControl, file_data: bytes, filename: str) -> dict:
+    """Process uploaded file in background."""
+    tc.log(f"Processing file: {filename}", "info")
+    tc.update_progress(50, "Analyzing file")
+    
+    # Your processing logic
+    result = {"filename": filename, "size": len(file_data), "status": "processed"}
+    
+    tc.update_progress(100, "Processing complete")
+    return result
+
+@app.post("/upload")
+async def upload_file(request: Request, file_data: bytes, filename: str):
+    """Upload endpoint that triggers background processing."""
+    # Get user session from request
+    session = get_session(request)
+    
+    # Start background task
+    with session:
+        instance = process_upload.instance()
+        future = instance.start(file_data, filename)
+        
+        return {
+            "message": "File uploaded successfully",
+            "task_id": instance.id,
+            "status": "processing"
+        }
+
+@app.get("/status/{task_id}")
+async def get_task_status(task_id: str):
+    """Check task status."""
+    # Implementation depends on your task tracking needs
+    return {"task_id": task_id, "status": "completed"}
+```
+
+### Streamlit Integration
+
+Create interactive data processing applications with Streamlit:
+
+```python
+import streamlit as st
+from numerous.tasks import task, Session, TaskControl
+from numerous.frameworks.streamlit import get_session
+
+@task
+def analyze_data(tc: TaskControl, data: list, analysis_type: str) -> dict:
+    """Analyze data with progress updates."""
+    tc.log(f"Starting {analysis_type} analysis", "info")
+    
+    results = {}
+    total_steps = len(data)
+    
+    for i, item in enumerate(data):
+        if tc.should_stop:
+            break
+            
+        # Simulate analysis
+        progress = (i + 1) / total_steps * 100
+        tc.update_progress(progress, f"Analyzing item {i+1}/{total_steps}")
+        
+        # Add to results
+        results[f"item_{i}"] = {"value": item, "analysis": analysis_type}
+    
+    tc.log("Analysis completed", "info")
+    return results
+
+# Streamlit app
+st.title("Data Analysis with Tasks")
+
+# Get user session
+session = get_session()
+
+# UI elements
+data_input = st.text_area("Enter data (one item per line)")
+analysis_type = st.selectbox("Analysis Type", ["statistical", "qualitative"])
+
+if st.button("Start Analysis"):
+    if data_input:
+        data = [line.strip() for line in data_input.split('\n') if line.strip()]
+        
+        with session:
+            instance = analyze_data.instance()
+            future = instance.start(data, analysis_type)
+            
+            # Show progress
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # In a real app, you'd want to poll for progress
+            # This is a simplified example
+            with st.spinner("Processing..."):
+                result = future.result()
+                
+            st.success("Analysis completed!")
+            st.json(result)
+```
+
+## CLI Integration and Deployment
+
+### Local Development with CLI
+
+Use the Numerous CLI to manage your task-based applications:
+
+```bash
+# Initialize a new project
+numerous init
+
+# Configure your numerous.toml
+```
+
+```toml
+# numerous.toml
+name = "Task Processing App"
+description = "An application that processes data using Numerous Tasks"
+port = 8000
+
+[python]
+version = "3.11"
+library = "fastapi"
+app_file = "main.py"
+requirements_file = "requirements.txt"
+
+[deploy]
+app = "my-task-app"
+organization = "my-org-slug"
+```
+
+### Deployment Workflow
+
+1. **Develop locally** using direct execution and local task instances
+2. **Test integration** with your chosen framework (FastAPI, Streamlit)
+3. **Deploy to production** using the Numerous CLI
+
+```bash
+# Deploy your application
+numerous deploy
+
+# Monitor logs
+numerous logs
+
+# Check deployment status
+numerous list
+```
+
+### Environment Configuration
+
+Configure task execution based on your environment:
+
+```python
+import os
+from numerous.tasks import task, Session, TaskControl
+
+# Configure backend based on environment
+if os.getenv('ENVIRONMENT') == 'production':
+    os.environ['NUMEROUS_TASK_BACKEND'] = 'remote'
+else:
+    os.environ['NUMEROUS_TASK_BACKEND'] = 'local'
+
+@task
+def environment_aware_task(tc: TaskControl, data: dict) -> dict:
+    """Task that adapts to different environments."""
+    env = os.getenv('ENVIRONMENT', 'development')
+    tc.log(f"Running in {env} environment", "info")
+    
+    if env == 'production':
+        # Use production-specific logic
+        tc.log("Using production optimizations", "info")
+    else:
+        # Use development-specific logic
+        tc.log("Using development settings", "info")
+    
+    return {"environment": env, "data": data}
+```
+
+## Session Management
+
+Sessions provide context for managing related tasks with built-in concurrency control:
+
+```python
+from numerous.tasks import Session, task, TaskControl
+
+@task(max_parallel=3)
+def batch_processor(tc: TaskControl, batch_id: str, items: list) -> dict:
+    """Process a batch of items."""
+    tc.log(f"Processing batch {batch_id}", "info")
+    
+    results = []
+    for i, item in enumerate(items):
+        if tc.should_stop:
+            break
+            
+        # Process item
+        result = {"item": item, "processed": True}
+        results.append(result)
+        
+        # Update progress
+        progress = (i + 1) / len(items) * 100
+        tc.update_progress(progress, f"Batch {batch_id}: {i+1}/{len(items)}")
+    
+    return {"batch_id": batch_id, "results": results}
+
+# Process multiple batches in a coordinated session
+with Session(name="batch-processing-session") as session:
+    futures = []
+    
+    # Start multiple batches (respecting max_parallel=3)
+    for i, batch_data in enumerate(dataset_batches):
+        instance = batch_processor.instance()
+        future = instance.start(f"batch_{i}", batch_data)
+        futures.append(future)
+    
+    # Collect results
+    results = []
+    for future in futures:
+        result = future.result()
+        results.append(result)
+    
+    print(f"Processed {len(results)} batches")
+```
+
+## Task Definition and Configuration
+
+### Basic Task Definition
+
+```python
 from numerous.tasks import task, TaskControl
 
 @task
-def monitored_task(tc: TaskControl, items: list) -> dict:
-    tc.log("Starting task execution", "info")
+def basic_task(value: int) -> int:
+    """A simple task that doubles a value."""
+    return value * 2
+
+# With configuration
+@task(name="configured_task", max_parallel=5, size="medium")
+def configured_task(tc: TaskControl, data: list) -> dict:
+    """A task with custom configuration."""
+    tc.log("Processing data", "info")
+    return {"processed": len(data), "items": data}
+```
+
+### Configuration Options
+
+- **`name`**: Custom name for the task (default: function name)
+- **`max_parallel`**: Maximum concurrent instances (default: 1)
+- **`size`**: Resource size hint - "small", "medium", "large" (default: "small")
+
+### Advanced Task Control
+
+```python
+@task
+def advanced_task(tc: TaskControl, items: list) -> dict:
+    """Task demonstrating all TaskControl features."""
+    tc.log("Starting advanced task", "info")
     tc.update_status("Initializing")
     
     results = []
     total = len(items)
     
     for i, item in enumerate(items):
-        # Check for cancellation
+        # Cancellation check
         if tc.should_stop:
             tc.log("Task cancelled by user", "warning")
             break
             
         # Process item
-        processed = process_item(item)  # Your processing logic
+        processed = process_item(item)
         results.append(processed)
         
-        # Update progress
+        # Progress updates
         progress = (i + 1) / total * 100
         tc.update_progress(progress, f"Processed {i+1}/{total} items")
         
-        # Log important events
+        # Structured logging
         if i % 10 == 0:
             tc.log(f"Checkpoint: processed {i+1} items", "info")
     
@@ -126,324 +443,222 @@ def monitored_task(tc: TaskControl, items: list) -> dict:
     return {"processed": len(results), "results": results}
 ```
 
-#### TaskControl Methods
+## Error Handling and Cancellation
 
-- `tc.log(message, level)`: Log messages with levels: "debug", "info", "warning", "error"
-- `tc.update_progress(percentage, status)`: Update progress (0-100) and status message
-- `tc.update_status(status)`: Update just the status message
-- `tc.should_stop`: Check if task should stop (boolean property)
+### Graceful Cancellation
 
-### Session Management
-
-Sessions provide a context for managing related tasks and enforcing concurrency limits:
-
-```py
-from numerous.tasks import Session
-
-# Create a named session
-with Session(name="data-processing-batch") as session:
-    # All tasks created in this context belong to this session
-    instance1 = task_a.instance()
-    instance2 = task_b.instance()
-    
-    # Start tasks
-    future1 = instance1.start(data_chunk_1)
-    future2 = instance2.start(data_chunk_2)
-    
-    # Wait for results
-    result1 = future1.result()
-    result2 = future2.result()
-```
-
-#### Session Features
-
-- **Task Grouping**: Organize related tasks together
-- **Concurrency Control**: Enforce `max_parallel` limits per task type within the session
-- **Resource Management**: Track and manage task instances
-- **Context Management**: Automatic cleanup when session ends
-
-### Task Execution Modes
-
-Tasks support multiple execution modes for different development stages:
-
-#### 1. Direct Execution (Development)
-
-Execute tasks directly as function calls for quick testing:
-
-```py
-@task
-def development_task(value: int) -> int:
-    return value * 2
-
-# Direct execution - no session required
-result = development_task(5)  # Returns 10 immediately
-```
-
-#### 2. Local Task Instances (Testing)
-
-Execute tasks as instances with full TaskControl features:
-
-```py
-with Session() as session:
-    instance = development_task.instance()
-    future = instance.start(5)
-    result = future.result()  # Returns 10
-```
-
-#### 3. Remote Execution (Production)
-
-Tasks execute on the Numerous platform with full scalability:
-
-```py
-# Same code works for remote execution
-# Backend is configured via environment variables
-with Session() as session:
-    instance = production_task.instance()
-    future = instance.start(large_dataset)
-    result = future.result()  # Executes on platform
-```
-
-### Future Objects and Asynchronous Execution
-
-Tasks return `Future` objects for asynchronous result handling:
-
-```py
-import time
-from numerous.tasks import task, Session, TaskControl
-
-@task(max_parallel=3)
-def async_task(tc: TaskControl, value: int) -> int:
-    tc.update_progress(50.0, "Processing")
-    time.sleep(1)  # Simulate work
-    tc.update_progress(100.0, "Complete")
-    return value * 2
-
-with Session() as session:
-    # Start multiple tasks concurrently
-    futures = []
-    for i in range(5):
-        instance = async_task.instance()
-        future = instance.start(i)
-        futures.append(future)
-    
-    # Collect results as they complete
-    results = []
-    for future in futures:
-        result = future.result()  # Blocks until this task completes
-        results.append(result)
-    
-    print(results)  # [0, 2, 4, 6, 8]
-```
-
-#### Future Methods and Properties
-
-- `future.result(timeout=None)`: Get result (blocks until complete)
-- `future.status`: Current status ("pending", "running", "completed", "failed", "cancelled")
-- `future.done`: Boolean indicating if task is complete
-- `future.error`: Exception if task failed, None otherwise
-- `future.cancel()`: Attempt to cancel the task
-
-### Task Cancellation
-
-Tasks can be cancelled gracefully using TaskControl:
-
-```py
-import time
-from numerous.tasks import task, Session, TaskControl
+```python
+from numerous.tasks import task, TaskControl
+from numerous.tasks.exceptions import TaskCancelledError
 
 @task
 def cancellable_task(tc: TaskControl, duration: int) -> str:
+    """Task that handles cancellation gracefully."""
     for i in range(duration):
         if tc.should_stop:
-            tc.log("Task cancelled gracefully", "info")
-            return "Cancelled"
+            tc.log("Graceful shutdown initiated", "warning")
+            # Cleanup logic here
+            raise TaskCancelledError("Task cancelled by user request")
         
         tc.update_progress(i / duration * 100, f"Step {i+1}/{duration}")
         time.sleep(1)
     
-    return "Completed"
+    return "Task completed successfully"
 
+# Usage with cancellation
 with Session() as session:
     instance = cancellable_task.instance()
-    future = instance.start(10)
+    future = instance.start(30)
     
-    # Cancel after 3 seconds
-    time.sleep(3)
-    instance.stop()  # Requests graceful cancellation
+    # Cancel after 5 seconds
+    import threading
+    def cancel_later():
+        time.sleep(5)
+        instance.stop()
     
-    result = future.result()  # Will be "Cancelled"
+    threading.Thread(target=cancel_later).start()
+    
+    try:
+        result = future.result()
+        print(result)
+    except TaskCancelledError:
+        print("Task was cancelled")
 ```
 
-### Error Handling
+### Error Recovery
 
-Tasks provide comprehensive error handling and recovery:
-
-```py
-from numerous.tasks import task, Session, TaskControl
+```python
+from numerous.tasks import task, TaskControl
 
 @task
-def error_prone_task(tc: TaskControl, should_fail: bool) -> str:
-    try:
-        tc.update_status("Processing")
-        
-        if should_fail:
-            raise ValueError("Simulated error")
-        
-        tc.update_progress(100.0, "Success")
-        return "Task completed successfully"
-        
-    except Exception as e:
-        tc.log(f"Task failed: {str(e)}", "error")
-        raise  # Re-raise to mark task as failed
-
-with Session() as session:
-    # Successful execution
-    instance1 = error_prone_task.instance()
-    future1 = instance1.start(False)
-    result1 = future1.result()  # "Task completed successfully"
+def resilient_task(tc: TaskControl, items: list, max_retries: int = 3) -> dict:
+    """Task with built-in error recovery."""
+    tc.log(f"Processing {len(items)} items with {max_retries} max retries", "info")
     
-    # Failed execution
-    instance2 = error_prone_task.instance()
-    future2 = instance2.start(True)
+    results = []
+    failures = []
     
-    try:
-        result2 = future2.result()
-    except ValueError as e:
-        print(f"Task failed: {e}")  # "Task failed: Simulated error"
-        print(f"Future status: {future2.status}")  # "failed"
-        print(f"Future error: {future2.error}")  # ValueError instance
+    for i, item in enumerate(items):
+        if tc.should_stop:
+            break
+            
+        retries = 0
+        while retries < max_retries:
+            try:
+                # Process item (might fail)
+                result = risky_operation(item)
+                results.append(result)
+                break
+            except Exception as e:
+                retries += 1
+                tc.log(f"Attempt {retries} failed for item {i}: {e}", "warning")
+                
+                if retries >= max_retries:
+                    failures.append({"item": item, "error": str(e)})
+                    tc.log(f"Max retries exceeded for item {i}", "error")
+                else:
+                    time.sleep(1)  # Wait before retry
+        
+        # Update progress
+        progress = (i + 1) / len(items) * 100
+        tc.update_progress(progress, f"Processed {i+1}/{len(items)} items")
+    
+    return {
+        "successful": len(results),
+        "failed": len(failures),
+        "results": results,
+        "failures": failures
+    }
 ```
 
-### Advanced Configuration
+## Code Examples
 
-#### Backend Configuration
+Explore comprehensive examples in the repository:
 
-Control where tasks execute using environment variables:
-
-```bash
-# Local execution (default)
-export NUMEROUS_TASK_BACKEND=local
-
-# Remote execution on Numerous platform
-export NUMEROUS_TASK_BACKEND=remote
-```
-
-#### Custom Task Control Handlers
-
-For advanced use cases, you can customize how TaskControl operations are handled:
-
-```py
-from numerous.tasks.control import TaskControlHandler, set_task_control_handler
-
-class CustomTaskControlHandler(TaskControlHandler):
-    def log(self, task_control, message, level, **extra_data):
-        # Custom logging implementation
-        print(f"[{level.upper()}] {task_control.task_definition_name}: {message}")
-    
-    def update_progress(self, task_control, progress, status):
-        # Custom progress tracking
-        print(f"Progress: {progress}% - {status}")
-    
-    def update_status(self, task_control, status):
-        # Custom status updates
-        print(f"Status: {status}")
-
-# Set custom handler globally
-set_task_control_handler(CustomTaskControlHandler())
-```
-
-### Best Practices
-
-1. **Use TaskControl for Long-Running Tasks**: Always include `TaskControl` parameter for tasks that take more than a few seconds.
-
-2. **Check for Cancellation**: Regularly check `tc.should_stop` in loops and long operations.
-
-3. **Provide Progress Updates**: Update progress and status to help users track task execution.
-
-4. **Handle Errors Gracefully**: Use try-catch blocks and log errors appropriately.
-
-5. **Configure Concurrency**: Set appropriate `max_parallel` limits based on your resources.
-
-6. **Use Sessions for Related Tasks**: Group related tasks in sessions for better organization.
-
-7. **Test Locally First**: Use direct execution for development, then task instances for testing.
+- **[Basic Local Task Example](https://github.com/numerous-com/numerous-sdk/blob/main/python/examples/basic_local_task.py)**: Demonstrates task definition, execution, and session management
+- **[Cancellation and Logging Example](https://github.com/numerous-com/numerous-sdk/blob/main/python/examples/cancellation_and_logging_task.py)**: Shows cancellation handling and structured logging
+- **[Failing Task Example](https://github.com/numerous-com/numerous-sdk/blob/main/python/examples/failing_task_example.py)**: Demonstrates error handling and recovery patterns
 
 ## Common Patterns
 
-### Batch Processing
+### Data Pipeline Processing
 
-```py
-@task(max_parallel=3)
+```python
+@task
+def extract_data(tc: TaskControl, source: str) -> dict:
+    """Extract data from source."""
+    tc.log(f"Extracting data from {source}", "info")
+    # Extraction logic
+    return {"source": source, "data": extracted_data}
+
+@task
+def transform_data(tc: TaskControl, raw_data: dict) -> dict:
+    """Transform extracted data."""
+    tc.log("Transforming data", "info")
+    # Transformation logic
+    return {"transformed": raw_data}
+
+@task
+def load_data(tc: TaskControl, processed_data: dict) -> dict:
+    """Load processed data to destination."""
+    tc.log("Loading data", "info")
+    # Loading logic
+    return {"loaded": True, "records": len(processed_data)}
+
+# Execute pipeline
+with Session(name="etl-pipeline") as session:
+    # Extract
+    extract_instance = extract_data.instance()
+    extract_future = extract_instance.start("database")
+    raw_data = extract_future.result()
+    
+    # Transform
+    transform_instance = transform_data.instance()
+    transform_future = transform_instance.start(raw_data)
+    processed_data = transform_future.result()
+    
+    # Load
+    load_instance = load_data.instance()
+    load_future = load_instance.start(processed_data)
+    final_result = load_future.result()
+```
+
+### Parallel Batch Processing
+
+```python
+@task(max_parallel=4)
 def process_batch(tc: TaskControl, batch_id: str, items: list) -> dict:
-    tc.log(f"Starting batch {batch_id} with {len(items)} items", "info")
+    """Process a batch of items in parallel."""
+    tc.log(f"Processing batch {batch_id} with {len(items)} items", "info")
     
     results = []
     for i, item in enumerate(items):
         if tc.should_stop:
             break
             
+        # Process individual item
         result = process_single_item(item)
         results.append(result)
         
+        # Update progress
         progress = (i + 1) / len(items) * 100
         tc.update_progress(progress, f"Batch {batch_id}: {i+1}/{len(items)}")
     
-    tc.log(f"Batch {batch_id} completed", "info")
-    return {"batch_id": batch_id, "processed": len(results)}
+    tc.log(f"Completed batch {batch_id}", "info")
+    return {"batch_id": batch_id, "processed": len(results), "results": results}
 
 # Process multiple batches concurrently
-with Session(name="batch-processing") as session:
+with Session(name="parallel-processing") as session:
     futures = []
-    for i, batch in enumerate(data_batches):
+    
+    # Start up to 4 batches concurrently (max_parallel=4)
+    for i, batch_data in enumerate(data_batches):
         instance = process_batch.instance()
-        future = instance.start(f"batch_{i}", batch)
+        future = instance.start(f"batch_{i}", batch_data)
         futures.append(future)
     
-    results = [f.result() for f in futures]
+    # Wait for all batches to complete
+    results = []
+    for future in futures:
+        result = future.result()
+        results.append(result)
+    
+    print(f"Processed {len(results)} batches")
 ```
 
-### Pipeline Processing
+## Best Practices
 
-```py
-@task
-def stage_1(tc: TaskControl, data: dict) -> dict:
-    tc.update_status("Stage 1: Data validation")
-    # Validation logic
-    return {"validated": data, "stage": 1}
+### 1. Task Design
 
-@task
-def stage_2(tc: TaskControl, data: dict) -> dict:
-    tc.update_status("Stage 2: Data transformation")
-    # Transformation logic
-    return {"transformed": data, "stage": 2}
+- **Single Responsibility**: Each task should have a clear, single purpose
+- **Idempotency**: Tasks should be safe to retry and produce consistent results
+- **Statelessness**: Avoid shared state between task instances
 
-@task
-def stage_3(tc: TaskControl, data: dict) -> dict:
-    tc.update_status("Stage 3: Data storage")
-    # Storage logic
-    return {"stored": data, "stage": 3}
+### 2. Progress and Logging
 
-# Execute pipeline
-with Session(name="data-pipeline") as session:
-    # Stage 1
-    instance1 = stage_1.instance()
-    future1 = instance1.start(raw_data)
-    result1 = future1.result()
-    
-    # Stage 2
-    instance2 = stage_2.instance()
-    future2 = instance2.start(result1)
-    result2 = future2.result()
-    
-    # Stage 3
-    instance3 = stage_3.instance()
-    future3 = instance3.start(result2)
-    final_result = future3.result()
-```
+- **Regular Progress Updates**: Use `tc.update_progress()` for long-running tasks
+- **Structured Logging**: Use appropriate log levels and meaningful messages
+- **Status Updates**: Keep users informed with `tc.update_status()`
+
+### 3. Error Handling
+
+- **Graceful Degradation**: Handle partial failures appropriately
+- **Retry Logic**: Implement exponential backoff for transient failures
+- **Cancellation Checks**: Regularly check `tc.should_stop` in loops
+
+### 4. Resource Management
+
+- **Appropriate Sizing**: Set correct `size` parameter for resource requirements
+- **Concurrency Limits**: Configure `max_parallel` based on available resources
+- **Session Management**: Use sessions to organize related tasks
+
+### 5. Development Workflow
+
+- **Start Simple**: Begin with direct execution for rapid development
+- **Test Locally**: Use local task instances for integration testing
+- **Deploy Incrementally**: Test thoroughly before switching to remote execution
 
 ## API Reference
-
-See the [API reference](reference/numerous/tasks/index.md) for complete details on all classes and methods.
 
 ### Core Classes
 
@@ -454,9 +669,87 @@ See the [API reference](reference/numerous/tasks/index.md) for complete details 
 - [`Session`](reference/numerous/tasks/session.md#numerous.tasks.session.Session) - Task session management
 - [`Future`](reference/numerous/tasks/future.md#numerous.tasks.future.Future) - Asynchronous result handling
 
+### Task Control Methods
+
+- [`tc.log(message, level)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.log) - Log messages with levels: "debug", "info", "warning", "error"
+- [`tc.update_progress(percentage, status)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.update_progress) - Update progress (0-100) and status message
+- [`tc.update_status(status)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.update_status) - Update just the status message
+- [`tc.should_stop`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.should_stop) - Check if task should stop (boolean property)
+
+### Future Methods
+
+- [`future.result(timeout=None)`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.result) - Get result (blocks until complete)
+- [`future.status`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.status) - Current status ("pending", "running", "completed", "failed", "cancelled")
+- [`future.done`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.done) - Boolean indicating if task is complete
+- [`future.error`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.error) - Exception if task failed, None otherwise
+- [`future.cancel()`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.cancel) - Attempt to cancel the task
+
+### Framework Integration
+
+- [`numerous.frameworks.fastapi.get_session(request)`](reference/numerous/frameworks/fastapi.md#numerous.frameworks.fastapi.get_session) - Get session for FastAPI applications
+- [`numerous.frameworks.streamlit.get_session()`](reference/numerous/frameworks/streamlit.md#numerous.frameworks.streamlit.get_session) - Get session for Streamlit applications
+
 ### Exceptions
 
 - [`TaskError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.TaskError) - Base task exception
 - [`MaxInstancesReachedError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.MaxInstancesReachedError) - Concurrency limit exceeded
 - [`SessionNotFoundError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.SessionNotFoundError) - No active session
-- [`TaskCancelledError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.TaskCancelledError) - Task was cancelled 
+- [`TaskCancelledError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.TaskCancelledError) - Task was cancelled
+
+## Advanced Topics
+
+### Custom Task Control Handlers
+
+For advanced use cases, customize how TaskControl operations are handled:
+
+```python
+from numerous.tasks.control import TaskControlHandler, set_task_control_handler
+
+class CustomTaskControlHandler(TaskControlHandler):
+    """Custom handler for task control operations."""
+    
+    def log(self, task_control, message, level, **extra_data):
+        """Custom logging implementation."""
+        print(f"[{level.upper()}] {task_control.task_definition_name}: {message}")
+    
+    def update_progress(self, task_control, progress, status):
+        """Custom progress tracking."""
+        print(f"Progress: {progress:.1f}% - {status}")
+    
+    def update_status(self, task_control, status):
+        """Custom status updates."""
+        print(f"Status: {status}")
+
+# Set custom handler globally
+set_task_control_handler(CustomTaskControlHandler())
+```
+
+### Backend Configuration
+
+Control task execution environment:
+
+```python
+import os
+
+# Local execution (default)
+os.environ['NUMEROUS_TASK_BACKEND'] = 'local'
+
+# Remote execution on Numerous platform
+os.environ['NUMEROUS_TASK_BACKEND'] = 'remote'
+```
+
+### Task Versioning
+
+Tasks support versioning for deployment management:
+
+```python
+from numerous.tasks import task
+
+@task(version="1.2.0")
+def versioned_task(tc: TaskControl, data: dict) -> dict:
+    """Task with version information."""
+    tc.log(f"Running task version 1.2.0", "info")
+    return {"version": "1.2.0", "data": data}
+```
+
+For complete API documentation, see the [API reference](reference/numerous/tasks/index.md). 
