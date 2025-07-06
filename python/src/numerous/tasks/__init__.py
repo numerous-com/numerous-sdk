@@ -12,26 +12,32 @@ Key Abstractions:
 - ExecutionBackend: Abstract base class for task execution backends.
 """
 
-from .task import task, Task, TaskInstance, TaskConfig
-from .control import TaskControl, set_task_control_handler, LocalTaskControlHandler, PoCMockRemoteTaskControlHandler
-from .session import Session
-from .future import Future, LocalFuture, TaskStatus, TaskCancelledError
-from .exceptions import (
-    TaskError,
-    MaxInstancesReachedError,
-    BackendError,
-    TaskDefinitionError,
-    SessionNotFoundError,
-    SessionError
-)
 from .backends import (
     ExecutionBackend,
-    register_backend,
     get_backend,
-    set_default_backend
+    register_backend,
+    set_default_backend,
 )
 from .backends.local import LocalExecutionBackend
 from .backends.remote import RemoteExecutionBackend
+from .control import (
+    LocalTaskControlHandler,
+    PoCMockRemoteTaskControlHandler,
+    TaskControl,
+    set_task_control_handler,
+)
+from .exceptions import (
+    BackendError,
+    MaxInstancesReachedError,
+    SessionError,
+    SessionNotFoundError,
+    TaskDefinitionError,
+    TaskError,
+)
+from .future import Future, LocalFuture, TaskCancelledError, TaskStatus
+from .session import Session
+from .task import Task, TaskConfig, TaskInstance, task
+
 
 # Local backend is registered by default.
 _local_backend = LocalExecutionBackend()
@@ -44,16 +50,13 @@ __all__ = [
     "Task",
     "TaskInstance",
     "TaskConfig",
-    
     # Control and context
     "TaskControl",
     "Session",
-    
     # Futures and status
     "Future",
     "LocalFuture",
     "TaskStatus",
-    
     # Exceptions
     "TaskError",
     "MaxInstancesReachedError",
@@ -62,15 +65,14 @@ __all__ = [
     "TaskCancelledError",
     "BackendError",
     "TaskDefinitionError",
-
     # Backends & Handlers (Expose for extensibility / testing)
     "ExecutionBackend",
     "register_backend",
     "get_backend",
     "set_default_backend",
     "LocalExecutionBackend",
-    "set_task_control_handler", # For runner or advanced setup
+    "set_task_control_handler",  # For runner or advanced setup
     "LocalTaskControlHandler",  # For type hinting or direct use if needed
-    "PoCMockRemoteTaskControlHandler", # For PoC testing
+    "PoCMockRemoteTaskControlHandler",  # For PoC testing
     "RemoteExecutionBackend",
-] 
+]

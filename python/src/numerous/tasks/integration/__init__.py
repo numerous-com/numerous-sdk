@@ -7,4 +7,5 @@ during integration testing and remote task execution.
 
 from .remote_handler import RemoteTaskControlHandler
 
-__all__ = ["RemoteTaskControlHandler"] 
+
+__all__ = ["RemoteTaskControlHandler"]
