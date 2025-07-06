@@ -662,39 +662,39 @@ with Session(name="parallel-processing") as session:
 
 ### Core Classes
 
-- [`@task`](reference/numerous/tasks/task.md#numerous.tasks.task.task) - Decorator for defining tasks
-- [`Task`](reference/numerous/tasks/task.md#numerous.tasks.task.Task) - Task definition class
-- [`TaskInstance`](reference/numerous/tasks/task.md#numerous.tasks.task.TaskInstance) - Individual task execution instance
-- [`TaskControl`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl) - Task control and monitoring
-- [`Session`](reference/numerous/tasks/session.md#numerous.tasks.session.Session) - Task session management
-- [`Future`](reference/numerous/tasks/future.md#numerous.tasks.future.Future) - Asynchronous result handling
+- **@task** - Decorator for defining tasks ([reference](reference/numerous/tasks/task.md))
+- **Task** - Task definition class ([reference](reference/numerous/tasks/task.md))
+- **TaskInstance** - Individual task execution instance ([reference](reference/numerous/tasks/task.md))
+- **TaskControl** - Task control and monitoring ([reference](reference/numerous/tasks/control.md))
+- **Session** - Task session management ([reference](reference/numerous/tasks/session.md))
+- **Future** - Asynchronous result handling ([reference](reference/numerous/tasks/future.md))
 
 ### Task Control Methods
 
-- [`tc.log(message, level)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.log) - Log messages with levels: "debug", "info", "warning", "error"
-- [`tc.update_progress(percentage, status)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.update_progress) - Update progress (0-100) and status message
-- [`tc.update_status(status)`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.update_status) - Update just the status message
-- [`tc.should_stop`](reference/numerous/tasks/control.md#numerous.tasks.control.TaskControl.should_stop) - Check if task should stop (boolean property)
+- **tc.log(message, level)** - Log messages with levels: "debug", "info", "warning", "error"
+- **tc.update_progress(percentage, status)** - Update progress (0-100) and status message
+- **tc.update_status(status)** - Update just the status message
+- **tc.should_stop** - Check if task should stop (boolean property)
 
 ### Future Methods
 
-- [`future.result(timeout=None)`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.result) - Get result (blocks until complete)
-- [`future.status`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.status) - Current status ("pending", "running", "completed", "failed", "cancelled")
-- [`future.done`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.done) - Boolean indicating if task is complete
-- [`future.error`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.error) - Exception if task failed, None otherwise
-- [`future.cancel()`](reference/numerous/tasks/future.md#numerous.tasks.future.Future.cancel) - Attempt to cancel the task
+- **future.result(timeout=None)** - Get result (blocks until complete)
+- **future.status** - Current status ("pending", "running", "completed", "failed", "cancelled")
+- **future.done** - Boolean indicating if task is complete
+- **future.error** - Exception if task failed, None otherwise
+- **future.cancel()** - Attempt to cancel the task
 
 ### Framework Integration
 
-- [`numerous.frameworks.fastapi.get_session(request)`](reference/numerous/frameworks/fastapi.md#numerous.frameworks.fastapi.get_session) - Get session for FastAPI applications
-- [`numerous.frameworks.streamlit.get_session()`](reference/numerous/frameworks/streamlit.md#numerous.frameworks.streamlit.get_session) - Get session for Streamlit applications
+- **numerous.frameworks.fastapi.get_session(request)** - Get session for FastAPI applications ([reference](reference/numerous/frameworks/fastapi.md))
+- **numerous.frameworks.streamlit.get_session()** - Get session for Streamlit applications ([reference](reference/numerous/frameworks/streamlit.md))
 
 ### Exceptions
 
-- [`TaskError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.TaskError) - Base task exception
-- [`MaxInstancesReachedError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.MaxInstancesReachedError) - Concurrency limit exceeded
-- [`SessionNotFoundError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.SessionNotFoundError) - No active session
-- [`TaskCancelledError`](reference/numerous/tasks/exceptions.md#numerous.tasks.exceptions.TaskCancelledError) - Task was cancelled
+- **TaskError** - Base task exception ([reference](reference/numerous/tasks/exceptions.md))
+- **MaxInstancesReachedError** - Concurrency limit exceeded ([reference](reference/numerous/tasks/exceptions.md))
+- **SessionNotFoundError** - No active session ([reference](reference/numerous/tasks/exceptions.md))
+- **TaskCancelledError** - Task was cancelled ([reference](reference/numerous/tasks/exceptions.md))
 
 ## Advanced Topics
 
@@ -738,18 +738,24 @@ os.environ['NUMEROUS_TASK_BACKEND'] = 'local'
 os.environ['NUMEROUS_TASK_BACKEND'] = 'remote'
 ```
 
-### Task Versioning
+### Task Metadata
 
-Tasks support versioning for deployment management:
+Tasks can include metadata and documentation for better organization:
 
 ```python
 from numerous.tasks import task
 
-@task(version="1.2.0")
-def versioned_task(tc: TaskControl, data: dict) -> dict:
-    """Task with version information."""
-    tc.log(f"Running task version 1.2.0", "info")
-    return {"version": "1.2.0", "data": data}
+@task(name="data_processor", max_parallel=3, size="medium")
+def data_processing_task(tc: TaskControl, data: dict) -> dict:
+    """Process data with comprehensive logging and monitoring."""
+    tc.log(f"Processing data batch with {len(data)} items", "info")
+    tc.update_status("Initializing data processing")
+    
+    # Your processing logic here
+    processed_data = {"processed": data, "timestamp": "2024-01-01"}
+    
+    tc.update_progress(100, "Processing complete")
+    return processed_data
 ```
 
 For complete API documentation, see the [API reference](reference/numerous/tasks/index.md). 
