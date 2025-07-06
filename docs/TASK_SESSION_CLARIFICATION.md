@@ -235,8 +235,29 @@ The **recommended approach** is to:
 2. ✅ **Enhance documentation** with clear distinctions and examples
 3. ✅ **Provide integration patterns** showing both session types working together
 4. ✅ **Use qualified naming** ("User Session" vs "Task Session") consistently
+5. ✅ **Add collection-based persistence examples** for production workflows
 
 This approach maintains backward compatibility while providing clear guidance for developers on how to effectively use both session types together.
+
+### ✅ **Collection-Based Persistence Added**
+
+The documentation now includes comprehensive examples of:
+
+- **Pattern 2b**: Task Session Persistence with Numerous Collections
+- **PersistentTaskSessionManager**: Full implementation for production use
+- **Collection Document Structure**: Detailed schema for workflow metadata
+- **UI Integration**: Ready-to-use endpoints for "Load Session" functionality
+- **Tag-based Querying**: Efficient filtering by user, status, and workflow type
+- **Progress Tracking**: Real-time workflow progress updates
+- **Lifecycle Management**: Complete workflow creation, updating, and completion
+
+The examples demonstrate how to:
+1. **Save workflows** to collection documents with metadata
+2. **Filter workflows** by user using collection tags
+3. **Track progress** with real-time updates
+4. **Load sessions** for UI dropdowns and resumption
+5. **Query efficiently** using collection tags (user_id, status, workflow_type)
+6. **Manage lifecycle** from creation to completion
 
 ## Key Takeaways
 
@@ -244,4 +265,5 @@ This approach maintains backward compatibility while providing clear guidance fo
 - **Task Sessions**: Task grouping, concurrency control, workflow management (new)
 - **Integration**: Tag task sessions with user IDs, persist with user-given names
 - **UI Pattern**: "Load Session" shows user's saved task sessions/workflows
+- **Persistence**: Use Numerous collections for scalable, production-ready storage
 - **Best Practice**: Always qualify which type of session you're referring to

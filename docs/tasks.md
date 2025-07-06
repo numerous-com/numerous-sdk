@@ -434,7 +434,7 @@ def process_user_data(data):
         return result
 ```
 
-#### Pattern 2: Persistent Named Task Sessions
+#### Pattern 2: Persistent Named Task Sessions (Long-running Workflows)
 
 For longer-running or user-managed task sessions that can be saved and loaded:
 
@@ -537,6 +537,347 @@ def load_user_sessions_for_ui(user_id: str):
     ]
 ```
 
+#### Pattern 2b: Task Session Persistence with Numerous Collections
+
+For production applications, persist task sessions using Numerous collection documents:
+
+```python
+from numerous.tasks import Session, task, TaskControl
+from numerous.collections import collection
+from typing import Dict, List, Optional
+import uuid
+import datetime
+import json
+
+@task(max_parallel=3)
+def document_processing_task(tc: TaskControl, doc_id: str, operation: str) -> dict:
+    """Process a document with specified operation."""
+    tc.log(f"Processing document {doc_id} with operation {operation}", "info")
+    
+    # Simulate document processing
+    for i in range(5):
+        if tc.should_stop:
+            tc.log("Task cancelled during processing", "warning")
+            break
+        
+        progress = (i + 1) * 20
+        tc.update_progress(progress, f"Processing step {i+1}/5")
+        
+        # Simulate processing time
+        import time
+        time.sleep(0.2)
+    
+    return {
+        "document_id": doc_id,
+        "operation": operation,
+        "status": "completed",
+        "processed_at": datetime.datetime.now().isoformat()
+    }
+
+class PersistentTaskSessionManager:
+    """Manage task sessions with persistence to Numerous collections."""
+    
+    def __init__(self, collection_key: str = "task-sessions"):
+        self.sessions_collection = collection(collection_key)
+    
+    def create_user_workflow(self, user_id: str, workflow_name: str, description: str = "") -> str:
+        """Create a new named workflow that can be resumed later."""
+        session_id = str(uuid.uuid4())
+        
+        # Create task session metadata
+        workflow_metadata = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "workflow_name": workflow_name,
+            "description": description,
+            "created_at": datetime.datetime.now().isoformat(),
+            "updated_at": datetime.datetime.now().isoformat(),
+            "status": "active",
+            "task_instances": [],
+            "results": {},
+            "progress": 0,
+            "tags": {
+                "user_id": user_id,
+                "workflow_type": "document_processing",
+                "status": "active"
+            }
+        }
+        
+        # Save to collection with tags for filtering
+        doc_ref = self.sessions_collection.document(session_id)
+        doc_ref.set(workflow_metadata)
+        
+        # Add tags for efficient querying
+        doc_ref.tag("user_id", user_id)
+        doc_ref.tag("workflow_name", workflow_name)
+        doc_ref.tag("status", "active")
+        doc_ref.tag("workflow_type", "document_processing")
+        
+        return session_id
+    
+    def get_user_workflows(self, user_id: str, status: Optional[str] = None) -> List[Dict]:
+        """Get all workflows for a specific user (for UI 'Load Session' dropdown)."""
+        workflows = []
+        
+        # Query documents by user_id tag
+        for doc_ref in self.sessions_collection.documents(tag_key="user_id", tag_value=user_id):
+            workflow_data = doc_ref.get()
+            if workflow_data:
+                # Filter by status if specified
+                if status is None or workflow_data.get("status") == status:
+                    workflows.append({
+                        "id": workflow_data["session_id"],
+                        "name": workflow_data["workflow_name"],
+                        "description": workflow_data.get("description", ""),
+                        "created": workflow_data["created_at"],
+                        "updated": workflow_data["updated_at"],
+                        "status": workflow_data["status"],
+                        "progress": workflow_data.get("progress", 0),
+                        "task_count": len(workflow_data.get("task_instances", []))
+                    })
+        
+        # Sort by most recently updated
+        workflows.sort(key=lambda w: w["updated"], reverse=True)
+        return workflows
+    
+    def load_workflow(self, session_id: str) -> Optional[Dict]:
+        """Load a workflow session for resumption."""
+        doc_ref = self.sessions_collection.document(session_id)
+        return doc_ref.get()
+    
+    def update_workflow_progress(self, session_id: str, progress: int, task_instances: List[Dict] = None):
+        """Update workflow progress and task instances."""
+        doc_ref = self.sessions_collection.document(session_id)
+        workflow_data = doc_ref.get()
+        
+        if workflow_data:
+            workflow_data["progress"] = progress
+            workflow_data["updated_at"] = datetime.datetime.now().isoformat()
+            
+            if task_instances:
+                workflow_data["task_instances"] = task_instances
+            
+            doc_ref.set(workflow_data)
+    
+    def complete_workflow(self, session_id: str, results: Dict):
+        """Mark workflow as completed with final results."""
+        doc_ref = self.sessions_collection.document(session_id)
+        workflow_data = doc_ref.get()
+        
+        if workflow_data:
+            workflow_data["status"] = "completed"
+            workflow_data["progress"] = 100
+            workflow_data["results"] = results
+            workflow_data["completed_at"] = datetime.datetime.now().isoformat()
+            workflow_data["updated_at"] = datetime.datetime.now().isoformat()
+            
+            doc_ref.set(workflow_data)
+            
+            # Update status tag
+            doc_ref.tag("status", "completed")
+    
+    def delete_workflow(self, session_id: str):
+        """Delete a workflow session."""
+        doc_ref = self.sessions_collection.document(session_id)
+        doc_ref.delete()
+
+# Usage examples
+def start_document_processing_workflow(user_id: str, workflow_name: str, document_ids: List[str]):
+    """Start a new document processing workflow with persistent session."""
+    
+    # Initialize session manager
+    session_manager = PersistentTaskSessionManager()
+    
+    # Create persistent workflow
+    session_id = session_manager.create_user_workflow(
+        user_id=user_id,
+        workflow_name=workflow_name,
+        description=f"Processing {len(document_ids)} documents"
+    )
+    
+    print(f"Created workflow session: {session_id}")
+    
+    # Execute tasks within named session
+    task_session_name = f"workflow_{session_id}"
+    
+    with Session(name=task_session_name) as task_session:
+        futures = []
+        task_instances = []
+        
+        # Start document processing tasks
+        for i, doc_id in enumerate(document_ids):
+            instance = document_processing_task.instance()
+            future = instance.start(doc_id, "extract_text")
+            futures.append(future)
+            
+            # Track task instance metadata
+            task_instances.append({
+                "task_id": instance.id,
+                "document_id": doc_id,
+                "operation": "extract_text",
+                "status": "running",
+                "started_at": datetime.datetime.now().isoformat()
+            })
+        
+        # Update progress as tasks complete
+        completed_tasks = 0
+        results = []
+        
+        for i, future in enumerate(futures):
+            result = future.result()
+            results.append(result)
+            completed_tasks += 1
+            
+            # Update task instance status
+            task_instances[i]["status"] = "completed"
+            task_instances[i]["completed_at"] = datetime.datetime.now().isoformat()
+            
+            # Update workflow progress
+            progress = int((completed_tasks / len(document_ids)) * 100)
+            session_manager.update_workflow_progress(session_id, progress, task_instances)
+            
+            print(f"Completed {completed_tasks}/{len(document_ids)} tasks ({progress}%)")
+        
+        # Mark workflow as completed
+        final_results = {
+            "processed_documents": len(results),
+            "successful": sum(1 for r in results if r["status"] == "completed"),
+            "results": results
+        }
+        
+        session_manager.complete_workflow(session_id, final_results)
+        print(f"Workflow {workflow_name} completed successfully!")
+        
+        return session_id, final_results
+
+def resume_workflow(session_id: str):
+    """Resume a previously saved workflow."""
+    session_manager = PersistentTaskSessionManager()
+    
+    # Load workflow metadata
+    workflow_data = session_manager.load_workflow(session_id)
+    if not workflow_data:
+        print(f"Workflow {session_id} not found")
+        return
+    
+    print(f"Resuming workflow: {workflow_data['workflow_name']}")
+    print(f"Status: {workflow_data['status']}")
+    print(f"Progress: {workflow_data['progress']}%")
+    print(f"Tasks: {len(workflow_data['task_instances'])}")
+    
+    # Resume logic here (if workflow supports resumption)
+    # This would depend on your specific workflow requirements
+    
+    return workflow_data
+
+def get_user_workflows_for_ui(user_id: str):
+    """Get user's workflows for UI 'Load Session' feature."""
+    session_manager = PersistentTaskSessionManager()
+    
+    # Get all workflows for user
+    all_workflows = session_manager.get_user_workflows(user_id)
+    
+    # Get active workflows
+    active_workflows = session_manager.get_user_workflows(user_id, status="active")
+    
+    # Get completed workflows
+    completed_workflows = session_manager.get_user_workflows(user_id, status="completed")
+    
+    return {
+        "all": all_workflows,
+        "active": active_workflows,
+        "completed": completed_workflows
+    }
+
+# Example usage in a web application
+def document_processing_endpoint(user_id: str, workflow_name: str, document_ids: List[str]):
+    """Web endpoint for starting document processing."""
+    try:
+        session_id, results = start_document_processing_workflow(
+            user_id=user_id,
+            workflow_name=workflow_name,
+            document_ids=document_ids
+        )
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "workflow_name": workflow_name,
+            "processed_documents": results["processed_documents"],
+            "message": f"Successfully processed {results['processed_documents']} documents"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to process documents"
+        }
+
+def load_session_endpoint(user_id: str):
+    """Web endpoint for loading user's sessions (for UI dropdown)."""
+    try:
+        workflows = get_user_workflows_for_ui(user_id)
+        
+        return {
+            "success": True,
+            "workflows": workflows,
+            "message": f"Found {len(workflows['all'])} workflows"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to load workflows"
+        }
+```
+
+This pattern provides:
+
+#### **Key Benefits**
+- **Persistent Storage**: Workflows survive application restarts
+- **User Filtering**: Efficient querying by user ID using collection tags
+- **Progress Tracking**: Real-time updates to workflow progress
+- **UI Integration**: Ready-to-use data structure for "Load Session" dropdowns
+- **Metadata Rich**: Store comprehensive workflow information
+- **Scalable**: Uses Numerous collections for distributed storage
+
+#### **Collection Document Structure**
+```json
+{
+  "session_id": "uuid-here",
+  "user_id": "user123", 
+  "workflow_name": "Document Analysis",
+  "description": "Processing 50 documents",
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:15:00Z",
+  "status": "completed",
+  "progress": 100,
+  "task_instances": [
+    {
+      "task_id": "task-uuid",
+      "document_id": "doc1",
+      "operation": "extract_text",
+      "status": "completed",
+      "started_at": "2024-01-01T10:00:00Z",
+      "completed_at": "2024-01-01T10:01:00Z"
+    }
+  ],
+  "results": {
+    "processed_documents": 50,
+    "successful": 48,
+    "results": [...]
+  }
+}
+```
+
+#### **Collection Tags for Efficient Querying**
+- `user_id`: Filter workflows by user
+- `workflow_name`: Find workflows by name  
+- `status`: Filter by active/completed/failed
+- `workflow_type`: Group by workflow type
+
 #### Pattern 3: Framework Integration with Session Distinction
 
 Example showing both session types in a FastAPI application:
@@ -548,7 +889,7 @@ from numerous.frameworks.fastapi import get_session
 
 app = FastAPI()
 
-@task
+@task(max_parallel=5)
 def process_user_document(tc: TaskControl, doc_id: str, user_id: str) -> dict:
     """Process a document for a specific user."""
     tc.log(f"Processing document {doc_id} for user {user_id}", "info")
@@ -602,7 +943,7 @@ async def get_my_task_sessions(request: Request):
         return {"error": "Not authenticated"}
     
     # Return user's task sessions for UI selection
-    return load_user_sessions_for_ui(user_id)
+    return get_user_workflows_for_ui(user_id)
 ```
 
 ### Task Session Lifecycle Management
