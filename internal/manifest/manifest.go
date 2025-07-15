@@ -17,6 +17,7 @@ type Manifest struct {
 	Python     *Python     `toml:"python,omitempty" json:"python,omitempty"`
 	Docker     *Docker     `toml:"docker,omitempty" json:"docker,omitempty"`
 	Deployment *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
+	Tasks      *Tasks      `toml:"tasks,omitempty" json:"tasks,omitempty"`
 }
 
 type Docker struct {
@@ -43,6 +44,10 @@ type App struct {
 type Deployment struct {
 	OrganizationSlug string `toml:"organization" json:"organization"`
 	AppSlug          string `toml:"app" json:"app"`
+}
+
+type Tasks struct {
+	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
 func load(filePath string) (*Manifest, error) {

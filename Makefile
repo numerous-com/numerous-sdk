@@ -56,6 +56,8 @@ packages: $(PACKAGE_TARGETS)
 
 test: sdk-test cli-test
 
+integration: sdk-integration-test
+
 lint: sdk-lint cli-lint
 
 dep: sdk-dep cli-dep
@@ -71,6 +73,11 @@ sdk-test:
 	@echo "-- Running tests for sdk"
 	$(SDK_CHECK_VENV)
 	pytest python/tests
+
+sdk-integration-test:
+	@echo "-- Running integration tests for sdk"
+	$(SDK_CHECK_VENV)
+	pytest python/tests --integration
 
 sdk-dep:
 	@echo "-- Installing SDK dependencies"
