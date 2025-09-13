@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	ErrAppNotFound  = errors.New("app not found")
-	ErrAccessDenied = errors.New("access denied")
+	ErrAppNotFound          = errors.New("app not found")
+	ErrAccessDenied         = errors.New("access denied")
+	ErrDeploymentNotFound   = errors.New("deployment not found")
+	ErrOrganizationNotFound = errors.New("organization not found")
 )
 
 func convertErrors(err error) error {
@@ -51,4 +53,25 @@ func PrintErrorAccessDenied(ai appident.AppIdentifier) {
 Is the organization slug %q and the app slug %q correct?`,
 		ai.OrganizationSlug, ai.AppSlug,
 	)
+}
+
+func PrintErrorOrganizationNotFound(ai appident.AppIdentifier) {
+	output.PrintError(
+		"Organization not found",
+		"The organization \"%s\" cannot be found. Did you specify the correct organization slug?",
+		ai.OrganizationSlug,
+	)
+}
+
+func PrintTaskError(err error, ai appident.AppIdentifier) {
+	switch {
+	case errors.Is(err, ErrAccessDenied):
+		PrintErrorAccessDenied(ai)
+	case errors.Is(err, ErrAppNotFound):
+		PrintErrorAppNotFound(ai)
+	case errors.Is(err, ErrOrganizationNotFound):
+		PrintErrorOrganizationNotFound(ai)
+	case err != nil:
+		output.PrintUnknownError(err)
+	}
 }

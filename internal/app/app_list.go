@@ -65,10 +65,7 @@ type QueryOrganizationApps struct {
 	} `graphql:"organization(organizationSlug: $organizationSlug)"`
 }
 
-var (
-	ErrOrganizationNotFound = errors.New("organization not found")
-	ErrUnexpectedType       = errors.New("unexpected type")
-)
+var ErrUnexpectedType = errors.New("unexpected type")
 
 func (s *Service) List(ctx context.Context, organizationSlug string) ([]ListApp, error) {
 	var q QueryOrganizationApps

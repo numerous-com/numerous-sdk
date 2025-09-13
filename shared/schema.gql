@@ -594,6 +594,79 @@ extend type Mutation {
     @trackAppOperation(eventName: "App Unshare")
 }
 
+###############################################################################
+### Workload management (types)
+###############################################################################
+
+type WorkloadLogEntryConnection {
+  edges: [WorkloadLogEntry!]!
+  pageInfo: PageInfo!
+}
+
+type WorkloadLogEntry {
+  timestamp: Time!
+  text: String!
+}
+
+type WorkloadResourceUsage {
+  current: Float!
+  timeseries: [WorkloadResourceUsageDataPoint!]!
+}
+
+type WorkloadResourceUsageDataPoint {
+  timestamp: Time!
+  value: Float!
+}
+
+###############################################################################
+### End of Workload management (types)
+###############################################################################
+
+###############################################################################
+### Task management
+###############################################################################
+
+enum TaskWorkloadStatus {
+  PENDING
+  RUNNING
+  STOPPED
+  ERROR
+  UNKNOWN
+}
+
+type Task {
+  id: ID!
+  command: [String!]!
+  appVersion: AppVersion!
+}
+
+type TaskInstance {
+  id: ID!
+  task: Task!
+  createdAt: Time!
+  workload: TaskInstanceWorkload!
+}
+
+type TaskInstanceWorkload {
+  status: TaskWorkloadStatus!
+  startedAt: Time!
+  logs(last: Int): WorkloadLogEntryConnection!
+  cpuUsage: WorkloadResourceUsage
+  memoryUsageMB: WorkloadResourceUsage
+}
+
+extend type AppVersion {
+  tasks: [Task!]!
+}
+
+extend type Query {
+  taskInstances(deployID: ID!): [TaskInstance!]! @canManageApp
+}
+
+###############################################################################
+### End of Task management
+###############################################################################
+
 type Subscription {
   appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
   appDeployLogs(input: AppDeployLogsInput!): AppDeployLogEntry!
