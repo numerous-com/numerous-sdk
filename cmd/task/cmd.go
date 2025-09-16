@@ -5,6 +5,7 @@ import (
 	"numerous.com/cli/cmd/group"
 	"numerous.com/cli/cmd/task/instances"
 	"numerous.com/cli/cmd/task/list"
+	"numerous.com/cli/cmd/task/logs"
 
 	"github.com/spf13/cobra"
 )
@@ -19,4 +20,5 @@ var Cmd = &cobra.Command{
 func init() {
 	Cmd.AddCommand(list.Cmd)
 	Cmd.AddCommand(instances.Cmd)
+	Cmd.AddCommand(logs.Cmd)
 }

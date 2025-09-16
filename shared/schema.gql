@@ -655,6 +655,12 @@ type TaskInstanceWorkload {
   memoryUsageMB: WorkloadResourceUsage
 }
 
+input TaskInstanceLogsInput {
+  taskInstanceID: ID!
+  tail: Int # N most recent lines
+  follow: Boolean # continue streaming new logs (default: true)
+}
+
 extend type AppVersion {
   tasks: [Task!]!
 }
@@ -670,6 +676,7 @@ extend type Query {
 type Subscription {
   appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
   appDeployLogs(input: AppDeployLogsInput!): AppDeployLogEntry!
+  taskInstanceLogs(input: TaskInstanceLogsInput!): WorkloadLogEntry!
 }
 
 ###############################################################################
