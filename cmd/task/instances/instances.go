@@ -37,22 +37,21 @@ func listInstances(ctx context.Context, service taskInstancesService, params Tas
 
 	taskInstances, err := service.ListTaskInstances(ctx, app.ListTaskInstancesInput{
 		DeployID: deployID,
+		TaskID:   params.TaskID,
 	})
 	if err != nil {
 		app.PrintTaskError(err, ai)
 		return err
 	}
 
-	filteredInstances := filterInstancesByTaskID(taskInstances, params.TaskID)
-
-	if len(filteredInstances) == 0 {
+	if len(taskInstances) == 0 {
 		println(fmt.Sprintf("No instances found for task '%s'.", params.TaskID))
 		return nil
 	}
 
 	println(fmt.Sprintf("Task Instances (%s):", params.TaskID))
 
-	for i, instance := range filteredInstances {
+	for i, instance := range taskInstances {
 		if i > 0 {
 			println()
 		}
@@ -60,17 +59,6 @@ func listInstances(ctx context.Context, service taskInstancesService, params Tas
 	}
 
 	return nil
-}
-
-func filterInstancesByTaskID(instances []app.TaskInstance, taskID string) []app.TaskInstance {
-	var filtered []app.TaskInstance
-	for _, instance := range instances {
-		if strings.EqualFold(instance.Task.ID, taskID) {
-			filtered = append(filtered, instance)
-		}
-	}
-
-	return filtered
 }
 
 func printTaskInstance(taskInstance app.TaskInstance) {

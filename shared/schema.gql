@@ -666,7 +666,7 @@ extend type AppVersion {
 }
 
 extend type Query {
-  taskInstances(deployID: ID!): [TaskInstance!]! @canManageApp
+  taskInstances(deployID: ID!, taskID: ID!): [TaskInstance!]! @canManageApp
 }
 
 ###############################################################################
