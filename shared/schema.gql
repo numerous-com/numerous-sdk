@@ -655,10 +655,19 @@ type TaskInstanceWorkload {
   memoryUsageMB: WorkloadResourceUsage
 }
 
+input TaskStartInput {
+  deployID: ID!
+  taskName: String!
+}
+
 input TaskInstanceLogsInput {
   taskInstanceID: ID!
   tail: Int # N most recent lines
   follow: Boolean # continue streaming new logs (default: true)
+}
+
+type TaskStopResult {
+  taskInstanceID: ID!
 }
 
 extend type AppVersion {
@@ -667,6 +676,12 @@ extend type AppVersion {
 
 extend type Query {
   taskInstances(deployID: ID!, taskID: ID!): [TaskInstance!]! @canManageApp
+  taskInstance(taskInstanceID: ID!): TaskInstance @canManageApp
+}
+
+extend type Mutation {
+  taskStart(input: TaskStartInput!): TaskInstance! @canManageApp
+  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageApp
 }
 
 ###############################################################################

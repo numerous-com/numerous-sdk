@@ -101,29 +101,29 @@ func (s *Service) ListTaskInstances(ctx context.Context, input ListTaskInstances
 	return taskInstances, nil
 }
 
-func taskInstanceFromResponse(responseTaskInstance taskInstanceResponseData) TaskInstance {
+func taskInstanceFromResponse(response taskInstanceResponseData) TaskInstance {
 	ti := TaskInstance{
-		ID:        responseTaskInstance.ID,
-		CreatedAt: responseTaskInstance.CreatedAt,
+		ID:        response.ID,
+		CreatedAt: response.CreatedAt,
 		Task: Task{
-			ID:      responseTaskInstance.Task.ID,
-			Command: responseTaskInstance.Task.Command,
+			ID:      response.Task.ID,
+			Command: response.Task.Command,
 		},
 		Workload: TaskInstanceWorkload{
-			Status:    responseTaskInstance.Workload.Status,
-			StartedAt: responseTaskInstance.Workload.StartedAt,
+			Status:    response.Workload.Status,
+			StartedAt: response.Workload.StartedAt,
 		},
 	}
 
-	if responseTaskInstance.Workload.CPUUsage != nil {
+	if response.Workload.CPUUsage != nil {
 		ti.Workload.CPUUsage = &WorkloadResourceUsage{
-			Current: responseTaskInstance.Workload.CPUUsage.Current,
+			Current: response.Workload.CPUUsage.Current,
 		}
 	}
 
-	if responseTaskInstance.Workload.MemoryUsageMB != nil {
+	if response.Workload.MemoryUsageMB != nil {
 		ti.Workload.MemoryUsageMB = &WorkloadResourceUsage{
-			Current: responseTaskInstance.Workload.MemoryUsageMB.Current,
+			Current: response.Workload.MemoryUsageMB.Current,
 		}
 	}
 
