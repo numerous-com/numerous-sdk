@@ -626,6 +626,8 @@ type WorkloadResourceUsageDataPoint {
 ### Task management
 ###############################################################################
 
+directive @canManageTask on FIELD_DEFINITION
+
 enum TaskWorkloadStatus {
   PENDING
   RUNNING
@@ -675,13 +677,13 @@ extend type AppVersion {
 }
 
 extend type Query {
-  taskInstances(deployID: ID!, taskID: ID!): [TaskInstance!]! @canManageApp
-  taskInstance(taskInstanceID: ID!): TaskInstance @canManageApp
+  taskInstances(deployID: ID!, taskID: ID!): [TaskInstance!]! @canManageTask
+  taskInstance(taskInstanceID: ID!): TaskInstance @canManageTask
 }
 
 extend type Mutation {
-  taskStart(input: TaskStartInput!): TaskInstance! @canManageApp
-  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageApp
+  taskStart(input: TaskStartInput!): TaskInstance! @canManageTask
+  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageTask
 }
 
 ###############################################################################
