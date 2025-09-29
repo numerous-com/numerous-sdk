@@ -67,24 +67,15 @@ func printTaskInstance(taskInstance app.TaskInstance) {
 	println("Instance: " + taskInstance.ID)
 	println("Task:     " + taskInstance.Task.ID)
 	println("Status:   " + taskInstance.Workload.Status)
-	println("Duration: " + getDurationStr(taskInstance.Workload.StartedAt))
+	println("Created:  " + taskInstance.CreatedAt.Format(time.RFC3339))
 	println("Command:  " + commandStr)
+
+	if taskInstance.Workload.ExitCode != nil {
+		println(fmt.Sprintf("ExitCode: %d", *taskInstance.Workload.ExitCode))
+	}
 
 	if taskInstance.Workload.CPUUsage != nil && taskInstance.Workload.MemoryUsageMB != nil {
 		println(fmt.Sprintf("CPU:      %.1f", taskInstance.Workload.CPUUsage.Current))
 		println(fmt.Sprintf("Memory:   %.0fMB", taskInstance.Workload.MemoryUsageMB.Current))
-	}
-}
-
-func getDurationStr(startedAt time.Time) string {
-	duration := time.Since(startedAt)
-
-	switch {
-	case duration.Hours() >= 1:
-		return fmt.Sprintf("%.0fh", duration.Hours())
-	case duration.Minutes() >= 1:
-		return fmt.Sprintf("%.0fm", duration.Minutes())
-	default:
-		return fmt.Sprintf("%.0fs", duration.Seconds())
 	}
 }

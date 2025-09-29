@@ -655,6 +655,7 @@ type TaskInstanceWorkload {
   logs(last: Int): WorkloadLogEntryConnection!
   cpuUsage: WorkloadResourceUsage
   memoryUsageMB: WorkloadResourceUsage
+  exitCode: Int
 }
 
 input TaskStartInput {
