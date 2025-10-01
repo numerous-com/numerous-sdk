@@ -1,4 +1,4 @@
-package start
+package create
 
 import (
 	"context"
@@ -50,7 +50,7 @@ func startTask(ctx context.Context, service taskStartService, params TaskStartIn
 func printTaskStarted(result app.TaskStartResult) {
 	commandStr := strings.Join(result.Command, " ")
 
-	println("Task started.")
+	println("Task instance created.")
 	println()
 	println("Instance: " + result.TaskInstanceID)
 	println("Task:     " + result.TaskID)

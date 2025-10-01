@@ -17,15 +17,15 @@ The task instance ID can be obtained from the "numerous task instances" command.
 
 const example string = `To read the logs from a specific task instance:
 
-    numerous task logs ce5aba38-842d-4ee0-877b-4af9d426c848
+    numerous task instance logs ce5aba38-842d-4ee0-877b-4af9d426c848
 
 To tail the last 100 lines and follow new logs:
 
-    numerous task logs ce5aba38-842d-4ee0-877b-4af9d426c848 --tail 100 --follow
+    numerous task instance logs ce5aba38-842d-4ee0-877b-4af9d426c848 --tail 100 --follow
 
 To get logs without following (one-time read):
 
-    numerous task logs ce5aba38-842d-4ee0-877b-4af9d426c848 --follow=false`
+    numerous task instance logs ce5aba38-842d-4ee0-877b-4af9d426c848 --follow=false`
 
 var Cmd = &cobra.Command{
 	Use:     "logs <instance-id>",

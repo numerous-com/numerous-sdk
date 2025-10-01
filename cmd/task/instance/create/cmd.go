@@ -1,4 +1,4 @@
-package stop
+package create
 
 import (
 	"fmt"
@@ -12,9 +12,9 @@ import (
 	"numerous.com/cli/internal/gql"
 )
 
-const longFormat string = `Stops a task instance.
+const longFormat string = `Creates and starts a new instance of a specific task.
 
-Stops the specified task instance by its ID.
+Creates and starts a new task instance in an app deployment.
 
 %s
 
@@ -22,7 +22,7 @@ Stops the specified task instance by its ID.
 `
 
 var (
-	cmdActionText = "to stop a task instance for"
+	cmdActionText = "to start a task for"
 	long          = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
 )
 
@@ -32,35 +32,35 @@ var cmdArgs struct {
 }
 
 var Cmd = &cobra.Command{
-	Use:   "stop <task-instance-id> [app directory]",
+	Use:   "create <task-name> [app directory]",
 	RunE:  run,
-	Short: "Stop a task instance",
+	Short: "Create and start a new instance of a specific task",
 	Long:  long,
 	Args:  cobra.MinimumNArgs(1),
-	Example: `To stop a task instance for a specific app:
+	Example: `To create a new instance of task named "worker" for a specific app:
 
-	numerous task stop ce5aba38-842d-4ee0-877b-4af9d426c848 --organization "my-org" --app "my-app"
+	numerous task instance create worker --organization "my-org" --app "my-app"
 
 Otherwise, assuming an app has been initialized in the current directory:
 
-	numerous task stop ce5aba38-842d-4ee0-877b-4af9d426c848`,
+	numerous task instance create worker`,
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	taskInstanceID := args[0]
+	taskName := args[0]
 
 	if len(args) > 1 {
 		cmdArgs.appDir = args[1]
 	}
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	input := TaskStopInput{
+	input := TaskStartInput{
 		AppDir:           cmdArgs.appDir,
 		OrganizationSlug: cmdArgs.appIdent.OrganizationSlug,
 		AppSlug:          cmdArgs.appIdent.AppSlug,
-		TaskInstanceID:   taskInstanceID,
+		TaskName:         taskName,
 	}
-	err := stopTask(cmd.Context(), service, input)
+	err := startTask(cmd.Context(), service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }

@@ -1,4 +1,4 @@
-package start
+package stop
 
 import (
 	"fmt"
@@ -12,9 +12,9 @@ import (
 	"numerous.com/cli/internal/gql"
 )
 
-const longFormat string = `Starts a new instance of a specific task.
+const longFormat string = `Stops a task instance.
 
-Creates and starts a new task instance in an app deployment.
+Stops the specified task instance by its ID.
 
 %s
 
@@ -22,7 +22,7 @@ Creates and starts a new task instance in an app deployment.
 `
 
 var (
-	cmdActionText = "to start a task for"
+	cmdActionText = "to stop a task instance for"
 	long          = fmt.Sprintf(longFormat, usage.AppIdentifier(cmdActionText), usage.AppDirectoryArgument)
 )
 
@@ -32,35 +32,35 @@ var cmdArgs struct {
 }
 
 var Cmd = &cobra.Command{
-	Use:   "start <task-name> [app directory]",
+	Use:   "stop <task-instance-id> [app directory]",
 	RunE:  run,
-	Short: "Start a new instance of a specific task",
+	Short: "Stop a task instance",
 	Long:  long,
 	Args:  cobra.MinimumNArgs(1),
-	Example: `To start a new instance of task named "worker" for a specific app:
+	Example: `To stop a task instance for a specific app:
 
-	numerous task start worker --organization "my-org" --app "my-app"
+	numerous task instance stop ce5aba38-842d-4ee0-877b-4af9d426c848 --organization "my-org" --app "my-app"
 
 Otherwise, assuming an app has been initialized in the current directory:
 
-	numerous task start worker`,
+	numerous task instance stop ce5aba38-842d-4ee0-877b-4af9d426c848`,
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	taskName := args[0]
+	taskInstanceID := args[0]
 
 	if len(args) > 1 {
 		cmdArgs.appDir = args[1]
 	}
 
 	service := app.New(gql.NewClient(), nil, http.DefaultClient)
-	input := TaskStartInput{
+	input := TaskStopInput{
 		AppDir:           cmdArgs.appDir,
 		OrganizationSlug: cmdArgs.appIdent.OrganizationSlug,
 		AppSlug:          cmdArgs.appIdent.AppSlug,
-		TaskName:         taskName,
+		TaskInstanceID:   taskInstanceID,
 	}
-	err := startTask(cmd.Context(), service, input)
+	err := stopTask(cmd.Context(), service, input)
 
 	return errorhandling.ErrorAlreadyPrinted(err)
 }
