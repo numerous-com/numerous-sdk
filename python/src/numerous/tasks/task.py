@@ -12,6 +12,7 @@ from datetime import datetime
 from enum import Enum
 import os
 import uuid
+import threading
 
 
 # ============================================================================
@@ -227,7 +228,8 @@ class TaskInstanceController:
         if not 0 <= progress <= 1:
             raise ValueError("Progress must be between 0 and 1")
         if self._task_instance:
-            self._task_instance._progress = progress
+            with self._task_instance._lock:
+                self._task_instance._progress = progress
 
     def set_status(self, status: TaskStatus | str):
         """
@@ -241,10 +243,11 @@ class TaskInstanceController:
             ValueError: If the status is not a valid status.
         """
         if self._task_instance:
-            if isinstance(status, str):
-                self._task_instance._status = TaskStatus(status)
-            else:
-                self._task_instance._status = status
+            with self._task_instance._lock:
+                if isinstance(status, str):
+                    self._task_instance._status = TaskStatus(status)
+                else:
+                    self._task_instance._status = status
 
     def set_output(self, output: dict[str, Any]):
         """
@@ -257,7 +260,8 @@ class TaskInstanceController:
             TypeError: If the output is not JSON serializable.
         """
         if self._task_instance:
-            self._task_instance._output = output
+            with self._task_instance._lock:
+                self._task_instance._output = output
 
 
 # ============================================================================
@@ -314,6 +318,7 @@ class TaskInstance:
         self._output = None
         self._result = None
         self._controller = None
+        self._lock = threading.Lock()
 
     def _execute(self):
         """
@@ -329,7 +334,8 @@ class TaskInstance:
         Called by the executor in a separate thread.
         """
         try:
-            self._status = TaskStatus.RUNNING
+            with self._lock:
+                self._status = TaskStatus.RUNNING
             # Create a controller for this instance
             self._controller = TaskInstanceController(self)
             
@@ -344,10 +350,12 @@ class TaskInstance:
             
             # Call the task function with inputs
             self._result = self.task._func(**kwargs)
-            self._status = TaskStatus.COMPLETED
-            self._progress = 1.0
+            with self._lock:
+                self._status = TaskStatus.COMPLETED
+                self._progress = 1.0
         except Exception as e:
-            self._status = TaskStatus.FAILED
+            with self._lock:
+                self._status = TaskStatus.FAILED
             raise
 
     def stop(self) -> None:
@@ -399,7 +407,8 @@ class TaskInstance:
         Returns:
             The progress of the task instance (0.0 to 1.0).
         """
-        return self._progress
+        with self._lock:
+            return self._progress
 
     def result(self) -> Any:
         """
