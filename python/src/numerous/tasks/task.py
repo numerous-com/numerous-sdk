@@ -596,7 +596,7 @@ if __name__ == "__main__":
     Registering the task in numerous.toml:
     [[tasks]]
       name = "Task Test"
-      python_task_file = "task.py" # This is the file that contains the task function
+      command = "numerous-executor task.py" # This is the file that contains the task function
 
     Because we use the python task file, the platform will interpret this task as a python task,
      and execute it by importing the file and look for the task with the name "Task Test". 
