@@ -4,7 +4,7 @@ Task management API - Functional Interface.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, Future
-from typing import Any, Callable, Optional, TypeVar, ParamSpec
+from typing import Any, Callable, Optional, TypeVar, ParamSpec, Protocol
 from datetime import datetime
 from enum import Enum
 from dataclasses import dataclass, field, replace
@@ -12,6 +12,7 @@ from functools import wraps
 import os
 import uuid
 import inspect
+import threading
 
 
 # Type variables for generic function types
@@ -45,19 +46,41 @@ class TaskDefinition:
     command: Optional[list[str]] = None
 
 
-@dataclass(frozen=True)
 class TaskController:
     """
-    Immutable task controller interface.
+    Unified controller interface injected into task functions.
     
-    Task functions check should_stop and call update functions
-    which return new controller states.
+    Provides:
+    - should_stop()
+    - request_stop()
+    - set_progress(progress)
+    - set_status(status)
+    - set_output(output)
     """
-    should_stop: bool = False
-    
-    def request_stop(self) -> TaskController:
-        """Return a new controller with stop requested."""
-        return replace(self, should_stop=True)
+    def __init__(self, instance_state: "TaskInstanceState"):
+        self._state = instance_state
+        self._should_stop = False
+
+    def should_stop(self) -> bool:
+        return self._should_stop
+
+    def request_stop(self) -> None:
+        self._should_stop = True
+
+    def set_progress(self, progress: float) -> None:
+        set_progress(self._state, progress)
+
+    def set_status(self, status: str | "TaskStatus") -> None:
+        if isinstance(status, str):
+            with self._state._lock:
+                self._state.status = TaskStatus(status)
+        else:
+            with self._state._lock:
+                self._state.status = status
+
+    def set_output(self, output: dict[str, Any]) -> None:
+        with self._state._lock:
+            self._state.output = output
 
 
 @dataclass
@@ -79,17 +102,87 @@ class TaskInstanceState:
     result: Any = None
     error: Optional[Exception] = None
     future: Optional[Future] = None
-    controller: TaskController = field(default_factory=TaskController)
+    controller: Optional[TaskController] = None
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     
     def is_done(self) -> bool:
         """Check if task is complete."""
         return self.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED)
 
+    def stop(self) -> None:
+        if self.controller:
+            self.controller.request_stop()
+
+    def get_progress(self) -> float:
+        with self._lock:
+            return self.progress
+
+    def get_status(self) -> TaskStatus:
+        with self._lock:
+            return self.status
+
+    def get_output(self) -> Optional[dict[str, Any]]:
+        with self._lock:
+            return self.output
+
+    def logs(self) -> list[str]:
+        # Local mode: no logs collected
+        return []
+
 
 # Global state (minimized)
-_task_definitions: dict[str, TaskDefinition] = {}
-_task_instances: dict[str, TaskInstanceState] = {}
-_executor: Optional[ThreadPoolExecutor] = None
+class InMemoryTaskStore:
+    def __init__(self):
+        self._task_definitions: dict[str, TaskDefinition] = {}
+        self._task_instances: dict[str, TaskInstanceState] = {}
+        self._lock = threading.Lock()
+
+    def register_task(self, task_def: TaskDefinition) -> TaskDefinition:
+        with self._lock:
+            self._task_definitions[task_def.id] = task_def
+        return task_def
+
+    def get_task_definition(self, task_id: str) -> Optional[TaskDefinition]:
+        with self._lock:
+            return self._task_definitions.get(task_id)
+
+    def list_task_definitions(self) -> list[TaskDefinition]:
+        with self._lock:
+            return list(self._task_definitions.values())
+
+    def register_instance(self, state: TaskInstanceState) -> TaskInstanceState:
+        with self._lock:
+            self._task_instances[state.id] = state
+        return state
+
+    def get_task_instance(self, instance_id: str) -> Optional[TaskInstanceState]:
+        with self._lock:
+            return self._task_instances.get(instance_id)
+
+    def list_task_instances(self, task_id: Optional[str] = None) -> list[TaskInstanceState]:
+        with self._lock:
+            if task_id:
+                return [inst for inst in self._task_instances.values() if inst.task_id == task_id]
+            return list(self._task_instances.values())
+
+
+_store = InMemoryTaskStore()
+
+
+class TaskExecutor(Protocol):
+    def submit(self, task_def: TaskDefinition, state: TaskInstanceState) -> Future: ...
+
+
+class LocalThreadTaskExecutor:
+    def __init__(self, max_workers: int = 4):
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def submit(self, task_def: TaskDefinition, state: TaskInstanceState) -> Future:
+        future = self._executor.submit(execute_task, task_def, state)
+        return future
+
+
+_executor: Optional[TaskExecutor] = None
 
 
 # ============================================================================
@@ -131,34 +224,39 @@ def set_progress(state: TaskInstanceState, progress: float) -> TaskInstanceState
     """Return new state with updated progress."""
     if not 0 <= progress <= 1:
         raise ValueError("Progress must be between 0 and 1")
-    state.progress = progress
+    with state._lock:
+        state.progress = progress
     return state
 
 
 def set_status(state: TaskInstanceState, status: TaskStatus) -> TaskInstanceState:
     """Return new state with updated status."""
-    state.status = status
+    with state._lock:
+        state.status = status
     return state
 
 
 def set_result(state: TaskInstanceState, result: Any) -> TaskInstanceState:
     """Return new state with result."""
-    state.result = result
-    state.status = TaskStatus.COMPLETED
-    state.progress = 1.0
+    with state._lock:
+        state.result = result
+        state.status = TaskStatus.COMPLETED
+        state.progress = 1.0
     return state
 
 
 def set_error(state: TaskInstanceState, error: Exception) -> TaskInstanceState:
     """Return new state with error."""
-    state.error = error
-    state.status = TaskStatus.FAILED
+    with state._lock:
+        state.error = error
+        state.status = TaskStatus.FAILED
     return state
 
 
 def request_stop(state: TaskInstanceState) -> TaskInstanceState:
     """Request the task to stop."""
-    state.controller = state.controller.request_stop()
+    if state.controller:
+        state.controller.request_stop()
     return state
 
 
@@ -176,7 +274,8 @@ def execute_task(
     This is where side effects happen - the actual function execution.
     """
     # Update status to running
-    state.status = TaskStatus.RUNNING
+    with state._lock:
+        state.status = TaskStatus.RUNNING
     
     try:
         # Prepare arguments
@@ -185,21 +284,9 @@ def execute_task(
         
         # Inject controller if function expects it
         if 'task_controller' in sig.parameters:
-            # Create a mutable wrapper for the controller
-            class ControllerWrapper:
-                def __init__(self, instance_state: TaskInstanceState):
-                    self._state = instance_state
-                
-                def should_stop(self) -> bool:
-                    return self._state.controller.should_stop
-                
-                def set_progress(self, progress: float):
-                    set_progress(self._state, progress)
-                
-                def set_status(self, status: str):
-                    self._state.status = TaskStatus(status)
-            
-            kwargs['task_controller'] = ControllerWrapper(state)
+            if state.controller is None:
+                state.controller = TaskController(state)
+            kwargs['task_controller'] = state.controller
         
         # Execute the function
         result = task_def.func(**kwargs)
@@ -214,10 +301,10 @@ def execute_task(
 def submit_task_execution(
     task_def: TaskDefinition,
     state: TaskInstanceState,
-    executor: ThreadPoolExecutor,
+    executor: TaskExecutor,
 ) -> Future:
     """Submit task for async execution and return future."""
-    future = executor.submit(execute_task, task_def, state)
+    future = executor.submit(task_def, state)
     state.future = future
     return future
 
@@ -228,36 +315,32 @@ def submit_task_execution(
 
 def register_task(task_def: TaskDefinition) -> TaskDefinition:
     """Register a task definition globally."""
-    _task_definitions[task_def.id] = task_def
-    return task_def
+    return _store.register_task(task_def)
 
 
 def get_task_definition(task_id: str) -> Optional[TaskDefinition]:
     """Get a task definition by ID."""
-    return _task_definitions.get(task_id)
+    return _store.get_task_definition(task_id)
 
 
 def list_task_definitions() -> list[TaskDefinition]:
     """List all registered task definitions."""
-    return list(_task_definitions.values())
+    return _store.list_task_definitions()
 
 
 def register_instance(state: TaskInstanceState) -> TaskInstanceState:
     """Register a task instance."""
-    _task_instances[state.id] = state
-    return state
+    return _store.register_instance(state)
 
 
 def get_task_instance(instance_id: str) -> Optional[TaskInstanceState]:
     """Get a task instance by ID."""
-    return _task_instances.get(instance_id)
+    return _store.get_task_instance(instance_id)
 
 
 def list_task_instances(task_id: Optional[str] = None) -> list[TaskInstanceState]:
     """List all task instances, optionally filtered by task_id."""
-    if task_id:
-        return [inst for inst in _task_instances.values() if inst.task_id == task_id]
-    return list(_task_instances.values())
+    return _store.list_task_instances(task_id)
 
 
 # ============================================================================
@@ -377,20 +460,20 @@ def task(
 # Executor Management
 # ============================================================================
 
-def _get_executor() -> ThreadPoolExecutor:
+def _get_executor() -> TaskExecutor:
     """Get or create the global executor."""
     global _executor
     if _executor is None:
         if os.getenv("NUMEROUS_EXECUTOR") == "NUMEROUS_PLATFORM_EXECUTOR":
             # Placeholder for platform executor
             print("Warning: PlatformExecutor not implemented, using LocalThreadExecutor")
-            _executor = ThreadPoolExecutor(max_workers=4)
+            _executor = LocalThreadTaskExecutor(max_workers=4)
         else:
-            _executor = ThreadPoolExecutor(max_workers=4)
+            _executor = LocalThreadTaskExecutor(max_workers=4)
     return _executor
 
 
-def set_executor(executor: ThreadPoolExecutor):
+def set_executor(executor: TaskExecutor):
     """Set a custom executor."""
     global _executor
     _executor = executor
