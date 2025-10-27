@@ -591,10 +591,21 @@ if __name__ == "__main__":
     - Running tasks with progress tracking
     - Stopping tasks mid-execution
     - Querying tasks and instances
+
+
+    Registering the task in numerous.toml:
+    [[tasks]]
+      name = "Task Test"
+      python_task_file = "task.py" # This is the file that contains the task function
+
+    Because we use the python task file, the platform will interpret this task as a python task,
+     and execute it by importing the file and look for the task with the name "Task Test". 
+    If found it will execute the task in the Python interpreter.
     """
     import time
 
-    @task
+    # Optionally add name to the task if different from the function name
+    @task(task_name="Task Test")
     def test(x: int, task_controller: TaskInstanceController=None) -> int:
         """Example task that demonstrates progress tracking and cancellation."""
         NUM_STEPS = 10
