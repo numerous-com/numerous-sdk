@@ -25,6 +25,7 @@ type TaskInstanceWorkload struct {
 	CPUUsage      *WorkloadResourceUsage
 	MemoryUsageMB *WorkloadResourceUsage
 	ExitCode      *int
+	Input         *string
 }
 
 type WorkloadResourceUsage struct {
@@ -57,6 +58,7 @@ type taskInstanceResponseData struct {
 			Current float64
 		}
 		ExitCode *int
+		Input    *string
 	}
 }
 
@@ -79,6 +81,7 @@ query CLIListTaskInstances($deployID: ID!, $taskID: ID!) {
 				current
 			}
 			exitCode
+			input
 		}
 	}
 }
@@ -116,6 +119,7 @@ func taskInstanceFromResponse(response taskInstanceResponseData) TaskInstance {
 			Status:    response.Workload.Status,
 			StartedAt: response.Workload.StartedAt,
 			ExitCode:  response.Workload.ExitCode,
+			Input:     response.Workload.Input,
 		},
 	}
 

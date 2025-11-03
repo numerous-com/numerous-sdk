@@ -27,8 +27,10 @@ var (
 )
 
 var cmdArgs struct {
-	appIdent args.AppIdentifierArg
-	appDir   string
+	appIdent  args.AppIdentifierArg
+	appDir    string
+	input     string
+	inputFile string
 }
 
 var Cmd = &cobra.Command{
@@ -43,7 +45,16 @@ var Cmd = &cobra.Command{
 
 Otherwise, assuming an app has been initialized in the current directory:
 
-	numerous task instance create worker`,
+	numerous task instance create worker
+
+With input data:
+
+	numerous task instance create worker --input "user123"
+	numerous task instance create worker --input '{"user_id": 123, "action": "process"}'
+
+With input from a file:
+
+	numerous task instance create worker --input-file config.json`,
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -59,6 +70,8 @@ func run(cmd *cobra.Command, args []string) error {
 		OrganizationSlug: cmdArgs.appIdent.OrganizationSlug,
 		AppSlug:          cmdArgs.appIdent.AppSlug,
 		TaskName:         taskName,
+		Input:            cmdArgs.input,
+		InputFile:        cmdArgs.inputFile,
 	}
 	err := startTask(cmd.Context(), service, input)
 
@@ -68,4 +81,6 @@ func run(cmd *cobra.Command, args []string) error {
 func init() {
 	flags := Cmd.Flags()
 	cmdArgs.appIdent.AddAppIdentifierFlags(flags, cmdActionText)
+	flags.StringVar(&cmdArgs.input, "input", "", "Input data to pass to the task")
+	flags.StringVar(&cmdArgs.inputFile, "input-file", "", "Path to file containing input data to pass to the task")
 }

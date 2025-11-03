@@ -656,11 +656,13 @@ type TaskInstanceWorkload {
   cpuUsage: WorkloadResourceUsage
   memoryUsageMB: WorkloadResourceUsage
   exitCode: Int
+  input: String
 }
 
 input TaskStartInput {
   deployID: ID!
   taskName: String!
+  input: String
 }
 
 input TaskInstanceLogsInput {

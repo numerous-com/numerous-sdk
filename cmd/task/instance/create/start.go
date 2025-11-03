@@ -2,11 +2,18 @@ package create
 
 import (
 	"context"
+	"errors"
+	"os"
 	"strings"
 
 	"numerous.com/cli/internal/app"
 	"numerous.com/cli/internal/appident"
+	"numerous.com/cli/internal/output"
 )
+
+const maxDisplayedInputLength = 100
+
+var ErrConflictingInputFlags = errors.New("cannot specify both --input and --input-file")
 
 type taskStartService interface {
 	GetAppDeploymentID(ctx context.Context, organizationSlug, appSlug string) (string, error)
@@ -18,6 +25,8 @@ type TaskStartInput struct {
 	OrganizationSlug string
 	AppSlug          string
 	TaskName         string
+	Input            string
+	InputFile        string
 }
 
 func startTask(ctx context.Context, service taskStartService, params TaskStartInput) error {
@@ -27,27 +36,48 @@ func startTask(ctx context.Context, service taskStartService, params TaskStartIn
 		return err
 	}
 
+	if params.Input != "" && params.InputFile != "" {
+		output.PrintError("Cannot specify both --input and --input-file", "")
+		return ErrConflictingInputFlags
+	}
+
+	taskInput := params.Input
+	if params.InputFile != "" {
+		fileContent, err := os.ReadFile(params.InputFile)
+		if err != nil {
+			output.PrintErrorDetails("Error reading input file", err)
+			return err
+		}
+		taskInput = string(fileContent)
+	}
+
 	deployID, err := service.GetAppDeploymentID(ctx, ai.OrganizationSlug, ai.AppSlug)
 	if err != nil {
 		app.PrintTaskError(err, ai)
 		return err
 	}
 
+	var inputPtr *string
+	if taskInput != "" {
+		inputPtr = &taskInput
+	}
+
 	result, err := service.StartTask(ctx, app.StartTaskInput{
 		DeployID: deployID,
 		TaskName: params.TaskName,
+		Input:    inputPtr,
 	})
 	if err != nil {
 		app.PrintTaskError(err, ai)
 		return err
 	}
 
-	printTaskStarted(*result)
+	printTaskStarted(*result, taskInput)
 
 	return nil
 }
 
-func printTaskStarted(result app.TaskStartResult) {
+func printTaskStarted(result app.TaskStartResult, input string) {
 	commandStr := strings.Join(result.Command, " ")
 
 	println("Task instance created.")
@@ -55,4 +85,9 @@ func printTaskStarted(result app.TaskStartResult) {
 	println("Instance: " + result.TaskInstanceID)
 	println("Task:     " + result.TaskID)
 	println("Command:  " + commandStr)
+
+	if input != "" {
+		displayInput := app.TruncateInputForDisplay(input, maxDisplayedInputLength)
+		println("Input:    " + displayInput)
+	}
 }
