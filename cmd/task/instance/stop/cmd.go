@@ -39,10 +39,6 @@ var Cmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Example: `To stop a task instance for a specific app:
 
-	numerous task instance stop ce5aba38-842d-4ee0-877b-4af9d426c848 --organization "my-org" --app "my-app"
-
-Otherwise, assuming an app has been initialized in the current directory:
-
 	numerous task instance stop ce5aba38-842d-4ee0-877b-4af9d426c848`,
 }
 

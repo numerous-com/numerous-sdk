@@ -11,8 +11,6 @@ import (
 	"numerous.com/cli/internal/output"
 )
 
-const maxDisplayedInputLength = 100
-
 var ErrConflictingInputFlags = errors.New("cannot specify both --input and --input-file")
 
 type taskStartService interface {
@@ -72,12 +70,12 @@ func startTask(ctx context.Context, service taskStartService, params TaskStartIn
 		return err
 	}
 
-	printTaskStarted(*result, taskInput)
+	printTaskStarted(*result)
 
 	return nil
 }
 
-func printTaskStarted(result app.TaskStartResult, input string) {
+func printTaskStarted(result app.TaskStartResult) {
 	commandStr := strings.Join(result.Command, " ")
 
 	println("Task instance created.")
@@ -85,9 +83,4 @@ func printTaskStarted(result app.TaskStartResult, input string) {
 	println("Instance: " + result.TaskInstanceID)
 	println("Task:     " + result.TaskID)
 	println("Command:  " + commandStr)
-
-	if input != "" {
-		displayInput := app.TruncateInputForDisplay(input, maxDisplayedInputLength)
-		println("Input:    " + displayInput)
-	}
 }

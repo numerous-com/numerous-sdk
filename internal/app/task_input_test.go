@@ -43,43 +43,6 @@ func TestDecodeTaskInputForDisplay(t *testing.T) {
 	})
 }
 
-func TestTruncateInputForDisplay(t *testing.T) {
-	t.Run("returns same string when shorter than max length", func(t *testing.T) {
-		input := "short string"
-		result := TruncateInputForDisplay(input, 50)
-		assert.Equal(t, input, result)
-	})
-
-	t.Run("returns expected truncated string when longer than max length", func(t *testing.T) {
-		input := strings.Repeat("a", 100)
-		result := TruncateInputForDisplay(input, 50)
-		assert.Len(t, result, 50)
-		assert.True(t, strings.HasSuffix(result, "..."))
-	})
-
-	t.Run("does not truncate (none) placeholder", func(t *testing.T) {
-		result := TruncateInputForDisplay("(none)", 5)
-		assert.Equal(t, "(none)", result)
-	})
-
-	t.Run("does not truncate (binary data) placeholder", func(t *testing.T) {
-		result := TruncateInputForDisplay("(binary data)", 5)
-		assert.Equal(t, "(binary data)", result)
-	})
-
-	t.Run("returns same string when truncating at exact max length", func(t *testing.T) {
-		input := "exactly20characters!"
-		result := TruncateInputForDisplay(input, 20)
-		assert.Equal(t, input, result)
-	})
-
-	t.Run("returns string with suffix when truncating one character over max length", func(t *testing.T) {
-		input := "exactly21characters!!"
-		result := TruncateInputForDisplay(input, 20)
-		assert.Equal(t, "exactly21characte...", result)
-	})
-}
-
 func TestEncodeTaskInput(t *testing.T) {
 	maxRawDataSize := 3 * int(math.Ceil(float64(MaxTaskInputSize/4)))
 	t.Run("encodes simple string", func(t *testing.T) {

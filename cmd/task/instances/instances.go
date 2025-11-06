@@ -10,8 +10,6 @@ import (
 	"numerous.com/cli/internal/appident"
 )
 
-const maxDisplayedInputLength = 100
-
 type taskInstancesService interface {
 	GetAppDeploymentID(ctx context.Context, organizationSlug, appSlug string) (string, error)
 	ListTaskInstances(ctx context.Context, input app.ListTaskInstancesInput) ([]app.TaskInstance, error)
@@ -72,18 +70,7 @@ func printTaskInstance(taskInstance app.TaskInstance) {
 	println("Created:  " + taskInstance.CreatedAt.Format(time.RFC3339))
 	println("Command:  " + commandStr)
 
-	if taskInstance.Workload.Input != nil {
-		decodedInput := app.DecodeTaskInputForDisplay(taskInstance.Workload.Input)
-		displayInput := app.TruncateInputForDisplay(decodedInput, maxDisplayedInputLength)
-		println("Input:    " + displayInput)
-	}
-
 	if taskInstance.Workload.ExitCode != nil {
 		println(fmt.Sprintf("ExitCode: %d", *taskInstance.Workload.ExitCode))
-	}
-
-	if taskInstance.Workload.CPUUsage != nil && taskInstance.Workload.MemoryUsageMB != nil {
-		println(fmt.Sprintf("CPU:      %.1f", taskInstance.Workload.CPUUsage.Current))
-		println(fmt.Sprintf("Memory:   %.0fMB", taskInstance.Workload.MemoryUsageMB.Current))
 	}
 }

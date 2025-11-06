@@ -21,15 +21,3 @@ func DecodeTaskInputForDisplay(base64Input *string) string {
 
 	return string(decoded)
 }
-
-func TruncateInputForDisplay(input string, maxLen int) string {
-	if input == "(none)" || input == "(binary data)" {
-		return input
-	}
-
-	if len(input) <= maxLen {
-		return input
-	}
-
-	return input[:maxLen-3] + "..."
-}
