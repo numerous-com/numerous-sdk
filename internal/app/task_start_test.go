@@ -35,8 +35,9 @@ func TestStartTask(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "worker",
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "worker",
 		}
 		result, err := s.StartTask(context.TODO(), input)
 
@@ -70,8 +71,9 @@ func TestStartTask(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "nonexistent-task",
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "nonexistent-task",
 		}
 		result, err := s.StartTask(context.TODO(), input)
 
@@ -102,9 +104,10 @@ func TestStartTask(t *testing.T) {
 
 		inputData := "test input data"
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "worker",
-			Input:    &inputData,
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "worker",
+			Input:            &inputData,
 		}
 		result, err := s.StartTask(context.TODO(), input)
 
@@ -122,9 +125,10 @@ func TestStartTask(t *testing.T) {
 
 		largeInputData := strings.Repeat("a", maxRawDataSize+1)
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "worker",
-			Input:    &largeInputData,
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "worker",
+			Input:            &largeInputData,
 		}
 		result, err := s.StartTask(context.TODO(), input)
 
@@ -155,9 +159,10 @@ func TestStartTask(t *testing.T) {
 		doer.On("Do", mock.Anything).Return(resp, nil)
 
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "worker",
-			Input:    nil,
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "worker",
+			Input:            nil,
 		}
 		result, err := s.StartTask(context.TODO(), input)
 
@@ -188,9 +193,10 @@ func TestStartTask(t *testing.T) {
 
 		jsonInput := `{"user_id": 123, "action": "process"}`
 		input := StartTaskInput{
-			DeployID: "test-deploy-id",
-			TaskName: "worker",
-			Input:    &jsonInput,
+			OrganizationSlug: "test-org",
+			DeployID:         "test-deploy-id",
+			TaskName:         "worker",
+			Input:            &jsonInput,
 		}
 		result, err := s.StartTask(context.TODO(), input)
 

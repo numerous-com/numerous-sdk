@@ -36,8 +36,9 @@ func listInstances(ctx context.Context, service taskInstancesService, params Tas
 	}
 
 	taskInstances, err := service.ListTaskInstances(ctx, app.ListTaskInstancesInput{
-		DeployID: deployID,
-		TaskID:   params.TaskID,
+		OrganizationSlug: ai.OrganizationSlug,
+		DeployID:         deployID,
+		TaskID:           params.TaskID,
 	})
 	if err != nil {
 		app.PrintTaskError(err, ai)

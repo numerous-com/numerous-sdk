@@ -660,6 +660,7 @@ type TaskInstanceWorkload {
 }
 
 input TaskStartInput {
+  organizationSlug: String!
   deployID: ID!
   taskName: String!
   input: String
@@ -680,7 +681,11 @@ extend type AppVersion {
 }
 
 extend type Query {
-  taskInstances(deployID: ID!, taskID: ID!): [TaskInstance!]! @canManageTask
+  taskInstances(
+    organizationSlug: String!
+    deployID: ID!
+    taskID: ID!
+  ): [TaskInstance!]! @canManageTask
   taskInstance(taskInstanceID: ID!): TaskInstance @canManageTask
 }
 

@@ -15,9 +15,10 @@ const (
 var ErrTaskInputTooLarge = errors.New("task input too large: maximum size is 4KB (base64-encoded)")
 
 type StartTaskInput struct {
-	DeployID string
-	TaskName string
-	Input    *string
+	OrganizationSlug string
+	DeployID         string
+	TaskName         string
+	Input            *string
 }
 
 type TaskStartResult struct {
@@ -54,8 +55,9 @@ func (s *Service) StartTask(ctx context.Context, input StartTaskInput) (*TaskSta
 	var resp taskStartResponse
 
 	taskInput := map[string]any{
-		"deployID": graphql.ID(input.DeployID),
-		"taskName": input.TaskName,
+		"organizationSlug": input.OrganizationSlug,
+		"deployID":         graphql.ID(input.DeployID),
+		"taskName":         input.TaskName,
 	}
 
 	if input.Input != nil {

@@ -30,8 +30,9 @@ func TestStartTask(t *testing.T) {
 		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
 
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
 		}
 		expectedResult := &app.TaskStartResult{
 			TaskInstanceID: taskInstanceID,
@@ -75,8 +76,9 @@ func TestStartTask(t *testing.T) {
 		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
 
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
 		}
 		var nilResult *app.TaskStartResult = nil
 		service.On("StartTask", mock.Anything, expectedStartInput).Return(nilResult, testError)
@@ -99,8 +101,9 @@ func TestStartTask(t *testing.T) {
 		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
 
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
 		}
 		expectedResult := &app.TaskStartResult{
 			TaskInstanceID: taskInstanceID,
@@ -128,9 +131,10 @@ func TestStartTask(t *testing.T) {
 
 		testInput := "test input data"
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
-			Input:    &testInput,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
+			Input:            &testInput,
 		}
 		expectedResult := &app.TaskStartResult{
 			TaskInstanceID: taskInstanceID,
@@ -164,9 +168,10 @@ func TestStartTask(t *testing.T) {
 		assert.NoError(t, err)
 
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
-			Input:    &fileContent,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
+			Input:            &fileContent,
 		}
 		expectedResult := &app.TaskStartResult{
 			TaskInstanceID: taskInstanceID,
@@ -231,9 +236,10 @@ func TestStartTask(t *testing.T) {
 		assert.NoError(t, err)
 
 		expectedStartInput := app.StartTaskInput{
-			DeployID: deployID,
-			TaskName: taskName,
-			Input:    &jsonContent,
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
+			Input:            &jsonContent,
 		}
 		expectedResult := &app.TaskStartResult{
 			TaskInstanceID: taskInstanceID,

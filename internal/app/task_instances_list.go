@@ -33,12 +33,13 @@ type WorkloadResourceUsage struct {
 }
 
 type ListTaskInstancesInput struct {
-	DeployID string
-	TaskID   string
+	OrganizationSlug string
+	DeployID         string
+	TaskID           string
 }
 
 type taskInstancesResponse struct {
-	TaskInstances []taskInstanceResponseData `graphql:"taskInstances(deployID: $deployID, taskID: $taskID)"`
+	TaskInstances []taskInstanceResponseData `graphql:"taskInstances(organizationSlug: $organizationSlug, deployID: $deployID, taskID: $taskID)"`
 }
 
 type taskInstanceResponseData struct {
@@ -63,8 +64,8 @@ type taskInstanceResponseData struct {
 }
 
 const queryTaskInstancesText = `
-query CLIListTaskInstances($deployID: ID!, $taskID: ID!) {
-	taskInstances(deployID: $deployID, taskID: $taskID) {
+query CLIListTaskInstances($organizationSlug: String!, $deployID: ID!, $taskID: ID!) {
+	taskInstances(organizationSlug: $organizationSlug, deployID: $deployID, taskID: $taskID) {
 		id
 		createdAt
 		task {
@@ -90,8 +91,9 @@ query CLIListTaskInstances($deployID: ID!, $taskID: ID!) {
 func (s *Service) ListTaskInstances(ctx context.Context, input ListTaskInstancesInput) ([]TaskInstance, error) {
 	var resp taskInstancesResponse
 	variables := map[string]any{
-		"deployID": graphql.ID(input.DeployID),
-		"taskID":   graphql.ID(input.TaskID),
+		"organizationSlug": input.OrganizationSlug,
+		"deployID":         graphql.ID(input.DeployID),
+		"taskID":           graphql.ID(input.TaskID),
 	}
 
 	err := s.client.Exec(ctx, queryTaskInstancesText, &resp, variables, graphql.OperationName("CLIListTaskInstances"))

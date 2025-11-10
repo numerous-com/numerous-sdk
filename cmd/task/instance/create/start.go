@@ -61,9 +61,10 @@ func startTask(ctx context.Context, service taskStartService, params TaskStartIn
 	}
 
 	result, err := service.StartTask(ctx, app.StartTaskInput{
-		DeployID: deployID,
-		TaskName: params.TaskName,
-		Input:    inputPtr,
+		OrganizationSlug: ai.OrganizationSlug,
+		DeployID:         deployID,
+		TaskName:         params.TaskName,
+		Input:            inputPtr,
 	})
 	if err != nil {
 		app.PrintTaskError(err, ai)
