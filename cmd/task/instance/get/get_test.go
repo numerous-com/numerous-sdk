@@ -25,6 +25,7 @@ func TestGetInstance(t *testing.T) {
 		memoryUsage := &app.WorkloadResourceUsage{Current: 512.0}
 		exitCode := 0
 		inputStr := "test input"
+		outputStr := "test output"
 
 		expectedResult := &app.TaskInstance{
 			ID:        taskInstanceID,
@@ -40,6 +41,7 @@ func TestGetInstance(t *testing.T) {
 				MemoryUsageMB: memoryUsage,
 				ExitCode:      &exitCode,
 				Input:         &inputStr,
+				Output:        &outputStr,
 			},
 		}
 

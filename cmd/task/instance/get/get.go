@@ -44,12 +44,13 @@ func printTaskInstanceDetails(taskInstance app.TaskInstance) {
 	println("Command:  " + commandStr)
 
 	if taskInstance.Workload.Input != nil {
-		decodedInput := app.DecodeTaskInputForDisplay(taskInstance.Workload.Input)
+		decodedInput := app.DecodeTaskDataForDisplay(taskInstance.Workload.Input)
 		println("Input:    " + decodedInput)
 	}
 
-	if taskInstance.Workload.ExitCode != nil {
-		println(fmt.Sprintf("ExitCode: %d", *taskInstance.Workload.ExitCode))
+	if taskInstance.Workload.Output != nil {
+		decodedOutput := app.DecodeTaskDataForDisplay(taskInstance.Workload.Output)
+		println("Output:   " + decodedOutput)
 	}
 
 	if taskInstance.Workload.ExitCode != nil {

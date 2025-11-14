@@ -26,6 +26,7 @@ type TaskInstanceWorkload struct {
 	MemoryUsageMB *WorkloadResourceUsage
 	ExitCode      *int
 	Input         *string
+	Output        *string
 }
 
 type WorkloadResourceUsage struct {

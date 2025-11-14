@@ -9,36 +9,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecodeTaskInputForDisplay(t *testing.T) {
+func TestDecodeTaskDataForDisplay(t *testing.T) {
 	t.Run("returns (none) for nil input", func(t *testing.T) {
-		result := DecodeTaskInputForDisplay(nil)
+		result := DecodeTaskDataForDisplay(nil)
 		assert.Equal(t, "(none)", result)
 	})
 
 	t.Run("returns expected decoded string for valid base64 text", func(t *testing.T) {
 		input := "Hello, World!"
 		encoded := base64.StdEncoding.EncodeToString([]byte(input))
-		result := DecodeTaskInputForDisplay(&encoded)
+		result := DecodeTaskDataForDisplay(&encoded)
 		assert.Equal(t, input, result)
 	})
 
 	t.Run("returns expected decoded string for valid base64 JSON", func(t *testing.T) {
 		input := `{"user_id": 123, "action": "process"}`
 		encoded := base64.StdEncoding.EncodeToString([]byte(input))
-		result := DecodeTaskInputForDisplay(&encoded)
+		result := DecodeTaskDataForDisplay(&encoded)
 		assert.Equal(t, input, result)
 	})
 
 	t.Run("returns (base64) indicator for invalid base64", func(t *testing.T) {
 		invalid := "not-valid-base64!"
-		result := DecodeTaskInputForDisplay(&invalid)
+		result := DecodeTaskDataForDisplay(&invalid)
 		assert.Contains(t, result, "(base64)")
 	})
 
 	t.Run("returns (binary data) for non-UTF-8 content", func(t *testing.T) {
 		binaryData := []byte{0xFF, 0xFE, 0xFD}
 		encoded := base64.StdEncoding.EncodeToString(binaryData)
-		result := DecodeTaskInputForDisplay(&encoded)
+		result := DecodeTaskDataForDisplay(&encoded)
 		assert.Equal(t, "(binary data)", result)
 	})
 }

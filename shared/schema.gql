@@ -627,6 +627,7 @@ type WorkloadResourceUsageDataPoint {
 ###############################################################################
 
 directive @canManageTask on FIELD_DEFINITION
+directive @canManageTaskInstance on FIELD_DEFINITION
 
 enum TaskWorkloadStatus {
   PENDING
@@ -657,6 +658,7 @@ type TaskInstanceWorkload {
   memoryUsageMB: WorkloadResourceUsage
   exitCode: Int
   input: String
+  output: String
 }
 
 input TaskStartInput {
@@ -686,12 +688,14 @@ extend type Query {
     deployID: ID!
     taskID: ID!
   ): [TaskInstance!]! @canManageTask
-  taskInstance(taskInstanceID: ID!): TaskInstance @canManageTask
+  taskInstance(taskInstanceID: ID!): TaskInstance @canManageTaskInstance
 }
 
 extend type Mutation {
   taskStart(input: TaskStartInput!): TaskInstance! @canManageTask
-  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageTask
+  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageTaskInstance
+  taskInstanceSetOutput(taskInstanceID: ID!, value: String!): TaskInstance!
+    @canManageTaskInstance
 }
 
 ###############################################################################

@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-func DecodeTaskInputForDisplay(base64Input *string) string {
+func DecodeTaskDataForDisplay(base64Input *string) string {
 	if base64Input == nil {
 		return "(none)"
 	}

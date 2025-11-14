@@ -34,6 +34,7 @@ query CLIGetTaskInstance($taskInstanceID: ID!) {
 			}
 			exitCode
 			input
+			output
 		}
 	}
 }
