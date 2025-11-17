@@ -647,6 +647,8 @@ type TaskInstance {
   id: ID!
   task: Task!
   createdAt: Time!
+  input: String
+  output: String
   workload: TaskInstanceWorkload!
 }
 
@@ -657,8 +659,6 @@ type TaskInstanceWorkload {
   cpuUsage: WorkloadResourceUsage
   memoryUsageMB: WorkloadResourceUsage
   exitCode: Int
-  input: String
-  output: String
 }
 
 input TaskStartInput {

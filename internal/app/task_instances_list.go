@@ -11,6 +11,8 @@ type TaskInstance struct {
 	ID        string
 	Task      Task
 	CreatedAt time.Time
+	Input     *string
+	Output    *string
 	Workload  TaskInstanceWorkload
 }
 
@@ -25,8 +27,6 @@ type TaskInstanceWorkload struct {
 	CPUUsage      *WorkloadResourceUsage
 	MemoryUsageMB *WorkloadResourceUsage
 	ExitCode      *int
-	Input         *string
-	Output        *string
 }
 
 type WorkloadResourceUsage struct {
@@ -46,6 +46,8 @@ type taskInstancesResponse struct {
 type taskInstanceResponseData struct {
 	ID        string
 	CreatedAt time.Time
+	Input     *string
+	Output    *string
 	Task      struct {
 		ID      string
 		Command []string
@@ -60,7 +62,6 @@ type taskInstanceResponseData struct {
 			Current float64
 		}
 		ExitCode *int
-		Input    *string
 	}
 }
 
@@ -69,6 +70,8 @@ query CLIListTaskInstances($organizationSlug: String!, $deployID: ID!, $taskID: 
 	taskInstances(organizationSlug: $organizationSlug, deployID: $deployID, taskID: $taskID) {
 		id
 		createdAt
+		input
+		output
 		task {
 			id
 			command
@@ -83,7 +86,6 @@ query CLIListTaskInstances($organizationSlug: String!, $deployID: ID!, $taskID: 
 				current
 			}
 			exitCode
-			input
 		}
 	}
 }
@@ -114,6 +116,8 @@ func taskInstanceFromResponse(response taskInstanceResponseData) TaskInstance {
 	ti := TaskInstance{
 		ID:        response.ID,
 		CreatedAt: response.CreatedAt,
+		Input:     response.Input,
+		Output:    response.Output,
 		Task: Task{
 			ID:      response.Task.ID,
 			Command: response.Task.Command,
@@ -122,7 +126,6 @@ func taskInstanceFromResponse(response taskInstanceResponseData) TaskInstance {
 			Status:    response.Workload.Status,
 			StartedAt: response.Workload.StartedAt,
 			ExitCode:  response.Workload.ExitCode,
-			Input:     response.Workload.Input,
 		},
 	}
 

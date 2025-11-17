@@ -30,6 +30,8 @@ func TestGetInstance(t *testing.T) {
 		expectedResult := &app.TaskInstance{
 			ID:        taskInstanceID,
 			CreatedAt: time.Now(),
+			Input:     &inputStr,
+			Output:    &outputStr,
 			Task: app.Task{
 				ID:      "task-id",
 				Command: []string{"python", "main.py"},
@@ -40,8 +42,6 @@ func TestGetInstance(t *testing.T) {
 				CPUUsage:      cpuUsage,
 				MemoryUsageMB: memoryUsage,
 				ExitCode:      &exitCode,
-				Input:         &inputStr,
-				Output:        &outputStr,
 			},
 		}
 

@@ -19,6 +19,8 @@ query CLIGetTaskInstance($taskInstanceID: ID!) {
 	taskInstance(taskInstanceID: $taskInstanceID) {
 		id
 		createdAt
+		input
+		output
 		task {
 			id
 			command
@@ -33,8 +35,6 @@ query CLIGetTaskInstance($taskInstanceID: ID!) {
 				current
 			}
 			exitCode
-			input
-			output
 		}
 	}
 }

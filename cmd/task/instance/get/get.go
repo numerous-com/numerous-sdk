@@ -43,13 +43,13 @@ func printTaskInstanceDetails(taskInstance app.TaskInstance) {
 	println("Created:  " + taskInstance.CreatedAt.Format(time.RFC3339))
 	println("Command:  " + commandStr)
 
-	if taskInstance.Workload.Input != nil {
-		decodedInput := app.DecodeTaskDataForDisplay(taskInstance.Workload.Input)
+	if taskInstance.Input != nil {
+		decodedInput := app.DecodeTaskDataForDisplay(taskInstance.Input)
 		println("Input:    " + decodedInput)
 	}
 
-	if taskInstance.Workload.Output != nil {
-		decodedOutput := app.DecodeTaskDataForDisplay(taskInstance.Workload.Output)
+	if taskInstance.Output != nil {
+		decodedOutput := app.DecodeTaskDataForDisplay(taskInstance.Output)
 		println("Output:   " + decodedOutput)
 	}
 
