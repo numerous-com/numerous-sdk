@@ -643,12 +643,18 @@ type Task {
   appVersion: AppVersion!
 }
 
+type TaskInstanceProgress {
+  value: Float
+  message: String
+}
+
 type TaskInstance {
   id: ID!
   task: Task!
   createdAt: Time!
   input: String
   output: String
+  progress: TaskInstanceProgress!
   workload: TaskInstanceWorkload!
 }
 
@@ -696,6 +702,11 @@ extend type Mutation {
   taskStop(taskInstanceID: ID!): TaskStopResult! @canManageTaskInstance
   taskInstanceSetOutput(taskInstanceID: ID!, value: String!): TaskInstance!
     @canManageTaskInstance
+  taskInstanceUpdateProgress(
+    taskInstanceID: ID!
+    value: Float
+    message: String
+  ): TaskInstance! @canManageTaskInstance
 }
 
 ###############################################################################

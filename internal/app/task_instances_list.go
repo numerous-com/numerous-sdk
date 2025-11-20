@@ -13,12 +13,18 @@ type TaskInstance struct {
 	CreatedAt time.Time
 	Input     *string
 	Output    *string
+	Progress  TaskInstanceProgress
 	Workload  TaskInstanceWorkload
 }
 
 type Task struct {
 	ID      string
 	Command []string
+}
+
+type TaskInstanceProgress struct {
+	Value   *float64
+	Message *string
 }
 
 type TaskInstanceWorkload struct {

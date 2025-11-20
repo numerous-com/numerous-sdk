@@ -21,6 +21,10 @@ query CLIGetTaskInstance($taskInstanceID: ID!) {
 		createdAt
 		input
 		output
+		progress {
+			value
+			message
+		}
 		task {
 			id
 			command

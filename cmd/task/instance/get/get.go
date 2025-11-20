@@ -53,6 +53,14 @@ func printTaskInstanceDetails(taskInstance app.TaskInstance) {
 		println("Output:   " + decodedOutput)
 	}
 
+	if taskInstance.Progress.Value != nil {
+		progressStr := fmt.Sprintf("Progress: %.1f", *taskInstance.Progress.Value)
+		if taskInstance.Progress.Message != nil && *taskInstance.Progress.Message != "" {
+			progressStr += fmt.Sprintf(" (%s)", *taskInstance.Progress.Message)
+		}
+		println(progressStr)
+	}
+
 	if taskInstance.Workload.ExitCode != nil {
 		println(fmt.Sprintf("ExitCode: %d", *taskInstance.Workload.ExitCode))
 	}
