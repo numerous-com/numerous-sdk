@@ -203,7 +203,7 @@ class Field:
         A tuple containing the Pydantic Field object with the value and properties.
         """
         # Create a Pydantic Field object with the value and properties
-        self._field_info = PydanticField(self._default, **self._props)  # type: ignore[arg-type]
+        self._field_info = PydanticField(self._default, **self._props)  # type: ignore[arg-type,call-overload,unused-ignore]
         return self._field_info
 
     @property
