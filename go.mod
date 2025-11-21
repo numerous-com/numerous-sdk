@@ -1,6 +1,6 @@
 module numerous.com/cli
 
-go 1.23.8
+go 1.24.9
 
 require (
 	git.sr.ht/~emersion/gqlclient v0.0.0-20250318184027-d4a003529bba
@@ -15,8 +15,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vektah/gqlparser/v2 v2.5.26
 	github.com/zalando/go-keyring v0.2.6
-	golang.org/x/term v0.31.0
-	golang.org/x/text v0.24.0
+	golang.org/x/term v0.37.0
+	golang.org/x/text v0.31.0
 )
 
 require (
@@ -52,7 +52,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
