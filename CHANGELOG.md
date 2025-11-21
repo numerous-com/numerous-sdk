@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.50.1 (2025-11-21)
+
+### Build
+
+* build(deps): update CLI go version (#80) ([`52a1caf`](https://github.com/numerous-com/numerous-sdk/commit/52a1caf03769ab1e948fa8c4f1e0bbd8abf96474))
+
+  > 
+  > * Updates packages.
+
+
+
+### Fix
+
+* fix(python-sdk): loose dependencies (#81) ([`2e765e4`](https://github.com/numerous-com/numerous-sdk/commit/2e765e432982b26829edbe433df8ea3e0b2f2925))
+
+  > 
+  > Loosens httpx and pydantic version ranges.
+
+
+
+
 ## v0.50.0 (2025-07-04)
 
 ### Feature
