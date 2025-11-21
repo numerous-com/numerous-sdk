@@ -20,7 +20,7 @@ repos:
         additional_dependencies:
           - "types-requests"
           - "pytest-asyncio"
-          - "pydantic<2.10.0"
+          - "pydantic>=2.9.0,<3.0.0"
           - "marimo==0.8.14"
   - repo: local
     hooks:
