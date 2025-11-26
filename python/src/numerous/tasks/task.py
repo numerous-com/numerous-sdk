@@ -1,42 +1,27 @@
 """
-Task management API - Object-Oriented Interface.
-
-This module provides a task execution system for running long-running operations
-asynchronously with progress tracking, cancellation, and result handling.
+Task management API - Functional Interface.
 """
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, Future
-from typing import Any, Callable
+from typing import Any, Callable, Optional, TypeVar, ParamSpec, Protocol
 from datetime import datetime
 from enum import Enum
+from dataclasses import dataclass, field, replace
+from functools import wraps
 import os
 import uuid
+import inspect
 import threading
 
 
-# ============================================================================
-# Global State
-# ============================================================================
+# Type variables for generic function types
+P = ParamSpec('P')
+R = TypeVar('R')
 
-# Global registry for tasks
-_task_registry: list[Task] = []
-
-
-# ============================================================================
-# Enumerations
-# ============================================================================
 
 class TaskStatus(Enum):
-    """
-    Task instance status.
-    
-    PENDING: Task is created but not yet running
-    RUNNING: Task is currently executing
-    COMPLETED: Task finished successfully
-    FAILED: Task failed with an error
-    CANCELLED: Task was cancelled before completion
-    """
+    """Task instance status."""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -44,461 +29,427 @@ class TaskStatus(Enum):
     CANCELLED = "cancelled"
 
 
-class TaskInstanceWorkload(Enum):
-    """
-    Task instance workload type.
-    
-    LOCAL: Task runs in local thread pool
-    REMOTE: Task runs on remote platform
-    """
+class TaskWorkload(Enum):
+    """Task instance workload type."""
     LOCAL = "local"
     REMOTE = "remote"
 
 
-# ============================================================================
-# Core Classes - Task Definition
-# ============================================================================
-
-class Task:
-    """
-    Task definition that wraps a Python function.
-    
-    A Task represents a reusable operation that can be executed multiple times
-    with different inputs, creating TaskInstance objects for each execution.
-    
-    Attributes:
-        id: Unique identifier for this task
-        name: Human-readable name of the task
-        command: Optional command associated with the task
-        app_id: Optional application identifier
-        app_version_id: Optional application version identifier
-    """
-
+@dataclass(frozen=True)
+class TaskDefinition:
+    """Immutable task definition."""
     id: str
-    command: list[str]
-    app_id: str 
-    app_version_id: str
     name: str
-    _func: Callable[[dict[str, Any]], Any]
-    _instances: list[TaskInstance]
-
-    def __init__(self, func: Callable[[dict[str, Any]], Any], name: str = None):
-        """
-        Initialize a Task with a function.
-        
-        Args:
-            func: The function to wrap as a task
-            name: Optional name for the task (defaults to function name)
-        """
-        self._func = func
-        self.name = name or func.__name__
-        self.id = str(uuid.uuid4())
-        self._instances = []
-        # Register this task globally
-        _task_registry.append(self)
-
-    def create_instance(self, inputs: dict[str, Any]) -> TaskInstance:
-        """
-        Create a new task instance with the given inputs.
-
-        Args:
-            inputs: A dictionary of inputs to the task. Must be JSON serializable.
-
-        Returns:
-            A new task instance.
-        """
-        instance = TaskInstance(
-            task=self,
-            inputs=inputs,
-            workload=TaskInstanceWorkload.LOCAL
-        )
-        # Track the instance
-        self._instances.append(instance)
-        # Execute the task instance using the global executor
-        executor.execute(instance, block=False)
-        return instance
-
-    def list_instances(self) -> list[TaskInstance]:
-        """
-        List all task instances for the task.
-
-        Returns:
-            A list of task instances.
-        """
-        return self._instances
-
-    def __call__(self, *args, **kwargs) -> TaskInstance:
-        """
-        Create a new task instance with the given inputs.
-        
-        This allows the task to be called like a function:
-            task_instance = my_task(x=1, y=2)
-        
-        Supports three calling styles:
-            1. Dictionary: my_task({'x': 1, 'y': 2})
-            2. Positional: my_task(1, 2)
-            3. Keyword: my_task(x=1, y=2)
-
-        Args:
-            *args: Positional arguments to pass to the task function.
-            **kwargs: Keyword arguments to pass to the task function.
-
-        Returns:
-            A new task instance.
-        """
-        import inspect
-        
-        # If called with a single dict argument, use it directly
-        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
-            inputs = args[0]
-        else:
-            # Map positional and keyword arguments to parameter names
-            sig = inspect.signature(self._func)
-            params = list(sig.parameters.keys())
-            
-            # Remove task_controller from params as it's injected
-            if 'task_controller' in params:
-                params.remove('task_controller')
-            
-            # Build inputs dictionary
-            inputs = {}
-            
-            # Add positional arguments
-            for i, arg in enumerate(args):
-                if i < len(params):
-                    inputs[params[i]] = arg
-            
-            # Add keyword arguments
-            inputs.update(kwargs)
-        
-        return self.create_instance(inputs)
+    func: Callable[..., Any]
+    app_id: Optional[str] = None
+    app_version_id: Optional[str] = None
+    command: Optional[list[str]] = None
 
 
-# ============================================================================
-# Core Classes - Task Instance Controller
-# ============================================================================
-
-class TaskInstanceController:
+class TaskController:
     """
-    Controller for managing task instance execution.
+    Unified controller interface injected into task functions.
     
-    Provides an interface for task functions to:
-    - Check if they should stop execution
-    - Report progress updates
-    - Set status and output
-    
-    This is injected into task functions that declare a 'task_controller' parameter.
+    Provides:
+    - should_stop()
+    - request_stop()
+    - set_progress(progress)
+    - set_status(status)
+    - set_output(output)
     """
-
-    def __init__(self, task_instance: TaskInstance = None):
-        """
-        Initialize a controller for a task instance.
-        
-        Args:
-            task_instance: The task instance this controller manages
-        """
-        self._task_instance = task_instance
+    def __init__(self, instance_state: "TaskInstanceState"):
+        self._state = instance_state
         self._should_stop = False
 
     def should_stop(self) -> bool:
-        """
-        Whether the task instance should be stopped or not.
-
-        Returns:
-            True if the task instance should be stopped, False otherwise.
-        """
         return self._should_stop
 
-    def request_stop(self):
-        """
-        Request the task instance to stop.
-        """
+    def request_stop(self) -> None:
         self._should_stop = True
 
-    def set_progress(self, progress: float):
-        """
-        Set the progress of the task instance.
+    def set_progress(self, progress: float) -> None:
+        set_progress(self._state, progress)
 
-        Args:
-            progress: The progress to set for the task instance. Must be a float between 0 and 1.
+    def set_status(self, status: str | "TaskStatus") -> None:
+        if isinstance(status, str):
+            with self._state._lock:
+                self._state.status = TaskStatus(status)
+        else:
+            with self._state._lock:
+                self._state.status = status
 
-        Raises:
-            ValueError: If the progress is not a float between 0 and 1.
-        """
-        if not 0 <= progress <= 1:
-            raise ValueError("Progress must be between 0 and 1")
-        if self._task_instance:
-            with self._task_instance._lock:
-                self._task_instance._progress = progress
-
-    def set_status(self, status: TaskStatus | str):
-        """
-        Set the status of the task instance.
-
-        Args:
-            status: The status to set for the task instance.
-                   Can be a TaskStatus enum or a string value.
-
-        Raises:
-            ValueError: If the status is not a valid status.
-        """
-        if self._task_instance:
-            with self._task_instance._lock:
-                if isinstance(status, str):
-                    self._task_instance._status = TaskStatus(status)
-                else:
-                    self._task_instance._status = status
-
-    def set_output(self, output: dict[str, Any]):
-        """
-        Set the output of the task instance. Must be JSON serializable.
-
-        Args:
-            output: The output to set for the task instance. Must be JSON serializable.
-
-        Raises:
-            TypeError: If the output is not JSON serializable.
-        """
-        if self._task_instance:
-            with self._task_instance._lock:
-                self._task_instance._output = output
+    def set_output(self, output: dict[str, Any]) -> None:
+        with self._state._lock:
+            self._state.output = output
 
 
-# ============================================================================
-# Core Classes - Task Instance
-# ============================================================================
-
-class TaskInstance:
+@dataclass
+class TaskInstanceState:
     """
-    A single execution of a Task with specific inputs.
+    Mutable task instance state.
     
-    TaskInstance represents a running or completed task execution. It tracks:
-    - Execution state (pending, running, completed, failed, cancelled)
-    - Progress (0.0 to 1.0)
-    - Result or error
-    - Controller for task function interaction
-    
-    Attributes:
-        id: Unique identifier for this instance
-        task: The Task definition being executed
-        created_at: Timestamp when instance was created
-        workload: Where the task runs (LOCAL or REMOTE)
-        inputs: Input parameters for this execution
+    This is the only mutable structure, containing runtime state.
+    All state changes go through pure functions.
     """
-
     id: str
-    task: Task
-    created_at: datetime
-    workload: TaskInstanceWorkload
+    task_id: str
+    status: TaskStatus
+    progress: float
     inputs: dict[str, Any]
-    _future: Future | None
-    _progress: float
-    _status: TaskStatus
-    _output: dict[str, Any] | None
-    _result: Any
-    _controller: TaskInstanceController | None
-
-    def __init__(self, task: Task, inputs: dict[str, Any], workload: TaskInstanceWorkload):
-        """
-        Initialize a task instance.
-        
-        Args:
-            task: The Task definition to execute
-            inputs: Input parameters for the task function
-            workload: Where to run the task (LOCAL or REMOTE)
-        """
-        self.id = str(uuid.uuid4())
-        self.task = task
-        self.created_at = datetime.now()
-        self.workload = workload
-        self.inputs = inputs
-        self._future = None
-        self._progress = 0.0
-        self._status = TaskStatus.PENDING
-        self._output = None
-        self._result = None
-        self._controller = None
-        self._lock = threading.Lock()
-
-    def _execute(self):
-        """
-        Execute the task function with its inputs and controller.
-        
-        This method:
-        1. Creates a controller for this instance
-        2. Inspects the function signature
-        3. Injects the controller if the function expects it
-        4. Executes the function
-        5. Updates status and progress
-        
-        Called by the executor in a separate thread.
-        """
-        try:
-            with self._lock:
-                self._status = TaskStatus.RUNNING
-            # Create a controller for this instance
-            self._controller = TaskInstanceController(self)
-            
-            # Get the function signature to check if it expects task_controller
-            import inspect
-            sig = inspect.signature(self.task._func)
-            
-            # Prepare the arguments
-            kwargs = dict(self.inputs)
-            if 'task_controller' in sig.parameters:
-                kwargs['task_controller'] = self._controller
-            
-            # Call the task function with inputs
-            self._result = self.task._func(**kwargs)
-            with self._lock:
-                self._status = TaskStatus.COMPLETED
-                self._progress = 1.0
-        except Exception as e:
-            with self._lock:
-                self._status = TaskStatus.FAILED
-            raise
+    workload: TaskWorkload
+    created_at: datetime
+    output: Optional[dict[str, Any]] = None
+    result: Any = None
+    error: Optional[Exception] = None
+    future: Optional[Future] = None
+    controller: Optional[TaskController] = None
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    
+    def is_done(self) -> bool:
+        """Check if task is complete."""
+        return self.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED)
 
     def stop(self) -> None:
-        """
-        Stop the task instance.
-
-        In local mode, this sets the stop flag on the controller.
-        In remote mode, this will call the API to stop the task instance.
-        """
-        if self._controller:
-            self._controller.request_stop()
-
-    def logs(self) -> list[str]:
-        """
-        Get the logs for the task instance.
-
-        In local mode, this will return an empty list.
-        In remote mode, this will call the API to get the logs for the task instance.
-
-        Returns:
-            A list of logs.
-        """
-        ...
-
-    @property
-    def status(self) -> TaskStatus:
-        """
-        Get the current status of the task instance.
-
-        Returns:
-            The current TaskStatus.
-        """
-        return self._status
-
-    @property
-    def is_done(self) -> bool:
-        """
-        Whether the task instance is done or not.
-
-        Returns:
-            True if the task instance is done, False otherwise.
-        """
-        return self._status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED)
+        if self.controller:
+            self.controller.request_stop()
 
     def get_progress(self) -> float:
-        """
-        Get the progress of the task instance.
-
-        Returns:
-            The progress of the task instance (0.0 to 1.0).
-        """
         with self._lock:
-            return self._progress
+            return self.progress
 
-    def result(self) -> Any:
-        """
-        Get the result of the task instance. Blocks until the task is done.
+    def get_status(self) -> TaskStatus:
+        with self._lock:
+            return self.status
 
-        Returns:
-            The result of the task instance.
-        """
-        if self._future:
-            self._future.result()  # Wait for completion
-        return self._result
+    def get_output(self) -> Optional[dict[str, Any]]:
+        with self._lock:
+            return self.output
+
+    def logs(self) -> list[str]:
+        # Local mode: no logs collected
+        return []
+
+
+# Global state (minimized)
+class InMemoryTaskStore:
+    def __init__(self):
+        self._task_definitions: dict[str, TaskDefinition] = {}
+        self._task_instances: dict[str, TaskInstanceState] = {}
+        self._lock = threading.Lock()
+
+    def register_task(self, task_def: TaskDefinition) -> TaskDefinition:
+        with self._lock:
+            self._task_definitions[task_def.id] = task_def
+        return task_def
+
+    def get_task_definition(self, task_id: str) -> Optional[TaskDefinition]:
+        with self._lock:
+            return self._task_definitions.get(task_id)
+
+    def list_task_definitions(self) -> list[TaskDefinition]:
+        with self._lock:
+            return list(self._task_definitions.values())
+
+    def register_instance(self, state: TaskInstanceState) -> TaskInstanceState:
+        with self._lock:
+            self._task_instances[state.id] = state
+        return state
+
+    def get_task_instance(self, instance_id: str) -> Optional[TaskInstanceState]:
+        with self._lock:
+            return self._task_instances.get(instance_id)
+
+    def list_task_instances(self, task_id: Optional[str] = None) -> list[TaskInstanceState]:
+        with self._lock:
+            if task_id:
+                return [inst for inst in self._task_instances.values() if inst.task_id == task_id]
+            return list(self._task_instances.values())
+
+
+_store = InMemoryTaskStore()
+
+
+class TaskExecutor(Protocol):
+    def submit(self, task_def: TaskDefinition, state: TaskInstanceState) -> Future: ...
+
+
+class LocalThreadTaskExecutor:
+    def __init__(self, max_workers: int = 4):
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def submit(self, task_def: TaskDefinition, state: TaskInstanceState) -> Future:
+        future = self._executor.submit(execute_task, task_def, state)
+        return future
+
+
+_executor: Optional[TaskExecutor] = None
 
 
 # ============================================================================
-# Task Registry - Query Functions
+# Pure Functions - State Transformations
 # ============================================================================
 
-def list_tasks() -> list[Task]:
+def create_task_definition(
+    func: Callable[..., Any],
+    name: Optional[str] = None,
+    app_id: Optional[str] = None,
+) -> TaskDefinition:
+    """Create a task definition from a function."""
+    return TaskDefinition(
+        id=str(uuid.uuid4()),
+        name=name or func.__name__,
+        func=func,
+        app_id=app_id,
+    )
+
+
+def create_task_instance(
+    task_def: TaskDefinition,
+    inputs: dict[str, Any],
+    workload: TaskWorkload = TaskWorkload.LOCAL,
+) -> TaskInstanceState:
+    """Create a new task instance state."""
+    return TaskInstanceState(
+        id=str(uuid.uuid4()),
+        task_id=task_def.id,
+        status=TaskStatus.PENDING,
+        progress=0.0,
+        inputs=inputs,
+        workload=workload,
+        created_at=datetime.now(),
+    )
+
+
+def set_progress(state: TaskInstanceState, progress: float) -> TaskInstanceState:
+    """Return new state with updated progress."""
+    if not 0 <= progress <= 1:
+        raise ValueError("Progress must be between 0 and 1")
+    with state._lock:
+        state.progress = progress
+    return state
+
+
+def set_status(state: TaskInstanceState, status: TaskStatus) -> TaskInstanceState:
+    """Return new state with updated status."""
+    with state._lock:
+        state.status = status
+    return state
+
+
+def set_result(state: TaskInstanceState, result: Any) -> TaskInstanceState:
+    """Return new state with result."""
+    with state._lock:
+        state.result = result
+        state.status = TaskStatus.COMPLETED
+        state.progress = 1.0
+    return state
+
+
+def set_error(state: TaskInstanceState, error: Exception) -> TaskInstanceState:
+    """Return new state with error."""
+    with state._lock:
+        state.error = error
+        state.status = TaskStatus.FAILED
+    return state
+
+
+def request_stop(state: TaskInstanceState) -> TaskInstanceState:
+    """Request the task to stop."""
+    if state.controller:
+        state.controller.request_stop()
+    return state
+
+
+# ============================================================================
+# Task Execution - Side Effects Isolated Here
+# ============================================================================
+
+def execute_task(
+    task_def: TaskDefinition,
+    state: TaskInstanceState,
+) -> Any:
     """
-    List all registered task definitions.
-
-    Returns:
-        A list of all task definitions in the global registry.
-    """ 
-    return _task_registry
-
-
-def get_task(task_id: str, app_id: str) -> Task:
+    Execute a task function with its inputs and controller.
+    
+    This is where side effects happen - the actual function execution.
     """
-    Get a task by its ID.
-
-    Args:
-        task_id: The ID of the task to get.
-        app_id: The ID of the app to get the task for.
+    # Update status to running
+    with state._lock:
+        state.status = TaskStatus.RUNNING
+    
+    try:
+        # Prepare arguments
+        sig = inspect.signature(task_def.func)
+        kwargs = dict(state.inputs)
         
-    Returns:
-        The Task with the given ID, or None if not found.
-    """
-    ...
+        # Inject controller if function expects it
+        if 'task_controller' in sig.parameters:
+            if state.controller is None:
+                state.controller = TaskController(state)
+            kwargs['task_controller'] = state.controller
+        
+        # Execute the function
+        result = task_def.func(**kwargs)
+        set_result(state, result)
+        return result
+        
+    except Exception as e:
+        set_error(state, e)
+        raise
 
 
-def get_task_instance_controller_from_env() -> TaskInstanceController:
-    """
-    Get a task instance controller from the environment.
-    
-    Used by platform executors to get a controller connected to the
-    remote task instance.
-
-    Returns:
-        A task instance controller configured from environment variables.
-    """
-    ...
+def submit_task_execution(
+    task_def: TaskDefinition,
+    state: TaskInstanceState,
+    executor: TaskExecutor,
+) -> Future:
+    """Submit task for async execution and return future."""
+    future = executor.submit(task_def, state)
+    state.future = future
+    return future
 
 
 # ============================================================================
-# Decorator - Task Registration
+# Task Registry - Stateful Operations
 # ============================================================================
 
-def task(func=None, *, task_name: str = None):
+def register_task(task_def: TaskDefinition) -> TaskDefinition:
+    """Register a task definition globally."""
+    return _store.register_task(task_def)
+
+
+def get_task_definition(task_id: str) -> Optional[TaskDefinition]:
+    """Get a task definition by ID."""
+    return _store.get_task_definition(task_id)
+
+
+def list_task_definitions() -> list[TaskDefinition]:
+    """List all registered task definitions."""
+    return _store.list_task_definitions()
+
+
+def register_instance(state: TaskInstanceState) -> TaskInstanceState:
+    """Register a task instance."""
+    return _store.register_instance(state)
+
+
+def get_task_instance(instance_id: str) -> Optional[TaskInstanceState]:
+    """Get a task instance by ID."""
+    return _store.get_task_instance(instance_id)
+
+
+def list_task_instances(task_id: Optional[str] = None) -> list[TaskInstanceState]:
+    """List all task instances, optionally filtered by task_id."""
+    return _store.list_task_instances(task_id)
+
+
+# ============================================================================
+# High-Level API - Composable Functions
+# ============================================================================
+
+def run_task(
+    task_def: TaskDefinition,
+    inputs: dict[str, Any],
+    block: bool = False,
+    workload: TaskWorkload = TaskWorkload.LOCAL,
+) -> TaskInstanceState:
     """
-    Decorator to convert a function into a Task.
+    High-level function to create and execute a task.
     
-    The decorated function becomes callable and returns a TaskInstance when invoked.
-    The Task is automatically registered in the global registry.
+    This composes the lower-level functions into a useful operation.
+    """
+    # Create instance
+    state = create_task_instance(task_def, inputs, workload)
+    register_instance(state)
+    
+    # Get executor
+    executor = _get_executor()
+    
+    # Submit for execution
+    future = submit_task_execution(task_def, state, executor)
+    
+    # Optionally block
+    if block:
+        future.result()
+    
+    return state
+
+
+def stop_task_instance(instance_id: str) -> Optional[TaskInstanceState]:
+    """Stop a running task instance."""
+    state = get_task_instance(instance_id)
+    if state:
+        return request_stop(state)
+    return None
+
+
+def wait_for_completion(state: TaskInstanceState) -> Any:
+    """Wait for task completion and return result."""
+    if state.future:
+        state.future.result()
+    return state.result
+
+
+# ============================================================================
+# Decorator - Functional Task Registration
+# ============================================================================
+
+def task(
+    func: Optional[Callable[P, R]] = None,
+    *,
+    name: Optional[str] = None,
+    app_id: Optional[str] = None,
+) -> Callable[P, TaskInstanceState] | Callable[[Callable[P, R]], Callable[P, TaskInstanceState]]:
+    """
+    Decorator to convert a function into a task.
+    
+    Returns a new function that when called, creates and runs a task instance.
     
     Usage:
         @task
         def my_task(x: int) -> int:
             return x + 1
         
-        @task(task_name="custom_name")
+        @task(name="custom_name")
         def another_task(x: int) -> int:
             return x * 2
         
-        # Call the task to create an instance
+        # Calling the decorated function runs the task
         instance = my_task(5)
-
-    Args:
-        task_name: Optional custom name for the task. 
-                  If not provided, uses the function name.
-
-    Returns:
-        A Task object that can be called to create TaskInstances.
     """
-    def decorator(f: Callable[[dict[str, Any]], Any]) -> Task:
-        # Create a Task instance with the function and optional name
-        return Task(f, name=task_name)
+    def decorator(f: Callable[P, R]) -> Callable[P, TaskInstanceState]:
+        # Create and register task definition
+        task_def = create_task_definition(f, name=name, app_id=app_id)
+        register_task(task_def)
+        
+        @wraps(f)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> TaskInstanceState:
+            # Convert args/kwargs to inputs dict
+            sig = inspect.signature(f)
+            params = list(sig.parameters.keys())
+            
+            # Remove task_controller from params
+            if 'task_controller' in params:
+                params.remove('task_controller')
+            
+            # Build inputs
+            inputs = {}
+            for i, arg in enumerate(args):
+                if i < len(params):
+                    inputs[params[i]] = arg
+            inputs.update(kwargs)
+            
+            # Run the task
+            return run_task(task_def, inputs)
+        
+        # Attach task definition and helper methods to wrapper
+        wrapper.task_def = task_def  # type: ignore
+        wrapper.list_instances = lambda: list_task_instances(task_def.id)  # type: ignore
+        
+        return wrapper
     
     if func is None:
-        # Called with arguments: @task(task_name="...")
+        # Called with arguments: @task(name="...")
         return decorator
     else:
         # Called without arguments: @task
@@ -506,76 +457,26 @@ def task(func=None, *, task_name: str = None):
 
 
 # ============================================================================
-# Executor - Task Instance Execution
+# Executor Management
 # ============================================================================
 
-class LocalThreadTaskInstanceExecutor:
-    """
-    Executor that runs task instances in a local thread pool.
-    
-    This is the default executor for local development and testing.
-    Tasks are executed asynchronously in background threads.
-    
-    Attributes:
-        max_workers: Maximum number of concurrent task executions
-        executor: The underlying ThreadPoolExecutor
-    """
-
-    def __init__(self, max_workers: int=4):
-        """
-        Initialize the local thread executor.
-        
-        Args:
-            max_workers: Maximum number of concurrent tasks (default: 4)
-        """
-        self.max_workers = max_workers
-        self.executor = ThreadPoolExecutor(max_workers=max_workers)
-
-    def execute(self, task_instance: TaskInstance, block: bool=False) -> Future:
-        """
-        Execute a task instance asynchronously.
-
-        Args:
-            task_instance: The task instance to execute.
-            block: If True, wait for the task to complete before returning.
-
-        Returns:
-            A Future representing the task execution.
-        """
-        future = self.executor.submit(task_instance._execute)
-        task_instance._future = future
-        if block:
-            future.result()  # Wait for completion
-
-        return future
+def _get_executor() -> TaskExecutor:
+    """Get or create the global executor."""
+    global _executor
+    if _executor is None:
+        if os.getenv("NUMEROUS_EXECUTOR") == "NUMEROUS_PLATFORM_EXECUTOR":
+            # Placeholder for platform executor
+            print("Warning: PlatformExecutor not implemented, using LocalThreadExecutor")
+            _executor = LocalThreadTaskExecutor(max_workers=4)
+        else:
+            _executor = LocalThreadTaskExecutor(max_workers=4)
+    return _executor
 
 
-# ============================================================================
-# Executor Initialization
-# ============================================================================
-
-# Initialize the global executor based on environment
-# 
-# Two modes:
-# 1. LOCAL (default): Uses LocalThreadTaskInstanceExecutor for local execution
-# 2. PLATFORM: Would use PlatformTaskInstanceExecutor for remote execution
-#
-if os.getenv("NUMEROUS_EXECUTOR") == "NUMEROUS_PLATFORM_EXECUTOR":
-    # Platform executor (not implemented yet)
-    # 
-    # When implemented, PlatformTaskInstanceExecutor will:
-    # 1. Read task name and inputs from environment variables
-    # 2. Execute the appropriate task function in a thread pool
-    # 3. Monitor for stop signals via API calls
-    # 4. Push progress and status updates to the platform API
-    # 5. Upload the final result/output when complete
-    #
-    # For now, fall back to local executor
-    print("Warning: PlatformExecutor not implemented, using LocalThreadExecutor")
-    executor = LocalThreadTaskInstanceExecutor()
-else:
-    # Local executor for development
-    executor = LocalThreadTaskInstanceExecutor()
+def set_executor(executor: TaskExecutor):
+    """Set a custom executor."""
+    global _executor
+    _executor = executor
 
 
 # ============================================================================
@@ -584,14 +485,7 @@ else:
 
 if __name__ == "__main__":
     """
-    Example demonstrating the task execution API.
-    
-    This example shows:
-    - Defining a task with @task decorator
-    - Running tasks with progress tracking
-    - Stopping tasks mid-execution
-    - Querying tasks and instances
-
+    Example usage of the functional task API.
 
     Registering the task in numerous.toml:
     [[tasks]]
@@ -604,45 +498,48 @@ if __name__ == "__main__":
     """
     import time
 
-    # Optionally add name to the task if different from the function name
-    @task(task_name="Task Test")
-    def test(x: int, task_controller: TaskInstanceController=None) -> int:
-        """Example task that demonstrates progress tracking and cancellation."""
-        NUM_STEPS = 10
-        for i in range(NUM_STEPS):
-            time.sleep(.1)
-            task_controller.set_progress(i / NUM_STEPS)
-            if task_controller.should_stop():
-                print("Task instance stopped")
-                return x + 1
+    @task
+    def compute(x: int, task_controller=None) -> int:
+        """Example task that does some computation."""
+        num_steps = 10
+        for i in range(num_steps):
+            time.sleep(0.1)
+            
+            # Update progress
+            if task_controller:
+                task_controller.set_progress(i / num_steps)
+            
+            # Check for stop signal
+            if task_controller and task_controller.should_stop():
+                print("Task stopped by request")
+                return x
+        
         return x + 1
 
-    # Create and run a task instance
-    # Supports multiple calling styles:
-    task_instance = test(1)       # Positional
-    # task_instance = test(x=1)   # Keyword
-    # task_instance = test({'x': 1})  # Dictionary
-
-    # Monitor progress and demonstrate cancellation
-    while not task_instance.is_done:
-        time.sleep(.1)
-        print("Progress: {:.2f}%".format(task_instance.get_progress()*100))
+    # Run the task
+    print("Starting task...")
+    instance = compute(5)
+    
+    # Monitor progress
+    while not instance.is_done():
+        time.sleep(0.1)
+        print(f"Progress: {instance.progress * 100:.1f}%")
         
-        # Stop the task when it reaches 50% progress
-        if task_instance.get_progress() > 0.5:
-            task_instance.stop()
-            print("Stopping task instance")
-
-    # Get the result (blocks until complete)
-    print("Result:", task_instance.result())
-    print("Final status:", task_instance.status.value)
-
-    # List all registered tasks
-    print("\nTasks:")
-    for task in list_tasks():
-        print(f"  - {task.name}")
-
-    # List all instances of the test task
+        # Stop task if progress > 50%
+        if instance.progress > 0.5:
+            print("Requesting stop...")
+            request_stop(instance)
+    
+    # Get result
+    result = wait_for_completion(instance)
+    print(f"Result: {result}")
+    
+    # List all tasks
+    print("\nAll tasks:")
+    for task_def in list_task_definitions():
+        print(f"  - {task_def.name} (id: {task_def.id})")
+    
+    # List instances for this task
     print("\nTask instances:")
-    for instance in test.list_instances():
-        print(f"  - {instance.id} (status: {instance.status.value})")
+    for inst in compute.list_instances():
+        print(f"  - {inst.id}: {inst.status.value} (progress: {inst.progress * 100:.0f}%)")
