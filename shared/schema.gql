@@ -627,6 +627,7 @@ type WorkloadResourceUsageDataPoint {
 ###############################################################################
 
 directive @canManageTask on FIELD_DEFINITION
+directive @canManageTasks on FIELD_DEFINITION
 directive @canManageTaskInstance on FIELD_DEFINITION
 
 enum TaskWorkloadStatus {
@@ -689,6 +690,7 @@ extend type AppVersion {
 }
 
 extend type Query {
+  tasks(organizationSlug: String!, deployID: ID!): [Task!]! @canManageTasks
   taskInstances(
     organizationSlug: String!
     deployID: ID!
