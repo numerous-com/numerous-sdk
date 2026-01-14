@@ -6,6 +6,7 @@ from typing import Any, List, Optional
 from pydantic import Field
 
 from .base_model import BaseModel
+from .enums import TaskWorkloadStatus
 
 
 class CollectionDocumentReference(BaseModel):
@@ -68,6 +69,29 @@ class CollectionWithTagsTags(BaseModel):
     value: str
 
 
+class TaskInstanceData(BaseModel):
+    id: str
+    task: "TaskInstanceDataTask"
+    created_at: Any = Field(alias="createdAt")
+    input: Optional[str]
+    output: Optional[str]
+    progress: "TaskInstanceDataProgress"
+    workload: "TaskInstanceDataWorkload"
+
+
+class TaskInstanceDataTask(BaseModel):
+    id: str
+
+
+class TaskInstanceDataProgress(BaseModel):
+    value: Optional[float]
+
+
+class TaskInstanceDataWorkload(BaseModel):
+    status: TaskWorkloadStatus
+    exit_code: Optional[int] = Field(alias="exitCode")
+
+
 CollectionDocumentReference.model_rebuild()
 CollectionDocumentWithData.model_rebuild()
 CollectionFileNotFound.model_rebuild()
@@ -76,3 +100,4 @@ CollectionNotFound.model_rebuild()
 CollectionOrganizationMismatch.model_rebuild()
 CollectionReference.model_rebuild()
 CollectionWithTags.model_rebuild()
+TaskInstanceData.model_rebuild()

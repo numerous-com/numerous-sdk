@@ -23,8 +23,15 @@ from .collection_files import CollectionFiles
 from .collection_tag_add import CollectionTagAdd
 from .collection_tag_delete import CollectionTagDelete
 from .collection_tags import CollectionTags
+from .deployment_tasks import DeploymentTasks
 from .input_types import TagInput
 from .organization_by_id import OrganizationByID
+from .task_instance import TaskInstance
+from .task_instance_set_output import TaskInstanceSetOutput
+from .task_instance_update_progress import TaskInstanceUpdateProgress
+from .task_instances import TaskInstances
+from .task_start import TaskStart
+from .task_stop import TaskStop
 
 
 def gql(q: str) -> str:
@@ -748,6 +755,214 @@ class Client(AsyncBaseClient):
         )
         data = self.get_data(response)
         return CollectionFile.model_validate(data)
+
+    async def deployment_tasks(
+        self, organization_slug: str, deploy_id: str, **kwargs: Any
+    ) -> DeploymentTasks:
+        query = gql(
+            """
+            query DeploymentTasks($organizationSlug: String!, $deployID: ID!) {
+              tasks(organizationSlug: $organizationSlug, deployID: $deployID) {
+                id
+                command
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationSlug": organization_slug,
+            "deployID": deploy_id,
+        }
+        response = await self.execute(
+            query=query, operation_name="DeploymentTasks", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return DeploymentTasks.model_validate(data)
+
+    async def task_instance(self, task_instance_id: str, **kwargs: Any) -> TaskInstance:
+        query = gql(
+            """
+            query TaskInstance($taskInstanceID: ID!) {
+              taskInstance(taskInstanceID: $taskInstanceID) {
+                ...TaskInstanceData
+              }
+            }
+
+            fragment TaskInstanceData on TaskInstance {
+              id
+              task {
+                id
+              }
+              createdAt
+              input
+              output
+              progress {
+                value
+              }
+              workload {
+                status
+                exitCode
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"taskInstanceID": task_instance_id}
+        response = await self.execute(
+            query=query, operation_name="TaskInstance", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return TaskInstance.model_validate(data)
+
+    async def task_instances(
+        self, organization_slug: str, deploy_id: str, task_id: str, **kwargs: Any
+    ) -> TaskInstances:
+        query = gql(
+            """
+            query TaskInstances($organizationSlug: String!, $deployID: ID!, $taskID: ID!) {
+              taskInstances(
+                organizationSlug: $organizationSlug
+                deployID: $deployID
+                taskID: $taskID
+              ) {
+                ...TaskInstanceData
+              }
+            }
+
+            fragment TaskInstanceData on TaskInstance {
+              id
+              task {
+                id
+              }
+              createdAt
+              input
+              output
+              progress {
+                value
+              }
+              workload {
+                status
+                exitCode
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationSlug": organization_slug,
+            "deployID": deploy_id,
+            "taskID": task_id,
+        }
+        response = await self.execute(
+            query=query, operation_name="TaskInstances", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return TaskInstances.model_validate(data)
+
+    async def task_start(
+        self,
+        organization_slug: str,
+        deploy_id: str,
+        task_name: str,
+        input: Union[Optional[str], UnsetType] = UNSET,
+        **kwargs: Any
+    ) -> TaskStart:
+        query = gql(
+            """
+            mutation TaskStart($organizationSlug: String!, $deployID: ID!, $taskName: String!, $input: String) {
+              taskStart(
+                input: {organizationSlug: $organizationSlug, deployID: $deployID, taskName: $taskName, input: $input}
+              ) {
+                id
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "organizationSlug": organization_slug,
+            "deployID": deploy_id,
+            "taskName": task_name,
+            "input": input,
+        }
+        response = await self.execute(
+            query=query, operation_name="TaskStart", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return TaskStart.model_validate(data)
+
+    async def task_instance_update_progress(
+        self,
+        task_instance_id: str,
+        value: Union[Optional[float], UnsetType] = UNSET,
+        message: Union[Optional[str], UnsetType] = UNSET,
+        **kwargs: Any
+    ) -> TaskInstanceUpdateProgress:
+        query = gql(
+            """
+            mutation TaskInstanceUpdateProgress($taskInstanceID: ID!, $value: Float, $message: String) {
+              taskInstanceUpdateProgress(
+                taskInstanceID: $taskInstanceID
+                value: $value
+                message: $message
+              ) {
+                id
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "taskInstanceID": task_instance_id,
+            "value": value,
+            "message": message,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="TaskInstanceUpdateProgress",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return TaskInstanceUpdateProgress.model_validate(data)
+
+    async def task_instance_set_output(
+        self, task_instance_id: str, value: str, **kwargs: Any
+    ) -> TaskInstanceSetOutput:
+        query = gql(
+            """
+            mutation TaskInstanceSetOutput($taskInstanceID: ID!, $value: String!) {
+              taskInstanceSetOutput(taskInstanceID: $taskInstanceID, value: $value) {
+                id
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {
+            "taskInstanceID": task_instance_id,
+            "value": value,
+        }
+        response = await self.execute(
+            query=query,
+            operation_name="TaskInstanceSetOutput",
+            variables=variables,
+            **kwargs
+        )
+        data = self.get_data(response)
+        return TaskInstanceSetOutput.model_validate(data)
+
+    async def task_stop(self, task_instance_id: str, **kwargs: Any) -> TaskStop:
+        query = gql(
+            """
+            mutation TaskStop($taskInstanceID: ID!) {
+              taskStop(taskInstanceID: $taskInstanceID) {
+                taskInstanceID
+              }
+            }
+            """
+        )
+        variables: Dict[str, object] = {"taskInstanceID": task_instance_id}
+        response = await self.execute(
+            query=query, operation_name="TaskStop", variables=variables, **kwargs
+        )
+        data = self.get_data(response)
+        return TaskStop.model_validate(data)
 
     async def organization_by_id(
         self, organization_id: str, **kwargs: Any
