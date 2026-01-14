@@ -1,3 +1,7 @@
+###############################################################################
+## Collections
+###############################################################################
+
 fragment CollectionReference on Collection {
   id
   key
@@ -123,6 +127,14 @@ mutation CollectionTagAdd($collectionID: ID!, $tag: TagInput!) {
   }
 }
 
+###############################################################################
+## End of Collections
+###############################################################################
+
+###############################################################################
+## Documents
+###############################################################################
+
 mutation CollectionTagDelete($collectionID: ID!, $key: String!) {
   collectionTagDelete(collectionID: $collectionID, key: $key) {
     __typename
@@ -230,6 +242,14 @@ query CollectionDocuments(
   }
 }
 
+###############################################################################
+## End of Documents
+###############################################################################
+
+###############################################################################
+## Files
+###############################################################################
+
 mutation CollectionFileCreate($collectionID: ID!, $key: ID!) {
   collectionFileCreate(collectionID: $collectionID, key: $key) {
     __typename
@@ -307,6 +327,106 @@ query CollectionFile($id: ID!) {
   }
 }
 
+###############################################################################
+## End of Files
+###############################################################################
+
+###############################################################################
+### Task management
+###############################################################################
+
+fragment TaskInstanceData on TaskInstance {
+  id
+  task {
+    id
+  }
+  createdAt
+  input
+  output
+  progress {
+    value
+  }
+  workload {
+    status
+    exitCode
+  }
+}
+
+query DeploymentTasks($organizationSlug: String!, $deployID: ID!) {
+  tasks(organizationSlug: $organizationSlug, deployID: $deployID) {
+    id
+    command
+  }
+}
+
+query TaskInstance($taskInstanceID: ID!) {
+  taskInstance(taskInstanceID: $taskInstanceID) {
+    ...TaskInstanceData
+  }
+}
+
+query TaskInstances($organizationSlug: String!, $deployID: ID!, $taskID: ID!) {
+  taskInstances(
+    organizationSlug: $organizationSlug
+    deployID: $deployID
+    taskID: $taskID
+  ) {
+    ...TaskInstanceData
+  }
+}
+
+mutation TaskStart(
+  $organizationSlug: String!
+  $deployID: ID!
+  $taskName: String!
+  $input: String
+) {
+  taskStart(
+    input: {
+      organizationSlug: $organizationSlug
+      deployID: $deployID
+      taskName: $taskName
+      input: $input
+    }
+  ) {
+    id
+  }
+}
+
+mutation TaskInstanceUpdateProgress(
+  $taskInstanceID: ID!
+  $value: Float
+  $message: String
+) {
+  taskInstanceUpdateProgress(
+    taskInstanceID: $taskInstanceID
+    value: $value
+    message: $message
+  ) {
+    id
+  }
+}
+
+mutation TaskInstanceSetOutput($taskInstanceID: ID!, $value: String!) {
+  taskInstanceSetOutput(taskInstanceID: $taskInstanceID, value: $value) {
+    id
+  }
+}
+
+mutation TaskStop($taskInstanceID: ID!) {
+  taskStop(taskInstanceID: $taskInstanceID) {
+    taskInstanceID
+  }
+}
+
+###############################################################################
+### End of Task management
+###############################################################################
+
+###############################################################################
+## Helpers
+###############################################################################
+
 query OrganizationByID($organizationId: ID!) {
   organizationById(organizationId: $organizationId) {
     __typename
@@ -316,3 +436,7 @@ query OrganizationByID($organizationId: ID!) {
     }
   }
 }
+
+###############################################################################
+## End of Helpers
+###############################################################################

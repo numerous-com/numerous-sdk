@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, Optional
 
 import requests
 
@@ -97,6 +97,16 @@ if TYPE_CHECKING:
         CollectionFileTagDeleteCollectionFileTagDeleteCollectionFile,
         CollectionFileTagDeleteCollectionFileTagDeleteCollectionFileNotFound,
     )
+    from .graphql.deployment_tasks import DeploymentTasks
+    from .graphql.task_instance import TaskInstanceTaskInstance
+    from .graphql.task_instance_set_output import (
+        TaskInstanceSetOutputTaskInstanceSetOutput,
+    )
+    from .graphql.task_instance_update_progress import (
+        TaskInstanceUpdateProgressTaskInstanceUpdateProgress,
+    )
+    from .graphql.task_instances import TaskInstances
+    from .graphql.task_start import TaskStartTaskStart
 
 COLLECTED_OBJECTS_NUMBER = 100
 _REQUEST_TIMEOUT_SECONDS_ = 1.5
@@ -556,6 +566,92 @@ class GraphQLClient:
         return self._loop.await_coro(
             self._gql.organization_by_id(organization_id, headers=self._headers)
         )
+
+    def task_start(
+        self,
+        organization_slug: str,
+        deploy_id: str,
+        task_name: str,
+        input_data: str | None = None,
+    ) -> TaskStartTaskStart:
+        return self._loop.await_coro(
+            self._gql.task_start(
+                organization_slug=organization_slug,
+                deploy_id=deploy_id,
+                task_name=task_name,
+                input=input_data,
+                headers=self._headers,
+            )
+        ).task_start
+
+    def task_instance(
+        self, task_instance_id: str
+    ) -> Optional[TaskInstanceTaskInstance]:
+        return self._loop.await_coro(
+            self._gql.task_instance(
+                task_instance_id=task_instance_id,
+                headers=self._headers,
+            )
+        ).task_instance
+
+    def deployment_tasks(
+        self, organization_slug: str, deploy_id: str
+    ) -> DeploymentTasks:
+        return self._loop.await_coro(
+            self._gql.deployment_tasks(
+                organization_slug=organization_slug,
+                deploy_id=deploy_id,
+                headers=self._headers,
+            )
+        )
+
+    def task_instances(
+        self, organization_slug: str, deploy_id: str, task_id: str
+    ) -> TaskInstances:
+        return self._loop.await_coro(
+            self._gql.task_instances(
+                organization_slug=organization_slug,
+                deploy_id=deploy_id,
+                task_id=task_id,
+                headers=self._headers,
+            )
+        )
+
+    def task_instance_update_progress(
+        self,
+        task_instance_id: str,
+        value: float | None = None,
+        message: str | None = None,
+    ) -> TaskInstanceUpdateProgressTaskInstanceUpdateProgress:
+        return self._loop.await_coro(
+            self._gql.task_instance_update_progress(
+                task_instance_id=task_instance_id,
+                value=value,
+                message=message,
+                headers=self._headers,
+            )
+        ).task_instance_update_progress
+
+    def task_instance_set_output(
+        self,
+        task_instance_id: str,
+        value: str,
+    ) -> TaskInstanceSetOutputTaskInstanceSetOutput:
+        return self._loop.await_coro(
+            self._gql.task_instance_set_output(
+                task_instance_id=task_instance_id,
+                value=value,
+                headers=self._headers,
+            )
+        ).task_instance_set_output
+
+    def task_stop(self, task_instance_id: str) -> str:
+        return self._loop.await_coro(
+            self._gql.task_stop(
+                task_instance_id=task_instance_id,
+                headers=self._headers,
+            )
+        ).task_stop.task_instance_id
 
 
 def _tag_input_strict(tag: Tag) -> TagInput:

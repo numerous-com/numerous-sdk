@@ -107,6 +107,7 @@ from .collection_tags import (
     CollectionTagsCollectionCollection,
     CollectionTagsCollectionCollectionNotFound,
 )
+from .deployment_tasks import DeploymentTasks, DeploymentTasksTasks
 from .enums import (
     AppDeploymentStatus,
     AppSubscriptionStatus,
@@ -114,6 +115,7 @@ from .enums import (
     PaymentAccountStatus,
     Role,
     SubscriptionOfferStatus,
+    TaskWorkloadStatus,
     ToolHashType,
 )
 from .exceptions import (
@@ -135,6 +137,10 @@ from .fragments import (
     CollectionReference,
     CollectionWithTags,
     CollectionWithTagsTags,
+    TaskInstanceData,
+    TaskInstanceDataProgress,
+    TaskInstanceDataTask,
+    TaskInstanceDataWorkload,
 )
 from .input_types import (
     AppCreateInfo,
@@ -157,12 +163,26 @@ from .input_types import (
     PersonalAccessTokenCreateInput,
     SubscriptionOfferInput,
     TagInput,
+    TaskInstanceLogsInput,
+    TaskStartInput,
 )
 from .organization_by_id import (
     OrganizationByID,
     OrganizationByIDOrganizationByIdOrganization,
     OrganizationByIDOrganizationByIdOrganizationNotFound,
 )
+from .task_instance import TaskInstance, TaskInstanceTaskInstance
+from .task_instance_set_output import (
+    TaskInstanceSetOutput,
+    TaskInstanceSetOutputTaskInstanceSetOutput,
+)
+from .task_instance_update_progress import (
+    TaskInstanceUpdateProgress,
+    TaskInstanceUpdateProgressTaskInstanceUpdateProgress,
+)
+from .task_instances import TaskInstances, TaskInstancesTaskInstances
+from .task_start import TaskStart, TaskStartTaskStart
+from .task_stop import TaskStop, TaskStopTaskStop
 
 __all__ = [
     "AppCreateInfo",
@@ -262,6 +282,8 @@ __all__ = [
     "CollectionTagsCollectionCollectionNotFound",
     "CollectionWithTags",
     "CollectionWithTagsTags",
+    "DeploymentTasks",
+    "DeploymentTasksTasks",
     "GraphQLClientError",
     "GraphQLClientGraphQLError",
     "GraphQLClientGraphQLMultiError",
@@ -281,6 +303,25 @@ __all__ = [
     "SubscriptionOfferInput",
     "SubscriptionOfferStatus",
     "TagInput",
+    "TaskInstance",
+    "TaskInstanceData",
+    "TaskInstanceDataProgress",
+    "TaskInstanceDataTask",
+    "TaskInstanceDataWorkload",
+    "TaskInstanceLogsInput",
+    "TaskInstanceSetOutput",
+    "TaskInstanceSetOutputTaskInstanceSetOutput",
+    "TaskInstanceTaskInstance",
+    "TaskInstanceUpdateProgress",
+    "TaskInstanceUpdateProgressTaskInstanceUpdateProgress",
+    "TaskInstances",
+    "TaskInstancesTaskInstances",
+    "TaskStart",
+    "TaskStartInput",
+    "TaskStartTaskStart",
+    "TaskStop",
+    "TaskStopTaskStop",
+    "TaskWorkloadStatus",
     "ToolHashType",
     "Upload",
 ]
