@@ -6,6 +6,12 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from numerous._client.graphql.deployment_tasks import DeploymentTasks
     from numerous._client.graphql.task_instance import TaskInstanceTaskInstance
+    from numerous._client.graphql.task_instance_set_output import (
+        TaskInstanceSetOutputTaskInstanceSetOutput,
+    )
+    from numerous._client.graphql.task_instance_update_progress import (
+        TaskInstanceUpdateProgressTaskInstanceUpdateProgress,
+    )
     from numerous._client.graphql.task_instances import TaskInstances
     from numerous._client.graphql.task_start import TaskStartTaskStart
     from numerous.organization._client import OrganizationData
@@ -29,13 +35,13 @@ class Client(Protocol):
         task_instance_id: str,
         value: float | None = None,
         message: str | None = None,
-    ) -> None: ...
+    ) -> TaskInstanceUpdateProgressTaskInstanceUpdateProgress: ...
 
     def task_instance_set_output(
         self,
         task_instance_id: str,
         value: str,
-    ) -> None: ...
+    ) -> TaskInstanceSetOutputTaskInstanceSetOutput: ...
 
     def get_organization(self, organization_id: str) -> OrganizationData | None: ...
 
