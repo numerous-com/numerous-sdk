@@ -24,10 +24,10 @@ from numerous._client.graphql.task_instances import (
     TaskInstancesTaskInstances,
 )
 from numerous._client.graphql.task_start import TaskStart, TaskStartTaskStart
-from numerous.tasks.task import (
-    PlatformExecutor,
-    PlatformTaskController,
-    PlatformTaskStore,
+from numerous.tasks.controller import PlatformTaskController
+from numerous.tasks.executor import PlatformExecutor
+from numerous.tasks.store import PlatformTaskStore
+from numerous.tasks.types import (
     TaskDefinition,
     TaskInstanceState,
     TaskStatus,
