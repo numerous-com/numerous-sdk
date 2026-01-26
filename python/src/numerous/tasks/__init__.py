@@ -22,12 +22,8 @@ __all__ = [
     "TaskInstanceNotFoundError",
 ]
 
+from numerous.tasks.controller import TaskController
 from numerous.tasks.task import (
-    TaskController,
-    TaskDefinition,
-    TaskInstanceNotFoundError,
-    TaskInstanceState,
-    TaskStatus,
     get_task_definition,
     get_task_instance,
     list_task_definitions,
@@ -37,4 +33,10 @@ from numerous.tasks.task import (
     stop_task_instance,
     task,
     wait_for_completion,
+)
+from numerous.tasks.types import (
+    TaskDefinition,
+    TaskInstanceNotFoundError,
+    TaskInstanceState,
+    TaskStatus,
 )
