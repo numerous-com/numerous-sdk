@@ -215,7 +215,7 @@ def stop_task_instance(instance_id: str) -> Optional[TaskInstanceState]:
 def wait_for_completion(state: TaskInstanceState) -> Any:  # noqa: ANN401
     """Wait for task completion and return result."""
     if state.future:
-        state.future.result()
+        return state.future.result()
     return state.result
 
 
