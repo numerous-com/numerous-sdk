@@ -124,7 +124,7 @@ class PlatformExecutor:
 
         poll_thread = threading.Thread(
             target=self._poll_completion,
-            args=(state.id, future),
+            args=(state.id, future, state),
             daemon=True,
             name=f"TaskPoll-{state.id[:8]}",
         )
@@ -132,13 +132,22 @@ class PlatformExecutor:
 
         return future
 
-    def _poll_completion(self, instance_id: str, future: Future[Any]) -> None:
+    def _poll_completion(
+        self, instance_id: str, future: Future[Any], state: TaskInstanceState
+    ) -> None:
         while True:
             instance = self._store.get_task_instance(instance_id)
 
             if instance is None:
                 future.set_exception(TaskInstanceNotFoundError(instance_id))
                 return
+
+            with state.lock:
+                state.status = instance.status
+                state.progress = instance.progress
+                state.result = instance.result
+                state.error = instance.error
+                state.output = instance.output
 
             if instance.is_done():
                 if instance.error:
