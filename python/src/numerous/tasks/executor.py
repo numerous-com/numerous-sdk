@@ -8,6 +8,7 @@ import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, Protocol
 
+from numerous.tasks.context import _current_controller, _current_inputs
 from numerous.tasks.controller import LocalTaskController
 from numerous.tasks.serialization import serialize_task_inputs
 from numerous.tasks.types import (
@@ -31,11 +32,13 @@ class TaskExecutor(Protocol):
         ...
 
 
-def _set_result(state: TaskInstanceState, result: Any) -> TaskInstanceState:  # noqa: ANN401
+def _set_finished(state: TaskInstanceState) -> TaskInstanceState:
     with state.lock:
-        state.result = result
-        state.status = TaskStatus.COMPLETED
-        state.progress = 1.0
+        if state.controller is not None:
+            if state.controller.should_stop():
+                state.status = TaskStatus.CANCELLED
+            else:
+                state.status = TaskStatus.COMPLETED
     return state
 
 
@@ -53,23 +56,30 @@ def _execute_local_task(
     with state.lock:
         state.status = TaskStatus.RUNNING
 
+    if state.controller is None:
+        state.controller = LocalTaskController(state)
+
+    controller_token = _current_controller.set(state.controller)
+    inputs_token = _current_inputs.set(state.inputs)
+
     try:
         sig = inspect.signature(task_def.func)
         kwargs = dict(state.inputs)
 
         if "task_controller" in sig.parameters:
-            if state.controller is None:
-                state.controller = LocalTaskController(state)
             kwargs["task_controller"] = state.controller
 
-        result = task_def.func(**kwargs)
+        task_def.func(**kwargs)
 
     except Exception as e:
         _set_error(state, e)
         raise
     else:
-        _set_result(state, result)
-        return result
+        _set_finished(state)
+        return state.result
+    finally:
+        _current_controller.reset(controller_token)
+        _current_inputs.reset(inputs_token)
 
 
 class LocalThreadTaskExecutor:
