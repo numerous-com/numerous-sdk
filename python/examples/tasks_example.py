@@ -16,10 +16,9 @@ If found it will execute the task in the Python interpreter.
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 from numerous.tasks import (
-    TaskController,
+    get_task_controller,
     list_task_definitions,
     list_task_instances,
     task,
@@ -32,22 +31,26 @@ PROGRESS_THRESHOLD = 0.5
 
 
 @task
-def compute(x: int, task_controller: Optional[TaskController] = None) -> int:
+def compute(x: int) -> int:
     """Perform example computation."""
+    controller = get_task_controller()
+
     num_steps = 10
     for i in range(num_steps):
         time.sleep(0.1)
 
         # Update progress
-        if task_controller:
-            task_controller.set_progress(i / num_steps)
+        controller.set_progress(i / num_steps)
 
         # Check for stop signal
-        if task_controller and task_controller.should_stop():
+        if controller.should_stop():
             print("Task stopped by request")  # noqa: T201
+            controller.set_output({"result": x})
             return x
 
-    return x + 1
+    result = x + 1
+    controller.set_output({"result": result})
+    return result
 
 
 def main() -> None:

@@ -8,6 +8,9 @@ __all__ = [
     "TaskDefinition",
     "TaskInstanceState",
     "TaskStatus",
+    # Context accessors
+    "get_task_controller",
+    "get_task_inputs",
     # Lifecycle
     "run_task",
     "wait_for_completion",
@@ -22,6 +25,7 @@ __all__ = [
     "TaskInstanceNotFoundError",
 ]
 
+from numerous.tasks.context import get_task_controller, get_task_inputs
 from numerous.tasks.controller import TaskController
 from numerous.tasks.task import (
     get_task_definition,

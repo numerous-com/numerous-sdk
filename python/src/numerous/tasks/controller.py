@@ -76,6 +76,7 @@ class LocalTaskController:
         """Set the task output."""
         with self._state.lock:
             self._state.output = output
+            self._state.result = output.get("result")
 
 
 class PlatformTaskController:
@@ -132,3 +133,7 @@ class PlatformTaskController:
             task_instance_id=self._state.id,
             value=output_json,
         )
+
+        with self._state.lock:
+            self._state.output = output
+            self._state.result = output.get("result")
