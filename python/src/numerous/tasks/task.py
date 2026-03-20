@@ -219,6 +219,11 @@ def wait_for_completion(state: TaskInstanceState) -> Any:  # noqa: ANN401
     return state.result
 
 
+def _is_platform_task_instance() -> bool:
+    """Whether executing inside a platform task instance."""
+    return os.getenv("NUMEROUS_TASK_INSTANCE_ID") is not None
+
+
 # ============================================================================
 # Decorator - Functional Task Registration
 # ============================================================================
@@ -270,19 +275,22 @@ def task(
     """
 
     def decorator(f: Callable[..., R]) -> Callable[..., TaskInstanceState]:
-        # Create and register task definition
-        task_def = create_task_definition(f, name=name, app_id=app_id)
-        register_task(task_def)
+        # Inside a platform task instance just return the original function
+        if not _is_platform_task_instance():
+            task_def = create_task_definition(f, name=name, app_id=app_id)
+            register_task(task_def)
+        else:
+            task_def = None
 
         @wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> TaskInstanceState:  # noqa: ANN401
+            # Inside a platform task instance just run the function directly.
+            if _is_platform_task_instance():
+                return f(*args, **kwargs)  # type: ignore[return-value]
+
             # Convert args/kwargs to inputs dict
             sig = inspect.signature(f)
             params = list(sig.parameters.keys())
-
-            # Remove task_controller from params
-            if "task_controller" in params:
-                params.remove("task_controller")
 
             # Build inputs
             inputs = {}
@@ -292,11 +300,14 @@ def task(
             inputs.update(kwargs)
 
             # Run the task
+            if task_def is None:
+                msg = "task_def is not available"
+                raise RuntimeError(msg)
             return run_task(task_def, inputs)
 
-        # Attach task definition and helper methods to wrapper
-        wrapper.task_def = task_def  # type: ignore[attr-defined]
-        wrapper.list_instances = lambda: list_task_instances(task_def.id)  # type: ignore[attr-defined]
+        if task_def is not None:
+            wrapper.task_def = task_def  # type: ignore[attr-defined]
+            wrapper.list_instances = lambda: list_task_instances(task_def.id)  # type: ignore[attr-defined]
 
         return wrapper
 
