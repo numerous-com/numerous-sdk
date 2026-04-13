@@ -79,14 +79,30 @@ block so that it will still work when run remotely.
 ```python
 from numerous.collections import collection
 
-#
 try:
     import dotenv
     dotenv.load_dotenv()
 except ModuleNotFoundError:
     pass
 
-col_ref = collection("my-collection)
+col_ref = collection("my-collection")
 
 # Use the collection reference ...
 ```
+
+## Running tasks locally
+
+By default, tasks defined with the `@task` decorator run in-process using a
+local thread executor. This is the behavior when the `NUMEROUS_EXECUTOR`
+environment variable is not set.
+
+To route task execution through the Numerous Platform instead, set:
+
+```
+NUMEROUS_EXECUTOR=NUMEROUS_PLATFORM_EXECUTOR
+```
+
+When `NUMEROUS_EXECUTOR` is not set (or set to any value other than
+`NUMEROUS_PLATFORM_EXECUTOR`), tasks run locally inside the current Python
+process, which is useful for development and testing without a platform
+connection.

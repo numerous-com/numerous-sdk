@@ -12,6 +12,7 @@ nav:
       - Collection documents: collection_documents.md
       - Collection files: collection_files.md
       - Bulk Operations: collection_bulk_operations.md
+      - Tasks: tasks.md
       - Sessions: sessions.md
       - Users: user.md
       - Frameworks: frameworks.md
