@@ -96,13 +96,19 @@ def compute(x: int) -> int:
 
 ### Requesting a stop from outside the task
 
-Call `request_stop` with the `TaskInstanceState` to signal the task that it
-should stop.
+Call `stop_task_instance` with the instance ID, or call `.stop()` directly on
+the `TaskInstanceState` to signal the task that it should stop.
 
 ```py
-from numerous.tasks.task import request_stop
+from numerous.tasks import stop_task_instance
 
-request_stop(instance)
+stop_task_instance(instance.id)
+```
+
+Or equivalently:
+
+```py
+instance.stop()
 ```
 
 ### Checking the stop signal from inside the task
