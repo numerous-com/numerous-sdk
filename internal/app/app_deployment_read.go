@@ -35,6 +35,10 @@ func (s *Service) GetAppDeploymentID(ctx context.Context, organizationSlug, appS
 		return "", convertErrors(err)
 	}
 
+	if resp.App.ID == "" {
+		return "", ErrAppNotFound
+	}
+
 	if resp.App.DefaultDeployment == nil {
 		return "", ErrDeploymentNotFound
 	}
