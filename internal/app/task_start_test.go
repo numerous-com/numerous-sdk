@@ -57,14 +57,11 @@ func TestStartTask(t *testing.T) {
 
 		respBody := `
 			{
-				"errors": [
-					{
-						"message": "Task not found",
-						"extensions": {
-							"code": "TASK_NOT_FOUND"
-						}
-					}
-				]
+				"errors": [{
+					"message": "Task not found",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["taskStart"]
+				}]
 			}
 		`
 		resp := test.JSONResponse(respBody)

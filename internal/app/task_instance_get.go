@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/hasura/go-graphql-client"
 )
@@ -10,8 +11,10 @@ type GetTaskInstanceInput struct {
 	TaskInstanceID string
 }
 
+var ErrTaskInstanceNotFound = errors.New("task instance not found")
+
 type taskInstanceResponse struct {
-	TaskInstance TaskInstance `graphql:"taskInstance(taskInstanceID: $taskInstanceID)"`
+	TaskInstance *TaskInstance `graphql:"taskInstance(taskInstanceID: $taskInstanceID)"`
 }
 
 const queryTaskInstanceText = `
@@ -55,5 +58,9 @@ func (s *Service) GetTaskInstance(ctx context.Context, input GetTaskInstanceInpu
 		return nil, convertErrors(err)
 	}
 
-	return &resp.TaskInstance, nil
+	if resp.TaskInstance == nil {
+		return nil, ErrTaskInstanceNotFound
+	}
+
+	return resp.TaskInstance, nil
 }

@@ -13,9 +13,7 @@ import (
 
 func TestStopTask(t *testing.T) {
 	const (
-		organizationSlug = "test-org"
-		appSlug          = "test-app"
-		taskInstanceID   = "test-instance-id"
+		taskInstanceID = "test-instance-id"
 	)
 	testError := errors.New("test error")
 
@@ -28,10 +26,7 @@ func TestStopTask(t *testing.T) {
 		service.On("StopTask", mock.Anything, taskInstanceID).Return(expectedResult, nil)
 
 		input := TaskStopInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskInstanceID:   taskInstanceID,
+			TaskInstanceID: taskInstanceID,
 		}
 		err := stopTask(context.TODO(), service, input)
 
@@ -42,14 +37,10 @@ func TestStopTask(t *testing.T) {
 	t.Run("returns error if StopTask fails", func(t *testing.T) {
 		service := &TaskStopServiceMock{}
 
-		var nilResult *app.TaskStopResult = nil
-		service.On("StopTask", mock.Anything, taskInstanceID).Return(nilResult, testError)
+		service.On("StopTask", mock.Anything, taskInstanceID).Return(nil, testError)
 
 		input := TaskStopInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskInstanceID:   taskInstanceID,
+			TaskInstanceID: taskInstanceID,
 		}
 		err := stopTask(context.TODO(), service, input)
 
@@ -66,10 +57,7 @@ func TestStopTask(t *testing.T) {
 		service.On("StopTask", mock.Anything, taskInstanceID).Return(expectedResult, nil)
 
 		input := TaskStopInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskInstanceID:   taskInstanceID,
+			TaskInstanceID: taskInstanceID,
 		}
 		err := stopTask(context.TODO(), service, input)
 
@@ -87,10 +75,7 @@ func TestStopTask(t *testing.T) {
 		service.On("StopTask", mock.Anything, differentInstanceID).Return(expectedResult, nil)
 
 		input := TaskStopInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskInstanceID:   differentInstanceID,
+			TaskInstanceID: differentInstanceID,
 		}
 		err := stopTask(context.TODO(), service, input)
 

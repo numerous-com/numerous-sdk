@@ -54,6 +54,10 @@ func (s *Service) GetTasks(ctx context.Context, input GetTasksInput) ([]Task, er
 		return nil, convertErrors(err)
 	}
 
+	if resp.App.ID == "" {
+		return nil, ErrAppNotFound
+	}
+
 	if resp.App.DefaultDeployment == nil || resp.App.DefaultDeployment.Current == nil {
 		return nil, ErrDeploymentNotFound
 	}

@@ -45,14 +45,11 @@ func TestStopTask(t *testing.T) {
 
 		respBody := `
 			{
-				"errors": [
-					{
-						"message": "Task instance not found",
-						"extensions": {
-							"code": "TASK_INSTANCE_NOT_FOUND"
-						}
-					}
-				]
+				"errors": [{
+					"message": "Task instance not found",
+					"location": [{"line": 1, "column": 1}],
+					"path": ["taskStop"]
+				}]
 			}
 		`
 		resp := test.JSONResponse(respBody)
