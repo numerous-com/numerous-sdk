@@ -17,18 +17,25 @@ func TestStopTask(t *testing.T) {
 	)
 	testError := errors.New("test error")
 
-	t.Run("calls service with expected parameters", func(t *testing.T) {
+	newTestStopInput := func() TaskStopInput {
+		return TaskStopInput{TaskInstanceID: taskInstanceID}
+	}
+
+	newTestStopResult := func() *app.TaskStopResult {
+		return &app.TaskStopResult{TaskInstanceID: taskInstanceID}
+	}
+
+	newTestService := func(instanceID string) *TaskStopServiceMock {
 		service := &TaskStopServiceMock{}
+		service.On("StopTask", mock.Anything, instanceID).Return(newTestStopResult(), nil)
 
-		expectedResult := &app.TaskStopResult{
-			TaskInstanceID: taskInstanceID,
-		}
-		service.On("StopTask", mock.Anything, taskInstanceID).Return(expectedResult, nil)
+		return service
+	}
 
-		input := TaskStopInput{
-			TaskInstanceID: taskInstanceID,
-		}
-		err := stopTask(context.TODO(), service, input)
+	t.Run("calls service with expected parameters and return no error on successful stop", func(t *testing.T) {
+		service := newTestService(taskInstanceID)
+
+		err := stopTask(context.TODO(), service, newTestStopInput())
 
 		assert.NoError(t, err)
 		service.AssertExpectations(t)
@@ -36,48 +43,19 @@ func TestStopTask(t *testing.T) {
 
 	t.Run("returns error if StopTask fails", func(t *testing.T) {
 		service := &TaskStopServiceMock{}
-
 		service.On("StopTask", mock.Anything, taskInstanceID).Return(nil, testError)
 
-		input := TaskStopInput{
-			TaskInstanceID: taskInstanceID,
-		}
-		err := stopTask(context.TODO(), service, input)
+		err := stopTask(context.TODO(), service, newTestStopInput())
 
 		assert.ErrorIs(t, err, testError)
 		service.AssertExpectations(t)
 	})
 
-	t.Run("returns no error if successful task stop", func(t *testing.T) {
-		service := &TaskStopServiceMock{}
-
-		expectedResult := &app.TaskStopResult{
-			TaskInstanceID: taskInstanceID,
-		}
-		service.On("StopTask", mock.Anything, taskInstanceID).Return(expectedResult, nil)
-
-		input := TaskStopInput{
-			TaskInstanceID: taskInstanceID,
-		}
-		err := stopTask(context.TODO(), service, input)
-
-		assert.NoError(t, err)
-		service.AssertExpectations(t)
-	})
-
 	t.Run("handles different task instance IDs", func(t *testing.T) {
-		service := &TaskStopServiceMock{}
-
 		differentInstanceID := "ce5aba38-842d-4ee0-877b-4af9d426c848"
-		expectedResult := &app.TaskStopResult{
-			TaskInstanceID: differentInstanceID,
-		}
-		service.On("StopTask", mock.Anything, differentInstanceID).Return(expectedResult, nil)
+		service := newTestService(differentInstanceID)
 
-		input := TaskStopInput{
-			TaskInstanceID: differentInstanceID,
-		}
-		err := stopTask(context.TODO(), service, input)
+		err := stopTask(context.TODO(), service, TaskStopInput{TaskInstanceID: differentInstanceID})
 
 		assert.NoError(t, err)
 		service.AssertExpectations(t)

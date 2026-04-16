@@ -11,10 +11,17 @@ import (
 )
 
 func TestGetTasks(t *testing.T) {
+	newTestService := func(t *testing.T) (*test.MockDoer, *Service) {
+		t.Helper()
+
+		doer := &test.MockDoer{}
+		c := test.CreateTestGQLClient(t, doer)
+
+		return doer, New(c, nil, nil)
+	}
+
 	t.Run("returns expected tasks", func(t *testing.T) {
-		doer := test.MockDoer{}
-		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil, nil)
+		doer, s := newTestService(t)
 
 		respBody := `
 			{
@@ -56,9 +63,7 @@ func TestGetTasks(t *testing.T) {
 	})
 
 	t.Run("returns ErrAppNotFound when app is null", func(t *testing.T) {
-		doer := test.MockDoer{}
-		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil, nil)
+		doer, s := newTestService(t)
 
 		respBody := `
 			{
@@ -80,9 +85,7 @@ func TestGetTasks(t *testing.T) {
 	})
 
 	t.Run("returns ErrDeploymentNotFound when deployment is nil", func(t *testing.T) {
-		doer := test.MockDoer{}
-		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil, nil)
+		doer, s := newTestService(t)
 
 		respBody := `
 			{
@@ -107,9 +110,7 @@ func TestGetTasks(t *testing.T) {
 	})
 
 	t.Run("returns ErrDeploymentNotFound when current is nil", func(t *testing.T) {
-		doer := test.MockDoer{}
-		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil, nil)
+		doer, s := newTestService(t)
 
 		respBody := `
 			{
@@ -136,9 +137,7 @@ func TestGetTasks(t *testing.T) {
 	})
 
 	t.Run("returns error if query fails", func(t *testing.T) {
-		doer := test.MockDoer{}
-		c := test.CreateTestGQLClient(t, &doer)
-		s := New(c, nil, nil)
+		doer, s := newTestService(t)
 
 		respBody := `
 			{

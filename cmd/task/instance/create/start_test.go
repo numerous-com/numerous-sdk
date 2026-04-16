@@ -24,30 +24,41 @@ func TestStartTask(t *testing.T) {
 	)
 	testError := errors.New("test error")
 
-	t.Run("calls service with expected parameters", func(t *testing.T) {
-		service := &TaskStartServiceMock{}
-
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
-
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-		}
-		expectedResult := &app.TaskStartResult{
-			TaskInstanceID: taskInstanceID,
-			TaskID:         taskID,
-			Command:        []string{"echo", "hello"},
-		}
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(expectedResult, nil)
-
-		input := TaskStartInput{
+	newTestInput := func() TaskStartInput {
+		return TaskStartInput{
 			AppDir:           "",
 			OrganizationSlug: organizationSlug,
 			AppSlug:          appSlug,
 			TaskName:         taskName,
 		}
-		err := startTask(context.TODO(), service, input)
+	}
+
+	newExpectedTestInput := func() app.StartTaskInput {
+		return app.StartTaskInput{
+			OrganizationSlug: organizationSlug,
+			DeployID:         deployID,
+			TaskName:         taskName,
+		}
+	}
+
+	newSuccessResult := func() *app.TaskStartResult {
+		return &app.TaskStartResult{
+			TaskInstanceID: taskInstanceID,
+			TaskID:         taskID,
+			Command:        []string{"python", "worker.py"},
+		}
+	}
+
+	setupDeployID := func(service *TaskStartServiceMock) {
+		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
+	}
+
+	t.Run("calls service with expected parameters", func(t *testing.T) {
+		service := &TaskStartServiceMock{}
+		setupDeployID(service)
+		service.On("StartTask", mock.Anything, newExpectedTestInput()).Return(newSuccessResult(), nil)
+
+		err := startTask(context.TODO(), service, newTestInput())
 
 		assert.NoError(t, err)
 		service.AssertExpectations(t)
@@ -55,16 +66,9 @@ func TestStartTask(t *testing.T) {
 
 	t.Run("returns error if GetAppDeploymentID fails", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
-
 		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return("", testError)
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-		}
-		err := startTask(context.TODO(), service, input)
+		err := startTask(context.TODO(), service, newTestInput())
 
 		assert.ErrorIs(t, err, testError)
 		service.AssertExpectations(t)
@@ -72,24 +76,11 @@ func TestStartTask(t *testing.T) {
 
 	t.Run("returns error if StartTask fails", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
-
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
-
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-		}
+		setupDeployID(service)
 		var nilResult *app.TaskStartResult = nil
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(nilResult, testError)
+		service.On("StartTask", mock.Anything, newExpectedTestInput()).Return(nilResult, testError)
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-		}
-		err := startTask(context.TODO(), service, input)
+		err := startTask(context.TODO(), service, newTestInput())
 
 		assert.ErrorIs(t, err, testError)
 		service.AssertExpectations(t)
@@ -97,59 +88,25 @@ func TestStartTask(t *testing.T) {
 
 	t.Run("returns no error if successful task start", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
+		setupDeployID(service)
+		service.On("StartTask", mock.Anything, newExpectedTestInput()).Return(newSuccessResult(), nil)
 
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
-
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-		}
-		expectedResult := &app.TaskStartResult{
-			TaskInstanceID: taskInstanceID,
-			TaskID:         taskID,
-			Command:        []string{"python", "worker.py"},
-		}
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(expectedResult, nil)
-
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-		}
-		err := startTask(context.TODO(), service, input)
+		err := startTask(context.TODO(), service, newTestInput())
 
 		assert.NoError(t, err)
-		service.AssertExpectations(t)
 	})
 
 	t.Run("returns no error if input is provided", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
-
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
+		setupDeployID(service)
 
 		testInput := "test input data"
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-			Input:            &testInput,
-		}
-		expectedResult := &app.TaskStartResult{
-			TaskInstanceID: taskInstanceID,
-			TaskID:         taskID,
-			Command:        []string{"python", "worker.py"},
-		}
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(expectedResult, nil)
+		expectedInput := newExpectedTestInput()
+		expectedInput.Input = &testInput
+		service.On("StartTask", mock.Anything, expectedInput).Return(newSuccessResult(), nil)
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-			Input:            testInput,
-		}
+		input := newTestInput()
+		input.Input = testInput
 		err := startTask(context.TODO(), service, input)
 
 		assert.NoError(t, err)
@@ -158,8 +115,7 @@ func TestStartTask(t *testing.T) {
 
 	t.Run("reads input from file when input file is provided", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
-
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
+		setupDeployID(service)
 
 		tmpDir := t.TempDir()
 		inputFile := filepath.Join(tmpDir, "input.txt")
@@ -167,26 +123,12 @@ func TestStartTask(t *testing.T) {
 		err := os.WriteFile(inputFile, []byte(fileContent), 0o644)
 		assert.NoError(t, err)
 
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-			Input:            &fileContent,
-		}
-		expectedResult := &app.TaskStartResult{
-			TaskInstanceID: taskInstanceID,
-			TaskID:         taskID,
-			Command:        []string{"python", "worker.py"},
-		}
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(expectedResult, nil)
+		expectedInput := newExpectedTestInput()
+		expectedInput.Input = &fileContent
+		service.On("StartTask", mock.Anything, expectedInput).Return(newSuccessResult(), nil)
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-			InputFile:        inputFile,
-		}
+		input := newTestInput()
+		input.InputFile = inputFile
 		err = startTask(context.TODO(), service, input)
 
 		assert.NoError(t, err)
@@ -196,14 +138,9 @@ func TestStartTask(t *testing.T) {
 	t.Run("returns error when both input and input file are provided", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-			Input:            "direct input",
-			InputFile:        "/path/to/file",
-		}
+		input := newTestInput()
+		input.Input = "direct input"
+		input.InputFile = "/path/to/file"
 		err := startTask(context.TODO(), service, input)
 
 		assert.ErrorIs(t, err, ErrConflictingInputFlags)
@@ -212,13 +149,8 @@ func TestStartTask(t *testing.T) {
 	t.Run("returns error when input file does not exist", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-			InputFile:        "/nonexistent/file.txt",
-		}
+		input := newTestInput()
+		input.InputFile = "/nonexistent/file.txt"
 		err := startTask(context.TODO(), service, input)
 
 		assert.Error(t, err)
@@ -226,8 +158,7 @@ func TestStartTask(t *testing.T) {
 
 	t.Run("returns no error if input file contains JSON", func(t *testing.T) {
 		service := &TaskStartServiceMock{}
-
-		service.On("GetAppDeploymentID", mock.Anything, organizationSlug, appSlug).Return(deployID, nil)
+		setupDeployID(service)
 
 		tmpDir := t.TempDir()
 		inputFile := filepath.Join(tmpDir, "input.json")
@@ -235,26 +166,12 @@ func TestStartTask(t *testing.T) {
 		err := os.WriteFile(inputFile, []byte(jsonContent), 0o644)
 		assert.NoError(t, err)
 
-		expectedStartInput := app.StartTaskInput{
-			OrganizationSlug: organizationSlug,
-			DeployID:         deployID,
-			TaskName:         taskName,
-			Input:            &jsonContent,
-		}
-		expectedResult := &app.TaskStartResult{
-			TaskInstanceID: taskInstanceID,
-			TaskID:         taskID,
-			Command:        []string{"python", "worker.py"},
-		}
-		service.On("StartTask", mock.Anything, expectedStartInput).Return(expectedResult, nil)
+		expectedInput := newExpectedTestInput()
+		expectedInput.Input = &jsonContent
+		service.On("StartTask", mock.Anything, expectedInput).Return(newSuccessResult(), nil)
 
-		input := TaskStartInput{
-			AppDir:           "",
-			OrganizationSlug: organizationSlug,
-			AppSlug:          appSlug,
-			TaskName:         taskName,
-			InputFile:        inputFile,
-		}
+		input := newTestInput()
+		input.InputFile = inputFile
 		err = startTask(context.TODO(), service, input)
 
 		assert.NoError(t, err)
