@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.51.0 (2026-04-17)
+
+### Feature
+
+* feat(cli, python-sdk): task management (#83) ([`e7441f0`](https://github.com/numerous-com/numerous-sdk/commit/e7441f03ca78335327e7c4cd2efa7c45833cef99))
+
+  > 
+  > Adds task management support across the CLI and Python SDK.
+
+
+
+
 ## v0.50.1 (2025-11-21)
 
 ### Build
