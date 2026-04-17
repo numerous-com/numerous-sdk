@@ -91,6 +91,19 @@ class AppWorkloadsInput(BaseModel):
     metrics_since: Optional[Any] = Field(alias="metricsSince", default=None)
 
 
+class TaskStartInput(BaseModel):
+    organization_slug: str = Field(alias="organizationSlug")
+    deploy_id: str = Field(alias="deployID")
+    task_name: str = Field(alias="taskName")
+    input: Optional[str] = None
+
+
+class TaskInstanceLogsInput(BaseModel):
+    task_instance_id: str = Field(alias="taskInstanceID")
+    tail: Optional[int] = None
+    follow: Optional[bool] = None
+
+
 class PaymentConfigurationInput(BaseModel):
     monthly_price_usd: Any = Field(alias="monthlyPriceUSD")
     trial_days: Optional[int] = Field(alias="trialDays", default=None)

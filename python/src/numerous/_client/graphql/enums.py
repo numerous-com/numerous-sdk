@@ -23,6 +23,14 @@ class AppDeploymentStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class TaskWorkloadStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    STOPPED = "STOPPED"
+    ERROR = "ERROR"
+    UNKNOWN = "UNKNOWN"
+
+
 class SubscriptionOfferStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
     WITHDRAWN = "WITHDRAWN"

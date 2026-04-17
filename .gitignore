@@ -183,3 +183,6 @@ numerous-*
 
 # SDK cli binaries
 python/src/numerous/_cli/bin
+
+# Don't ignore our Go instance package
+!cmd/task/instance/

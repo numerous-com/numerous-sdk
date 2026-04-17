@@ -594,9 +594,131 @@ extend type Mutation {
     @trackAppOperation(eventName: "App Unshare")
 }
 
+###############################################################################
+### Workload management (types)
+###############################################################################
+
+type WorkloadLogEntryConnection {
+  edges: [WorkloadLogEntry!]!
+  pageInfo: PageInfo!
+}
+
+type WorkloadLogEntry {
+  timestamp: Time!
+  text: String!
+}
+
+type WorkloadResourceUsage {
+  current: Float!
+  timeseries: [WorkloadResourceUsageDataPoint!]!
+}
+
+type WorkloadResourceUsageDataPoint {
+  timestamp: Time!
+  value: Float!
+}
+
+###############################################################################
+### End of Workload management (types)
+###############################################################################
+
+###############################################################################
+### Task management
+###############################################################################
+
+directive @canManageTask on FIELD_DEFINITION
+directive @canManageTasks on FIELD_DEFINITION
+directive @canManageTaskInstance on FIELD_DEFINITION
+
+enum TaskWorkloadStatus {
+  PENDING
+  RUNNING
+  STOPPED
+  ERROR
+  UNKNOWN
+}
+
+type Task {
+  id: ID!
+  command: [String!]!
+  appVersion: AppVersion!
+}
+
+type TaskInstanceProgress {
+  value: Float
+  message: String
+}
+
+type TaskInstance {
+  id: ID!
+  task: Task!
+  createdAt: Time!
+  input: String
+  output: String
+  progress: TaskInstanceProgress!
+  workload: TaskInstanceWorkload!
+}
+
+type TaskInstanceWorkload {
+  status: TaskWorkloadStatus!
+  startedAt: Time!
+  logs(last: Int): WorkloadLogEntryConnection!
+  cpuUsage: WorkloadResourceUsage
+  memoryUsageMB: WorkloadResourceUsage
+  exitCode: Int
+}
+
+input TaskStartInput {
+  organizationSlug: String!
+  deployID: ID!
+  taskName: String!
+  input: String
+}
+
+input TaskInstanceLogsInput {
+  taskInstanceID: ID!
+  tail: Int # N most recent lines
+  follow: Boolean # continue streaming new logs (default: true)
+}
+
+type TaskStopResult {
+  taskInstanceID: ID!
+}
+
+extend type AppVersion {
+  tasks: [Task!]!
+}
+
+extend type Query {
+  tasks(organizationSlug: String!, deployID: ID!): [Task!]! @canManageTasks
+  taskInstances(
+    organizationSlug: String!
+    deployID: ID!
+    taskID: ID!
+  ): [TaskInstance!]! @canManageTask
+  taskInstance(taskInstanceID: ID!): TaskInstance @canManageTaskInstance
+}
+
+extend type Mutation {
+  taskStart(input: TaskStartInput!): TaskInstance! @canManageTask
+  taskStop(taskInstanceID: ID!): TaskStopResult! @canManageTaskInstance
+  taskInstanceSetOutput(taskInstanceID: ID!, value: String!): TaskInstance!
+    @canManageTaskInstance
+  taskInstanceUpdateProgress(
+    taskInstanceID: ID!
+    value: Float
+    message: String
+  ): TaskInstance! @canManageTaskInstance
+}
+
+###############################################################################
+### End of Task management
+###############################################################################
+
 type Subscription {
   appDeployEvents(appDeploymentVersionID: ID!): AppDeployEvent!
   appDeployLogs(input: AppDeployLogsInput!): AppDeployLogEntry!
+  taskInstanceLogs(input: TaskInstanceLogsInput!): WorkloadLogEntry!
 }
 
 ###############################################################################
