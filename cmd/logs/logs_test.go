@@ -93,6 +93,7 @@ func TestLogs(t *testing.T) {
 		apps.On("AppDeployLogs", ai, (*int)(nil), true).Return(ch, nil)
 
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		go func() {
 			time.Sleep(time.Millisecond * 10)
 			cancel()

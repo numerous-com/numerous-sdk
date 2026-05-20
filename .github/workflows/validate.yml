@@ -8,6 +8,8 @@ jobs:
     name: Lint python SDK
     timeout-minutes: 5
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,6 +25,9 @@ jobs:
     name: Unit test python SDK
     timeout-minutes: 5
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,6 +46,9 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     name: Build
+    permissions:
+      contents: read
+      actions: write
     strategy:
       matrix:
         platform: ["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64", "windows_arm64"]
@@ -68,6 +76,8 @@ jobs:
     name: Collect dists
     runs-on: ubuntu-latest
     needs: [build]
+    permissions:
+      actions: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -102,6 +112,9 @@ jobs:
     name: Test CLI on windows
     runs-on: windows-latest
     needs: [build]
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -121,6 +134,8 @@ jobs:
   lint-cli:
     name: Lint CLI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
@@ -155,6 +170,9 @@ jobs:
   test-cli:
     name: Unit test CLI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go

@@ -2,6 +2,7 @@ package archive
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -88,7 +89,13 @@ func TarExtract(content io.Reader, dest string) error {
 			continue
 		}
 
-		target := filepath.Join(dest, header.Name)
+		// Sanitize the entry name before constructing the target path to prevent path traversal
+		entryName := filepath.Clean(filepath.FromSlash(header.Name))
+		if filepath.IsAbs(entryName) || entryName == ".." || strings.HasPrefix(entryName, ".."+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path in archive: %s", header.Name)
+		}
+
+		target := filepath.Join(dest, entryName)
 
 		switch header.Typeflag {
 		case tar.TypeDir:

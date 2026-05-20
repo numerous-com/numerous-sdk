@@ -54,6 +54,7 @@ func TestTaskLogs(t *testing.T) {
 		service.On("TaskInstanceLogs", expectedInput).Return(ch, nil)
 
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		go func() {
 			time.Sleep(time.Millisecond * 10)
 			cancel()
