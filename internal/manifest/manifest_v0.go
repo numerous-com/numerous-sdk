@@ -20,7 +20,7 @@ type ManifestV0 struct {
 }
 
 func (d *ManifestV0) ToManifest() (*Manifest, error) {
-	port, err := strconv.ParseUint(d.Port, 10, 64)
+	port, err := strconv.ParseUint(d.Port, 10, strconv.IntSize)
 	if err != nil {
 		return nil, err
 	}
