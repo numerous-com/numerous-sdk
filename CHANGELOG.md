@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.51.1 (2026-05-21)
+
+### Fix
+
+* fix(ci, cli): code scanning alerts (#84) ([`d0ffb0e`](https://github.com/numerous-com/numerous-sdk/commit/d0ffb0edd52bde4679af9ada184fe1d644c2e2d0))
+
+  > 
+  > * Fix path traversal in tar extraction.
+  > * Fix integer type conversion in manifest port parsing.
+  > * Add explicit least-privilege permissions to validate and release workflows and workflow-level permissions to job-level.
+  > * Defer context cancel after creation in logs and task logs tests to prevent resource leaks.
+
+
+
+
 ## v0.51.0 (2026-04-17)
 
 ### Feature
