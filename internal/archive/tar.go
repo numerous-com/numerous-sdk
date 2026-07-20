@@ -77,6 +77,12 @@ const mkdirPerms = 0o755
 
 // TarExtract extracts the tar file in the reader into a directory at dest.
 func TarExtract(content io.Reader, dest string) error {
+	absDest, err := filepath.Abs(dest)
+	if err != nil {
+		return err
+	}
+	absDest = filepath.Clean(absDest)
+
 	tr := tar.NewReader(content)
 	for {
 		header, err := tr.Next()
@@ -89,13 +95,12 @@ func TarExtract(content io.Reader, dest string) error {
 			continue
 		}
 
-		// Sanitize the entry name before constructing the target path to prevent path traversal
-		entryName := filepath.Clean(filepath.FromSlash(header.Name))
-		if filepath.IsAbs(entryName) || entryName == ".." || strings.HasPrefix(entryName, ".."+string(os.PathSeparator)) {
+		// Reject entries whose resolved path escapes dest
+		target := filepath.Join(absDest, filepath.FromSlash(header.Name))
+		target = filepath.Clean(target)
+		if target != absDest && !strings.HasPrefix(target, absDest+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path in archive: %s", header.Name)
 		}
-
-		target := filepath.Join(dest, entryName)
 
 		switch header.Typeflag {
 		case tar.TypeDir:
