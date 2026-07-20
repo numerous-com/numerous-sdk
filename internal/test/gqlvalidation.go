@@ -76,7 +76,7 @@ func findSchemaFilePath(t *testing.T) string {
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
-	dots := ""
+	var dots strings.Builder
 	for {
 		if _, err := os.Stat(wd + schemaRelative); err == nil {
 			break
@@ -87,10 +87,10 @@ func findSchemaFilePath(t *testing.T) string {
 		require.NotEmpty(t, wd)
 		require.NotEqual(t, "/", wd)
 
-		dots += "../"
+		dots.WriteString("../")
 	}
 
-	return dots + schemaRelative
+	return dots.String() + schemaRelative
 }
 
 type multipartUploadMap = map[string][]string

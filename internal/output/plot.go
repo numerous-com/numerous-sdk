@@ -77,15 +77,15 @@ func (p *Plot) Display(prefix string, height int) {
 // Render the plotted raster, and the axes with the given prefix, returning it as a
 // string.
 func (p *Plot) render(raster *plotRaster, axes plotAxes, prefix string, height int) string {
-	s := ""
+	var s strings.Builder
 	for y := height - 1; y >= 0; y-- {
 		ln := prefix + axes.renderYAxisAtHeight(y)
 		ln += raster.renderRow(y)
-		s += ln + "\n"
+		s.WriteString(ln + "\n")
 	}
-	s += axes.renderXAxis(prefix) + "\n"
+	s.WriteString(axes.renderXAxis(prefix) + "\n")
 
-	return s
+	return s.String()
 }
 
 func (p *Plot) newAxes(width, height int) plotAxes {
@@ -198,17 +198,17 @@ func newPlotRaster(width, height int) *plotRaster {
 
 // Render a single row (or line) of the raster, returning it as a string.
 func (r *plotRaster) renderRow(y int) string {
-	ln := ""
+	var ln strings.Builder
 	for x := 0; x < r.width; x++ {
 		pt := r.data[r.width*y+x]
 		if pt == 0 {
-			ln += " "
+			ln.WriteRune(' ')
 		} else {
-			ln += string(pt)
+			ln.WriteRune(pt)
 		}
 	}
 
-	return ln
+	return ln.String()
 }
 
 // Plot a data point, marking the specified cell and all cells below it with the

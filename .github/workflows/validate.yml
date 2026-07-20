@@ -148,13 +148,13 @@ jobs:
       - name: Lint (golangci-lint)
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.1.2
+          version: v2.12.2
           args: --verbose
       - name: Install gofumpt
         shell: bash
         run: |
-          wget https://github.com/mvdan/gofumpt/releases/download/v0.8.0/gofumpt_v0.8.0_linux_amd64
-          mv gofumpt_v0.8.0_linux_amd64 gofumpt
+          wget https://github.com/mvdan/gofumpt/releases/download/v0.10.0/gofumpt_v0.10.0_linux_amd64
+          mv gofumpt_v0.10.0_linux_amd64 gofumpt
           chmod +x gofumpt
           mv gofumpt /usr/local/bin
       - name: Check gofumpt formatting
