@@ -72,7 +72,8 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 func printSuccess() {
-	fmt.Printf(`
+	fmt.Printf(
+		`
 The app has been initialized! 🎉
 
 The information you entered is now stored in %s.

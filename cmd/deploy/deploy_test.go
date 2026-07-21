@@ -302,15 +302,16 @@ func TestDeploy(t *testing.T) {
 
 // Strips output of known ANSI terminal escapes, and non-ascii runes (e.g. icons).
 func cleanNonASCIIAndANSI(s string) string {
-	var cleaned string
+	var builder strings.Builder
 	for _, r := range s {
 		if r < 128 {
-			cleaned += string(r)
+			builder.WriteRune(r)
 		} else {
-			cleaned += "<non-ascii>"
+			builder.WriteString("<non-ascii>")
 		}
 	}
 
+	cleaned := builder.String()
 	for _, code := range []string{output.AnsiRed, output.AnsiReset, output.AnsiGreen, output.AnsiFaint, output.AnsiCyanBold} {
 		cleaned = strings.ReplaceAll(cleaned, code, "")
 	}

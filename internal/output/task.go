@@ -93,7 +93,7 @@ func (t *Task) Progress(percent float32) {
 	line := "\r" + hourglassIcon + " " + msg + AnsiFaint
 
 	if progressWidth > 0 {
-		completedWidth := int((float32)(progressWidth) / 100.0 * percent)
+		completedWidth := int(float32(progressWidth) / 100.0 * percent)
 		remainingWidth := progressWidth - completedWidth
 		line += strings.Repeat("#", completedWidth) + strings.Repeat(".", remainingWidth)
 	}

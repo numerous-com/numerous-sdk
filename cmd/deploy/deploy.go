@@ -390,7 +390,8 @@ const appSourceUploadErrMsg string = `When uploading the app source archive, the
 `
 
 func printAppSourceUploadErr(appSourceUploadErr *app.AppSourceUploadError) {
-	output.PrintError("Error uploading app source archive",
+	output.PrintError(
+		"Error uploading app source archive",
 		appSourceUploadErrMsg,
 		appSourceUploadErr.HTTPStatusCode,
 		appSourceUploadErr.HTTPStatus,
