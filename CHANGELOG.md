@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.51.2 (2026-07-21)
+
+### Fix
+
+* fix(cli): security and toolchain updates (#85) ([`7260708`](https://github.com/numerous-com/numerous-sdk/commit/7260708dcdcedb04de47571586344c2c470ea78e))
+
+  > 
+  > * Updates Go to 1.26.
+  > * Bump dependencies.
+  > * Bump `gofumpt` and `golangci-lint`.
+  > * Fix path traversal in `TarExtract`.
+
+
+
+
 ## v0.51.1 (2026-05-21)
 
 ### Fix
