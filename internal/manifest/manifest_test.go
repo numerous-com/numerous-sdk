@@ -203,6 +203,20 @@ func TestLoad(t *testing.T) {
 				tomlContent: tomlStreamlitWithSize,
 				expected:    manifestStreamlitWithSize,
 			},
+			{
+				name: "docker with mcp section",
+				tomlContent: tomlDocker + `
+[mcp]
+  enabled = true
+  path = "/mcp"
+`,
+				expected: Manifest{
+					App:        manifestDocker.App,
+					Docker:     manifestDocker.Docker,
+					Deployment: manifestDocker.Deployment,
+					MCP:        &MCP{Enabled: true, Path: "/mcp"},
+				},
+			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				filePath := test.WriteTempFile(t, ManifestFileName, []byte(tc.tomlContent))

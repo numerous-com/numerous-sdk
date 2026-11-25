@@ -20,3 +20,9 @@ func TestGetAppURL(t *testing.T) {
 
 	assert.Equal(t, "https://www.numerous.com/app/organization/"+orgSlug+"/private/"+appSlug, url)
 }
+
+func TestGetAppMCPURL(t *testing.T) {
+	assert.Equal(t, "https://my-app.api.numerous.com/mcp", GetAppMCPURL("my-app", ""))
+	assert.Equal(t, "https://my-app.api.numerous.com/custom/mcp", GetAppMCPURL("my-app", "custom/mcp/"))
+	assert.Equal(t, "https://my-app.api.numerous.com/", GetAppMCPURL("my-app", "/"))
+}

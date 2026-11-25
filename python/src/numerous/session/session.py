@@ -18,6 +18,11 @@ class CookieGetter(Protocol):
         """Get the cookies associated with the current session."""
 
 
+class HeaderGetter(Protocol):
+    def headers(self) -> dict[str, str]:
+        """Get the HTTP headers associated with the current session."""
+
+
 def encode_user_info(user_id: str, name: str) -> str:
     user_info_json = json.dumps({"user_id": user_id, "user_full_name": name})
     return base64.b64encode(user_info_json.encode()).decode()
@@ -30,8 +35,14 @@ def set_user_info_cookie(cookies: dict[str, str], user: User) -> None:
 class Session:
     """A session with Numerous."""
 
-    def __init__(self, cg: CookieGetter, _client: GraphQLClient | None = None) -> None:
+    def __init__(
+        self,
+        cg: CookieGetter,
+        _client: GraphQLClient | None = None,
+        hg: HeaderGetter | None = None,
+    ) -> None:
         self._cg = cg
+        self._hg = hg
         self._user: User | None = None
         self._client = _client
 
@@ -62,3 +73,12 @@ class Session:
     def cookies(self) -> dict[str, str]:
         """The cookies associated with the current session."""
         return self._cg.cookies()
+
+    @property
+    def ui_session_id(self) -> str | None:
+        """The verified live UI session ID forwarded by the Numerous proxy, if any."""
+        if self._hg is None:
+            return None
+        lowered = {str(k).lower(): str(v) for k, v in self._hg.headers().items()}
+        value = lowered.get("x-numerous-ui-session-id", "").strip()
+        return value or None

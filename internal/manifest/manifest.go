@@ -17,6 +17,12 @@ type Manifest struct {
 	Python     *Python     `toml:"python,omitempty" json:"python,omitempty"`
 	Docker     *Docker     `toml:"docker,omitempty" json:"docker,omitempty"`
 	Deployment *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
+	MCP        *MCP        `toml:"mcp,omitempty" json:"mcp,omitempty"`
+}
+
+type MCP struct {
+	Enabled bool   `toml:"enabled" json:"enabled"`
+	Path    string `toml:"path,omitempty" json:"path,omitempty"`
 }
 
 type Docker struct {
