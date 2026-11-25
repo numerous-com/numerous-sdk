@@ -33,6 +33,15 @@ def _deserialize_task_data(json_str: Optional[str]) -> dict[str, Any]:
     if not json_str:
         return {}
 
+    # Platform injects decoded UTF-8 JSON into NUMEROUS_INPUT_DATA, while
+    # GraphQL task instance input/output fields are base64-encoded JSON.
+    try:
+        direct = json.loads(json_str)
+        if isinstance(direct, dict):
+            return direct
+    except (ValueError, json.JSONDecodeError):
+        pass
+
     try:
         decoded = base64.b64decode(json_str).decode("utf-8")
     except (ValueError, binascii.Error, UnicodeDecodeError):

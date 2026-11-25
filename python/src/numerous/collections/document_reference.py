@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
@@ -26,6 +26,8 @@ class DocumentReference:
     collection_id: str
     collection_key: str
     _client: Client
+    _cached_data: str | None = field(default=None, repr=False, compare=False)
+    _cached_tags: dict[str, str] | None = field(default=None, repr=False, compare=False)
 
     @property
     def exists(self) -> bool:
@@ -47,6 +49,9 @@ class DocumentReference:
     @property
     def tags(self) -> dict[str, str]:
         """Get the tags for the document."""
+        if self._cached_tags is not None:
+            return dict(self._cached_tags)
+
         self._set_id_if_reference_exists()
         if self.id is None:
             return {}
@@ -66,6 +71,7 @@ class DocumentReference:
         """
         base64_data = dict_to_base64(data)
         self._client.document_set(self.collection_id, self.key, base64_data)
+        self._cached_data = base64_data
 
     def get(self) -> dict[str, Any] | None:
         """
@@ -75,6 +81,9 @@ class DocumentReference:
             The data of the document if it is set.
 
         """
+        if self._cached_data is not None:
+            return base64_to_dict(self._cached_data)
+
         self._set_id_if_reference_exists()
         if self.id is None:
             return None
@@ -94,6 +103,8 @@ class DocumentReference:
             )
 
         self._client.document_delete(self.id)
+        self._cached_data = None
+        self._cached_tags = None
 
     def tag(self, key: str, value: str) -> None:
         """
@@ -111,6 +122,7 @@ class DocumentReference:
             )
 
         self._client.document_tag_add(self.id, Tag(key=key, value=value))
+        self._cached_tags = None
 
     def tag_delete(self, tag_key: str) -> None:
         """
@@ -127,3 +139,4 @@ class DocumentReference:
             )
 
         self._client.document_tag_delete(self.id, tag_key)
+        self._cached_tags = None

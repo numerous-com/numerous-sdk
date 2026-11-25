@@ -69,6 +69,30 @@ class FileReference:
         """
         return self._client.file_read_bytes(self.id)
 
+    def presigned_url(self) -> str | None:
+        """
+        Return a presigned download URL for this file, or None if unavailable.
+
+        Returns:
+            A presigned download URL (or file URI in local mode), or None.
+
+        """
+        return self._client.file_download_url(self.id)
+
+    def read_range(self, start: int, end: int | None = None) -> bytes:
+        """
+        Read an inclusive byte range `[start, end]` from the file.
+
+        Args:
+            start: Starting byte offset (0-based, inclusive).
+            end: Ending byte offset (inclusive). If omitted, reads to EOF.
+
+        Returns:
+            The requested byte slice.
+
+        """
+        return self._client.file_read_range(self.id, start, end)
+
     def open(self) -> BinaryIO:
         """
         Open the file for reading in binary mode.

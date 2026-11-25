@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
+from urllib.parse import quote, unquote
 
 from numerous._utils.jsonbase64 import base64_to_dict, dict_to_base64
 from numerous.collections._client import (
@@ -12,6 +15,26 @@ from numerous.collections._client import (
     CollectionIdentifier,
     Tag,
 )
+from numerous.collections.exceptions import ParentCollectionNotFoundError
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp_path.replace(path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    _atomic_write_bytes(path, content.encode("utf-8"))
 
 
 def _parse_tag(tag: dict[str, Any]) -> Tag:
@@ -37,8 +60,7 @@ class FileSystemCollectionMetadata:
     tags: list[Tag]
 
     def save(self, path: Path) -> None:
-        with path.open("w") as f:
-            json.dump(asdict(self), f)
+        _atomic_write_text(path, json.dumps(asdict(self)))
 
     @staticmethod
     def load(path: Path) -> FileSystemCollectionMetadata:
@@ -102,8 +124,9 @@ class FileSystemFileMetadata:
                 return str(obj)
             return ""
 
-        with path.open("w") as f:
-            json.dump(asdict(self), f, default=convert_to_serializable)
+        _atomic_write_text(
+            path, json.dumps(asdict(self), default=convert_to_serializable)
+        )
 
     @staticmethod
     def load(file_path: Path) -> FileSystemFileMetadata:
@@ -161,8 +184,7 @@ class FileSystemCollectionDocument:
     tags: list[Tag]
 
     def save(self, path: Path) -> None:
-        with path.open("w") as f:
-            json.dump(asdict(self), f)
+        _atomic_write_text(path, json.dumps(asdict(self)))
 
     @staticmethod
     def load(path: Path) -> FileSystemCollectionDocument:
@@ -218,15 +240,18 @@ class FileIndexEntry:
 
     def remove(self) -> None:
         if self._path is not None:
-            self._path.unlink()
+            self._path.unlink(missing_ok=True)
 
     def save(self, path: Path) -> None:
         if self._path:
             msg = "Cannot save file index entry that was already saved."
             raise RuntimeError(msg)
         self._path = path
-        path.write_text(
-            json.dumps({"collection_id": self.collection_id, "file_key": self.file_key})
+        _atomic_write_text(
+            path,
+            json.dumps(
+                {"collection_id": self.collection_id, "file_key": self.file_key}
+            ),
         )
 
 
@@ -251,7 +276,7 @@ class FileSystemClient:
         return self._base_path / collection_id / f"{_escape(file_key)}.file.data"
 
     def _document_path(self, collection_id: str, document_key: str) -> Path:
-        return self._base_path / collection_id / f"{document_key}.doc.json"
+        return self._base_path / collection_id / f"{_escape(document_key)}.doc.json"
 
     def _document_path_from_id(self, document_id: str) -> Path:
         return self._base_path / (document_id + ".doc.json")
@@ -281,6 +306,28 @@ class FileSystemClient:
         collection_path = self._base_path / collection_relpath
         collection_path.mkdir(parents=True, exist_ok=True)
         return CollectionIdentifier(id=collection_id, key=collection_key)
+
+    def collection_delete(self, collection_id: str) -> None:
+        col_path = self._base_path / collection_id
+        if not col_path.exists() or not col_path.is_dir():
+            raise ParentCollectionNotFoundError(collection_id=collection_id)
+
+        for item in col_path.iterdir():
+            if item.name == ".collection.meta.json":
+                continue
+            if (
+                item.is_dir()
+                or item.name.endswith(".doc.json")
+                or item.name.endswith(".file.meta.json")
+            ):
+                msg = (
+                    f"Collection '{collection_id}' is not empty and cannot be deleted."
+                )
+                raise ValueError(msg)
+
+        metadata_path = self._collection_metadata_path(collection_id)
+        metadata_path.unlink(missing_ok=True)
+        col_path.rmdir()
 
     def collection_collections(
         self,
@@ -315,6 +362,9 @@ class FileSystemClient:
         collection_id: str,
         end_cursor: str,  # noqa: ARG002
         tag: Tag | None,
+        *,
+        include_data: bool = False,
+        include_tags: bool = False,
     ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         col_path = self._base_path / collection_id
         if not col_path.exists():
@@ -331,13 +381,19 @@ class FileSystemClient:
                 # skips files that do not match tag input, if it is given
                 continue
 
-            doc_id = str(
-                doc_path.relative_to(self._base_path).with_name(
-                    doc_path.name.removesuffix(".doc.json")
+            raw_stem = doc_path.name.removesuffix(".doc.json")
+            doc_id = str(doc_path.relative_to(self._base_path).with_name(raw_stem))
+            doc_key = _unescape(raw_stem)
+            results.append(
+                CollectionDocumentIdentifier(
+                    id=doc_id,
+                    key=doc_key,
+                    data=dict_to_base64(doc.data) if include_data else None,
+                    tags=(
+                        {t.key: t.value for t in doc.tags} if include_tags else None
+                    ),
                 )
             )
-            doc_key = doc_path.name.removesuffix(".doc.json")
-            results.append(CollectionDocumentIdentifier(id=doc_id, key=doc_key))
 
         return sorted(results, key=lambda d: d.id if d else ""), False, ""
 
@@ -398,7 +454,7 @@ class FileSystemClient:
         if not path.exists():
             return None
 
-        doc_id = str(Path(collection_id) / document_key)
+        doc_id = str(Path(collection_id) / _escape(document_key))
         return CollectionDocumentIdentifier(id=doc_id, key=document_key)
 
     def document_get(self, document_id: str) -> str | None:
@@ -498,10 +554,12 @@ class FileSystemClient:
         )
 
         if not meta_path.exists():
+            index_entry.remove()
             return
 
-        meta_path.unlink()
-        data_path.unlink()
+        meta_path.unlink(missing_ok=True)
+        data_path.unlink(missing_ok=True)
+        index_entry.remove()
 
     def file_tag_add(self, file_id: str, tag: Tag) -> None:
         index_entry = self._file_index_entry(file_id)
@@ -542,15 +600,47 @@ class FileSystemClient:
         )
         return data_path.read_bytes()
 
+    def file_download_url(self, file_id: str) -> str | None:
+        try:
+            index_entry = self._file_index_entry(file_id)
+        except FileNotFoundError:
+            return None
+        data_path = self._file_data_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+        if not data_path.exists():
+            return None
+        return data_path.resolve().as_uri()
+
+    def file_read_range(
+        self, file_id: str, start: int, end: int | None = None
+    ) -> bytes:
+        if start < 0:
+            msg = f"Range start must be >= 0, got {start}"
+            raise ValueError(msg)
+        if end is not None and end < start:
+            msg = f"Range end ({end}) must be >= start ({start})"
+            raise ValueError(msg)
+
+        index_entry = self._file_index_entry(file_id)
+        data_path = self._file_data_path(
+            index_entry.collection_id, index_entry.file_key
+        )
+        with data_path.open("rb") as f:
+            f.seek(start)
+            if end is None:
+                return f.read()
+            return f.read(end - start + 1)
+
     def file_save(self, file_id: str, data: bytes | str) -> None:
         index_entry = self._file_index_entry(file_id)
         data_path = self._file_data_path(
             index_entry.collection_id, index_entry.file_key
         )
         if isinstance(data, bytes):
-            data_path.write_bytes(data)
+            _atomic_write_bytes(data_path, data)
         else:
-            data_path.write_text(data)
+            _atomic_write_text(data_path, data)
 
     def file_open(self, file_id: str) -> BinaryIO:
         index_entry = self._file_index_entry(file_id)
@@ -571,4 +661,8 @@ class FileSystemClient:
 
 
 def _escape(key: str) -> str:
-    return key.replace("/", "__")
+    return quote(key, safe="._-")
+
+
+def _unescape(encoded: str) -> str:
+    return unquote(encoded)

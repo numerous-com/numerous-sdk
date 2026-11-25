@@ -69,12 +69,20 @@ class CollectionReference:
     def _document_reference_from_identifier(
         self, doc_ref: CollectionDocumentIdentifier
     ) -> DocumentReference:
-        return self._document_reference(doc_ref.id, doc_ref.key)
+        return self._document_reference(
+            doc_ref.id,
+            doc_ref.key,
+            cached_data=doc_ref.data,
+            cached_tags=doc_ref.tags,
+        )
 
     def _document_reference(
         self,
         doc_id: str | None,
         doc_key: str,
+        *,
+        cached_data: str | None = None,
+        cached_tags: dict[str, str] | None = None,
     ) -> DocumentReference:
         return DocumentReference(
             id=doc_id,
@@ -82,6 +90,8 @@ class CollectionReference:
             collection_id=self.id,
             collection_key=self.key,
             _client=self._client,
+            _cached_data=cached_data,
+            _cached_tags=cached_tags,
         )
 
     def file(self, key: str) -> FileReference:
@@ -147,7 +157,12 @@ class CollectionReference:
                 yield self._file_reference_from_identifier(file_identifier)
 
     def documents(
-        self, tag_key: str | None = None, tag_value: str | None = None
+        self,
+        tag_key: str | None = None,
+        tag_value: str | None = None,
+        *,
+        include_data: bool = False,
+        include_tags: bool = False,
     ) -> Generator[DocumentReference, None, None]:
         """
         Retrieve documents from the collection, filtered by a tag key and value.
@@ -157,6 +172,10 @@ class CollectionReference:
                 tag.
             tag_value: If this and `tag_key` is specified, filter documents with this
                 tag.
+            include_data: When True, preload document payloads in each page request so
+                subsequent `.get()` calls avoid N+1 round-trips.
+            include_tags: When True, preload document tags in each page request so
+                subsequent `.tags` accesses avoid N+1 round-trips.
 
         Yields:
             Documents from the collection.
@@ -168,7 +187,18 @@ class CollectionReference:
             tag_input = Tag(key=tag_key, value=tag_value)
         has_next_page = True
         while has_next_page:
-            result = self._client.collection_documents(self.id, end_cursor, tag_input)
+            if include_data or include_tags:
+                result = self._client.collection_documents(
+                    self.id,
+                    end_cursor,
+                    tag_input,
+                    include_data=include_data,
+                    include_tags=include_tags,
+                )
+            else:
+                result = self._client.collection_documents(
+                    self.id, end_cursor, tag_input
+                )
             doc_refs, has_next_page, end_cursor = result
             if doc_refs is None:
                 break
@@ -233,3 +263,7 @@ class CollectionReference:
 
         """
         self._client.collection_tag_delete(self.id, key)
+
+    def delete(self) -> None:
+        """Delete this collection if it is empty."""
+        self._client.collection_delete(self.id)
