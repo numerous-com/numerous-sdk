@@ -97,6 +97,9 @@ func deploy(ctx context.Context, apps appService, input deployInput) error {
 	}
 
 	output.PrintlnOK("Access your app at: " + links.GetAppURL(orgSlug, appSlug))
+	if manifest.MCP != nil && manifest.MCP.Enabled {
+		output.PrintlnOK("Access your app's MCP server at: " + links.GetAppMCPURL(appSlug, manifest.MCP.Path))
+	}
 
 	if input.follow {
 		output.Notify("Following logs of %s/%s:", "", orgSlug, appSlug)

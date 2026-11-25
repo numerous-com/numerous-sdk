@@ -18,6 +18,7 @@ nav:
       - Frameworks: frameworks.md
       - Using the SDK locally: using_the_sdk_locally.md
       - Enabling/Setting up API access: api.md
+      - MCP & Live Agent UI Integration: mcp.md
       - Deploying your app with GitHub Actions: github-actions.md
   - API reference: reference/
 

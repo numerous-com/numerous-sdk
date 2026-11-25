@@ -19,6 +19,7 @@ type ManifestV1 struct {
 	Exclude          []string    `toml:"exclude" json:"exclude"`
 	Size             *string     `toml:"size,omitempty"`
 	Deployment       *Deployment `toml:"deploy,omitempty" json:"deploy,omitempty"`
+	MCP              *MCP        `toml:"mcp,omitempty" json:"mcp,omitempty"`
 }
 
 func (m *ManifestV1) ToTOML() (string, error) {
@@ -51,6 +52,7 @@ func (m *ManifestV1) ToManifest() Manifest {
 			RequirementsFile: m.RequirementsFile,
 		},
 		Deployment: m.Deployment,
+		MCP:        m.MCP,
 	}
 }
 

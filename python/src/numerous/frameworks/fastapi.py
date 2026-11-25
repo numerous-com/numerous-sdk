@@ -3,6 +3,7 @@
 from fastapi import Request
 
 from numerous._utils.local import is_local_mode, local_user
+from numerous.mcp import CallerIdentity, caller_from_headers
 from numerous.session import Session, session
 
 
@@ -18,6 +19,10 @@ class FastAPICookieGetter:
 
         return {str(key): str(val) for key, val in self.request.cookies.items()}
 
+    def headers(self) -> dict[str, str]:
+        """Get the HTTP headers associated with the current request."""
+        return {str(key): str(val) for key, val in self.request.headers.items()}
+
 
 def get_session(request: Request) -> Session:
     """
@@ -27,4 +32,10 @@ def get_session(request: Request) -> Session:
         The session for the current user.
 
     """
-    return Session(cg=FastAPICookieGetter(request))
+    getter = FastAPICookieGetter(request)
+    return Session(cg=getter, hg=getter)
+
+
+def get_caller(request: Request) -> CallerIdentity:
+    """Get the verified Numerous caller identity for a FastAPI API or MCP request."""
+    return caller_from_headers(request.headers, request.cookies)
