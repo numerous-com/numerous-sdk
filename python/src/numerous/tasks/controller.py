@@ -23,8 +23,8 @@ class TaskController(Protocol):
         """Request the task to stop."""
         ...
 
-    def set_progress(self, progress: float) -> None:
-        """Set the task progress (0.0 to 1.0)."""
+    def set_progress(self, progress: float, message: str | None = None) -> None:
+        """Set the task progress (0.0 to 1.0) and optional status message."""
         ...
 
     def set_status(self, status: Union[str, TaskStatus]) -> None:
@@ -55,13 +55,15 @@ class LocalTaskController:
         """Request the task to stop."""
         self._should_stop = True
 
-    def set_progress(self, progress: float) -> None:
-        """Set the task progress."""
+    def set_progress(self, progress: float, message: str | None = None) -> None:
+        """Set the task progress and optional status message."""
         if not 0 <= progress <= 1:
             msg = "Progress must be between 0 and 1"
             raise ValueError(msg)
         with self._state.lock:
             self._state.progress = progress
+            if message is not None:
+                self._state.progress_message = message
 
     def set_status(self, status: Union[str, TaskStatus]) -> None:
         """Set the task status (useful for local debugging)."""
@@ -104,8 +106,8 @@ class PlatformTaskController:
         self._should_stop = True
         self._client.task_stop(task_instance_id=self._state.id)
 
-    def set_progress(self, progress: float) -> None:
-        """Report task progress to backend."""
+    def set_progress(self, progress: float, message: str | None = None) -> None:
+        """Report task progress and optional status message to backend."""
         if not 0 <= progress <= 1:
             msg = "Progress must be between 0 and 1"
             raise ValueError(msg)
@@ -115,8 +117,12 @@ class PlatformTaskController:
         self._client.task_instance_update_progress(
             task_instance_id=self._state.id,
             value=progress_percent,
-            message=None,
+            message=message,
         )
+        with self._state.lock:
+            self._state.progress = progress
+            if message is not None:
+                self._state.progress_message = message
 
     def set_status(self, _: Union[str, TaskStatus]) -> None:
         """Status is managed by the backend and cannot be set directly."""

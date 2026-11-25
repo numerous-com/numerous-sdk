@@ -7,6 +7,8 @@ __all__ = [
     "TaskController",
     "TaskDefinition",
     "TaskInstanceState",
+    "TaskLogEntry",
+    "TaskLogsPage",
     "TaskStatus",
     # Context accessors
     "get_task_controller",
@@ -15,6 +17,7 @@ __all__ = [
     "run_task",
     "wait_for_completion",
     "stop_task_instance",
+    "get_task_logs",
     # Registry
     "register_task",
     "get_task_definition",
@@ -30,6 +33,7 @@ from numerous.tasks.controller import TaskController
 from numerous.tasks.task import (
     get_task_definition,
     get_task_instance,
+    get_task_logs,
     list_task_definitions,
     list_task_instances,
     register_task,
@@ -42,5 +46,7 @@ from numerous.tasks.types import (
     TaskDefinition,
     TaskInstanceNotFoundError,
     TaskInstanceState,
+    TaskLogEntry,
+    TaskLogsPage,
     TaskStatus,
 )

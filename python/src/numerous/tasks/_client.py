@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Protocol
 
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from numerous._client.graphql.deployment_tasks import DeploymentTasks
     from numerous._client.graphql.task_instance import TaskInstanceTaskInstance
     from numerous._client.graphql.task_instance_set_output import (
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
     from numerous._client.graphql.task_instances import TaskInstances
     from numerous._client.graphql.task_start import TaskStartTaskStart
     from numerous.organization._client import OrganizationData
+    from numerous.tasks.types import TaskLogsPage
 
 
 class Client(Protocol):
@@ -54,3 +57,10 @@ class Client(Protocol):
     ) -> TaskInstances: ...
 
     def task_stop(self, task_instance_id: str) -> str: ...
+
+    def task_instance_logs(
+        self,
+        task_instance_id: str,
+        last: int | None = None,
+        after: datetime | str | None = None,
+    ) -> TaskLogsPage: ...

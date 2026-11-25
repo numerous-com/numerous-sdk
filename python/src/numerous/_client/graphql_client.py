@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, BinaryIO, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 
 import requests
 
@@ -38,6 +39,7 @@ from numerous.collections.exceptions import (
     ParentCollectionNotFoundError,
 )
 from numerous.organization._client import OrganizationData
+from numerous.tasks.types import TaskLogEntry, TaskLogsPage
 
 from .graphql import fragments
 from .graphql.collection_collections import (
@@ -154,6 +156,35 @@ class GraphQLClient:
             self._collection_reference(collection_key, parent_collection_id)
         )
 
+    def collection_delete(self, collection_id: str) -> None:
+        return self._loop.await_coro(self._collection_delete(collection_id))
+
+    async def _collection_delete(self, collection_id: str) -> None:
+        query = """
+        mutation CollectionDelete($id: ID!) {
+          collectionDelete(id: $id) {
+            __typename
+            ... on Collection { id key }
+            ... on CollectionNotFound { id }
+            ... on CollectionNotEmpty { id }
+          }
+        }
+        """
+        response = await self._gql.execute(
+            query=query,
+            operation_name="CollectionDelete",
+            variables={"id": collection_id},
+            headers=self._headers,
+        )
+        data = self._gql.get_data(response)
+        result = data.get("collectionDelete") or {}
+        typename = result.get("__typename")
+        if typename == "CollectionNotFound":
+            raise ParentCollectionNotFoundError(collection_id=collection_id)
+        if typename == "CollectionNotEmpty":
+            msg = f"Collection '{collection_id}' is not empty and cannot be deleted."
+            raise ValueError(msg)
+
     def collection_tags(self, collection_id: str) -> list[Tag]:
         return self._loop.await_coro(self._collection_tags(collection_id))
 
@@ -205,10 +236,22 @@ class GraphQLClient:
         return result, has_next_page, end_cursor
 
     def collection_documents(
-        self, collection_id: str, end_cursor: str, tag: Tag | None
+        self,
+        collection_id: str,
+        end_cursor: str,
+        tag: Tag | None,
+        *,
+        include_data: bool = False,
+        include_tags: bool = False,
     ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
         return self._loop.await_coro(
-            self._collection_documents(collection_id, end_cursor, _tag_input(tag))
+            self._collection_documents(
+                collection_id,
+                end_cursor,
+                _tag_input(tag),
+                include_data=include_data,
+                include_tags=include_tags,
+            )
         )
 
     async def _collection_documents(
@@ -216,7 +259,19 @@ class GraphQLClient:
         collection_id: str,
         end_cursor: str,
         tag_input: TagInput | None,
+        *,
+        include_data: bool = False,
+        include_tags: bool = False,
     ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
+        if include_data or include_tags:
+            return await self._collection_documents_batch(
+                collection_id,
+                end_cursor,
+                tag_input,
+                include_data=include_data,
+                include_tags=include_tags,
+            )
+
         response = await self._gql.collection_documents(
             collection_id,
             tag_input,
@@ -243,6 +298,99 @@ class GraphQLClient:
         has_next_page = page_info.has_next_page
 
         return results, has_next_page, end_cursor
+
+    async def _collection_documents_batch(
+        self,
+        collection_id: str,
+        end_cursor: str,
+        tag_input: TagInput | None,
+        *,
+        include_data: bool,
+        include_tags: bool,
+    ) -> tuple[list[CollectionDocumentIdentifier], bool, str]:
+        extra_fields = []
+        if include_data:
+            extra_fields.append("data")
+        if include_tags:
+            extra_fields.append("tags { key value }")
+        fields_str = "\n".join(extra_fields)
+        query = f"""
+        query CollectionDocumentsBatch(
+          $collectionID: ID!, $tag: TagInput, $after: ID, $first: Int
+        ) {{
+          collection(id: $collectionID) {{
+            __typename
+            ... on Collection {{
+              documents(after: $after, first: $first, tag: $tag) {{
+                edges {{
+                  node {{
+                    id
+                    key
+                    {fields_str}
+                  }}
+                }}
+                pageInfo {{
+                  hasNextPage
+                  endCursor
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
+        variables: dict[str, Any] = {
+            "collectionID": collection_id,
+            "tag": (
+                {"key": tag_input.key, "value": tag_input.value}
+                if tag_input is not None
+                else None
+            ),
+            "after": end_cursor or None,
+            "first": COLLECTED_OBJECTS_NUMBER,
+        }
+        response = await self._gql.execute(
+            query=query,
+            operation_name="CollectionDocumentsBatch",
+            variables=variables,
+            headers=self._headers,
+        )
+        payload = self._gql.get_data(response)
+        collection = payload.get("collection")
+        if (
+            not isinstance(collection, dict)
+            or collection.get("__typename") != "Collection"
+        ):
+            return [], False, ""
+
+        documents = collection.get("documents") or {}
+        edges = documents.get("edges") or []
+        page_info = documents.get("pageInfo") or {}
+
+        results: list[CollectionDocumentIdentifier] = []
+        for edge in edges:
+            node = edge.get("node") if isinstance(edge, dict) else None
+            if not isinstance(node, dict):
+                continue
+            tags_dict: dict[str, str] | None = None
+            if include_tags:
+                raw_tags = node.get("tags") or []
+                tags_dict = {
+                    t["key"]: t["value"]
+                    for t in raw_tags
+                    if isinstance(t, dict) and "key" in t and "value" in t
+                }
+            results.append(
+                CollectionDocumentIdentifier(
+                    id=node["id"],
+                    key=node["key"],
+                    data=node.get("data") if include_data else None,
+                    tags=tags_dict,
+                )
+            )
+
+        next_cursor = page_info.get("endCursor") or ""
+        has_next_page = bool(page_info.get("hasNextPage", False))
+        return results, has_next_page, next_cursor
 
     def collection_files(
         self, collection_id: str, end_cursor: str, tag: Tag | None
@@ -513,6 +661,38 @@ class GraphQLClient:
     def file_read_bytes(self, file_id: str) -> bytes:
         return self._file_download(file_id).content
 
+    def file_download_url(self, file_id: str) -> str | None:
+        file = self._file_query(file_id)
+        if file is None or isinstance(
+            file, CollectionFileCollectionFileCollectionFileNotFound
+        ):
+            return None
+        return file.download_url
+
+    def file_read_range(
+        self, file_id: str, start: int, end: int | None = None
+    ) -> bytes:
+        if start < 0:
+            msg = f"Range start must be >= 0, got {start}"
+            raise ValueError(msg)
+        if end is not None and end < start:
+            msg = f"Range end ({end}) must be >= start ({start})"
+            raise ValueError(msg)
+
+        url = self.file_download_url(file_id)
+        if not url:
+            msg = "No download URL for this file."
+            raise ValueError(msg)
+
+        range_header = f"bytes={start}-{end}" if end is not None else f"bytes={start}-"
+        response = requests.get(
+            url,
+            headers={"Range": range_header},
+            timeout=_REQUEST_TIMEOUT_SECONDS_,
+        )
+        response.raise_for_status()
+        return response.content
+
     def file_open(self, file_id: str) -> BinaryIO:
         return io.BytesIO(self._file_download(file_id).content)
 
@@ -652,6 +832,102 @@ class GraphQLClient:
                 headers=self._headers,
             )
         ).task_stop.task_instance_id
+
+    def task_instance_logs(
+        self,
+        task_instance_id: str,
+        last: int | None = None,
+        after: datetime | str | None = None,
+    ) -> TaskLogsPage:
+        return self._loop.await_coro(
+            self._task_instance_logs(task_instance_id, last=last, after=after)
+        )
+
+    async def _task_instance_logs(
+        self,
+        task_instance_id: str,
+        last: int | None = None,
+        after: datetime | str | None = None,
+    ) -> TaskLogsPage:
+        after_str = after.isoformat() if isinstance(after, datetime) else after
+        if after_str is not None:
+            query = """
+            query TaskInstanceLogs($taskInstanceID: ID!, $last: Int, $after: Time) {
+              taskInstance(taskInstanceID: $taskInstanceID) {
+                workload {
+                  logs(last: $last, after: $after) {
+                    edges {
+                      timestamp
+                      text
+                    }
+                    pageInfo {
+                      endCursor
+                      hasNextPage
+                    }
+                  }
+                }
+              }
+            }
+            """
+            variables: dict[str, Any] = {
+                "taskInstanceID": task_instance_id,
+                "last": last,
+                "after": after_str,
+            }
+        else:
+            query = """
+            query TaskInstanceLogs($taskInstanceID: ID!, $last: Int) {
+              taskInstance(taskInstanceID: $taskInstanceID) {
+                workload {
+                  logs(last: $last) {
+                    edges {
+                      timestamp
+                      text
+                    }
+                    pageInfo {
+                      endCursor
+                      hasNextPage
+                    }
+                  }
+                }
+              }
+            }
+            """
+            variables = {
+                "taskInstanceID": task_instance_id,
+                "last": last,
+            }
+
+        response = await self._gql.execute(
+            query=query,
+            operation_name="TaskInstanceLogs",
+            variables=variables,
+            headers=self._headers,
+        )
+        data = self._gql.get_data(response)
+        instance = data.get("taskInstance") or {}
+        workload = instance.get("workload") or {}
+        logs = workload.get("logs") or {}
+        raw_edges = logs.get("edges") or []
+        page_info = logs.get("pageInfo") or {}
+
+        entries: list[TaskLogEntry] = []
+        for edge in raw_edges:
+            if not isinstance(edge, dict):
+                continue
+            raw_ts = edge.get("timestamp", "")
+            ts = (
+                datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+                if isinstance(raw_ts, str) and raw_ts
+                else datetime.now().astimezone()
+            )
+            entries.append(TaskLogEntry(timestamp=ts, text=str(edge.get("text", ""))))
+
+        return TaskLogsPage(
+            entries=entries,
+            end_cursor=page_info.get("endCursor"),
+            has_next_page=bool(page_info.get("hasNextPage", False)),
+        )
 
 
 def _tag_input_strict(tag: Tag) -> TagInput:

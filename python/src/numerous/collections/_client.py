@@ -21,6 +21,8 @@ class Tag:
 class CollectionDocumentIdentifier:
     id: str
     key: str
+    data: str | None = None
+    tags: dict[str, str] | None = None
 
 
 @dataclass
@@ -40,6 +42,8 @@ class Client(Protocol):
         self, collection_key: str, parent_collection_id: str | None = None
     ) -> CollectionIdentifier: ...
 
+    def collection_delete(self, collection_id: str) -> None: ...
+
     def collection_tags(self, collection_id: str) -> list[Tag]: ...
 
     def collection_collections(
@@ -47,7 +51,13 @@ class Client(Protocol):
     ) -> tuple[list[CollectionIdentifier] | None, bool, str]: ...
 
     def collection_documents(
-        self, collection_id: str, end_cursor: str, tag: Tag | None
+        self,
+        collection_id: str,
+        end_cursor: str,
+        tag: Tag | None,
+        *,
+        include_data: bool = False,
+        include_tags: bool = False,
     ) -> tuple[list[CollectionDocumentIdentifier] | None, bool, str]: ...
 
     def collection_files(
@@ -93,6 +103,12 @@ class Client(Protocol):
     def file_read_text(self, file_id: str) -> str: ...
 
     def file_read_bytes(self, file_id: str) -> bytes: ...
+
+    def file_download_url(self, file_id: str) -> str | None: ...
+
+    def file_read_range(
+        self, file_id: str, start: int, end: int | None = None
+    ) -> bytes: ...
 
     def file_save(self, file_id: str, data: bytes | str) -> None: ...
 

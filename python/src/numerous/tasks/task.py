@@ -14,6 +14,7 @@ from numerous.tasks.store import InMemoryTaskStore, PlatformTaskStore, TaskStore
 from numerous.tasks.types import (
     TaskDefinition,
     TaskInstanceState,
+    TaskLogsPage,
     TaskStatus,
     TaskWorkload,
 )
@@ -104,10 +105,12 @@ def create_task_instance(
     )
 
 
-def set_progress(state: TaskInstanceState, progress: float) -> TaskInstanceState:
-    """Set task progress, delegating to controller if available."""
+def set_progress(
+    state: TaskInstanceState, progress: float, message: Optional[str] = None
+) -> TaskInstanceState:
+    """Set task progress and optional status message via controller if available."""
     if state.controller:
-        state.controller.set_progress(progress)
+        state.controller.set_progress(progress, message=message)
     return state
 
 
@@ -210,6 +213,19 @@ def stop_task_instance(instance_id: str) -> Optional[TaskInstanceState]:
     if state:
         return request_stop(state)
     return None
+
+
+def get_task_logs(
+    instance_id: str,
+    last: Optional[int] = None,
+    after: Optional[Union[datetime, str]] = None,
+) -> TaskLogsPage:
+    """Fetch logs for a task instance, optionally paginating after a cursor."""
+    if _platform_context is not None:
+        return _platform_context.client.task_instance_logs(
+            instance_id, last=last, after=after
+        )
+    return TaskLogsPage(entries=[], end_cursor=None, has_next_page=False)
 
 
 def wait_for_completion(state: TaskInstanceState) -> Any:  # noqa: ANN401

@@ -51,7 +51,7 @@ def get_task_inputs() -> dict[str, Any]:
     if inputs is not None:
         return inputs
 
-    input_data = os.getenv("TASK_DATA_INPUT")
+    input_data = os.getenv("NUMEROUS_INPUT_DATA") or os.getenv("TASK_DATA_INPUT")
     inputs = deserialize_task_inputs(input_data) if input_data else {}
 
     _current_inputs.set(inputs)

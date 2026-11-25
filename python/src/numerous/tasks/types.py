@@ -52,6 +52,23 @@ class TaskDefinition:
     command: Optional[list[str]] = None
 
 
+@dataclass(frozen=True)
+class TaskLogEntry:
+    """A single log line emitted by a task instance."""
+
+    timestamp: datetime
+    text: str
+
+
+@dataclass(frozen=True)
+class TaskLogsPage:
+    """A page of task instance log entries."""
+
+    entries: list[TaskLogEntry]
+    end_cursor: Optional[str] = None
+    has_next_page: bool = False
+
+
 @dataclass
 class TaskInstanceState:
     """
@@ -73,6 +90,8 @@ class TaskInstanceState:
     error: Optional[Exception] = None
     future: Optional[Future[Any]] = None
     controller: Optional[TaskController] = None
+    progress_message: Optional[str] = None
+    stopped_reason: Optional[str] = None
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def is_done(self) -> bool:

@@ -18,10 +18,16 @@ from .exceptions import (
 )
 
 try:
-    from websockets.client import (  # type: ignore[import-not-found,unused-ignore]
-        WebSocketClientProtocol,
-        connect as ws_connect,
-    )
+    try:
+        from websockets.asyncio.client import (  # type: ignore[import-not-found,unused-ignore]
+            ClientConnection as WebSocketClientProtocol,
+            connect as ws_connect,
+        )
+    except ImportError:
+        from websockets.client import (  # type: ignore[import-not-found,unused-ignore]
+            WebSocketClientProtocol,
+            connect as ws_connect,
+        )
     from websockets.typing import (  # type: ignore[import-not-found,unused-ignore]
         Data,
         Origin,
