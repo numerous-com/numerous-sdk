@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, BinaryIO, Optional
+import time
+from typing import TYPE_CHECKING, BinaryIO, Callable, Optional
 
 import requests
 
@@ -109,7 +110,52 @@ if TYPE_CHECKING:
     from .graphql.task_start import TaskStartTaskStart
 
 COLLECTED_OBJECTS_NUMBER = 100
-_REQUEST_TIMEOUT_SECONDS_ = 1.5
+
+# Timeouts for presigned file uploads and downloads, as (connect, read) in
+# seconds. Both bound a single socket operation, not the whole transfer, so a
+# large file on a slow link succeeds as long as data keeps moving. urllib3
+# applies the connect value while it sends the request body, so it also bounds
+# each write of an upload: it must allow for short network stalls.
+_FILE_TRANSFER_TIMEOUT_SECONDS_ = (30.0, 300.0)
+# Attempts for a presigned transfer. PUT and GET of the same bytes are
+# idempotent, so connection errors, timeouts and transient statuses are retried.
+_FILE_TRANSFER_ATTEMPTS_ = 3
+_FILE_TRANSFER_BACKOFF_SECONDS_ = 1.0
+_FILE_TRANSFER_RETRY_STATUSES_ = frozenset({429, 500, 502, 503, 504})
+
+
+def _transfer_with_retries(
+    send: Callable[[], requests.Response],
+) -> requests.Response:
+    """
+    Send a presigned file transfer request, retrying transient failures.
+
+    Args:
+        send: Sends the request once and returns the response.
+
+    Returns:
+        The first response that is not a transient failure, or the last
+        response if every attempt failed with a transient status.
+
+    Raises:
+        requests.ConnectionError: The last attempt failed to connect or the
+            connection broke, for example with a write timeout.
+        requests.Timeout: The last attempt timed out.
+
+    """
+    for attempt in range(1, _FILE_TRANSFER_ATTEMPTS_ + 1):
+        last = attempt == _FILE_TRANSFER_ATTEMPTS_
+        try:
+            response = send()
+        except (requests.ConnectionError, requests.Timeout):
+            if last:
+                raise
+        else:
+            if last or response.status_code not in _FILE_TRANSFER_RETRY_STATUSES_:
+                return response
+        time.sleep(_FILE_TRANSFER_BACKOFF_SECONDS_ * 2 ** (attempt - 1))
+    msg = "unreachable"  # pragma: no cover
+    raise AssertionError(msg)  # pragma: no cover
 
 
 class GraphQLClient:
@@ -499,11 +545,15 @@ class GraphQLClient:
             content_type = "text/plain"
             data = data.encode()  # Convert string to bytes
 
-        response = requests.put(
-            file.upload_url,
-            timeout=_REQUEST_TIMEOUT_SECONDS_,
-            headers={"Content-Type": content_type, "Content-Length": str(len(data))},
-            data=data,
+        upload_url = file.upload_url
+        headers = {"Content-Type": content_type, "Content-Length": str(len(data))}
+        response = _transfer_with_retries(
+            lambda: requests.put(
+                upload_url,
+                timeout=_FILE_TRANSFER_TIMEOUT_SECONDS_,
+                headers=headers,
+                data=data,
+            )
         )
         response.raise_for_status()
 
@@ -540,7 +590,10 @@ class GraphQLClient:
             msg = "No download URL for this file."
             raise ValueError(msg)
 
-        response = requests.get(file.download_url, timeout=_REQUEST_TIMEOUT_SECONDS_)
+        download_url = file.download_url
+        response = _transfer_with_retries(
+            lambda: requests.get(download_url, timeout=_FILE_TRANSFER_TIMEOUT_SECONDS_)
+        )
         response.raise_for_status()
 
         return response

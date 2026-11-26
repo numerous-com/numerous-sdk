@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Generator
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import requests
 
 from numerous._client.graphql.client import Client as GQLClient
 from numerous._client.graphql.collection_create import CollectionCreate
@@ -15,7 +16,7 @@ from numerous._client.graphql.collection_file_tag_delete import (
     CollectionFileTagDelete,
 )
 from numerous._client.graphql.input_types import TagInput
-from numerous._client.graphql_client import GraphQLClient
+from numerous._client.graphql_client import _FILE_TRANSFER_ATTEMPTS_, GraphQLClient
 from numerous._utils.jsonbase64 import dict_to_base64
 from numerous.collections import collection
 from numerous.collections.file_reference import FileReference
@@ -38,7 +39,7 @@ DOCUMENT_DATA = {"test": "test"}
 BASE64_DOCUMENT_DATA = dict_to_base64(DOCUMENT_DATA)
 FILE_ID = "ce5aba38-842d-4ee0-877b-4af9d426c848"
 HEADERS_WITH_AUTHORIZATION = {"headers": {"Authorization": "Bearer token"}}
-_REQUEST_TIMEOUT_SECONDS = 1.5
+_FILE_TRANSFER_TIMEOUT_SECONDS = (30.0, 300.0)
 
 
 TEST_DOWNLOAD_URL = "http://127.0.0.1:8082/download/collection_files/" + FILE_ID
@@ -234,7 +235,7 @@ def test_read_text_returns_expected_text(
     text = file.read_text()
 
     mock_get.assert_called_once_with(
-        TEST_DOWNLOAD_URL, timeout=_REQUEST_TIMEOUT_SECONDS
+        TEST_DOWNLOAD_URL, timeout=_FILE_TRANSFER_TIMEOUT_SECONDS
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_ID,
@@ -260,7 +261,7 @@ def test_read_bytes_returns_expected_bytes(
     bytes_data = file.read_bytes()
 
     mock_get.assert_called_once_with(
-        TEST_DOWNLOAD_URL, timeout=_REQUEST_TIMEOUT_SECONDS
+        TEST_DOWNLOAD_URL, timeout=_FILE_TRANSFER_TIMEOUT_SECONDS
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_ID,
@@ -288,7 +289,7 @@ def test_open_read_returns_expected_file_content(
         bytes_data = fd.read()
 
     mock_get.assert_called_once_with(
-        TEST_DOWNLOAD_URL, timeout=_REQUEST_TIMEOUT_SECONDS
+        TEST_DOWNLOAD_URL, timeout=_FILE_TRANSFER_TIMEOUT_SECONDS
     )
     gql.collection_file_create.assert_called_once_with(
         COLLECTION_ID,
@@ -315,7 +316,7 @@ def test_save_with_bytes_makes_expected_put_request(
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        timeout=_REQUEST_TIMEOUT_SECONDS,
+        timeout=_FILE_TRANSFER_TIMEOUT_SECONDS,
         headers={
             "Content-Type": "application/octet-stream",
             "Content-Length": str(len(TEST_FILE_BYTES_CONTENT)),
@@ -347,7 +348,7 @@ def test_save_makes_expected_put_request(
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        timeout=_REQUEST_TIMEOUT_SECONDS,
+        timeout=_FILE_TRANSFER_TIMEOUT_SECONDS,
         headers={
             "Content-Type": "text/plain",
             "Content-Length": str(len(TEST_FILE_TEXT_CONTENT)),
@@ -376,7 +377,7 @@ def test_file_save_makes_expected_put_request(
 
     mock_put.assert_called_once_with(
         TEST_UPLOAD_URL,
-        timeout=_REQUEST_TIMEOUT_SECONDS,
+        timeout=_FILE_TRANSFER_TIMEOUT_SECONDS,
         headers={
             "Content-Type": "text/plain",
             "Content-Length": str(len(TEST_FILE_TEXT_CONTENT)),
@@ -458,3 +459,88 @@ def test_tags_property_queries_and_returns_expected_tags(
     tags = file.tags
 
     assert tags == expected_tags
+
+
+@pytest.fixture
+def no_backoff() -> Generator[MagicMock, None, None]:
+    with patch("numerous._client.graphql_client.time.sleep") as m:
+        yield m
+
+
+def _saved_file(gql: Mock, client: GraphQLClient) -> FileReference:
+    gql.collection_create.return_value = _collection_create_collection_reference(
+        COLLECTION_KEY, COLLECTION_ID
+    )
+    gql.collection_file_create.return_value = _collection_file_create(FILE_ID, FILE_KEY)
+    gql.collection_file.return_value = _collection_file(FILE_ID, FILE_KEY)
+    return collection(COLLECTION_KEY, client).file(FILE_KEY)
+
+
+def test_save_retries_upload_after_write_timeout(
+    mock_put: MagicMock, no_backoff: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
+    ok = MagicMock(status_code=200)
+    mock_put.side_effect = [
+        requests.ConnectionError(
+            "('Connection aborted.', TimeoutError('The write operation timed out'))"
+        ),
+        ok,
+    ]
+
+    _saved_file(gql, client).save(TEST_FILE_BYTES_CONTENT)
+
+    assert mock_put.call_count == 2  # noqa: PLR2004
+    no_backoff.assert_called_once()
+    ok.raise_for_status.assert_called_once()
+
+
+@pytest.mark.usefixtures("no_backoff")
+def test_save_retries_upload_after_transient_status(
+    mock_put: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
+    unavailable = MagicMock(status_code=503)
+    ok = MagicMock(status_code=200)
+    mock_put.side_effect = [unavailable, ok]
+
+    _saved_file(gql, client).save(TEST_FILE_BYTES_CONTENT)
+
+    assert mock_put.call_count == 2  # noqa: PLR2004
+    unavailable.raise_for_status.assert_not_called()
+    ok.raise_for_status.assert_called_once()
+
+
+def test_save_does_not_retry_client_error(
+    mock_put: MagicMock, no_backoff: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
+    forbidden = MagicMock(status_code=403)
+    forbidden.raise_for_status.side_effect = requests.HTTPError("403")
+    mock_put.return_value = forbidden
+
+    with pytest.raises(requests.HTTPError):
+        _saved_file(gql, client).save(TEST_FILE_BYTES_CONTENT)
+
+    mock_put.assert_called_once()
+    no_backoff.assert_not_called()
+
+
+def test_save_raises_after_last_attempt_times_out(
+    mock_put: MagicMock, no_backoff: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
+    mock_put.side_effect = requests.Timeout("timed out")
+
+    with pytest.raises(requests.Timeout):
+        _saved_file(gql, client).save(TEST_FILE_BYTES_CONTENT)
+
+    assert mock_put.call_count == _FILE_TRANSFER_ATTEMPTS_
+    assert no_backoff.call_count == _FILE_TRANSFER_ATTEMPTS_ - 1
+
+
+@pytest.mark.usefixtures("no_backoff")
+def test_read_bytes_retries_download_after_timeout(
+    mock_get: MagicMock, gql: Mock, client: GraphQLClient
+) -> None:
+    ok = MagicMock(status_code=200, content=TEST_FILE_BYTES_CONTENT)
+    mock_get.side_effect = [requests.ReadTimeout("read timed out"), ok]
+
+    assert _saved_file(gql, client).read_bytes() == TEST_FILE_BYTES_CONTENT
+    assert mock_get.call_count == 2  # noqa: PLR2004
